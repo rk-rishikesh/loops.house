@@ -32,9 +32,22 @@ export interface StoredBooster {
   id: string;
   name: string;
   problem_statements: string[];
-  sponsor_tracks?: { sponsor: string; track_description: string }[];
   theme?: string;
   booster_type?: BoosterType;
+  /** Public website or landing page for this booster/program */
+  website_url?: string;
+  /** Structured technical resources (link + description) */
+  technical_resources?: { url: string; description: string }[];
+  /** Links or notes for technical docs (Notion, Google Docs, API pages, etc.) */
+  technical_docs?: string;
+  /** Description of bounty pool, rewards, and incentives */
+  bounty_pool_summary?: string;
+  /** High-level goal for this booster/program */
+  program_goal?: string;
+  /** Timeline and key dates: launch, checkpoints, submissions, judging, etc. */
+  timeline?: string;
+  /** Freeform organizer notes / scratchpad for the program */
+  organizer_notes?: string;
   created_at: string;
 }
 

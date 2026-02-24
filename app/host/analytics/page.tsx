@@ -79,7 +79,6 @@ export default function HostAnalyticsPage() {
               name: booster.name,
               theme: booster.theme,
               problem_statements: booster.problem_statements,
-              sponsor_tracks: booster.sponsor_tracks,
             }
           : undefined,
         metrics,
