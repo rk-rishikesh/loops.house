@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Lightbulb, Zap, DollarSign, FolderOpen, LogIn, ArrowLeft } from "lucide-react";
-import { getRole } from "@/lib/auth";
+import { useRole } from "@/lib/queries";
 
 const BOOSTER_CTAS: { type: "idea" | "momentum" | "capital"; label: string; icon: React.ElementType }[] = [
   { type: "idea", label: "Idea Booster", icon: Lightbulb },
@@ -12,13 +11,7 @@ const BOOSTER_CTAS: { type: "idea" | "momentum" | "capital"; label: string; icon
 ];
 
 export default function BoostersLandingPage() {
-  const [role, setRole] = useState<ReturnType<typeof getRole>>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    setRole(getRole());
-  }, []);
+  const { data: role, isFetched: mounted } = useRole();
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950">

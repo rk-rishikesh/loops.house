@@ -1,4 +1,17 @@
-import { embedText, cosineSimilarity } from "./embeddings";
+/**
+ * Vector store — delegates to Supabase pgvector via lib/db/knowledge-base.ts.
+ *
+ * Keeps the same exports so existing API routes continue to work.
+ */
+
+import { embedText } from "./embeddings";
+import {
+  upsertChunks as dbUpsert,
+  getChunks as dbGetChunks,
+  queryTopK as dbQueryTopK,
+  hasProject as dbHasProject,
+  deleteProjectKB,
+} from "@/lib/db/knowledge-base";
 
 export interface VectorChunk {
   id: string;
@@ -7,51 +20,57 @@ export interface VectorChunk {
   metadata?: Record<string, unknown>;
 }
 
-interface ProjectStore {
-  chunks: VectorChunk[];
-  createdAt: number;
+export async function upsertChunks(
+  projectId: string,
+  chunks: VectorChunk[],
+): Promise<void> {
+  await dbUpsert(
+    projectId,
+    chunks.map((c) => ({
+      content: c.text,
+      embedding: c.embedding,
+      metadata: c.metadata as Record<string, string> | undefined,
+    })),
+  );
 }
 
-const store = new Map<string, ProjectStore>();
-
-export function upsertChunks(projectId: string, chunks: VectorChunk[]): void {
-  store.set(projectId, { chunks, createdAt: Date.now() });
+export async function getChunks(
+  projectId: string,
+): Promise<VectorChunk[] | null> {
+  const chunks = await dbGetChunks(projectId);
+  if (chunks.length === 0) return null;
+  return chunks.map((c, i) => ({
+    id: `${projectId}-${i}`,
+    text: c.content,
+    embedding: [],
+    metadata: c.metadata as Record<string, unknown>,
+  }));
 }
 
-export function getChunks(projectId: string): VectorChunk[] | null {
-  return store.get(projectId)?.chunks ?? null;
+export async function deleteProject(projectId: string): Promise<void> {
+  await deleteProjectKB(projectId);
 }
 
-export function deleteProject(projectId: string): boolean {
-  return store.delete(projectId);
-}
-
-export function hasProject(projectId: string): boolean {
-  return store.has(projectId);
+export async function hasProject(projectId: string): Promise<boolean> {
+  return dbHasProject(projectId);
 }
 
 export async function queryTopK(
   projectId: string,
   query: string,
-  k: number = 5,
-  minSimilarity: number = 0
+  k = 5,
+  minSimilarity = 0,
 ): Promise<{ chunk: VectorChunk; score: number }[]> {
-  const project = store.get(projectId);
-  if (!project) return [];
-
   const queryEmbedding = await embedText(query);
+  const results = await dbQueryTopK(projectId, queryEmbedding, k, minSimilarity);
 
-  const scored = project.chunks.map((chunk) => ({
-    chunk,
-    score: cosineSimilarity(queryEmbedding, chunk.embedding),
+  return results.map((r) => ({
+    chunk: {
+      id: r.metadata ? String((r.metadata as Record<string, unknown>).id ?? "") : "",
+      text: r.content,
+      embedding: [],
+      metadata: r.metadata as Record<string, unknown>,
+    },
+    score: r.similarity,
   }));
-
-  return scored
-    .filter((s) => s.score >= minSimilarity)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, k);
-}
-
-export function listProjects(): string[] {
-  return Array.from(store.keys());
 }

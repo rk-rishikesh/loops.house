@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Store } from "lucide-react";
+import { LogoutButton } from "@/components/logout-button";
 
 export default function ViewerLayout({
   children,
@@ -12,9 +13,13 @@ export default function ViewerLayout({
             <Store className="w-5 h-5" />
             <span className="font-semibold">Loops · Store</span>
           </Link>
-          <Link href="/viewer" className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-emerald-600">
-            Browse projects
-          </Link>
+          <nav className="flex items-center gap-2 text-sm">
+            <Link href="/viewer" className="text-zinc-600 dark:text-zinc-400 hover:text-emerald-600">
+              Browse projects
+            </Link>
+            <span className="w-px h-4 bg-zinc-200 dark:bg-zinc-700" aria-hidden />
+            <LogoutButton />
+          </nav>
         </div>
       </header>
       <main className="container mx-auto px-4 py-8">{children}</main>

@@ -3,25 +3,33 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Users, Plus } from "lucide-react";
-import { getTeams, saveTeam } from "@/lib/storage";
+import { useAuth } from "@/app/providers";
+import { useTeams, useSaveTeam } from "@/lib/queries";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createTeamSchema, type CreateTeamSchema } from "@/lib/validations/schemas";
 
 export default function BuilderTeamsPage() {
-  const [teams, setTeams] = useState(getTeams());
-  const [newName, setNewName] = useState("");
+  const { user } = useAuth();
+  const { data: teams = [], isLoading: loading } = useTeams(user?.id);
+  const saveTeamMutation = useSaveTeam(user?.id);
   const [adding, setAdding] = useState(false);
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName.trim()) return;
-    saveTeam({
-      id: `team_${Date.now()}`,
-      name: newName.trim(),
-      created_at: new Date().toISOString(),
-    });
-    setTeams(getTeams());
-    setNewName("");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CreateTeamSchema>({
+    resolver: zodResolver(createTeamSchema),
+  });
+
+  const handleCreate = handleSubmit(async (data) => {
+    if (!user) return;
+    await saveTeamMutation.mutateAsync(data);
+    reset();
     setAdding(false);
-  };
+  });
 
   return (
     <div>
@@ -46,35 +54,45 @@ export default function BuilderTeamsPage() {
             <Plus className="w-4 h-4" /> Create team
           </button>
         ) : (
-          <form onSubmit={handleCreate} className="flex gap-2">
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Team name"
-              className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
-              autoFocus
-            />
-            <button
-              type="submit"
-              disabled={!newName.trim()}
-              className="rounded-lg bg-violet-600 text-white px-4 py-2 font-medium hover:bg-violet-700 disabled:opacity-50"
-            >
-              Save
-            </button>
-            <button
-              type="button"
-              onClick={() => { setAdding(false); setNewName(""); }}
-              className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-zinc-600 dark:text-zinc-400"
-            >
-              Cancel
-            </button>
+          <form onSubmit={handleCreate} className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                {...register("name")}
+                placeholder="Team name"
+                className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={saveTeamMutation.isPending}
+                className="rounded-lg bg-violet-600 text-white px-4 py-2 font-medium hover:bg-violet-700 disabled:opacity-50"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAdding(false); reset(); }}
+                className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-zinc-600 dark:text-zinc-400"
+              >
+                Cancel
+              </button>
+            </div>
+            {errors.name && (
+              <p className="text-xs text-red-600 dark:text-red-400">{errors.name.message}</p>
+            )}
           </form>
         )}
       </div>
 
       <ul className="mt-8 space-y-3">
-        {teams.length === 0 && !adding && (
+        {loading && (
+          <li className="animate-pulse py-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5">
+            <div className="h-4 w-32 bg-zinc-200 dark:bg-zinc-700 rounded" />
+            <div className="h-3 w-20 bg-zinc-100 dark:bg-zinc-800 rounded mt-2" />
+          </li>
+        )}
+        {!loading && teams.length === 0 && !adding && (
           <li className="text-zinc-500 dark:text-zinc-400 py-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5">
             No teams yet. Create one above, then create a new project and select the team.
           </li>

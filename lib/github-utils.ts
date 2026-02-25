@@ -244,12 +244,13 @@ export function isValidGitHubUrl(url: string): boolean {
 /**
  * Create file tree structure from flat file list
  */
-export function createFileTree(files: FileData[]): Record<string, any> {
-    const tree: Record<string, any> = {};
+type FileTreeNode = FileData | Record<string, FileData | Record<string, unknown>>;
+export function createFileTree(files: FileData[]): Record<string, FileTreeNode> {
+    const tree: Record<string, FileTreeNode> = {};
 
     for (const file of files) {
         const parts = file.path.split('/');
-        let current = tree;
+        let current: Record<string, FileTreeNode> = tree;
 
         for (let i = 0; i < parts.length; i++) {
             const part = parts[i];
@@ -262,7 +263,7 @@ export function createFileTree(files: FileData[]): Record<string, any> {
                 if (!current[part]) {
                     current[part] = {};
                 }
-                current = current[part];
+                current = current[part] as Record<string, FileTreeNode>;
             }
         }
     }

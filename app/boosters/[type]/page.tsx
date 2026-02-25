@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, FileText, Send } from "lucide-react";
-import { getBoosters } from "@/lib/storage";
-import type { StoredBooster, BoosterType } from "@/lib/storage";
+import { useBoosters } from "@/lib/queries";
+import type { BoosterType } from "@/lib/storage";
 
 const TYPES: BoosterType[] = ["idea", "momentum", "capital"];
 const TYPE_LABELS: Record<BoosterType, string> = {
@@ -14,21 +13,11 @@ const TYPE_LABELS: Record<BoosterType, string> = {
   capital: "Capital Boosters",
 };
 
-function filterByType(boosters: StoredBooster[], type: BoosterType): StoredBooster[] {
-  return boosters.filter((b) => (b.booster_type ?? "idea") === type);
-}
-
 export default function BoosterTypePage() {
   const params = useParams();
   const type = (params.type as string)?.toLowerCase() || "idea";
   const validType = TYPES.includes(type as BoosterType) ? (type as BoosterType) : "idea";
-  const [boosters, setBoosters] = useState<StoredBooster[]>([]);
-
-  useEffect(() => {
-    setBoosters(getBoosters());
-  }, []);
-
-  const list = filterByType(boosters, validType);
+  const { data: list = [], isLoading: loading } = useBoosters(validType);
 
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -49,7 +38,16 @@ export default function BoosterTypePage() {
           Select a booster to ideate, apply with a project, or view your submission.
         </p>
 
-        {list.length === 0 ? (
+        {loading ? (
+          <div className="mt-6 space-y-4 animate-pulse">
+            {[1, 2].map((i) => (
+              <div key={i} className="p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                <div className="h-4 w-40 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                <div className="h-3 w-56 bg-zinc-100 dark:bg-zinc-800 rounded mt-2" />
+              </div>
+            ))}
+          </div>
+        ) : list.length === 0 ? (
           <div className="mt-10 p-10 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center">
             <p className="text-zinc-500 dark:text-zinc-400">No boosters in this category yet.</p>
             <p className="text-sm text-zinc-500 mt-1">Hosts can add boosters from the Host dashboard.</p>

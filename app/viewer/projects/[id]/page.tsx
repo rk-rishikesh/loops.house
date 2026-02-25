@@ -1,11 +1,16 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Code2, MessageSquare, Send, Loader2 } from "lucide-react";
-import { getProject } from "@/lib/storage";
 import type { StoredProject } from "@/lib/storage";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { useProject } from "@/lib/queries";
+import { codeQuerySchema, chatInputSchema, type CodeQuerySchema, type ChatInputSchema } from "@/lib/validations/schemas";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -25,34 +30,25 @@ function projectKbSnapshot(p: StoredProject) {
 export default function ViewerProjectPage() {
   const params = useParams();
   const projectId = params.id as string;
-  const [project, setProject] = useState<StoredProject | null | undefined>(undefined);
-
-  const [codeQuestion, setCodeQuestion] = useState("");
-  const [codeAnswer, setCodeAnswer] = useState<string | null>(null);
-  const [codeLoading, setCodeLoading] = useState(false);
+  const { data: project, isLoading, isError } = useProject(projectId);
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setProject(getProject(projectId));
-  }, [projectId]);
+  const codeQueryForm = useForm<CodeQuerySchema>({
+    resolver: zodResolver(codeQuerySchema),
+  });
 
-  useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
+  const chatForm = useForm<ChatInputSchema>({
+    resolver: zodResolver(chatInputSchema),
+  });
 
-  const handleCodeQuery = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!codeQuestion.trim() || codeLoading) return;
-    setCodeLoading(true);
-    setCodeAnswer(null);
-    try {
+  const codeQueryMutation = useMutation({
+    mutationFn: async (data: CodeQuerySchema): Promise<{ answer: string }> => {
       const body: { project_id: string; question: string; project?: ReturnType<typeof projectKbSnapshot> } = {
         project_id: projectId,
-        question: codeQuestion.trim(),
+        question: data.question,
       };
       if (project) body.project = projectKbSnapshot(project);
       const res = await fetch("/api/viewer-agents/code-query", {
@@ -60,21 +56,15 @@ export default function ViewerProjectPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Query failed");
-      setCodeAnswer(data.answer);
-    } catch (e) {
-      setCodeAnswer(`Error: ${e instanceof Error ? e.message : "Request failed"}`);
-    } finally {
-      setCodeLoading(false);
-    }
-  };
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Query failed");
+      return json as { answer: string };
+    },
+  });
 
-  const handleChatSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim() || chatLoading) return;
-    const userMsg = chatInput.trim();
-    setChatInput("");
+  const handleChatSend = chatForm.handleSubmit(async (data) => {
+    const userMsg = data.message;
+    chatForm.reset();
     setChatMessages((m) => [...m, { role: "user", content: userMsg }]);
     setChatLoading(true);
     try {
@@ -95,8 +85,8 @@ export default function ViewerProjectPage() {
         body: JSON.stringify(chatBody),
       });
       if (!res.ok || !res.body) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Chat failed");
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || "Chat failed");
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -111,10 +101,10 @@ export default function ViewerProjectPage() {
         buffer = lines.pop() ?? "";
         for (const line of lines) {
           if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data === "[DONE]") continue;
+            const chunk = line.slice(6);
+            if (chunk === "[DONE]") continue;
             try {
-              const parsed = JSON.parse(data);
+              const parsed = JSON.parse(chunk);
               if (parsed.text) {
                 assistantContent += parsed.text;
                 setChatMessages((m) => {
@@ -129,6 +119,7 @@ export default function ViewerProjectPage() {
           }
         }
       }
+      chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
     } catch (e) {
       setChatMessages((m) => [
         ...m,
@@ -137,9 +128,9 @@ export default function ViewerProjectPage() {
     } finally {
       setChatLoading(false);
     }
-  };
+  });
 
-  if (project === undefined) {
+  if (isLoading) {
     return (
       <div>
         <Link href="/viewer" className="text-emerald-600 hover:underline">← Back to store</Link>
@@ -148,11 +139,20 @@ export default function ViewerProjectPage() {
     );
   }
 
-  if (project === null) {
+  if (isError || project === null) {
     return (
       <div>
         <Link href="/viewer" className="text-emerald-600 hover:underline">← Back to store</Link>
         <p className="mt-4 text-zinc-500">Project not found. It may only exist on another device.</p>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div>
+        <Link href="/viewer" className="text-emerald-600 hover:underline">← Back to store</Link>
+        <p className="mt-4 text-zinc-500">Loading…</p>
       </div>
     );
   }
@@ -168,7 +168,7 @@ export default function ViewerProjectPage() {
 
       <div className="flex flex-col md:flex-row gap-6 mb-6">
         {project.logo_url ? (
-          <img src={project.logo_url} alt="" className="w-16 h-16 rounded-xl object-cover" />
+          <Image src={project.logo_url} alt="" width={64} height={64} className="w-16 h-16 rounded-xl object-cover" />
         ) : (
           <div className="w-16 h-16 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
             <Code2 className="w-8 h-8 text-emerald-600" />
@@ -195,38 +195,44 @@ export default function ViewerProjectPage() {
       )}
 
       <div className="grid lg:grid-cols-2 gap-8">
+        {/* Code query section */}
         <section className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
           <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
             <Code2 className="w-5 h-5" />
             <span className="font-medium">Ask about the code</span>
           </div>
           <div className="p-4">
-            <form onSubmit={handleCodeQuery} className="flex gap-2">
+            <form onSubmit={codeQueryForm.handleSubmit((data) => codeQueryMutation.mutate(data))} className="flex gap-2">
               <input
                 type="text"
-                value={codeQuestion}
-                onChange={(e) => setCodeQuestion(e.target.value)}
+                {...codeQueryForm.register("question")}
                 placeholder="e.g. How is auth implemented?"
                 className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white text-sm"
-                disabled={codeLoading}
+                disabled={codeQueryMutation.isPending}
               />
               <button
                 type="submit"
-                disabled={codeLoading || !codeQuestion.trim()}
+                disabled={codeQueryMutation.isPending}
                 className="rounded-lg bg-emerald-600 text-white px-4 py-2 text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1"
               >
-                {codeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {codeQueryMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 Ask
               </button>
             </form>
-            {codeAnswer !== null && (
+            {codeQueryMutation.isError && (
+              <div className="mt-4 p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 text-sm text-red-600 dark:text-red-400">
+                {codeQueryMutation.error.message}
+              </div>
+            )}
+            {codeQueryMutation.data && (
               <div className="mt-4 p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
-                {codeAnswer}
+                {codeQueryMutation.data.answer}
               </div>
             )}
           </div>
         </section>
 
+        {/* Chat section */}
         <section className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden flex flex-col max-h-[500px]">
           <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
             <MessageSquare className="w-5 h-5" />
@@ -264,15 +270,14 @@ export default function ViewerProjectPage() {
           <form onSubmit={handleChatSend} className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex gap-2">
             <input
               type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
+              {...chatForm.register("message")}
               placeholder="Message…"
               className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white text-sm"
               disabled={chatLoading}
             />
             <button
               type="submit"
-              disabled={chatLoading || !chatInput.trim()}
+              disabled={chatLoading}
               className="rounded-lg bg-emerald-600 text-white p-2 hover:bg-emerald-700 disabled:opacity-50"
             >
               <Send className="w-4 h-4" />

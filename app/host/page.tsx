@@ -1,22 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { BarChart3, Gavel, Plus, FileText, ArrowRight } from "lucide-react";
-import { getBoosters, getProjects, getProject, getBooster } from "@/lib/storage";
-import type { StoredProject, StoredBooster } from "@/lib/storage";
+import { useBoosters, useProjects, useSubmissionsForBoosters } from "@/lib/queries";
 
 export default function HostPage() {
-  const [boosters, setBoosters] = useState<StoredBooster[]>([]);
-  const [projects, setProjects] = useState<StoredProject[]>([]);
-
-  useEffect(() => {
-    setBoosters(getBoosters());
-    setProjects(getProjects());
-  }, []);
-
-  const boosterIds = new Set(boosters.map((b) => b.id));
-  const submittedProjects = projects.filter((p) => p.booster_id && boosterIds.has(p.booster_id));
+  const { data: boosters = [], isLoading: loadingBoosters } = useBoosters();
+  const { data: projects = [], isLoading: loadingProjects } = useProjects();
+  const boosterIds = useMemo(() => boosters.map((b) => b.id), [boosters]);
+  const { data: submissions = [], isLoading: loadingSubs } = useSubmissionsForBoosters(boosterIds);
+  const projectMap = useMemo(() => {
+    const map: Record<string, (typeof projects)[0]> = {};
+    projects.forEach((p) => { map[p.project_id] = p; });
+    return map;
+  }, [projects]);
+  const loading = loadingBoosters || loadingProjects || loadingSubs;
 
   return (
     <div>
@@ -55,25 +54,31 @@ export default function HostPage() {
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
               Projects submitted to your boosters. View and grade each.
             </p>
-            {submittedProjects.length === 0 ? (
+            {loading ? (
+              <div className="mt-4 space-y-2 animate-pulse">
+                <div className="h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800" />
+                <div className="h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800" />
+              </div>
+            ) : submissions.length === 0 ? (
               <p className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">No submissions yet.</p>
             ) : (
               <ul className="mt-4 space-y-2">
-                {submittedProjects.map((p) => {
-                  const booster = p.booster_id ? getBooster(p.booster_id) : null;
+                {submissions.map((sub) => {
+                  const project = projectMap[sub.project_id];
+                  const booster = boosters.find((b) => b.id === sub.booster_id);
                   return (
                     <li
-                      key={p.project_id}
+                      key={sub.id}
                       className="flex items-center justify-between gap-4 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50"
                     >
                       <div className="min-w-0">
-                        <p className="font-medium text-zinc-900 dark:text-white">{p.name}</p>
+                        <p className="font-medium text-zinc-900 dark:text-white">{project?.name ?? "Unknown project"}</p>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
                           {booster ? `Submitted to ${booster.name}` : "—"}
                         </p>
                       </div>
                       <Link
-                        href={`/host/judging?project_id=${p.project_id}&booster_id=${p.booster_id ?? ""}`}
+                        href={`/host/judging?project_id=${sub.project_id}&booster_id=${sub.booster_id}`}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 text-white px-3 py-1.5 text-sm font-medium hover:bg-amber-700 shrink-0"
                       >
                         <Gavel className="w-4 h-4" /> Grade project

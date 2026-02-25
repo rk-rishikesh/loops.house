@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Hammer, Lightbulb, FolderOpen, Users, Trophy, Share2, MessageSquare, FlaskConical } from "lucide-react";
+import { Hammer, Lightbulb, FolderOpen, Users, Share2, MessageSquare, FlaskConical } from "lucide-react";
+import { LogoutButton } from "@/components/logout-button";
 
 export default function BuilderLayout({
   children,
@@ -35,6 +36,8 @@ export default function BuilderLayout({
             <Link href="/builder/test" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300" title="Test agents">
               <FlaskConical className="w-4 h-4" />
             </Link>
+            <span className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-1" aria-hidden />
+            <LogoutButton />
           </nav>
         </div>
       </header>

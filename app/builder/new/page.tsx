@@ -1,71 +1,90 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { Suspense, useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Check, X, Minus } from "lucide-react";
-import { saveProject, getTeams, getBoosters } from "@/lib/storage";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { saveProject } from "@/lib/storage";
+import { useTeams, useBoosters } from "@/lib/queries";
+import { useAuth } from "@/app/providers";
+import { createProfileSchema, type CreateProfileSchema } from "@/lib/validations/schemas";
 
 const STEPS = ["code-reader", "demo-reader", "theme-reader", "knowledge-base"] as const;
 type StepStatus = "pending" | "started" | "done" | "failed" | "skipped";
 
 export default function NewProfilePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-zinc-500">Loading...</div>}>
+      <NewProfileContent />
+    </Suspense>
+  );
+}
+
+function NewProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<Record<string, StepStatus>>({});
   const [progressErrors, setProgressErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
-  const teams = getTeams();
-  const boosters = getBoosters();
+  const { data: teams = [] } = useTeams(user?.id);
+  const { data: boosters = [] } = useBoosters();
+
   const teamIdFromUrl = searchParams.get("team_id");
   const boosterIdFromUrl = searchParams.get("booster_id");
 
-  const [form, setForm] = useState({
-    project_id: `proj_${Date.now()}`,
-    team_id: "",
-    name: "",
-    description: "",
-    logo_url: "",
-    website_url: "",
-    github_url: "",
-    youtube_url: "",
-    screenshot_urls: "",
-    booster_id: "",
-    social_links: "",
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isValid },
+    watch,
+  } = useForm<CreateProfileSchema>({
+    resolver: zodResolver(createProfileSchema),
+    mode: "onChange",
+    defaultValues: {
+      team_id: "",
+      name: "",
+      description: "",
+      github_url: "",
+      youtube_url: "",
+      logo_url: "",
+      website_url: "",
+      screenshot_urls: "",
+      social_links: "",
+      booster_id: "",
+    },
   });
 
+  // Apply URL params as defaults once data is loaded
   useEffect(() => {
     const validUrlTeam = teamIdFromUrl && teams.some((t) => t.id === teamIdFromUrl) ? teamIdFromUrl : null;
     const fallbackTeamId = teams[0]?.id ?? "";
     const validUrlBooster = boosterIdFromUrl && boosters.some((b) => b.id === boosterIdFromUrl) ? boosterIdFromUrl : null;
-    setForm((f) => {
-      let next = f;
-      if (validUrlTeam) next = { ...next, team_id: validUrlTeam };
-      else if (!next.team_id && fallbackTeamId) next = { ...next, team_id: fallbackTeamId };
-      if (validUrlBooster) next = { ...next, booster_id: validUrlBooster };
-      return next;
-    });
-  }, [teamIdFromUrl, boosterIdFromUrl, teams.length, boosters.length]);
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!form.team_id) {
-        setError("Please select a team first.");
-        return;
-      }
+    reset((prev) => ({
+      ...prev,
+      team_id: validUrlTeam ?? (prev.team_id || fallbackTeamId),
+      booster_id: validUrlBooster ?? prev.booster_id,
+    }));
+  }, [teamIdFromUrl, boosterIdFromUrl, teams, boosters, reset]);
+
+  const onSubmit = useCallback(
+    async (data: CreateProfileSchema) => {
       setError(null);
       setProgressErrors({});
       setLoading(true);
       STEPS.forEach((s) => setProgress((p) => ({ ...p, [s]: "pending" })));
 
-      const screenshotUrls = form.screenshot_urls
-        ? form.screenshot_urls.split("\n").map((u) => u.trim()).filter(Boolean)
+      const screenshotUrls = data.screenshot_urls
+        ? data.screenshot_urls.split("\n").map((u) => u.trim()).filter(Boolean)
         : undefined;
-      const socialLinks = form.social_links
-        ? form.social_links
+      const socialLinks = data.social_links
+        ? data.social_links
             .split("\n")
             .map((line) => {
               const trimmed = line.trim();
@@ -84,23 +103,22 @@ export default function NewProfilePage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            project_id: form.project_id || `proj_${Date.now()}`,
-            team_id: form.team_id,
-            name: form.name,
-            description: form.description,
-            logo_url: form.logo_url || undefined,
-            website_url: form.website_url || undefined,
-            github_url: form.github_url || undefined,
-            youtube_url: form.youtube_url || undefined,
+            team_id: data.team_id,
+            name: data.name,
+            description: data.description,
+            logo_url: data.logo_url,
+            website_url: data.website_url,
+            github_url: data.github_url,
+            youtube_url: data.youtube_url,
             screenshot_urls: screenshotUrls,
             social_links: socialLinks,
-            booster_id: form.booster_id || undefined,
+            booster_id: data.booster_id,
           }),
         });
 
         if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || data.message || "Profile creation failed");
+          const json = await res.json().catch(() => ({}));
+          throw new Error(json.error || json.message || "Profile creation failed");
         }
         if (!res.body) {
           throw new Error("No response body");
@@ -125,10 +143,10 @@ export default function NewProfilePage() {
               continue;
             }
             if (!line.startsWith("data: ")) continue;
-            const data = line.slice(6);
-            if (data === "[DONE]") continue;
+            const chunk = line.slice(6);
+            if (chunk === "[DONE]") continue;
             try {
-              const parsed = JSON.parse(data) as Record<string, unknown>;
+              const parsed = JSON.parse(chunk) as Record<string, unknown>;
               if (parsed.message !== undefined && typeof parsed.message === "string") {
                 serverError = parsed.message;
               }
@@ -156,9 +174,9 @@ export default function NewProfilePage() {
           throw new Error(serverError);
         }
         if (lastComplete && typeof lastComplete.project_id === "string") {
-          saveProject({
+          await saveProject({
             ...lastComplete,
-            team_id: form.team_id,
+            team_id: data.team_id,
             created_at: new Date().toISOString(),
           } as Parameters<typeof saveProject>[0]);
           router.push(`/builder/projects/${lastComplete.project_id}`);
@@ -171,10 +189,10 @@ export default function NewProfilePage() {
         setLoading(false);
       }
     },
-    [form, router]
+    [router]
   );
 
-  const canSubmit = form.team_id && form.name.trim() && form.description.trim();
+  const teamId = watch("team_id");
 
   return (
     <div>
@@ -186,10 +204,10 @@ export default function NewProfilePage() {
       </Link>
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Create Loops profile</h1>
       <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-        Create a team first, then select it below. We’ll analyze your repo, demo, and screenshots to build your project profile.
+        Create a team first, then select it below. We&apos;ll analyze your repo, demo, and screenshots to build your project profile.
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 max-w-xl space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 max-w-xl space-y-5">
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Team *</label>
           {teams.length === 0 ? (
@@ -198,9 +216,7 @@ export default function NewProfilePage() {
             </p>
           ) : (
             <select
-              required
-              value={form.team_id}
-              onChange={(e) => setForm((f) => ({ ...f, team_id: e.target.value }))}
+              {...register("team_id")}
               className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
             >
               <option value="">Select a team…</option>
@@ -209,92 +225,110 @@ export default function NewProfilePage() {
               ))}
             </select>
           )}
+          {errors.team_id && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.team_id.message}</p>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Project name *</label>
           <input
             type="text"
-            required
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            {...register("name")}
             className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           />
+          {errors.name && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.name.message}</p>
+          )}
         </div>
+
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Description *</label>
           <textarea
-            required
             rows={4}
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            {...register("description")}
             className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           />
+          {errors.description && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.description.message}</p>
+          )}
         </div>
+
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">GitHub repo URL</label>
           <input
             type="url"
             placeholder="https://github.com/user/repo"
-            value={form.github_url}
-            onChange={(e) => setForm((f) => ({ ...f, github_url: e.target.value }))}
+            {...register("github_url")}
             className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           />
+          {errors.github_url && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.github_url.message}</p>
+          )}
         </div>
+
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">YouTube demo URL</label>
           <input
             type="url"
             placeholder="https://www.youtube.com/watch?v=..."
-            value={form.youtube_url}
-            onChange={(e) => setForm((f) => ({ ...f, youtube_url: e.target.value }))}
+            {...register("youtube_url")}
             className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           />
+          {errors.youtube_url && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.youtube_url.message}</p>
+          )}
         </div>
+
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Logo URL</label>
           <input
             type="url"
-            value={form.logo_url}
-            onChange={(e) => setForm((f) => ({ ...f, logo_url: e.target.value }))}
+            {...register("logo_url")}
             className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           />
+          {errors.logo_url && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.logo_url.message}</p>
+          )}
         </div>
+
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Screenshot URLs (one per line)</label>
           <textarea
             rows={2}
             placeholder="https://example.com/screenshot1.png"
-            value={form.screenshot_urls}
-            onChange={(e) => setForm((f) => ({ ...f, screenshot_urls: e.target.value }))}
+            {...register("screenshot_urls")}
             className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           />
         </div>
+
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Website URL</label>
           <input
             type="url"
-            value={form.website_url}
-            onChange={(e) => setForm((f) => ({ ...f, website_url: e.target.value }))}
+            {...register("website_url")}
             className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           />
+          {errors.website_url && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.website_url.message}</p>
+          )}
         </div>
+
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Social links (one per line: Label, URL)</label>
           <textarea
             rows={2}
             placeholder="Twitter, https://twitter.com/..."
-            value={form.social_links}
-            onChange={(e) => setForm((f) => ({ ...f, social_links: e.target.value }))}
+            {...register("social_links")}
             className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           />
         </div>
-{boosters.length > 0 && (
-            <div>
+
+        {boosters.length > 0 && (
+          <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Link to booster (optional)</label>
             <select
-              value={form.booster_id}
-              onChange={(e) => setForm((f) => ({ ...f, booster_id: e.target.value }))}
+              {...register("booster_id")}
               className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
             >
               <option value="">None</option>
@@ -333,7 +367,7 @@ export default function NewProfilePage() {
         <div className="flex gap-3">
           <button
             type="submit"
-            disabled={loading || !canSubmit}
+            disabled={loading || !isValid || !teamId}
             className="rounded-lg bg-violet-600 text-white px-4 py-2 font-medium hover:bg-violet-700 disabled:opacity-50 flex items-center gap-2"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

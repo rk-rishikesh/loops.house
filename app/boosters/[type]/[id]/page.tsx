@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, MessageSquare, Send, FileText, CheckCircle } from "lucide-react";
-import { getBooster, getProjects } from "@/lib/storage";
-import type { StoredBooster, StoredProject } from "@/lib/storage";
-import { getRole } from "@/lib/auth";
+import { ArrowLeft, MessageSquare, Send, FileText, CheckCircle, Clock, Trophy, BookOpen, Users, HelpCircle } from "lucide-react";
+import { getBoosterWithTracks, getProjects, getBoosterSubmissions } from "@/lib/storage";
+import type { StoredBooster, StoredProject, StoredSubmission } from "@/lib/storage";
+import { getRole, type AppRole } from "@/lib/auth";
 
 const TYPE_LABELS: Record<string, string> = {
   idea: "Idea Booster",
@@ -20,16 +20,19 @@ export default function IndividualBoosterPage() {
   const id = params.id as string;
   const [booster, setBooster] = useState<StoredBooster | null | undefined>(undefined);
   const [submittedProject, setSubmittedProject] = useState<StoredProject | null>(null);
-  const [role, setRole] = useState<ReturnType<typeof getRole>>(null);
+  const [submissions, setSubmissions] = useState<StoredSubmission[]>([]);
+  const [role, setRole] = useState<AppRole | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    setRole(getRole());
-    setBooster(getBooster(id));
-    const projects = getProjects();
-    const submitted = projects.find((p) => p.booster_id === id) ?? null;
-    setSubmittedProject(submitted);
+    requestAnimationFrame(() => setMounted(true));
+    getRole().then(setRole);
+    getBoosterWithTracks(id).then(setBooster);
+    getBoosterSubmissions(id).then(setSubmissions);
+    getProjects().then((projects) => {
+      const submitted = projects.find((p) => (p as Record<string, unknown>).booster_id === id) ?? null;
+      setSubmittedProject(submitted);
+    });
   }, [id]);
 
   if (booster === undefined) {
@@ -87,6 +90,59 @@ export default function IndividualBoosterPage() {
           </div>
         )}
 
+        {booster.program_goal && (
+          <div className="mt-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+              <BookOpen className="w-3.5 h-3.5" /> About
+            </p>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{booster.program_goal}</p>
+          </div>
+        )}
+
+        {booster.timeline && (
+          <div className="mt-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" /> Timeline
+            </p>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap">{booster.timeline}</p>
+          </div>
+        )}
+
+        {booster.bounty_pool_summary && (
+          <div className="mt-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+              <Trophy className="w-3.5 h-3.5" /> Prizes
+            </p>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{booster.bounty_pool_summary}</p>
+          </div>
+        )}
+
+        {(booster.sponsor_tracks?.length ?? 0) > 0 && (
+          <div className="mt-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+              <Users className="w-3.5 h-3.5" /> Sponsor Tracks
+            </p>
+            <ul className="mt-2 space-y-2">
+              {booster.sponsor_tracks!.map((t, i) => (
+                <li key={i} className="text-sm">
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">{t.sponsor}</span>
+                  {t.track_description && (
+                    <span className="text-zinc-500 dark:text-zinc-400"> — {t.track_description}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {submissions.length > 0 && (
+          <div className="mt-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
+              {submissions.length} Submission{submissions.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+        )}
+
         <div className="mt-8 space-y-4">
           <Link
             href={`/builder/ideate?booster_id=${id}`}
@@ -103,6 +159,21 @@ export default function IndividualBoosterPage() {
             </div>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-medium shrink-0">AI</span>
           </Link>
+
+          {mounted && role === "builder" && (booster.sponsor_tracks?.length ?? 0) > 0 && (
+            <div className="flex items-center gap-4 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+              <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shrink-0">
+                <HelpCircle className="w-6 h-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-semibold text-zinc-900 dark:text-white">Tech Buddy</h2>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Ask technical questions about sponsor APIs and documentation.
+                </p>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-medium shrink-0">AI</span>
+            </div>
+          )}
 
           {mounted && role === "builder" && (
             <Link

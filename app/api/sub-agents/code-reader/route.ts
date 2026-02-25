@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/supabase/middleware";
 import { Octokit } from "@octokit/rest";
 import type {
   ErrorResponse,
@@ -167,6 +168,9 @@ export async function queryCode(
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<Record<string, unknown> | ErrorResponse>> {
+  const auth = await requireAuth();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const body = await request.json();
     const { github_url, github_token, action, project_id, question } = body;

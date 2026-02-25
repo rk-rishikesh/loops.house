@@ -1,40 +1,48 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Send, Loader2, MessageSquare, Calendar } from "lucide-react";
-import { getBoosters, getBooster } from "@/lib/storage";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useBoosters, useBooster } from "@/lib/queries";
+import { ideateInputSchema, type IdeateInputSchema } from "@/lib/validations/schemas";
 
 type Message = { role: "user" | "assistant"; content: string };
 
 export default function IdeatePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-zinc-500">Loading...</div>}>
+      <IdeatePageContent />
+    </Suspense>
+  );
+}
+
+function IdeatePageContent() {
   const searchParams = useSearchParams();
   const boosterIdFromUrl = searchParams.get("booster_id");
   const [selectedBoosterId, setSelectedBoosterId] = useState<string | null>(boosterIdFromUrl);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const boosters = getBoosters();
-  const selectedBooster = selectedBoosterId ? getBooster(selectedBoosterId) : null;
 
-  useEffect(() => {
-    if (boosterIdFromUrl && getBooster(boosterIdFromUrl)) {
-      setSelectedBoosterId(boosterIdFromUrl);
-    }
-  }, [boosterIdFromUrl]);
+  const { data: boosters = [] } = useBoosters();
+  const { data: selectedBooster } = useBooster(selectedBoosterId ?? "");
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  const {
+    register,
+    handleSubmit,
+    reset,
+  } = useForm<IdeateInputSchema>({
+    resolver: zodResolver(ideateInputSchema),
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || loading || !selectedBooster) return;
-    const userMessage = input.trim();
-    setInput("");
+  const onSubmit = handleSubmit(async (data) => {
+    if (!selectedBooster || loading) return;
+    const userMessage = data.message;
+    reset();
     setMessages((m) => [...m, { role: "user", content: userMessage }]);
     setLoading(true);
     setError(null);
@@ -55,8 +63,8 @@ export default function IdeatePage() {
       });
 
       if (!res.ok || !res.body) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Request failed");
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || "Request failed");
       }
 
       const reader = res.body.getReader();
@@ -74,10 +82,10 @@ export default function IdeatePage() {
         buffer = lines.pop() ?? "";
         for (const line of lines) {
           if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data === "[DONE]") continue;
+            const chunk = line.slice(6);
+            if (chunk === "[DONE]") continue;
             try {
-              const parsed = JSON.parse(data);
+              const parsed = JSON.parse(chunk);
               if (parsed.text) {
                 assistantContent += parsed.text;
                 setMessages((m) => {
@@ -92,13 +100,14 @@ export default function IdeatePage() {
           }
         }
       }
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setMessages((m) => [...m, { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "Request failed"}. Please try again.` }]);
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   return (
     <div>
@@ -120,8 +129,7 @@ export default function IdeatePage() {
         </label>
         {boosters.length === 0 ? (
           <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
-            No boosters in local storage. Add one from the{" "}
-            <Link href="/host/boosters" className="underline hover:no-underline">Host dashboard</Link> to get problem statements and theme context, then return here.
+            No boosters available. Ask a host to create a booster, then return here.
           </p>
         ) : (
           <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -141,7 +149,7 @@ export default function IdeatePage() {
             </select>
             {selectedBooster && (
               <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                Mentor will use this event’s problem statements, theme, and sponsor tracks.
+                Mentor will use this event&apos;s problem statements, theme, and sponsor tracks.
               </span>
             )}
           </div>
@@ -163,7 +171,7 @@ export default function IdeatePage() {
           </div>
           {!selectedBoosterId ? (
             <div className="flex-1 p-8 text-center text-sm text-zinc-500 dark:text-zinc-400 min-h-[200px] flex items-center justify-center">
-              Select a booster above to start the ideation chat. The mentor will refer only to that booster’s description and resources.
+              Select a booster above to start the ideation chat. The mentor will refer only to that booster&apos;s description and resources.
             </div>
           ) : (
             <>
@@ -198,18 +206,17 @@ export default function IdeatePage() {
                 )}
                 <div ref={bottomRef} />
               </div>
-              <form onSubmit={handleSubmit} className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex gap-2">
+              <form onSubmit={onSubmit} className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex gap-2">
                 <input
                   type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  {...register("message")}
                   placeholder="Your message…"
                   className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white text-sm"
                   disabled={loading}
                 />
                 <button
                   type="submit"
-                  disabled={loading || !input.trim()}
+                  disabled={loading || !selectedBoosterId}
                   className="rounded-lg bg-violet-600 text-white p-2 hover:bg-violet-700 disabled:opacity-50"
                 >
                   <Send className="w-4 h-4" />

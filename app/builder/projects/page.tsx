@@ -1,16 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, FolderOpen, PlusCircle } from "lucide-react";
-import { getProjects } from "@/lib/storage";
+import { useProjects } from "@/lib/queries";
+
+function ListSkeleton() {
+  return (
+    <ul className="mt-8 grid gap-4 sm:grid-cols-2">
+      {[1, 2, 3].map((i) => (
+        <li key={i} className="p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-pulse">
+          <div className="h-4 w-36 bg-zinc-200 dark:bg-zinc-700 rounded" />
+          <div className="h-3 w-48 bg-zinc-100 dark:bg-zinc-800 rounded mt-2" />
+          <div className="mt-3 flex gap-2">
+            <div className="h-5 w-16 bg-zinc-100 dark:bg-zinc-800 rounded-lg" />
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function BuilderProjectsPage() {
-  const [projects, setProjects] = useState<ReturnType<typeof getProjects>>([]);
-
-  useEffect(() => {
-    setProjects(getProjects());
-  }, []);
+  const { data: projects = [], isLoading: loading } = useProjects();
 
   return (
     <div>
@@ -22,7 +33,7 @@ export default function BuilderProjectsPage() {
       </Link>
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">My projects</h1>
       <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-        All Loops profiles you've created. Open a project to view, share, or apply to boosters.
+        All Loops profiles you&apos;ve created. Open a project to view, share, or apply to boosters.
       </p>
 
       <Link
@@ -41,7 +52,9 @@ export default function BuilderProjectsPage() {
         </div>
       </Link>
 
-      {projects.length === 0 ? (
+      {loading ? (
+        <ListSkeleton />
+      ) : projects.length === 0 ? (
         <div className="mt-8 p-10 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center">
           <FolderOpen className="w-12 h-12 mx-auto text-zinc-400" />
           <p className="mt-4 text-zinc-600 dark:text-zinc-400">No projects yet.</p>

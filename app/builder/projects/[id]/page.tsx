@@ -3,10 +3,10 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Share2, ExternalLink, FileText, Code2, Video, Palette, Github, Globe, Link2 } from "lucide-react";
-import { getProject, getBooster } from "@/lib/storage";
+import { ArrowLeft, Share2, ExternalLink, FileText, Code2, Video, Palette, Github, Globe, Link2, Pencil, X, Save } from "lucide-react";
+import { getProject, getProjectSubmissions, getBoostersByIds, saveProject } from "@/lib/storage";
 import { useState, useEffect } from "react";
-import type { StoredProject } from "@/lib/storage";
+import type { StoredProject, StoredSubmission } from "@/lib/storage";
 
 const KB_SECTION_LABELS: Record<string, { label: string; icon: React.ElementType }> = {
   profile: { label: "Profile", icon: FileText },
@@ -34,13 +34,36 @@ export default function BuilderProjectDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
   const [project, setProject] = useState<StoredProject | null | undefined>(undefined);
+  const [submissions, setSubmissions] = useState<StoredSubmission[]>([]);
+  const [boosterNames, setBoosterNames] = useState<Record<string, string>>({});
 
   const [socialLoading, setSocialLoading] = useState(false);
   const [socialResult, setSocialResult] = useState<{ linkedin_post?: string; twitter_post?: string; suggested_hashtags?: string[] } | null>(null);
   const [kbActiveTab, setKbActiveTab] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    tagline: "",
+    description: "",
+    category: "",
+    website_url: "",
+    github_url: "",
+    youtube_url: "",
+    logo_url: "",
+    tech_stack_tags: "",
+  });
 
   useEffect(() => {
-    setProject(getProject(projectId));
+    getProject(projectId).then(setProject);
+    getProjectSubmissions(projectId).then(async (subs) => {
+      setSubmissions(subs);
+      const uniqueIds = [...new Set(subs.map((s) => s.booster_id))];
+      const boosterMap = await getBoostersByIds(uniqueIds);
+      const names: Record<string, string> = {};
+      for (const [id, b] of Object.entries(boosterMap)) names[id] = b.name;
+      setBoosterNames(names);
+    });
   }, [projectId]);
 
   if (project === undefined) {
@@ -60,16 +83,59 @@ export default function BuilderProjectDetailPage() {
         <Link href="/builder/projects" className="inline-flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-400 hover:text-violet-600 mb-6">
           <ArrowLeft className="w-4 h-4" /> Back to projects
         </Link>
-        <p className="mt-4 text-zinc-500">Project not found. It may exist only on another device (localStorage is per-browser).</p>
+        <p className="mt-4 text-zinc-500">Project not found.</p>
       </div>
     );
   }
 
   const p = project;
-  const loopsProfileUrl = typeof window !== "undefined" ? `${window.location.origin}/viewer/projects/${projectId}` : "";
+  const loopsProfileUrl = `/viewer/projects/${projectId}`;
   const socialLinks = (p.social_links ?? []) as { label: string; url: string }[];
   const additionalLinks = (p.additional_links ?? []) as { label: string; url: string }[];
   const screenshots = (p.screenshot_urls ?? []) as string[];
+
+  const startEditing = () => {
+    if (!p) return;
+    setEditForm({
+      name: p.name ?? "",
+      tagline: p.tagline ?? "",
+      description: p.refined_description ?? p.description ?? "",
+      category: p.category ?? "",
+      website_url: p.website_url ?? "",
+      github_url: p.github_url ?? "",
+      youtube_url: p.youtube_url ?? "",
+      logo_url: p.logo_url ?? "",
+      tech_stack_tags: (p.tech_stack_tags ?? []).join(", "),
+    });
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    if (!project) return;
+    setSaving(true);
+    try {
+      const updated: StoredProject = {
+        ...project,
+        name: editForm.name,
+        tagline: editForm.tagline || undefined,
+        description: editForm.description || undefined,
+        refined_description: editForm.description || undefined,
+        category: editForm.category || undefined,
+        website_url: editForm.website_url || undefined,
+        github_url: editForm.github_url || undefined,
+        youtube_url: editForm.youtube_url || undefined,
+        logo_url: editForm.logo_url || undefined,
+        tech_stack_tags: editForm.tech_stack_tags
+          ? editForm.tech_stack_tags.split(",").map((t) => t.trim()).filter(Boolean)
+          : [],
+      };
+      await saveProject(updated);
+      setProject(updated);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleShare = async () => {
     setSocialLoading(true);
@@ -117,7 +183,7 @@ export default function BuilderProjectDetailPage() {
             <div className="flex gap-4">
               {p.logo_url && (
                 <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 shrink-0 bg-zinc-100 dark:bg-zinc-800">
-                  <Image src={p.logo_url} alt="" fill className="object-contain" unoptimized />
+                  <Image src={p.logo_url} alt="" fill className="object-contain" />
                 </div>
               )}
               <div>
@@ -133,17 +199,27 @@ export default function BuilderProjectDetailPage() {
                     {String(p.category)}
                   </span>
                 )}
-                {p.booster_id && getBooster(p.booster_id) && (
-                  <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                    Submitted to{" "}
-                    <Link href="/builder/boosters" className="text-violet-600 dark:text-violet-400 hover:underline">
-                      {getBooster(p.booster_id)!.name}
-                    </Link>
-                  </p>
+                {submissions.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {submissions.map((s) => (
+                      <span key={s.id} className="text-sm text-zinc-500 dark:text-zinc-400">
+                        Submitted to{" "}
+                        <Link href="/builder/boosters" className="text-violet-600 dark:text-violet-400 hover:underline">
+                          {boosterNames[s.booster_id] ?? "booster"}
+                        </Link>
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
             <div className="flex flex-wrap gap-2 shrink-0">
+              <button
+                onClick={startEditing}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <Pencil className="w-4 h-4" /> Edit
+              </button>
               <a
                 href={loopsProfileUrl}
                 target="_blank"
@@ -177,7 +253,7 @@ export default function BuilderProjectDetailPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {screenshots.slice(0, 6).map((src, i) => (
                   <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="relative aspect-video rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800">
-                    <Image src={src} alt="" fill className="object-cover" unoptimized />
+                    <Image src={src} alt="" fill className="object-cover" />
                   </a>
                 ))}
               </div>
@@ -378,6 +454,81 @@ export default function BuilderProjectDetailPage() {
               <li key={i}>{String(f)}</li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {editing && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center pt-16 px-4 overflow-y-auto">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-2xl p-6 mb-16">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Edit Profile</h2>
+              <button onClick={() => setEditing(false)} className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                <X className="w-5 h-5 text-zinc-500" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project Name</label>
+                <input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tagline</label>
+                <input type="text" value={editForm.tagline} onChange={(e) => setEditForm({ ...editForm, tagline: e.target.value })}
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Description</label>
+                <textarea rows={4} value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Category</label>
+                <input type="text" value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tech Stack (comma-separated)</label>
+                <input type="text" value={editForm.tech_stack_tags} onChange={(e) => setEditForm({ ...editForm, tech_stack_tags: e.target.value })}
+                  placeholder="React, TypeScript, Supabase"
+                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Website URL</label>
+                  <input type="url" value={editForm.website_url} onChange={(e) => setEditForm({ ...editForm, website_url: e.target.value })}
+                    className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">GitHub URL</label>
+                  <input type="url" value={editForm.github_url} onChange={(e) => setEditForm({ ...editForm, github_url: e.target.value })}
+                    className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">YouTube Demo URL</label>
+                  <input type="url" value={editForm.youtube_url} onChange={(e) => setEditForm({ ...editForm, youtube_url: e.target.value })}
+                    className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Logo URL</label>
+                  <input type="url" value={editForm.logo_url} onChange={(e) => setEditForm({ ...editForm, logo_url: e.target.value })}
+                    className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                <button onClick={() => setEditing(false)}
+                  className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                  Cancel
+                </button>
+                <button onClick={handleSave} disabled={saving || !editForm.name}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 disabled:opacity-50 transition-colors">
+                  <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

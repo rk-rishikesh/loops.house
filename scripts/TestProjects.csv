@@ -1,0 +1,72 @@
+Submission ID,Respondent ID,Submitted at,First Name,Last Name,Email Address,Discord Handle,Twitter Profile,Telegram Handle,Discord Handle (2),Project Name,Problem Statement,Project Description,Project Source Code,Project Live Demo ,Project Presentation,Project Video Demo,Builder Feedback
+9q8J8lp,q4bBkWY,2026-01-31 15:25:09,Sohyun,Oh,osohyun0224@naver.com,,https://x.com/osohyun_0224,@osohyun0805,,x402 Developer Dashboard,"Problem Statement : Blockchain API payments are invisible and confusing for developers.
+
+When developers integrate payment-gated APIs using protocols like x402, they face a black box experience. The HTTP 402 Payment Required flow involves multiple steps—request, payment construction, verification, and settlement—but none of these are visible or understandable without deep blockchain knowledge.
+
+Existing tools show raw transaction data and technical jargon that only blockchain experts can interpret. 
+
+There's no developer-friendly way to:
+- See what's happening at each step of the payment flow
+- Understand why a payment failed
+- Track API spending like financial transactions
+- Debug payment issues without reading blockchain explorer logs
+
+We need a tool that makes invisible payment flows visible, turning complex blockchain transactions into clear, fintech-style experiences that any developer can understand.","x402 Developer Dashboard is a fintech-inspired visualization tool that makes blockchain API payment flows visible and understandable for developers.
+
+# How It Solves the Problem
+We transform the invisible x402 payment process into a clear, step-by-step experience:
+1. Real-time Payment Timeline: Watch each step of the payment flow as it happens—Request Sent → Payment Required → Building Payment → Verifying → Settling → Complete. Each step shows timestamps and human-readable descriptions.
+
+2. API Usage Tracking: See your total API spending at a glance, just like checking your bank balance. Track how much you've spent on API calls today.
+
+3. Transaction History: Browse all API calls in a familiar finance-app-style list. Each transaction shows status (Success/Failed/Pending), amount, and timestamp.
+
+4. Developer Debug Panel: When you need technical details, expandable panels reveal raw payloads—402 response, payment payload, verify response, settle response, and final API response.
+
+# Korean Common Fintech UX Applied likes my company
+
+This project brings Korean fintech culture to blockchain developer tools. Korean financial apps are globally recognized for their speed, simplicity, and intuitive design—complex transactions completed in seconds with clear visual feedback.
+
+We applied these Korean UX principles:
+
+- Clarity over complexity: Replace blockchain jargon with everyday language
+- Visual progress indicators: Show payment status like money transfer progress
+- Mobile-first design: Accessible anywhere as a responsive web app
+- Trust through transparency: Every step is visible, nothing is hidden
+
+By combining the x402 protocol with Korean-style simple finance UX, we make blockchain API payments as intuitive as using a modern banking app.",https://github.com/osohyun0224/x402-hackaton-blockchain-dashboard,https://x402-hackaton-blockchain-dashboard.vercel.app/,,,"The x402 protocol is a brilliant concept—using HTTP 402 for machine-to-machine payments feels like the natural evolution of web APIs. The documentation was clear, and the facilitator service made integration straightforward."
+XxpO1GO,1ArEB1l,2026-01-31 23:12:08,Herald,Bayoca,raldblox@outlook.com,raldblox,https://x.com/raldblox,@raldblox,raldblox,local-llm-x402,"Running AI models locally is becoming easier, but exposing them to others in a safe, fair, and monetizable way is still difficult. Today, sharing AI access usually requires centralized APIs, accounts, subscriptions, or manual billing, which creates friction and limits experimentation. There is no simple way for someone to host a local AI model, let others use it instantly, and charge only when value is delivered.","local-llm-x402 lets anyone expose a locally running AI model to the internet and charge for usage on a per-request basis.
+
+A host connects their local model using LM Studio, selects a model, sets a usage rate, and goes online as the active host of a shared AI room. Other users join instantly as guests through a familiar chat interface. When a guest sends a prompt, the request executes on the host’s local machine, payment is enforced per request, and the response is returned into the shared conversation with a verifiable receipt.
+
+The system removes API keys, subscriptions, and centralized billing. Instead, it uses a clear host–guest model, usage-based pricing, and protocol-level payment enforcement. This enables creators, teams, and agents to monetize local AI securely while keeping models and compute fully under the host’s control.",https://github.com/raldblox/local-llm-x402,https://local-llm-x402.vercel.app/,,https://youtu.be/MJNTw7EAIfk,"The tools and documentation made it easy to focus on shipping a real, working product with x402 Protocol. The emphasis on practical demos and clear value delivery pushed us to build something that feels immediately usable beyond the hackathon. Overall, a very positive and well-structured experience!"
+2EpO5ep,ZjdJXZ5,2026-02-01 0:24:38,Sean,Squire,sean.lee.squire@gmail.com,underling7,,,@underling7,Souldbound KYC,Trustful portable KYC/KYB identities for human and agentic x402 users ,"Souldbound KYC is an x402 application which allows users to pay for an APTOs soulbound NFT with their KYC/KYB information. Users may also authorize other wallets to obtain granular KYC information through the api and additional x402 micropayments. 
+
+This ""phase II"" was recommended by Rishikesh during the hackathon office hours/mentor session. It was a great idea and I was excited to be able to implement it.
+
+I also built a companion x402 e-signature application as an example consumer of souldbound KYC NFT identities. ",https://github.com/prometheus88/soulbound-kyc,https://soulbound-kyc.fly.dev/,,https://youtu.be/iC81PY84IAE,Great experience over all!
+81Xj4yY,1ArEa5g,2026-02-01 1:39:00,Joseph,Aleonomoh,aleonomohjoseph03@gmail.com,@Joseph-Leo,https://x.com/easybrane,@easybrane,@Joseph-Leo,Automata Protocol,"AI Agents are currently ""financial second-class citizens."" While they can perform complex tasks autonomously, they cannot transact autonomously. They are entirely dependent on human-owned credit cards or static API keys, which creates a massive friction point.
+
+Furthermore, giving an autonomous agent a crypto private key is a critical security risk; if the agent’s logic fails or it gets hallucinated into a bad state, it could drain the user’s entire life savings. Existing crypto payment solutions (traditional x402) fail here because they typically require a human interacting with a wallet popup to sign every transaction, defeating the purpose of an ""autonomous"" bot. There is currently no safe, standardized operating system for machines to find, trust, and pay each other for services without human hand-holding.","Automata Protocol is the ""App Store"" and economic operating system for Autonomous Agents built on Aptos. It turns API endpoints into vending machines that agents can interact with at the speed of thought.
+
+We solve the autonomy vs. security dilemma through Usage Wallets and Spend Policies. Instead of giving an agent full access to a main wallet, a user creates a dedicated, limited-access Usage Wallet (like a prepaid debit card) and attaches on-chain programmable policies (like ""Max 1 APT per day"" or ""Only approved vendors""). This allows the agent to sign its own micro-transactions autonomously for services—such as buying weather data or renting GPU inference—without bothering the human, while keeping the user's main funds perfectly safe.
+
+Combines with our on-chain Registry (market.move) and Reputation system, Automata provides the first complete infrastructure for a true Machine-to-Machine (M2M) economy,
+
+leveraging Aptos' sub-second finality to match the speed of AI.",https://github.com/leojay-net/Automata,https://automata-marketplace.vercel.app,https://docs.google.com/presentation/d/1G0BEdCVN3UBJ-F1uf0N55s6PSc40g7Ljrtcxr3z-6K8/edit?usp=sharing,https://youtu.be/gtb5bIeJNSk,"Move Language: The resource model made it incredibly easy to build ""Usage Wallets"" securely. Knowing that funds are resources that cannot be accidentally copied or dropped gave us huge confidence in the security of our protocol.
+Speed: The transaction speed on testnet was instant. For an AI marketplace where bots need to pay and get data in milliseconds, Aptos is the perfect fit.
+Documentation: The new Aptos TypeScript SDK documentation and examples were very helpful in getting our frontend connected quickly."
+RGA8Agv,ZjdJXZ5,2026-02-01 2:10:48,Sean,Squire,sean.lee.squire@gmail.com,@underling7,,,@underling7,Soulbound Signature,Create cryptographically secure legally enforceable e-signatures. Unlock collaboration between AI Agents and humans on everything from legal entity formation to complex business arrangement. ,Aptos wallet e-signature application. ,https://github.com/prometheus88/soulbound-signature,https://soulbound-signature-web.fly.dev/,,https://www.loom.com/share/845020e2a0b04127863c40c73ff1fff9,Great experience! 
+A7EAYrN,LZdX5El,2026-02-01 8:22:51,David,Ejere,ejeredavid2001@gmail.com,bigd6011,https://x.com/Doomsday_Codes,davedumtox402,bigd6011,BUILDx402,"Developers struggle to adopt micropayments on Aptos because the barrier to entry is too high. There is currently no standardized tool to instantly scaffold x402 applications, forcing builders to waste hours on manual wallet configuration and boilerplate code instead of building their product","BUILDx402 enables developers to run `npx buildx402 my-app-name` and instantly scaffold a production-ready x402 dApp, shortening setup time from hours to seconds so they can move into development in minutes.",https://github.com/davedumto/buildx402,https://www.npmjs.com/package/buildx402,https://www.canva.com/design/DAHADXabH-Q/VGHkbYxEHJDf7yyV6bk87A/view?utm_content=DAHADXabH-Q&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hc631af805d,https://files.fm/f/49syb79r5g,I had fun building this :)
+aQRA66y,9qdOAY5,2026-02-01 11:09:48,Mifah,Tajudeen,miftahudeentajudeen@gmail.com,@Alchmy952,https://x.com/TrQuilox87,@Neo031s,@Alchmy952,zylem,"The AI revolution is here, but agents are **economically isolated**.
+1.  **Siloed Intelligence**: Agents can generate amazing content but cannot easily buy data or sell services to other agents.
+2.  **Payment Friction**: Traditional gateways (Stripe/API keys) are built for humans, not code. Agents shouldn't need credit cards.
+3.  **Lack of Privacy**: On-chain payments usually expose the entire transaction history, which is unacceptable for enterprise or sensitive agent workflows.","Zylem brings the **HTTP 402** standard to life using the speed of **Aptos** and the privacy of **ZK Proofs**.
+
+> *""If HTTP 200 is 'OK', then HTTP 402 is 'Pay Me'.""*
+
+### Core Features
+*   **🔌 Native x402 Middleware**: A drop-in wrapper that turns *any* API endpoint into a monetizeable service. If an agent calls it without payment, they get a `402` and an invoice.
+*   **🕵️‍♂️ ZK-Privacy (Groth16)**: Transactions can be verified without revealing the payer's identity or the exact amount, preventing competitors from analyzing an agent's business flow.
+*   **⚡ Aptos Speed**: Sub-second finality means agents don't hang while waiting for block confirmations.
+*   **🤖 Universal Agent Registry**: An on-chain directory where agents advertise their capabilities (e.g., ""Summarization"", ""Image Gen"") and reputation.",https://github.com/0xQuilox/zylem.git,,https://docs.google.com/presentation/d/17R0YmB2_5tTIez4YlREuQMVMNwmPqxyX/edit?usp=drive_link&ouid=102379176217166576831&rtpof=true&sd=true,https://drive.google.com/drive/folders/1yRRWUKNZaWwzuvFT7BKkbhzGPt8jNaQR?usp=sharing,Nil

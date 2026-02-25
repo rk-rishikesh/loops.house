@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Lightbulb,
-  FolderOpen,
   PlusCircle,
   Users,
   Share2,
@@ -13,16 +12,30 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
-import { getProjects, getTeams } from "@/lib/storage";
+import { useProjects, useTeams } from "@/lib/queries";
+
+function CardSkeleton() {
+  return (
+    <div className="p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-pulse">
+      <div className="flex items-start gap-3">
+        <div className="w-12 h-12 rounded-xl bg-zinc-200 dark:bg-zinc-700" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-32 bg-zinc-200 dark:bg-zinc-700 rounded" />
+          <div className="h-3 w-48 bg-zinc-100 dark:bg-zinc-800 rounded" />
+        </div>
+      </div>
+      <div className="mt-4 flex gap-2">
+        <div className="h-7 w-24 bg-zinc-100 dark:bg-zinc-800 rounded-lg" />
+        <div className="h-7 w-28 bg-zinc-100 dark:bg-zinc-800 rounded-lg" />
+      </div>
+    </div>
+  );
+}
 
 export default function ProjectHubPage() {
-  const [projects, setProjects] = useState<ReturnType<typeof getProjects>>([]);
-  const [teams, setTeams] = useState<ReturnType<typeof getTeams>>([]);
-
-  useEffect(() => {
-    setProjects(getProjects());
-    setTeams(getTeams());
-  }, []);
+  const { data: projects = [], isLoading: loadingProjects } = useProjects();
+  const { data: teams = [], isLoading: loadingTeams } = useTeams();
+  const loading = loadingProjects || loadingTeams;
 
   return (
     <div className="max-w-4xl">
@@ -56,7 +69,12 @@ export default function ProjectHubPage() {
 
       <section className="mb-10">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">List of projects</h2>
-        {projects.length === 0 ? (
+        {loading ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
+        ) : projects.length === 0 ? (
           <div className="py-10 px-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center">
             <Sparkles className="w-10 h-10 mx-auto text-zinc-400" />
             <p className="mt-3 text-zinc-500 dark:text-zinc-400">No projects yet.</p>
@@ -67,7 +85,7 @@ export default function ProjectHubPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {projects.map((p) => {
-              const profileUrl = typeof window !== "undefined" ? `${window.location.origin}/viewer/projects/${p.project_id}` : "";
+              const profileUrl = `/viewer/projects/${p.project_id}`;
               return (
                 <div
                   key={p.project_id}
@@ -75,7 +93,7 @@ export default function ProjectHubPage() {
                 >
                   <div className="flex items-start gap-3">
                     {p.logo_url ? (
-                      <img src={p.logo_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                      <Image src={p.logo_url} alt="" width={48} height={48} className="w-12 h-12 rounded-xl object-cover shrink-0" />
                     ) : (
                       <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
                         <FileText className="w-6 h-6 text-violet-600 dark:text-violet-400" />
@@ -101,14 +119,13 @@ export default function ProjectHubPage() {
                     >
                       <Share2 className="w-3.5 h-3.5" /> Social Amplifier AI
                     </Link>
-                    <a
-                      href={profileUrl || "#"}
+                    <Link
+                      href={profileUrl}
                       target="_blank"
-                      rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 rounded-lg border border-violet-300 dark:border-violet-700 px-3 py-1.5 text-xs font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20"
                     >
                       <ExternalLink className="w-3.5 h-3.5" /> Get profile link
-                    </a>
+                    </Link>
                   </div>
                 </div>
               );

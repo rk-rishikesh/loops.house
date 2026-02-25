@@ -1,13 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, BarChart3, Loader2 } from "lucide-react";
-import { getBoosters, getBooster, getProjects } from "@/lib/storage";
-import type { StoredBooster, StoredProject } from "@/lib/storage";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { getBooster, getProjects } from "@/lib/storage";
+import type { StoredProject } from "@/lib/storage";
+import { useBoosters } from "@/lib/queries";
+import { analyticsFilterSchema, type AnalyticsFilterSchema } from "@/lib/validations/schemas";
 
-function buildMetricsForBooster(boosterId: string) {
-  const projects = getProjects().filter((p) => p.booster_id === boosterId) as StoredProject[];
+type AnalyticsResult = {
+  narrative?: string;
+  highlights?: string[];
+  raw_metrics?: unknown;
+  generated_at?: string;
+};
+
+async function buildMetricsForBooster(boosterId: string) {
+  const allProjects = await getProjects();
+  const projects = allProjects.filter((p) => p.booster_id === boosterId) as StoredProject[];
   const submissions = projects.map((p) => ({
     name: p.name,
     category: p.category,
@@ -41,38 +54,38 @@ function buildMetricsForBooster(boosterId: string) {
 }
 
 export default function HostAnalyticsPage() {
-  const [boosters, setBoosters] = useState<StoredBooster[]>([]);
-  const [boosterId, setBoosterId] = useState("");
-  const [reportType, setReportType] = useState<"overview" | "submissions" | "full">("full");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{
-    narrative?: string;
-    highlights?: string[];
-    raw_metrics?: unknown;
-    generated_at?: string;
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { data: boosters = [] } = useBoosters();
 
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<AnalyticsFilterSchema>({
+    resolver: zodResolver(analyticsFilterSchema),
+    defaultValues: {
+      booster_id: "",
+      report_type: "full",
+    },
+  });
+
+  // Set default booster once data loads
   useEffect(() => {
-    const list = getBoosters();
-    setBoosters(list);
-    if (list.length > 0 && !boosterId) setBoosterId(list[0].id);
-  }, []);
-
-  const handleGenerate = async () => {
-    if (!boosterId) {
-      setError("Select a booster first.");
-      return;
+    if (boosters.length > 0) {
+      reset((prev) => ({
+        ...prev,
+        booster_id: prev.booster_id || boosters[0].id,
+      }));
     }
-    setLoading(true);
-    setResult(null);
-    setError(null);
-    try {
-      const booster = getBooster(boosterId);
-      const metrics = buildMetricsForBooster(boosterId);
+  }, [boosters, reset]);
+
+  const mutation = useMutation({
+    mutationFn: async (data: AnalyticsFilterSchema): Promise<AnalyticsResult> => {
+      const booster = await getBooster(data.booster_id);
+      const metrics = await buildMetricsForBooster(data.booster_id);
       const payload = {
-        booster_id: boosterId,
-        report_type: reportType,
+        booster_id: data.booster_id,
+        report_type: data.report_type,
         booster: booster
           ? {
               id: booster.id,
@@ -88,15 +101,13 @@ export default function HostAnalyticsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to generate report");
-      setResult(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to generate report");
+      return json as AnalyticsResult;
+    },
+  });
+
+  const result = mutation.data;
 
   return (
     <div>
@@ -111,12 +122,14 @@ export default function HostAnalyticsPage() {
         Generate an AI narrative from booster details and submitted projects (from this browser).
       </p>
 
-      <div className="mt-6 flex flex-wrap gap-4 items-end">
+      <form
+        onSubmit={handleSubmit((data) => mutation.mutate(data))}
+        className="mt-6 flex flex-wrap gap-4 items-end"
+      >
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Booster</label>
           <select
-            value={boosterId}
-            onChange={(e) => setBoosterId(e.target.value)}
+            {...register("booster_id")}
             className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           >
             <option value="">Select a booster</option>
@@ -124,12 +137,15 @@ export default function HostAnalyticsPage() {
               <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
+          {errors.booster_id && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.booster_id.message}</p>
+          )}
         </div>
+
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Report type</label>
           <select
-            value={reportType}
-            onChange={(e) => setReportType(e.target.value as typeof reportType)}
+            {...register("report_type")}
             className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           >
             <option value="overview">Overview</option>
@@ -137,17 +153,20 @@ export default function HostAnalyticsPage() {
             <option value="full">Full</option>
           </select>
         </div>
+
         <button
-          onClick={handleGenerate}
-          disabled={loading || !boosterId}
+          type="submit"
+          disabled={mutation.isPending}
           className="flex items-center gap-2 rounded-lg bg-amber-600 text-white px-4 py-2 font-medium hover:bg-amber-700 disabled:opacity-50"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
+          {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
           Generate report
         </button>
-      </div>
+      </form>
 
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {mutation.error && (
+        <p className="mt-4 text-sm text-red-600">{mutation.error.message}</p>
+      )}
 
       {result && (
         <div className="mt-8 space-y-6">

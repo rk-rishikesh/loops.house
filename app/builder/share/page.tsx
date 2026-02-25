@@ -1,63 +1,62 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Share2, Loader2, Copy, Check } from "lucide-react";
-import { getProjects, getProject, getBooster, getBoosters } from "@/lib/storage";
-import type { StoredProject, StoredBooster } from "@/lib/storage";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { getProject, getBooster } from "@/lib/storage";
+import { useProjects, useBoosters } from "@/lib/queries";
+import { socialAmplifierSchema, type SocialAmplifierSchema } from "@/lib/validations/schemas";
 
-type Tone = "professional" | "casual" | "excited";
-type BoosterResult = "winner" | "runner-up" | "finalist" | "participant" | "";
+type SocialAmplifierResult = {
+  linkedin_post?: string;
+  twitter_post?: string;
+  suggested_hashtags?: string[];
+};
 
 export default function BuilderSharePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-zinc-500">Loading...</div>}>
+      <BuilderSharePageContent />
+    </Suspense>
+  );
+}
+
+function BuilderSharePageContent() {
   const searchParams = useSearchParams();
   const projectIdFromUrl = searchParams.get("project_id") ?? "";
-  const [projects, setProjects] = useState<StoredProject[]>([]);
-  const [boosters, setBoosters] = useState<StoredBooster[]>([]);
-  const [projectId, setProjectId] = useState(projectIdFromUrl);
-  const [boosterId, setBoosterId] = useState("");
-  const [boosterResult, setBoosterResult] = useState<BoosterResult>("");
-  const [tone, setTone] = useState<Tone>("excited");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{
-    linkedin_post?: string;
-    twitter_post?: string;
-    suggested_hashtags?: string[];
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
-  useEffect(() => {
-    setProjects(getProjects());
-    setBoosters(getBoosters());
-  }, []);
+  const { data: projects = [] } = useProjects();
+  const { data: boosters = [] } = useBoosters();
 
-  useEffect(() => {
-    if (projectIdFromUrl) setProjectId(projectIdFromUrl);
-  }, [projectIdFromUrl]);
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<SocialAmplifierSchema>({
+    resolver: zodResolver(socialAmplifierSchema),
+    defaultValues: {
+      project_id: projectIdFromUrl || (projects[0]?.project_id ?? ""),
+      booster_id: "",
+      booster_result: "",
+      tone: "excited",
+    },
+  });
 
-  useEffect(() => {
-    const list = getProjects();
-    if (list.length > 0 && !projectId) setProjectId(list[0].project_id);
-  }, [projects.length]);
+  const boosterId = watch("booster_id");
 
-  const handleGenerate = async () => {
-    if (!projectId) {
-      setError("Select a project.");
-      return;
-    }
-    const project = getProject(projectId);
-    if (!project) {
-      setError("Project not found.");
-      return;
-    }
-    setLoading(true);
-    setResult(null);
-    setError(null);
-    try {
+  const mutation = useMutation({
+    mutationFn: async (data: SocialAmplifierSchema): Promise<SocialAmplifierResult> => {
+      const project = await getProject(data.project_id);
+      if (!project) throw new Error("Project not found.");
+
       const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const payload = {
+      const payload: Record<string, unknown> = {
         project: {
           name: project.name,
           tagline: project.tagline ?? "",
@@ -65,31 +64,31 @@ export default function BuilderSharePage() {
           tech_stack_tags: project.tech_stack_tags ?? [],
           category: project.category ?? "Other",
           key_features: project.key_features ?? [],
-          loops_profile_url: `${origin}/viewer/projects/${projectId}`,
+          loops_profile_url: `${origin}/viewer/projects/${data.project_id}`,
         },
-        tone,
+        tone: data.tone,
       };
-      const booster = boosterId ? getBooster(boosterId) : null;
-      if (booster) {
-        (payload as Record<string, unknown>).booster = {
-          name: booster.name,
-          ...(boosterResult ? { result: boosterResult } : {}),
-        };
+
+      if (data.booster_id) {
+        const booster = await getBooster(data.booster_id);
+        if (booster) {
+          payload.booster = {
+            name: booster.name,
+            ...(data.booster_result ? { result: data.booster_result } : {}),
+          };
+        }
       }
+
       const res = await fetch("/api/builder-agents/social-amplifier", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to generate posts");
-      setResult(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to generate posts");
+      return json as SocialAmplifierResult;
+    },
+  });
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
@@ -100,6 +99,8 @@ export default function BuilderSharePage() {
       // ignore
     }
   };
+
+  const result = mutation.data;
 
   return (
     <div>
@@ -114,12 +115,14 @@ export default function BuilderSharePage() {
         Generate LinkedIn and Twitter posts for your project. Pick a project and optional booster context.
       </p>
 
-      <div className="mt-6 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 max-w-2xl space-y-4">
+      <form
+        onSubmit={handleSubmit((data) => mutation.mutate(data))}
+        className="mt-6 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 max-w-2xl space-y-4"
+      >
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project *</label>
           <select
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
+            {...register("project_id")}
             className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           >
             <option value="">Select project</option>
@@ -127,12 +130,15 @@ export default function BuilderSharePage() {
               <option key={p.project_id} value={p.project_id}>{p.name}</option>
             ))}
           </select>
+          {errors.project_id && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.project_id.message}</p>
+          )}
         </div>
+
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Booster (optional)</label>
           <select
-            value={boosterId}
-            onChange={(e) => setBoosterId(e.target.value)}
+            {...register("booster_id")}
             className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           >
             <option value="">None</option>
@@ -141,12 +147,12 @@ export default function BuilderSharePage() {
             ))}
           </select>
         </div>
+
         {boosterId && (
           <div>
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Booster result (optional)</label>
             <select
-              value={boosterResult}
-              onChange={(e) => setBoosterResult(e.target.value as BoosterResult)}
+              {...register("booster_result")}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
             >
               <option value="">Participant</option>
@@ -157,11 +163,11 @@ export default function BuilderSharePage() {
             </select>
           </div>
         )}
+
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tone</label>
           <select
-            value={tone}
-            onChange={(e) => setTone(e.target.value as Tone)}
+            {...register("tone")}
             className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           >
             <option value="excited">Excited</option>
@@ -169,19 +175,21 @@ export default function BuilderSharePage() {
             <option value="casual">Casual</option>
           </select>
         </div>
+
         <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={loading || !projectId}
+          type="submit"
+          disabled={mutation.isPending}
           className="flex items-center gap-2 rounded-lg bg-violet-600 text-white px-4 py-2 font-medium hover:bg-violet-700 disabled:opacity-50"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+          {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
           Generate posts
         </button>
-      </div>
+      </form>
 
-      {error && (
-        <p className="mt-4 text-sm text-red-600 dark:text-red-400">{error}</p>
+      {mutation.error && (
+        <p className="mt-4 text-sm text-red-600 dark:text-red-400">
+          {mutation.error.message}
+        </p>
       )}
 
       {result && (

@@ -1,61 +1,82 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Gavel, Loader2 } from "lucide-react";
-import { getProjects, getProject, getBoosters, getBooster } from "@/lib/storage";
-import type { StoredProject, StoredBooster } from "@/lib/storage";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { getProject, getBooster } from "@/lib/storage";
+import { useProjects, useBoosters } from "@/lib/queries";
+import { judgingEvalSchema, type JudgingEvalSchema } from "@/lib/validations/schemas";
+
+type EvalResult = {
+  overall_score?: number;
+  overall_summary?: string;
+  criteria_scores?: {
+    criterion_name: string;
+    score: number;
+    max_score: number;
+    justification: string;
+    strength: string;
+    improvement: string;
+  }[];
+  generated_at?: string;
+};
 
 export default function HostJudgingPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-zinc-500">Loading...</div>}>
+      <HostJudgingPageContent />
+    </Suspense>
+  );
+}
+
+function HostJudgingPageContent() {
   const searchParams = useSearchParams();
-  const [projects, setProjects] = useState<StoredProject[]>([]);
-  const [boosters, setBoosters] = useState<StoredBooster[]>([]);
-  const [projectId, setProjectId] = useState(searchParams.get("project_id") ?? "");
-  const [boosterId, setBoosterId] = useState(searchParams.get("booster_id") ?? "");
-  const [mode, setMode] = useState<"preview" | "official">("preview");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{
-    overall_score?: number;
-    overall_summary?: string;
-    criteria_scores?: { criterion_name: string; score: number; max_score: number; justification: string; strength: string; improvement: string }[];
-    generated_at?: string;
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { data: projects = [] } = useProjects();
+  const { data: boosters = [] } = useBoosters();
 
+  const [humanScores, setHumanScores] = useState<Record<string, number>>({});
+  const [humanRemarks, setHumanRemarks] = useState<Record<string, string>>({});
+  const [humanSaved, setHumanSaved] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<JudgingEvalSchema>({
+    resolver: zodResolver(judgingEvalSchema),
+    defaultValues: {
+      project_id: searchParams.get("project_id") ?? "",
+      booster_id: searchParams.get("booster_id") ?? "",
+      mode: "preview",
+    },
+  });
+
+  // Apply first-item fallbacks once data loads
   useEffect(() => {
-    setProjects(getProjects());
-    const b = getBoosters();
-    setBoosters(b);
-    const fromUrl = searchParams.get("booster_id");
-    if (fromUrl) setBoosterId(fromUrl);
-    else if (b.length > 0 && !boosterId) setBoosterId((id) => id || b[0].id);
-  }, []);
+    reset((prev) => ({
+      ...prev,
+      project_id: prev.project_id || projects[0]?.project_id || "",
+      booster_id: prev.booster_id || boosters[0]?.id || "",
+    }));
+  }, [projects, boosters, reset]);
 
-  useEffect(() => {
-    const fromUrl = searchParams.get("project_id");
-    if (fromUrl) setProjectId(fromUrl);
-    else {
-      const list = getProjects();
-      if (list.length > 0 && !projectId) setProjectId(list[0].project_id);
-    }
-  }, [projects.length]);
+  const projectId = watch("project_id");
+  const boosterId = watch("booster_id");
 
-  const handleEvaluate = async () => {
-    if (!projectId || !boosterId) {
-      setError("Select a project and a booster.");
-      return;
-    }
-    setLoading(true);
-    setResult(null);
-    setError(null);
-    try {
-      const project = getProject(projectId);
-      const booster = getBooster(boosterId);
+  const evalMutation = useMutation({
+    mutationFn: async (data: JudgingEvalSchema): Promise<EvalResult> => {
+      const project = await getProject(data.project_id);
+      const booster = await getBooster(data.booster_id);
       const payload = {
-        project_id: projectId,
-        booster_id: boosterId,
-        judge_mode: mode,
+        project_id: data.project_id,
+        booster_id: data.booster_id,
+        judge_mode: data.mode,
         project: project
           ? {
               name: project.name,
@@ -83,15 +104,39 @@ export default function HostJudgingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Evaluation failed");
-      setResult(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Evaluation failed");
+      return json as EvalResult;
+    },
+    onSuccess: () => {
+      setHumanScores({});
+      setHumanRemarks({});
+      setHumanSaved(false);
+    },
+  });
+
+  const humanScoreMutation = useMutation({
+    mutationFn: async () => {
+      const humanScorePayload = {
+        scores: humanScores,
+        remarks: humanRemarks,
+        overall: Object.keys(humanScores).length > 0
+          ? Math.round(Object.values(humanScores).reduce((a, b) => a + b, 0) / Object.keys(humanScores).length)
+          : 0,
+        judged_at: new Date().toISOString(),
+      };
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      await supabase
+        .from("submissions")
+        .update({ human_score: humanScorePayload })
+        .eq("project_id", projectId)
+        .eq("booster_id", boosterId);
+    },
+    onSuccess: () => setHumanSaved(true),
+  });
+
+  const result = evalMutation.data;
 
   return (
     <div>
@@ -106,12 +151,14 @@ export default function HostJudgingPage() {
         Evaluate a project against the rubric. Project and booster data are sent from this browser so the AI has full context.
       </p>
 
-      <div className="mt-6 flex flex-wrap gap-4 items-end">
+      <form
+        onSubmit={handleSubmit((data) => evalMutation.mutate(data))}
+        className="mt-6 flex flex-wrap gap-4 items-end"
+      >
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project</label>
           <select
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
+            {...register("project_id")}
             className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white min-w-[200px]"
           >
             <option value="">Select project</option>
@@ -119,12 +166,15 @@ export default function HostJudgingPage() {
               <option key={p.project_id} value={p.project_id}>{p.name}</option>
             ))}
           </select>
+          {errors.project_id && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.project_id.message}</p>
+          )}
         </div>
+
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Booster</label>
           <select
-            value={boosterId}
-            onChange={(e) => setBoosterId(e.target.value)}
+            {...register("booster_id")}
             className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           >
             <option value="">Select booster</option>
@@ -132,29 +182,35 @@ export default function HostJudgingPage() {
               <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
+          {errors.booster_id && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.booster_id.message}</p>
+          )}
         </div>
+
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Mode</label>
           <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value as "preview" | "official")}
+            {...register("mode")}
             className="rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           >
             <option value="preview">Preview (builder can see)</option>
             <option value="official">Official (host only)</option>
           </select>
         </div>
+
         <button
-          onClick={handleEvaluate}
-          disabled={loading || !projectId || !boosterId}
+          type="submit"
+          disabled={evalMutation.isPending}
           className="flex items-center gap-2 rounded-lg bg-amber-600 text-white px-4 py-2 font-medium hover:bg-amber-700 disabled:opacity-50"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gavel className="w-4 h-4" />}
+          {evalMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gavel className="w-4 h-4" />}
           Run evaluation
         </button>
-      </div>
+      </form>
 
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {evalMutation.error && (
+        <p className="mt-4 text-sm text-red-600">{evalMutation.error.message}</p>
+      )}
 
       {result && (
         <div className="mt-8 space-y-6">
@@ -170,6 +226,7 @@ export default function HostJudgingPage() {
               <p className="mt-2 text-xs text-zinc-500">Generated at {result.generated_at}</p>
             )}
           </div>
+
           {result.criteria_scores && result.criteria_scores.length > 0 && (
             <div className="space-y-4">
               <h2 className="font-semibold text-zinc-900 dark:text-white">Criteria</h2>
@@ -186,6 +243,57 @@ export default function HostJudgingPage() {
               ))}
             </div>
           )}
+
+          {/* Human Judge Scoring */}
+          <div className="p-5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10">
+            <h2 className="font-semibold text-zinc-900 dark:text-white mb-4">Human Judge Scores</h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
+              Enter your scores (0-100) and remarks for each criterion. Your scores override the AI scores.
+            </p>
+            <div className="space-y-4">
+              {(result.criteria_scores ?? []).map((c, i) => (
+                <div key={i} className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    {c.criterion_name} <span className="text-zinc-400 font-normal">(AI: {c.score}/{c.max_score})</span>
+                  </label>
+                  <div className="flex gap-3">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      placeholder="0-100"
+                      value={humanScores[c.criterion_name] ?? ""}
+                      onChange={(e) => setHumanScores((prev) => ({ ...prev, [c.criterion_name]: parseInt(e.target.value) || 0 }))}
+                      className="w-24 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Remarks..."
+                      value={humanRemarks[c.criterion_name] ?? ""}
+                      onChange={(e) => setHumanRemarks((prev) => ({ ...prev, [c.criterion_name]: e.target.value }))}
+                      className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => humanScoreMutation.mutate()}
+                disabled={humanScoreMutation.isPending}
+                className="px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 disabled:opacity-50 transition-colors"
+              >
+                {humanScoreMutation.isPending ? "Saving..." : "Save Human Scores"}
+              </button>
+              {humanSaved && (
+                <span className="text-sm text-green-600 dark:text-green-400">Saved</span>
+              )}
+              {humanScoreMutation.error && (
+                <span className="text-sm text-red-600">Failed to save human scores</span>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

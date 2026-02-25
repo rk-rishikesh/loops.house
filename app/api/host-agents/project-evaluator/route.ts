@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { generateJSON } from "../../lib/gemini-client";
 import { getChunks } from "../../lib/vector-store";
 
@@ -82,6 +83,9 @@ const DEFAULT_CRITERIA: JudgingCriterion[] = [
 ];
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth(["host", "judge", "admin"]);
+  if (!auth) return unauthorized();
+
   try {
     const input: EvaluatorInput = await request.json();
 
@@ -112,7 +116,7 @@ export async function POST(request: NextRequest) {
       kbSize = kbSummary.length;
       kbChunks = 1;
     } else {
-      const chunks = getChunks(input.project_id);
+      const chunks = await getChunks(input.project_id);
       if (!chunks || chunks.length === 0) {
         return NextResponse.json(
           { error: "No knowledge base found for this project. Send project data from the Host Judging page or run profile-creator first." },
@@ -134,8 +138,10 @@ export async function POST(request: NextRequest) {
       ? `\nBOOSTER CONTEXT (use for Track/Sponsor Fit):\nName: ${booster.name}\nTheme: ${booster.theme ?? "N/A"}\nProblem statements: ${(booster.problem_statements ?? []).join("; ")}\nSponsor tracks: ${(booster.sponsor_tracks ?? []).map((t) => `${t.sponsor}: ${t.track_description}`).join("; ") || "N/A"}`
       : "";
 
-    for (const criterion of criteria) {
-      const prompt = `You are an AI judge for a booster (idea/momentum/capital). Evaluate this project on a single criterion.
+    // Evaluate all criteria in parallel for ~5x speedup
+    const criteriaResults = await Promise.all(
+      criteria.map(async (criterion) => {
+        const prompt = `You are an AI judge for a booster (idea/momentum/capital). Evaluate this project on a single criterion.
 
 PROJECT KNOWLEDGE BASE:
 ${kbSummary.slice(0, 100000)}
@@ -158,22 +164,24 @@ Return JSON:
   "improvement": "one specific improvement suggestion"
 }`;
 
-      const result = await generateJSON<{
-        score: number;
-        justification: string;
-        strength: string;
-        improvement: string;
-      }>("pro", prompt);
+        const result = await generateJSON<{
+          score: number;
+          justification: string;
+          strength: string;
+          improvement: string;
+        }>("pro", prompt);
 
-      criteriaScores.push({
-        criterion_name: criterion.name,
-        score: Math.min(Math.max(result.score || 40, 0), criterion.max_score),
-        max_score: criterion.max_score,
-        justification: result.justification || "Insufficient data for evaluation.",
-        strength: result.strength || "N/A",
-        improvement: result.improvement || "N/A",
-      });
-    }
+        return {
+          criterion_name: criterion.name,
+          score: Math.min(Math.max(result.score || 40, 0), criterion.max_score),
+          max_score: criterion.max_score,
+          justification: result.justification || "Insufficient data for evaluation.",
+          strength: result.strength || "N/A",
+          improvement: result.improvement || "N/A",
+        } satisfies CriterionScore;
+      })
+    );
+    criteriaScores.push(...criteriaResults);
 
     const overallScore = criteria.reduce((sum, criterion, i) => {
       const normalized = criteriaScores[i].score / criterion.max_score;

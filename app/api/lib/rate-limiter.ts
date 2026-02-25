@@ -1,29 +1,23 @@
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
+/**
+ * Rate limiter — delegates to Supabase DB via lib/db/rate-limiter.ts.
+ *
+ * Keeps the same export signatures so existing API routes continue to work,
+ * but checkRateLimit is now async.
+ */
 
-const limits = new Map<string, RateLimitEntry>();
+import { checkRateLimit as dbCheckRateLimit } from "@/lib/db/rate-limiter";
 
-export function checkRateLimit(
+export async function checkRateLimit(
   key: string,
   maxRequests: number,
-  windowMs: number = 3600000
-): { allowed: boolean; remaining: number; resetAt: number } {
-  const now = Date.now();
-  const entry = limits.get(key);
-
-  if (!entry || now >= entry.resetAt) {
-    limits.set(key, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, remaining: maxRequests - 1, resetAt: now + windowMs };
-  }
-
-  if (entry.count >= maxRequests) {
-    return { allowed: false, remaining: 0, resetAt: entry.resetAt };
-  }
-
-  entry.count++;
-  return { allowed: true, remaining: maxRequests - entry.count, resetAt: entry.resetAt };
+  windowMs = 3600000,
+): Promise<{ allowed: boolean; remaining: number; resetAt: string }> {
+  const result = await dbCheckRateLimit(key, maxRequests, windowMs);
+  return {
+    allowed: result.allowed,
+    remaining: result.remaining,
+    resetAt: result.resetAt,
+  };
 }
 
 export function getClientIP(request: Request): string {

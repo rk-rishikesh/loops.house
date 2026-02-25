@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Trophy, Send, FileText, Lightbulb, Zap, DollarSign } from "lucide-react";
-import { getBoosters } from "@/lib/storage";
-import type { StoredBooster, BoosterType } from "@/lib/storage";
+import { useBoosters } from "@/lib/queries";
+import type { BoosterType } from "@/lib/storage";
 
 const BOOSTER_TABS: { id: BoosterType; label: string; icon: React.ElementType }[] = [
   { id: "idea", label: "Idea Boosters", icon: Lightbulb },
@@ -12,19 +12,9 @@ const BOOSTER_TABS: { id: BoosterType; label: string; icon: React.ElementType }[
   { id: "capital", label: "Capital Boosters", icon: DollarSign },
 ];
 
-function filterByType(boosters: StoredBooster[], type: BoosterType): StoredBooster[] {
-  return boosters.filter((b) => (b.booster_type ?? "idea") === type);
-}
-
 export default function BuilderBoostersPage() {
-  const [boosters, setBoosters] = useState<StoredBooster[]>([]);
   const [activeTab, setActiveTab] = useState<BoosterType>("idea");
-
-  useEffect(() => {
-    setBoosters(getBoosters());
-  }, []);
-
-  const list = filterByType(boosters, activeTab);
+  const { data: list = [], isLoading: loading } = useBoosters(activeTab);
 
   return (
     <div>
@@ -57,7 +47,16 @@ export default function BuilderBoostersPage() {
         ))}
       </div>
 
-      {list.length === 0 ? (
+      {loading ? (
+        <div className="mt-6 space-y-4 animate-pulse">
+          {[1, 2].map((i) => (
+            <div key={i} className="p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+              <div className="h-4 w-40 bg-zinc-200 dark:bg-zinc-700 rounded" />
+              <div className="h-3 w-56 bg-zinc-100 dark:bg-zinc-800 rounded mt-2" />
+            </div>
+          ))}
+        </div>
+      ) : list.length === 0 ? (
         <div className="mt-8 p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center">
           <Trophy className="w-12 h-12 mx-auto text-zinc-400 mb-3" />
           <p className="text-zinc-500 dark:text-zinc-400">No boosters in this category yet.</p>

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { streamContent } from "../../lib/gemini-client";
 
 interface IdeatorInput {
@@ -28,7 +29,7 @@ RULES:
 - If asked to write code or debug, politely redirect: "I'm here to help with direction and ideas — for technical questions, try Tech Buddy!"
 - Keep responses concise and actionable.`;
 
-const MAX_HISTORY = 50;
+const MAX_HISTORY = 15;
 
 function summarizeHistory(history: { role: string; content: string }[]): { role: string; content: string }[] {
   if (history.length <= MAX_HISTORY) return history;
@@ -42,6 +43,9 @@ function summarizeHistory(history: { role: string; content: string }[]): { role:
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth(["builder", "host", "admin"]);
+  if (!auth) return unauthorized();
+
   try {
     const input: IdeatorInput = await request.json();
 

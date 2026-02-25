@@ -91,11 +91,11 @@ export default function HostBoostersPage() {
   });
 
   useEffect(() => {
-    setBoosters(getBoosters());
+    getBoosters().then(setBoosters);
   }, []);
 
-  const handleSave = () => {
-    const id = form.id || `booster_${Date.now()}`;
+  const handleSave = async () => {
+    const id = form.id || crypto.randomUUID();
     const problem_statements = form.problem_statements
       .split("\n")
       .map((s: string) => s.trim())
@@ -126,8 +126,8 @@ export default function HostBoostersPage() {
       organizer_notes: form.organizer_notes || undefined,
       created_at: editing?.created_at ?? new Date().toISOString(),
     };
-    saveBooster(b);
-    setBoosters(getBoosters());
+    await saveBooster(b);
+    setBoosters(await getBoosters());
     setEditing(null);
     setProgramDraft(null);
     setResourcePlan(null);

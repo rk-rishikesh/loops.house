@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { generateJSON } from "../../lib/gemini-client";
+import { checkRateLimit } from "../../lib/rate-limiter";
 
 interface BoosterInput {
   id: string;
@@ -49,6 +51,18 @@ interface BoosterProgramResponse {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth(["host", "admin"]);
+  if (!auth) return unauthorized();
+
+  // Rate limit: 5 requests per day per user
+  const rl = await checkRateLimit(`booster-gen:${auth.user.id}`, 5, 86400000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Try again later.", remaining: rl.remaining, resetAt: rl.resetAt },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await request.json();
     const booster: BoosterInput | undefined = body?.booster;
