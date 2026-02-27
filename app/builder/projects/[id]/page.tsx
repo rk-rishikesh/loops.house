@@ -168,7 +168,7 @@ export default function BuilderProjectDetailPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-12">
+    <div className="max-w-6xl mx-auto pb-12 px-4 sm:px-6">
       <Link
         href="/builder/projects"
         className="inline-flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-400 hover:text-violet-600 mb-6"
@@ -176,147 +176,296 @@ export default function BuilderProjectDetailPage() {
         <ArrowLeft className="w-4 h-4" /> Back to projects
       </Link>
 
-      {/* Profile section — all project details */}
-      <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
-        <div className="p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div className="flex gap-4">
-              {p.logo_url && (
-                <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 shrink-0 bg-zinc-100 dark:bg-zinc-800">
-                  <Image src={p.logo_url} alt="" fill className="object-contain" />
+      {/* Bento profile grid */}
+      <section className="rounded-3xl bg-[#EBECE7] p-2 sm:p-3">
+        <div className="rounded-3xl bg-[#20332b] text-[#ECEEE5] p-6 sm:p-8">
+          <div className="grid gap-4 sm:grid-cols-4 auto-rows-[120px]">
+            {/* 1. LOGO - IMAGE */}
+            <div className="col-span-2 sm:col-span-1 row-span-2 rounded-2xl bg-[#1a2922] flex items-center justify-center">
+              {p.logo_url ? (
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-[#ECEEE5]/30 bg-[#141d19]">
+                  <Image src={p.logo_url} alt={`${p.name} logo`} fill className="object-contain" />
+                </div>
+              ) : (
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#141d19] flex items-center justify-center text-xs tracking-[0.16em] uppercase text-[#ECEEE5]/70">
+                  No logo
                 </div>
               )}
+            </div>
+
+            {/* 2. PROJECT NAME */}
+            <div className="col-span-2 sm:col-span-2 row-span-1 rounded-2xl bg-[#1a2922] px-4 py-3 flex items-center">
               <div>
-                <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">{p.name}</h1>
-                {(p.tagline ?? String(p.refined_description ?? p.description ?? "").trim().slice(0, 120)) && (
-                  <p className="mt-1 text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
-                    {p.tagline ?? String(p.refined_description ?? p.description ?? "").trim().slice(0, 120)}
-                    {p.tagline && <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300 font-medium">AI</span>}
-                  </p>
-                )}
-                {p.category && (
-                  <span className="mt-2 inline-block text-xs px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                    {String(p.category)}
-                  </span>
-                )}
-                {submissions.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
+                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
+                  Project name
+                </p>
+                <p className="mt-2 text-xl sm:text-2xl font-semibold tracking-tight">
+                  {p.name}
+                </p>
+              </div>
+            </div>
+
+            {/* 3. AI GENERATED TAGLINE */}
+            <div className="col-span-2 sm:col-span-1 row-span-1 rounded-2xl bg-[#1a2922] px-4 py-3 flex items-center">
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
+                  Tagline
+                </p>
+                <p className="mt-2 text-sm leading-snug text-[#ECEEE5]/90">
+                  {p.tagline
+                    ? p.tagline
+                    : String(p.refined_description ?? p.description ?? "")
+                        .trim()
+                        .slice(0, 120) || "No tagline yet"}
+                </p>
+              </div>
+            </div>
+
+            {/* 4. AI GENERATED PROJECT CATEGORY & 14. TEAM */}
+            <div className="col-span-2 sm:col-span-1 row-span-1 rounded-2xl bg-[#1a2922] px-4 py-3 flex flex-col justify-between">
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
+                  Category
+                </p>
+                <p className="mt-2 text-sm font-medium text-[#ECEEE5]/90">
+                  {p.category ? String(p.category) : "Uncategorized"}
+                </p>
+              </div>
+              <div className="mt-4">
+                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
+                  Team
+                </p>
+                <p className="mt-1 text-xs text-[#ECEEE5]/80">
+                  {p.team_id ? `Team ID: ${p.team_id}` : "No team linked"}
+                </p>
+              </div>
+            </div>
+
+            {/* 5. WHERE WAS THE PROJECT INCUBATED */}
+            <div className="col-span-2 sm:col-span-2 row-span-1 rounded-2xl bg-[#1a2922] px-4 py-3 flex items-center">
+              <div>
+                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
+                  Incubated at
+                </p>
+                {submissions.length > 0 ? (
+                  <div className="mt-2 space-y-1 text-xs text-[#ECEEE5]/85">
                     {submissions.map((s) => (
-                      <span key={s.id} className="text-sm text-zinc-500 dark:text-zinc-400">
+                      <p key={s.id}>
                         Submitted to{" "}
-                        <Link href="/builder/boosters" className="text-violet-600 dark:text-violet-400 hover:underline">
+                        <Link
+                          href="/builder/boosters"
+                          className="underline decoration-[#ECEEE5]/60 underline-offset-2 hover:text-white"
+                        >
                           {boosterNames[s.booster_id] ?? "booster"}
                         </Link>
-                      </span>
+                      </p>
                     ))}
                   </div>
+                ) : (
+                  <p className="mt-2 text-xs text-[#ECEEE5]/70">Not linked to any boosters yet.</p>
                 )}
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 shrink-0">
-              <button
-                onClick={startEditing}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <Pencil className="w-4 h-4" /> Edit
-              </button>
-              <a
-                href={loopsProfileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <ExternalLink className="w-4 h-4" /> View public page
-              </a>
-              <button
-                onClick={handleShare}
-                disabled={socialLoading}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 text-white px-3 py-2 text-sm font-medium hover:bg-violet-700 disabled:opacity-50 transition-colors"
-              >
-                <Share2 className="w-4 h-4" /> Share (generate posts)
-              </button>
-            </div>
-          </div>
 
-          {(String(p.refined_description ?? p.description ?? "").trim()).length > 0 && (
-            <div className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">Description</h2>
-              <p className="text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed">
-                {String(p.refined_description ?? p.description ?? "")}
+            {/* 6. AI GENERATED REFINED DESCRIPTION */}
+            <div className="col-span-4 sm:col-span-2 row-span-2 rounded-2xl bg-[#1a2922] px-4 py-4 flex flex-col">
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
+                AI generated description
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-[#ECEEE5]/90 whitespace-pre-wrap line-clamp-[10]">
+                {String(p.refined_description ?? p.description ?? "") ||
+                  "No description available yet for this project."}
               </p>
             </div>
-          )}
 
-          {screenshots.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Images</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {screenshots.slice(0, 6).map((src, i) => (
-                  <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="relative aspect-video rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800">
-                    <Image src={src} alt="" fill className="object-cover" />
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {(p.tech_stack_tags?.length ?? 0) > 0 && (
-            <div className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">Tech stack <span className="normal-case font-normal text-zinc-400">(AI generated)</span></h2>
-              <div className="flex flex-wrap gap-2">
-                {(p.tech_stack_tags ?? []).map((t) => (
-                  <span key={t} className="px-2.5 py-1 rounded-md bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-200 text-xs font-medium">
-                    {String(t)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Links</h2>
-            <div className="flex flex-wrap gap-x-6 gap-y-2">
-              {p.github_url && <LinkRow href={p.github_url} label="GitHub repo" icon={Github} />}
-              {p.website_url && <LinkRow href={p.website_url} label="Website" icon={Globe} />}
-              {p.youtube_url && <LinkRow href={p.youtube_url} label="YouTube demo" icon={Video} />}
-              {socialLinks.map((s, i) => (
-                <LinkRow key={i} href={s.url} label={s.label || s.url} icon={Link2} />
-              ))}
-              {additionalLinks.map((a, i) => (
-                <LinkRow key={i} href={a.url} label={a.label || a.url} icon={ExternalLink} />
-              ))}
-              {!p.github_url && !p.website_url && !p.youtube_url && socialLinks.length === 0 && additionalLinks.length === 0 && (
-                <span className="text-zinc-500 text-sm">No links added</span>
+            {/* 7. IMAGE GALLERY (optional) */}
+            <div className="col-span-4 sm:col-span-2 row-span-2 rounded-2xl bg-[#1a2922] px-4 py-4 flex flex-col">
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
+                Gallery
+              </p>
+              {screenshots.length > 0 ? (
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-3">
+                  {screenshots.slice(0, 4).map((src, i) => (
+                    <a
+                      key={i}
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="relative aspect-video rounded-xl overflow-hidden border border-[#ECEEE5]/20 bg-[#141d19]"
+                    >
+                      <Image src={src} alt="" fill className="object-cover" />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-xs text-[#ECEEE5]/70">No screenshots added yet.</p>
               )}
             </div>
-          </div>
 
-          {(p.primary_color || p.accent_color || p.theme_label) && (
-            <div className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-3">Theme <span className="normal-case font-normal text-zinc-400">(AI generated)</span></h2>
-              <div className="flex flex-wrap items-center gap-6">
-                {Boolean(p.primary_color) && (
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span className="w-12 h-12 rounded-xl border border-zinc-300 dark:border-zinc-600 shadow-inner" style={{ backgroundColor: String(p.primary_color) }} />
-                    <span className="text-xs text-zinc-500">Primary</span>
-                  </div>
-                )}
-                {Boolean(p.accent_color) && (
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span className="w-12 h-12 rounded-xl border border-zinc-300 dark:border-zinc-600 shadow-inner" style={{ backgroundColor: String(p.accent_color) }} />
-                    <span className="text-xs text-zinc-500">Accent</span>
-                  </div>
-                )}
-                {Boolean(p.secondary_color) && (
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span className="w-12 h-12 rounded-xl border border-zinc-300 dark:border-zinc-600 shadow-inner" style={{ backgroundColor: String(p.secondary_color) }} />
-                    <span className="text-xs text-zinc-500">Secondary</span>
-                  </div>
-                )}
-                {Boolean(p.theme_label) && <span className="text-sm text-zinc-600 dark:text-zinc-400 capitalize">{String(p.theme_label).replace(/-/g, " ")}</span>}
+            {/* 8. TECH STACK */}
+            <div className="col-span-4 sm:col-span-2 row-span-1 rounded-2xl bg-[#1a2922] px-4 py-3 flex flex-col">
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
+                Tech stack
+              </p>
+              {(p.tech_stack_tags?.length ?? 0) > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(p.tech_stack_tags ?? []).map((t) => (
+                    <span
+                      key={t}
+                      className="px-2.5 py-1 rounded-full bg-[#ECEEE5]/10 text-[11px] font-medium text-[#ECEEE5]"
+                    >
+                      {String(t)}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-xs text-[#ECEEE5]/70">No tech stack tagged yet.</p>
+              )}
+            </div>
+
+            {/* 9–13. LINKS CLUSTER */}
+            <div className="col-span-4 sm:col-span-2 row-span-2 rounded-2xl bg-[#1a2922] px-4 py-4 flex flex-col">
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
+                Links
+              </p>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {/* 9. GitHub URL */}
+                <div className="rounded-xl bg-[#141d19] px-3 py-2 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#ECEEE5]/60">
+                    GitHub
+                  </span>
+                  {p.github_url ? (
+                    <Link
+                      href={p.github_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 text-[#ECEEE5]/90 underline underline-offset-2 break-all"
+                    >
+                      {p.github_url}
+                    </Link>
+                  ) : (
+                    <span className="mt-1 text-[#ECEEE5]/60">Not provided</span>
+                  )}
+                </div>
+
+                {/* 10. Hosted URL */}
+                <div className="rounded-xl bg-[#141d19] px-3 py-2 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#ECEEE5]/60">
+                    Website
+                  </span>
+                  {p.website_url ? (
+                    <Link
+                      href={p.website_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 text-[#ECEEE5]/90 underline underline-offset-2 break-all"
+                    >
+                      {p.website_url}
+                    </Link>
+                  ) : (
+                    <span className="mt-1 text-[#ECEEE5]/60">Not provided</span>
+                  )}
+                </div>
+
+                {/* 11. YouTube demo */}
+                <div className="rounded-xl bg-[#141d19] px-3 py-2 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#ECEEE5]/60">
+                    YouTube demo
+                  </span>
+                  {p.youtube_url ? (
+                    <Link
+                      href={p.youtube_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 text-[#ECEEE5]/90 underline underline-offset-2 break-all"
+                    >
+                      {p.youtube_url}
+                    </Link>
+                  ) : (
+                    <span className="mt-1 text-[#ECEEE5]/60">Not provided</span>
+                  )}
+                </div>
+
+                {/* 12. Social links */}
+                <div className="rounded-xl bg-[#141d19] px-3 py-2 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#ECEEE5]/60">
+                    Social
+                  </span>
+                  {socialLinks.length > 0 ? (
+                    <div className="mt-1 space-y-1">
+                      {socialLinks.slice(0, 3).map((s, idx) => (
+                        <Link
+                          key={idx}
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-[#ECEEE5]/90 underline underline-offset-2 truncate"
+                        >
+                          {s.label || s.url}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="mt-1 text-[#ECEEE5]/60">No social links</span>
+                  )}
+                </div>
+
+                {/* 13. Additional links (optional) */}
+                <div className="rounded-xl bg-[#141d19] px-3 py-2 flex flex-col justify-between sm:col-span-2">
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#ECEEE5]/60">
+                    Additional links
+                  </span>
+                  {additionalLinks.length > 0 ? (
+                    <div className="mt-1 space-y-1">
+                      {additionalLinks.slice(0, 4).map((a, idx) => (
+                        <Link
+                          key={idx}
+                          href={a.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-[#ECEEE5]/90 underline underline-offset-2 truncate"
+                        >
+                          {a.label || a.url}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="mt-1 text-[#ECEEE5]/60">None yet</span>
+                  )}
+                </div>
               </div>
             </div>
-          )}
+
+            {/* Action tile – edit / share / view public */}
+            <div className="col-span-4 rounded-2xl bg-[#1a2922] px-4 py-3 flex flex-wrap gap-2 items-center justify-between">
+              <div className="text-xs text-[#ECEEE5]/70">
+                Manage how this project appears to builders and viewers.
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={startEditing}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#ECEEE5]/40 px-3 py-1.5 text-xs text-[#ECEEE5] hover:bg-[#ECEEE5] hover:text-[#20332b] transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Edit profile
+                </button>
+                <a
+                  href={loopsProfileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#ECEEE5]/40 px-3 py-1.5 text-xs text-[#ECEEE5] hover:bg-[#ECEEE5] hover:text-[#20332b] transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> View public page
+                </a>
+                <button
+                  onClick={handleShare}
+                  disabled={socialLoading}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#ECEEE5] text-[#20332b] px-3 py-1.5 text-xs font-medium hover:bg-white disabled:opacity-50 transition-colors"
+                >
+                  <Share2 className="w-3.5 h-3.5" /> Share (AI posts)
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -443,18 +592,6 @@ export default function BuilderProjectDetailPage() {
             )}
           </div>
         </section>
-      )}
-
-      {/* Key features (standalone if present) */}
-      {(p.key_features?.length ?? 0) > 0 && (
-        <div className="mt-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
-          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">Key features</h2>
-          <ul className="list-disc list-inside space-y-2 text-zinc-600 dark:text-zinc-400 text-sm">
-            {(p.key_features ?? []).map((f, i) => (
-              <li key={i}>{String(f)}</li>
-            ))}
-          </ul>
-        </div>
       )}
 
       {editing && (
