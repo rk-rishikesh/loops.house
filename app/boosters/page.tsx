@@ -78,12 +78,12 @@ export default function BoostersLandingPage() {
           <ArrowLeft size={12} /> Loops House
         </Link>
         <Image
-          src="/builder/woolCat.svg"
+          src="/logo.svg"
           alt="mascot"
           width={48}
           height={48}
           unoptimized
-          className="opacity-60"
+          className=""
         />
       </div>
 
@@ -108,7 +108,7 @@ export default function BoostersLandingPage() {
                 className="font-black text-[#2d4a3e] block"
                 style={{
                   fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
-                  fontSize: "clamp(88px, 13vw, 172px)",
+                  fontSize: "clamp(48px, 12vw, 160px)",
                   letterSpacing: "-0.03em",
                 }}
               >
@@ -117,7 +117,7 @@ export default function BoostersLandingPage() {
             </div>
 
             {/* Card overlapping the hero word */}
-            <div className={`relative -mt-8 px-8 z-10 w-full ${isRight ? "flex flex-col items-end" : ""}`}>
+            <div className={`relative -mt-2.5 px-8 z-10 w-full ${isRight ? "flex flex-col items-end" : ""}`}>
               <Link href={`/boosters/${b.type}`} className="no-underline block group">
                 <div
                   className="rounded-3xl max-w-[800px] px-10 pt-9 pb-11 transition-transform duration-200 group-hover:scale-[1.005]"

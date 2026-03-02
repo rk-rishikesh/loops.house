@@ -134,23 +134,6 @@ function ProjectRow({ project: p, index }: { project: StoredProject; index: numb
 
         {/* Description — logo + chat hint */}
         <div className="flex items-start gap-4">
-          {p.logo_url ? (
-            <Image
-              src={p.logo_url}
-              alt={p.name}
-              width={36}
-              height={36}
-              className="rounded shrink-0 mt-0.5"
-              style={{ objectFit: "cover" }}
-            />
-          ) : (
-            <span
-              className="inline-flex items-center justify-center w-9 h-9 rounded shrink-0 mt-0.5"
-              style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e" }}
-            >
-              <Code2 size={16} />
-            </span>
-          )}
           <p
             className="text-[#2d4a3e]/50 leading-relaxed text-sm"
             style={{ fontFamily: "Georgia, serif" }}

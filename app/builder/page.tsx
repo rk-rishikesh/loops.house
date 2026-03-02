@@ -14,6 +14,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import Image from "next/image";
+import { LogoutButton } from "@/components/logout-button";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Section = "home" | "projects" | "teams" | "boosters";
@@ -110,7 +111,10 @@ export default function ProjectHubPage() {
   };
 
   return (
-    <div className="h-full bg-[#f0ebe0] font-sans">
+    <div className="relative h-full bg-[#f0ebe0] font-sans">
+      <div className="absolute top-6 right-8 z-50">
+        <LogoutButton />
+      </div>
       {/* ── HOME ──────────────────────────────────────────────────────────── */}
       {section === "home" && (
         <SlideIn active={mounted}>
