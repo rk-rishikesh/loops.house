@@ -19,7 +19,7 @@ const ROLE_DASHBOARDS: Record<string, string> = {
 };
 
 const ROLE_COOKIE = "x-user-role";
-const ROLE_COOKIE_TTL = 60; // 1 minute
+const ROLE_COOKIE_TTL = 30; // 30s — keep short so role changes (e.g. admin promotion) propagate without hard refresh
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

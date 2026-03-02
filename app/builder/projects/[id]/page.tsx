@@ -3,109 +3,310 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Share2, ExternalLink, FileText, Code2, Video, Palette, Github, Globe, Link2, Pencil, X, Save } from "lucide-react";
-import { getProject, getProjectSubmissions, getBoostersByIds, saveProject } from "@/lib/storage";
+import {
+  ArrowLeft, ArrowUpRight, ExternalLink, FileText, Code2, Video, Palette,
+  Github, Globe, Youtube, Pencil, X, Save, Share2, Loader2, Check,
+} from "lucide-react";
+import { getProject, getProjectSubmissions, getBoostersByIds } from "@/lib/storage";
+import { useSaveProject } from "@/lib/queries";
 import { useState, useEffect } from "react";
 import type { StoredProject, StoredSubmission } from "@/lib/storage";
 
-const KB_SECTION_LABELS: Record<string, { label: string; icon: React.ElementType }> = {
-  profile: { label: "Profile", icon: FileText },
-  code: { label: "Code", icon: Code2 },
-  demo: { label: "Demo", icon: Video },
-  theme: { label: "Theme", icon: Palette },
+/* ─── Types ──────────────────────────────────────────────────────── */
+const KB_TABS: Record<string, { label: string; icon: React.ElementType }> = {
+  profile: { label: "Profile",  icon: FileText },
+  code:    { label: "Code",     icon: Code2    },
+  demo:    { label: "Demo",     icon: Video    },
+  theme:   { label: "Theme",    icon: Palette  },
 };
 
-function LinkRow({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) {
+/* ─── Arrow circle ───────────────────────────────────────────────── */
+function ArrowCircle({ size = 40, inverted = false }: { size?: number; inverted?: boolean }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 text-violet-600 dark:text-violet-400 hover:underline text-sm"
+    <span
+      style={{ width: size, height: size }}
+      className={`inline-flex items-center justify-center rounded-full shrink-0 transition-all duration-200 ${
+        inverted ? "bg-[#d6cfc0] text-[#2d4a3e]" : "bg-[#2d4a3e] text-[#f0ebe0]"
+      }`}
     >
-      <Icon className="w-4 h-4 shrink-0" />
-      <span className="truncate">{label || href}</span>
-      <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-70" />
-    </a>
+      <ArrowUpRight size={Math.round(size * 0.4)} />
+    </span>
   );
 }
 
+/* ─── Section heading ────────────────────────────────────────────── */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40 mb-2"
+      style={{ fontFamily: "'Inter', sans-serif" }}
+    >
+      {children}
+    </p>
+  );
+}
+
+/* ─── Table row ─────────────────────────────────────────────────── */
+function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid py-4 border-b border-[#2d4a3e]/08" style={{ gridTemplateColumns: "140px 1fr" }}>
+      <p
+        className="text-[11px] tracking-[0.1em] uppercase font-semibold text-[#2d4a3e]/40 pt-0.5"
+        style={{ fontFamily: "'Inter', sans-serif" }}
+      >
+        {label}
+      </p>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+/* ─── Edit modal ─────────────────────────────────────────────────── */
+function EditModal({
+  form, onChange, onSave, onClose, saving,
+}: {
+  form: Record<string, string>;
+  onChange: (key: string, value: string) => void;
+  onSave: () => void;
+  onClose: () => void;
+  saving: boolean;
+}) {
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    backgroundColor: "#d6cfc0",
+    border: "none",
+    borderRadius: 12,
+    padding: "12px 16px",
+    fontFamily: "'Inter', sans-serif",
+    fontSize: 14,
+    color: "#2d4a3e",
+    outline: "none",
+    transition: "background-color 0.15s ease",
+  };
+
+  const fields: { key: string; label: string; type?: string; multiline?: boolean; placeholder?: string }[] = [
+    { key: "name",           label: "Project Name" },
+    { key: "tagline",        label: "Tagline",              placeholder: "One sentence that captures the essence…" },
+    { key: "description",    label: "Description",          multiline: true },
+    { key: "category",       label: "Category" },
+    { key: "tech_stack_tags",label: "Tech Stack",           placeholder: "React, TypeScript, Supabase" },
+    { key: "website_url",    label: "Website URL",          type: "url" },
+    { key: "github_url",     label: "GitHub URL",           type: "url" },
+    { key: "youtube_url",    label: "YouTube Demo URL",     type: "url" },
+    { key: "logo_url",       label: "Logo URL",             type: "url" },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center pt-14 px-5 overflow-y-auto"
+      style={{ backgroundColor: "rgba(45,74,62,0.5)", backdropFilter: "blur(4px)" }}
+    >
+      <div
+        className="w-full max-w-xl rounded-3xl mb-14 overflow-hidden shadow-2xl"
+        style={{ backgroundColor: "#f0ebe0" }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-8 py-6 border-b"
+          style={{ borderColor: "rgba(45,74,62,0.1)" }}
+        >
+          <div>
+            <h2
+              className="font-black text-[#2d4a3e] leading-tight uppercase"
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, letterSpacing: "-0.02em" }}
+            >
+              Edit Profile
+            </h2>
+            <p className="text-[#2d4a3e]/45 text-sm mt-0.5" style={{ fontFamily: "Georgia, serif" }}>
+              Update your project details
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer transition-colors"
+            style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e" }}
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Fields */}
+        <div className="px-8 py-6 flex flex-col gap-4">
+          {fields.map(({ key, label, type, multiline, placeholder }) => (
+            <div key={key}>
+              <p
+                className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/45 mb-2"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                {label}
+              </p>
+              {multiline ? (
+                <textarea
+                  rows={4}
+                  value={form[key]}
+                  onChange={(e) => onChange(key, e.target.value)}
+                  placeholder={placeholder}
+                  className="resize-none outline-none placeholder-[#2d4a3e]/30"
+                  style={{ ...inputStyle, fontFamily: "Georgia, serif", lineHeight: 1.7 }}
+                  onFocus={(e) => (e.currentTarget.style.backgroundColor = "#cdc7b7")}
+                  onBlur={(e) => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
+                />
+              ) : (
+                <input
+                  type={type ?? "text"}
+                  value={form[key]}
+                  onChange={(e) => onChange(key, e.target.value)}
+                  placeholder={placeholder}
+                  className="outline-none placeholder-[#2d4a3e]/30"
+                  style={inputStyle}
+                  onFocus={(e) => (e.currentTarget.style.backgroundColor = "#cdc7b7")}
+                  onBlur={(e) => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div
+          className="flex items-center justify-end gap-3 px-8 py-5 border-t"
+          style={{ borderColor: "rgba(45,74,62,0.1)" }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[10px] tracking-widest uppercase font-bold px-5 py-3 rounded-full border-none cursor-pointer transition-all hover:opacity-70"
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              color: "#2d4a3e",
+              border: "1.5px solid rgba(45,74,62,0.25)",
+              backgroundColor: "transparent",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving || !form.name}
+            className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold px-6 py-3 rounded-full border-none cursor-pointer transition-all hover:opacity-90 disabled:opacity-40"
+            style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#2d4a3e", color: "#f0ebe0" }}
+          >
+            {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Social result panel ────────────────────────────────────────── */
+function SocialPanel({
+  result, onClose,
+}: {
+  result: { linkedin_post?: string; twitter_post?: string; suggested_hashtags?: string[] };
+  onClose: () => void;
+}) {
+  return (
+    <div className="rounded-3xl p-7 mt-5" style={{ backgroundColor: "#f5f2ea" }}>
+      <div className="flex items-center justify-between mb-6">
+        <h3
+          className="font-black text-[#2d4a3e] uppercase"
+          style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, letterSpacing: "-0.02em" }}
+        >
+          Generated Posts
+        </h3>
+        <button type="button" onClick={onClose} className="border-none bg-transparent cursor-pointer text-[#2d4a3e]/40 hover:text-[#2d4a3e] transition-colors">
+          <X size={15} />
+        </button>
+      </div>
+
+      {/* Table rows */}
+      <div className="border-t border-[#2d4a3e]/12">
+        {result.linkedin_post && (
+          <div className="py-5 border-b border-[#2d4a3e]/08">
+            <p className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40 mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
+              LinkedIn
+            </p>
+            <p className="text-[#2d4a3e]/75 leading-relaxed text-sm whitespace-pre-wrap" style={{ fontFamily: "Georgia, serif" }}>
+              {result.linkedin_post}
+            </p>
+          </div>
+        )}
+        {result.twitter_post && !result.twitter_post.startsWith("Error") && (
+          <div className="py-5 border-b border-[#2d4a3e]/08">
+            <p className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40 mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
+              X / Twitter
+            </p>
+            <p className="text-[#2d4a3e]/75 leading-relaxed text-sm" style={{ fontFamily: "Georgia, serif" }}>
+              {result.twitter_post}
+            </p>
+          </div>
+        )}
+        {result.suggested_hashtags && result.suggested_hashtags.length > 0 && (
+          <div className="pt-5">
+            <p className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40 mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
+              Hashtags
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {result.suggested_hashtags.map((h) => (
+                <span key={h} className="text-[10px] px-2.5 py-1 rounded-sm" style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e", fontFamily: "Georgia, serif" }}>
+                  {h}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Page ────────────────────────────────────────────────────────── */
 export default function BuilderProjectDetailPage() {
-  const params = useParams();
+  const params    = useParams();
   const projectId = params.id as string;
-  const [project, setProject] = useState<StoredProject | null | undefined>(undefined);
+  const saveProjectMutation = useSaveProject();
+
+  const [project,     setProject]     = useState<StoredProject | null | undefined>(undefined);
   const [submissions, setSubmissions] = useState<StoredSubmission[]>([]);
   const [boosterNames, setBoosterNames] = useState<Record<string, string>>({});
-
-  const [socialLoading, setSocialLoading] = useState(false);
-  const [socialResult, setSocialResult] = useState<{ linkedin_post?: string; twitter_post?: string; suggested_hashtags?: string[] } | null>(null);
   const [kbActiveTab, setKbActiveTab] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [editForm, setEditForm] = useState({
-    name: "",
-    tagline: "",
-    description: "",
-    category: "",
-    website_url: "",
-    github_url: "",
-    youtube_url: "",
-    logo_url: "",
-    tech_stack_tags: "",
+  const [editing,     setEditing]     = useState(false);
+  const [saving,      setSaving]      = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
+  const [socialResult,  setSocialResult]  = useState<{ linkedin_post?: string; twitter_post?: string; suggested_hashtags?: string[] } | null>(null);
+  const [editForm, setEditForm] = useState<Record<string, string>>({
+    name: "", tagline: "", description: "", category: "",
+    website_url: "", github_url: "", youtube_url: "", logo_url: "", tech_stack_tags: "",
   });
 
   useEffect(() => {
     getProject(projectId).then(setProject);
     getProjectSubmissions(projectId).then(async (subs) => {
       setSubmissions(subs);
-      const uniqueIds = [...new Set(subs.map((s) => s.booster_id))];
-      const boosterMap = await getBoostersByIds(uniqueIds);
+      const ids = [...new Set(subs.map((s) => s.booster_id))];
+      const map = await getBoostersByIds(ids);
       const names: Record<string, string> = {};
-      for (const [id, b] of Object.entries(boosterMap)) names[id] = b.name;
+      for (const [id, b] of Object.entries(map)) names[id] = b.name;
       setBoosterNames(names);
     });
   }, [projectId]);
 
-  if (project === undefined) {
-    return (
-      <div className="max-w-4xl mx-auto pb-12">
-        <Link href="/builder/projects" className="inline-flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-400 hover:text-violet-600 mb-6">
-          <ArrowLeft className="w-4 h-4" /> Back to projects
-        </Link>
-        <p className="mt-4 text-zinc-500">Loading…</p>
-      </div>
-    );
-  }
-
-  if (project === null) {
-    return (
-      <div className="max-w-4xl mx-auto pb-12">
-        <Link href="/builder/projects" className="inline-flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-400 hover:text-violet-600 mb-6">
-          <ArrowLeft className="w-4 h-4" /> Back to projects
-        </Link>
-        <p className="mt-4 text-zinc-500">Project not found.</p>
-      </div>
-    );
-  }
-
-  const p = project;
-  const loopsProfileUrl = `/viewer/projects/${projectId}`;
-  const socialLinks = (p.social_links ?? []) as { label: string; url: string }[];
-  const additionalLinks = (p.additional_links ?? []) as { label: string; url: string }[];
-  const screenshots = (p.screenshot_urls ?? []) as string[];
-
   const startEditing = () => {
-    if (!p) return;
+    if (!project) return;
     setEditForm({
-      name: p.name ?? "",
-      tagline: p.tagline ?? "",
-      description: p.refined_description ?? p.description ?? "",
-      category: p.category ?? "",
-      website_url: p.website_url ?? "",
-      github_url: p.github_url ?? "",
-      youtube_url: p.youtube_url ?? "",
-      logo_url: p.logo_url ?? "",
-      tech_stack_tags: (p.tech_stack_tags ?? []).join(", "),
+      name:           project.name ?? "",
+      tagline:        project.tagline ?? "",
+      description:    String(project.refined_description ?? (project as { description?: string }).description ?? ""),
+      category:       project.category ?? "",
+      website_url:    project.website_url ?? "",
+      github_url:     project.github_url ?? "",
+      youtube_url:    project.youtube_url ?? "",
+      logo_url:       project.logo_url ?? "",
+      tech_stack_tags: (project.tech_stack_tags ?? []).join(", "),
     });
     setEditing(true);
   };
@@ -116,20 +317,20 @@ export default function BuilderProjectDetailPage() {
     try {
       const updated: StoredProject = {
         ...project,
-        name: editForm.name,
-        tagline: editForm.tagline || undefined,
-        description: editForm.description || undefined,
+        name:                editForm.name,
+        tagline:             editForm.tagline || undefined,
+        description:         editForm.description || undefined,
         refined_description: editForm.description || undefined,
-        category: editForm.category || undefined,
-        website_url: editForm.website_url || undefined,
-        github_url: editForm.github_url || undefined,
-        youtube_url: editForm.youtube_url || undefined,
-        logo_url: editForm.logo_url || undefined,
-        tech_stack_tags: editForm.tech_stack_tags
+        category:            editForm.category || undefined,
+        website_url:         editForm.website_url || undefined,
+        github_url:          editForm.github_url || undefined,
+        youtube_url:         editForm.youtube_url || undefined,
+        logo_url:            editForm.logo_url || undefined,
+        tech_stack_tags:     editForm.tech_stack_tags
           ? editForm.tech_stack_tags.split(",").map((t) => t.trim()).filter(Boolean)
           : [],
       };
-      await saveProject(updated);
+      await saveProjectMutation.mutateAsync(updated);
       setProject(updated);
       setEditing(false);
     } finally {
@@ -138,6 +339,7 @@ export default function BuilderProjectDetailPage() {
   };
 
   const handleShare = async () => {
+    if (!project) return;
     setSocialLoading(true);
     setSocialResult(null);
     try {
@@ -146,13 +348,12 @@ export default function BuilderProjectDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           project: {
-            name: p.name,
-            tagline: p.tagline || "",
-            refined_description: p.refined_description || "",
-            tech_stack_tags: p.tech_stack_tags || [],
-            category: p.category || "",
-            key_features: p.key_features || [],
-            loops_profile_url: loopsProfileUrl,
+            name: project.name, tagline: project.tagline || "",
+            refined_description: String(project.refined_description ?? ""),
+            tech_stack_tags: project.tech_stack_tags || [],
+            category: project.category || "",
+            key_features: project.key_features || [],
+            loops_profile_url: `/viewer/projects/${projectId}`,
           },
           tone: "excited",
         }),
@@ -161,537 +362,555 @@ export default function BuilderProjectDetailPage() {
       if (!res.ok) throw new Error(data.error || "Failed to generate");
       setSocialResult(data);
     } catch (e) {
-      setSocialResult({ linkedin_post: "", twitter_post: String(e) });
+      setSocialResult({ twitter_post: `Error: ${String(e)}` });
     } finally {
       setSocialLoading(false);
     }
   };
 
-  return (
-    <div className="max-w-6xl mx-auto pb-12 px-4 sm:px-6">
-      <Link
-        href="/builder/projects"
-        className="inline-flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-400 hover:text-violet-600 mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to projects
-      </Link>
+  /* ─── Loading / error ─── */
+  if (project === undefined) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#f0ebe0" }}>
+      <Loader2 size={18} className="animate-spin" style={{ color: "#2d4a3e" }} />
+    </div>
+  );
 
-      {/* Bento profile grid */}
-      <section className="rounded-3xl bg-[#EBECE7] p-2 sm:p-3">
-        <div className="rounded-3xl bg-[#20332b] text-[#ECEEE5] p-6 sm:p-8">
-          <div className="grid gap-4 sm:grid-cols-4 auto-rows-[120px]">
-            {/* 1. LOGO - IMAGE */}
-            <div className="col-span-2 sm:col-span-1 row-span-2 rounded-2xl bg-[#1a2922] flex items-center justify-center">
+  if (project === null) return (
+    <div className="min-h-screen px-10 py-12" style={{ backgroundColor: "#f0ebe0" }}>
+      <Link href="/builder/projects" className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 no-underline" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <ArrowLeft size={12} /> Projects
+      </Link>
+      <p className="mt-10 text-[#2d4a3e]/50" style={{ fontFamily: "Georgia, serif" }}>Project not found.</p>
+    </div>
+  );
+
+  const p              = project;
+  const socialLinks    = (p.social_links    ?? []) as { label: string; url: string }[];
+  const additionalLinks = (p.additional_links ?? []) as { label: string; url: string }[];
+  const screenshots    = (p.screenshot_urls ?? []) as string[];
+  const tags           = (p.tech_stack_tags ?? []) as string[];
+  const features       = (p.key_features   ?? []) as string[];
+  const desc           = String(p.refined_description ?? (p as { description?: string }).description ?? "");
+  const loopsProfileUrl = `/viewer/projects/${projectId}`;
+
+  const links = [
+    { key: "github",  href: p.github_url,  icon: Github,  label: "GitHub"  },
+    { key: "website", href: p.website_url, icon: Globe,   label: "Website" },
+    { key: "demo",    href: p.youtube_url, icon: Youtube, label: "Demo"    },
+  ].filter((l) => l.href);
+
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
+
+      {/* ── Nav ─────────────────────────────────────────────────────── */}
+      <div
+        className="sticky top-0 z-50 px-10 py-5 flex items-center justify-between"
+        style={{ backgroundColor: "#f0ebe0", borderBottom: "1px solid rgba(45,74,62,0.1)" }}
+      >
+        <Link
+          href="/builder/projects"
+          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
+          <ArrowLeft size={12} /> Projects
+        </Link>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={startEditing}
+            className="inline-flex items-center gap-1.5 rounded-full text-[9px] tracking-widest uppercase font-bold px-4 py-2.5 border-none cursor-pointer transition-all hover:opacity-75"
+            style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e" }}
+          >
+            <Pencil size={11} /> Edit
+          </button>
+          <Link
+            href={loopsProfileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full text-[9px] tracking-widest uppercase font-bold px-4 py-2.5 no-underline transition-all hover:opacity-75"
+            style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e" }}
+          >
+            <ExternalLink size={11} /> Public page
+          </Link>
+          <button
+            type="button"
+            onClick={handleShare}
+            disabled={socialLoading}
+            className="inline-flex items-center gap-1.5 rounded-full text-[9px] tracking-widest uppercase font-bold px-5 py-2.5 border-none cursor-pointer transition-all hover:opacity-90 disabled:opacity-40"
+            style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#2d4a3e", color: "#f0ebe0" }}
+          >
+            {socialLoading ? <Loader2 size={11} className="animate-spin" /> : <Share2 size={11} />}
+            Share
+          </button>
+        </div>
+      </div>
+
+      <div className="px-10 py-8 max-w-[1400px] mx-auto">
+
+        {/* ── Hero heading ─────────────────────────────────────────────── */}
+        <div className="mb-12">
+          <h1
+            className="font-black text-[#2d4a3e] leading-[0.88] uppercase"
+            style={{
+              fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+              fontSize: "clamp(48px, 8vw, 120px)",
+              letterSpacing: "-0.025em",
+            }}
+          >
+            {p.name}
+          </h1>
+          {p.tagline && (
+            <div className="flex justify-end mt-4">
+              <p
+                className="text-[#2d4a3e]/55 max-w-[420px] text-right leading-relaxed"
+                style={{ fontFamily: "Georgia, serif", fontSize: "clamp(14px, 1.5vw, 18px)" }}
+              >
+                {p.tagline}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* ── Three-column grid ─────────────────────────────────────────── */}
+        <div className="grid gap-5 items-start" style={{ gridTemplateColumns: "280px 1fr 340px" }}>
+
+          {/* ═══ LEFT — sidebar ═══════════════════════════════════════════ */}
+          <aside className="sticky top-[81px] flex flex-col gap-5">
+
+            {/* Logo */}
+            <div
+              className="w-full rounded-3xl overflow-hidden flex items-center justify-center"
+              style={{ aspectRatio: "1/1", backgroundColor: "#d6cfc0" }}
+            >
               {p.logo_url ? (
-                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-[#ECEEE5]/30 bg-[#141d19]">
-                  <Image src={p.logo_url} alt={`${p.name} logo`} fill className="object-contain" />
-                </div>
+                <Image src={p.logo_url} alt={p.name} width={280} height={280} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#141d19] flex items-center justify-center text-xs tracking-[0.16em] uppercase text-[#ECEEE5]/70">
-                  No logo
-                </div>
+                <Code2 size={48} style={{ color: "#2d4a3e", opacity: 0.22 }} />
               )}
             </div>
 
-            {/* 2. PROJECT NAME */}
-            <div className="col-span-2 sm:col-span-2 row-span-1 rounded-2xl bg-[#1a2922] px-4 py-3 flex items-center">
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
-                  Project name
-                </p>
-                <p className="mt-2 text-xl sm:text-2xl font-semibold tracking-tight">
-                  {p.name}
-                </p>
-              </div>
+            {/* Category + tags */}
+            <div className="flex flex-wrap gap-2">
+              {p.category && (
+                <span
+                  className="text-[8px] tracking-[0.15em] uppercase font-bold px-3 py-1.5 rounded-sm"
+                  style={{ backgroundColor: "#2d4a3e", color: "#f0ebe0", fontFamily: "'Inter', sans-serif" }}
+                >
+                  {p.category}
+                </span>
+              )}
+              {tags.slice(0, 5).map((t) => (
+                <span
+                  key={t}
+                  className="text-[9px] px-2.5 py-1 rounded-sm"
+                  style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e", fontFamily: "Georgia, serif" }}
+                >
+                  {t}
+                </span>
+              ))}
             </div>
 
-            {/* 3. AI GENERATED TAGLINE */}
-            <div className="col-span-2 sm:col-span-1 row-span-1 rounded-2xl bg-[#1a2922] px-4 py-3 flex items-center">
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
-                  Tagline
-                </p>
-                <p className="mt-2 text-sm leading-snug text-[#ECEEE5]/90">
-                  {p.tagline
-                    ? p.tagline
-                    : String(p.refined_description ?? p.description ?? "")
-                        .trim()
-                        .slice(0, 120) || "No tagline yet"}
-                </p>
+            {/* Link squares */}
+            {links.length > 0 && (
+              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(links.length, 3)}, 1fr)` }}>
+                {links.map(({ key, href, icon: Icon, label }) => (
+                  <Link
+                    key={key}
+                    href={href!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group no-underline"
+                  >
+                    <div
+                      className="rounded-2xl flex flex-col items-center justify-center gap-2 transition-all duration-200 group-hover:scale-[1.03]"
+                      style={{ aspectRatio: "1/1", backgroundColor: "#2d4a3e" }}
+                    >
+                      <Icon size={24} style={{ color: "#d6cfc0" }} />
+                      <span
+                        className="text-[8px] tracking-[0.14em] uppercase font-bold text-[#d6cfc0]/50"
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      >
+                        {label}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
               </div>
+            )}
+
+            {/* Social links */}
+            {socialLinks.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <SectionLabel>Social</SectionLabel>
+                {socialLinks.slice(0, 5).map((s, i) => (
+                  <Link
+                    key={i}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between no-underline rounded-2xl px-4 py-3 transition-all duration-200 hover:scale-[1.01]"
+                    style={{ backgroundColor: "#d6cfc0" }}
+                  >
+                    <span className="text-[11px] font-semibold text-[#2d4a3e] truncate" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      {s.label || s.url}
+                    </span>
+                    <ExternalLink size={11} style={{ color: "rgba(45,74,62,0.4)", flexShrink: 0 }} />
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Booster submissions */}
+            {submissions.length > 0 && (
+              <div className="rounded-2xl p-5" style={{ backgroundColor: "#2d4a3e" }}>
+                <SectionLabel><span style={{ color: "rgba(240,235,224,0.4)" }}>Incubated at</span></SectionLabel>
+                <div className="flex flex-col gap-2 mt-2">
+                  {submissions.map((s) => (
+                    <Link
+                      key={s.id}
+                      href="/builder/boosters"
+                      className="text-[12px] text-[#f0ebe0]/70 no-underline hover:text-[#f0ebe0] transition-colors"
+                      style={{ fontFamily: "Georgia, serif" }}
+                    >
+                      → {boosterNames[s.booster_id] ?? "Booster"}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+
+          {/* ═══ CENTRE — detail table ════════════════════════════════════ */}
+          <main className="flex flex-col gap-5">
+
+            {/* Description card */}
+            <div className="rounded-3xl p-7" style={{ backgroundColor: "#f5f2ea" }}>
+              <SectionLabel>AI Generated Description</SectionLabel>
+              <p
+                className="text-[#2d4a3e]/75 leading-relaxed"
+                style={{ fontFamily: "Georgia, serif", fontSize: "clamp(14px, 1.4vw, 16px)" }}
+              >
+                {desc || "No description available yet."}
+              </p>
             </div>
 
-            {/* 4. AI GENERATED PROJECT CATEGORY & 14. TEAM */}
-            <div className="col-span-2 sm:col-span-1 row-span-1 rounded-2xl bg-[#1a2922] px-4 py-3 flex flex-col justify-between">
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
-                  Category
-                </p>
-                <p className="mt-2 text-sm font-medium text-[#ECEEE5]/90">
-                  {p.category ? String(p.category) : "Uncategorized"}
-                </p>
-              </div>
-              <div className="mt-4">
-                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
-                  Team
-                </p>
-                <p className="mt-1 text-xs text-[#ECEEE5]/80">
-                  {p.team_id ? `Team ID: ${p.team_id}` : "No team linked"}
-                </p>
-              </div>
-            </div>
+            {/* Info table */}
+            <div className="rounded-3xl p-7" style={{ backgroundColor: "#f5f2ea" }}>
+              <SectionLabel>Project Details</SectionLabel>
 
-            {/* 5. WHERE WAS THE PROJECT INCUBATED */}
-            <div className="col-span-2 sm:col-span-2 row-span-1 rounded-2xl bg-[#1a2922] px-4 py-3 flex items-center">
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
-                  Incubated at
+              {/* Table header */}
+              <div
+                className="grid py-3 border-b border-t border-[#2d4a3e]/20 mb-0"
+                style={{ gridTemplateColumns: "140px 1fr" }}
+              >
+                {["Field", "Value"].map((col) => (
+                  <p
+                    key={col}
+                    className="text-[11px] tracking-[0.12em] uppercase font-semibold text-[#2d4a3e]/40"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    {col}
+                  </p>
+                ))}
+              </div>
+
+              {/* Rows */}
+              <InfoRow label="Team">
+                <p className="text-sm text-[#2d4a3e]/70" style={{ fontFamily: "Georgia, serif" }}>
+                  {p.team_id ? `${p.team_id}` : "No team linked"}
                 </p>
-                {submissions.length > 0 ? (
-                  <div className="mt-2 space-y-1 text-xs text-[#ECEEE5]/85">
-                    {submissions.map((s) => (
-                      <p key={s.id}>
-                        Submitted to{" "}
-                        <Link
-                          href="/builder/boosters"
-                          className="underline decoration-[#ECEEE5]/60 underline-offset-2 hover:text-white"
-                        >
-                          {boosterNames[s.booster_id] ?? "booster"}
-                        </Link>
-                      </p>
+              </InfoRow>
+
+              {p.github_url && (
+                <InfoRow label="GitHub">
+                  <Link href={p.github_url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 no-underline text-[#2d4a3e] hover:opacity-70 transition-opacity text-sm"
+                    style={{ fontFamily: "Georgia, serif" }}>
+                    {p.github_url} <ExternalLink size={11} className="shrink-0 opacity-50" />
+                  </Link>
+                </InfoRow>
+              )}
+
+              {p.website_url && (
+                <InfoRow label="Website">
+                  <Link href={p.website_url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 no-underline text-[#2d4a3e] hover:opacity-70 transition-opacity text-sm"
+                    style={{ fontFamily: "Georgia, serif" }}>
+                    {p.website_url} <ExternalLink size={11} className="shrink-0 opacity-50" />
+                  </Link>
+                </InfoRow>
+              )}
+
+              {p.youtube_url && (
+                <InfoRow label="Demo">
+                  <Link href={p.youtube_url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 no-underline text-[#2d4a3e] hover:opacity-70 transition-opacity text-sm"
+                    style={{ fontFamily: "Georgia, serif" }}>
+                    {p.youtube_url} <ExternalLink size={11} className="shrink-0 opacity-50" />
+                  </Link>
+                </InfoRow>
+              )}
+
+              {additionalLinks.length > 0 && (
+                <InfoRow label="More links">
+                  <div className="flex flex-col gap-1.5">
+                    {additionalLinks.slice(0, 5).map((a, i) => (
+                      <Link key={i} href={a.url} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 no-underline text-[#2d4a3e]/70 hover:text-[#2d4a3e] text-sm"
+                        style={{ fontFamily: "Georgia, serif" }}>
+                        {a.label || a.url} <ExternalLink size={10} className="shrink-0 opacity-40" />
+                      </Link>
                     ))}
                   </div>
-                ) : (
-                  <p className="mt-2 text-xs text-[#ECEEE5]/70">Not linked to any boosters yet.</p>
-                )}
+                </InfoRow>
+              )}
+
+              {/* Footer strip */}
+              <div className="flex items-center justify-between mt-5 pt-5 border-t border-[#2d4a3e]/08">
+                <p className="text-[11px] text-[#2d4a3e]/40" style={{ fontFamily: "Georgia, serif" }}>
+                  Created {new Date(p.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </p>
+                <Link href={loopsProfileUrl} target="_blank" rel="noopener noreferrer" className="no-underline">
+                  <ArrowCircle size={40} />
+                </Link>
               </div>
             </div>
 
-            {/* 6. AI GENERATED REFINED DESCRIPTION */}
-            <div className="col-span-4 sm:col-span-2 row-span-2 rounded-2xl bg-[#1a2922] px-4 py-4 flex flex-col">
-              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
-                AI generated description
-              </p>
-              <p className="mt-3 text-sm leading-relaxed text-[#ECEEE5]/90 whitespace-pre-wrap line-clamp-[10]">
-                {String(p.refined_description ?? p.description ?? "") ||
-                  "No description available yet for this project."}
-              </p>
-            </div>
-
-            {/* 7. IMAGE GALLERY (optional) */}
-            <div className="col-span-4 sm:col-span-2 row-span-2 rounded-2xl bg-[#1a2922] px-4 py-4 flex flex-col">
-              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
-                Gallery
-              </p>
-              {screenshots.length > 0 ? (
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-3">
+            {/* Gallery */}
+            {screenshots.length > 0 && (
+              <div className="rounded-3xl p-7" style={{ backgroundColor: "#f5f2ea" }}>
+                <SectionLabel>Gallery</SectionLabel>
+                <div className="grid grid-cols-2 gap-3 mt-3">
                   {screenshots.slice(0, 4).map((src, i) => (
                     <a
                       key={i}
                       href={src}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="relative aspect-video rounded-xl overflow-hidden border border-[#ECEEE5]/20 bg-[#141d19]"
+                      className="block rounded-2xl overflow-hidden relative"
+                      style={{ aspectRatio: "16/9", backgroundColor: "#d6cfc0" }}
                     >
                       <Image src={src} alt="" fill className="object-cover" />
                     </a>
                   ))}
                 </div>
-              ) : (
-                <p className="mt-3 text-xs text-[#ECEEE5]/70">No screenshots added yet.</p>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* 8. TECH STACK */}
-            <div className="col-span-4 sm:col-span-2 row-span-1 rounded-2xl bg-[#1a2922] px-4 py-3 flex flex-col">
-              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
-                Tech stack
-              </p>
-              {(p.tech_stack_tags?.length ?? 0) > 0 ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {(p.tech_stack_tags ?? []).map((t) => (
-                    <span
-                      key={t}
-                      className="px-2.5 py-1 rounded-full bg-[#ECEEE5]/10 text-[11px] font-medium text-[#ECEEE5]"
-                    >
-                      {String(t)}
-                    </span>
+            {/* Social result */}
+            {socialResult && (
+              <SocialPanel result={socialResult} onClose={() => setSocialResult(null)} />
+            )}
+          </main>
+
+          {/* ═══ RIGHT — KB + features ═══════════════════════════════════ */}
+          <aside className="sticky top-[81px] flex flex-col gap-4">
+
+            {/* Features card */}
+            {features.length > 0 && (
+              <div className="rounded-3xl p-7" style={{ backgroundColor: "#f5f2ea" }}>
+                <SectionLabel>Key Features</SectionLabel>
+                <div className="border-t border-[#2d4a3e]/12 mt-3">
+                  {features.slice(0, 8).map((f, i) => (
+                    <div key={i} className="flex items-start gap-3 py-3 border-b border-[#2d4a3e]/08">
+                      <span
+                        className="font-black text-[#2d4a3e]/18 leading-none shrink-0 mt-0.5"
+                        style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, letterSpacing: "-0.02em", width: 20 }}
+                      >
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <p className="text-[#2d4a3e]/70 text-sm leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
+                        {f}
+                      </p>
+                    </div>
                   ))}
                 </div>
-              ) : (
-                <p className="mt-3 text-xs text-[#ECEEE5]/70">No tech stack tagged yet.</p>
-              )}
-            </div>
-
-            {/* 9–13. LINKS CLUSTER */}
-            <div className="col-span-4 sm:col-span-2 row-span-2 rounded-2xl bg-[#1a2922] px-4 py-4 flex flex-col">
-              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#ECEEE5]/60">
-                Links
-              </p>
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                {/* 9. GitHub URL */}
-                <div className="rounded-xl bg-[#141d19] px-3 py-2 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#ECEEE5]/60">
-                    GitHub
-                  </span>
-                  {p.github_url ? (
-                    <Link
-                      href={p.github_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 text-[#ECEEE5]/90 underline underline-offset-2 break-all"
-                    >
-                      {p.github_url}
-                    </Link>
-                  ) : (
-                    <span className="mt-1 text-[#ECEEE5]/60">Not provided</span>
-                  )}
-                </div>
-
-                {/* 10. Hosted URL */}
-                <div className="rounded-xl bg-[#141d19] px-3 py-2 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#ECEEE5]/60">
-                    Website
-                  </span>
-                  {p.website_url ? (
-                    <Link
-                      href={p.website_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 text-[#ECEEE5]/90 underline underline-offset-2 break-all"
-                    >
-                      {p.website_url}
-                    </Link>
-                  ) : (
-                    <span className="mt-1 text-[#ECEEE5]/60">Not provided</span>
-                  )}
-                </div>
-
-                {/* 11. YouTube demo */}
-                <div className="rounded-xl bg-[#141d19] px-3 py-2 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#ECEEE5]/60">
-                    YouTube demo
-                  </span>
-                  {p.youtube_url ? (
-                    <Link
-                      href={p.youtube_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 text-[#ECEEE5]/90 underline underline-offset-2 break-all"
-                    >
-                      {p.youtube_url}
-                    </Link>
-                  ) : (
-                    <span className="mt-1 text-[#ECEEE5]/60">Not provided</span>
-                  )}
-                </div>
-
-                {/* 12. Social links */}
-                <div className="rounded-xl bg-[#141d19] px-3 py-2 flex flex-col justify-between">
-                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#ECEEE5]/60">
-                    Social
-                  </span>
-                  {socialLinks.length > 0 ? (
-                    <div className="mt-1 space-y-1">
-                      {socialLinks.slice(0, 3).map((s, idx) => (
-                        <Link
-                          key={idx}
-                          href={s.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-[#ECEEE5]/90 underline underline-offset-2 truncate"
-                        >
-                          {s.label || s.url}
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="mt-1 text-[#ECEEE5]/60">No social links</span>
-                  )}
-                </div>
-
-                {/* 13. Additional links (optional) */}
-                <div className="rounded-xl bg-[#141d19] px-3 py-2 flex flex-col justify-between sm:col-span-2">
-                  <span className="text-[10px] uppercase tracking-[0.16em] text-[#ECEEE5]/60">
-                    Additional links
-                  </span>
-                  {additionalLinks.length > 0 ? (
-                    <div className="mt-1 space-y-1">
-                      {additionalLinks.slice(0, 4).map((a, idx) => (
-                        <Link
-                          key={idx}
-                          href={a.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-[#ECEEE5]/90 underline underline-offset-2 truncate"
-                        >
-                          {a.label || a.url}
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="mt-1 text-[#ECEEE5]/60">None yet</span>
-                  )}
-                </div>
               </div>
-            </div>
+            )}
 
-            {/* Action tile – edit / share / view public */}
-            <div className="col-span-4 rounded-2xl bg-[#1a2922] px-4 py-3 flex flex-wrap gap-2 items-center justify-between">
-              <div className="text-xs text-[#ECEEE5]/70">
-                Manage how this project appears to builders and viewers.
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={startEditing}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#ECEEE5]/40 px-3 py-1.5 text-xs text-[#ECEEE5] hover:bg-[#ECEEE5] hover:text-[#20332b] transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5" /> Edit profile
-                </button>
-                <a
-                  href={loopsProfileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#ECEEE5]/40 px-3 py-1.5 text-xs text-[#ECEEE5] hover:bg-[#ECEEE5] hover:text-[#20332b] transition-colors"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" /> View public page
-                </a>
-                <button
-                  onClick={handleShare}
-                  disabled={socialLoading}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#ECEEE5] text-[#20332b] px-3 py-1.5 text-xs font-medium hover:bg-white disabled:opacity-50 transition-colors"
-                >
-                  <Share2 className="w-3.5 h-3.5" /> Share (AI posts)
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Knowledge base section — test-like UI */}
-      {(p.kb_sections?.length ?? 0) > 0 && (
-        <section className="mt-8">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-1">Knowledge base</h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
-            {typeof p.knowledge_base_chunks === "number" ? `${p.knowledge_base_chunks} chunks` : ""} — sources used for project chat and code query.
-          </p>
-          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-            <div className="flex flex-wrap gap-1 p-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
-              {(p.kb_sections as string[]).map((source) => {
-                const meta = KB_SECTION_LABELS[source] ?? { label: source, icon: FileText };
-                const Icon = meta.icon;
-                const isActive = kbActiveTab === source;
-                return (
-                  <button
-                    key={source}
-                    type="button"
-                    onClick={() => setKbActiveTab(isActive ? null : source)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive ? "bg-violet-600 text-white shadow-sm" : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {meta.label}
-                  </button>
-                );
-              })}
-            </div>
-            {kbActiveTab && (
-              <div className="p-5 min-h-[200px]">
-                {kbActiveTab === "profile" && (
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Profile & description</p>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap leading-relaxed">
-                      {String(p.refined_description ?? p.description ?? "")}
-                    </p>
-                  </div>
+            {/* Knowledge base */}
+            {(p.kb_sections?.length ?? 0) > 0 && (
+              <div className="rounded-3xl p-7" style={{ backgroundColor: "#2d4a3e" }}>
+                <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/40 mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  Knowledge Base
+                </p>
+                {typeof p.knowledge_base_chunks === "number" && (
+                  <p className="text-sm text-[#f0ebe0]/50 mb-4" style={{ fontFamily: "Georgia, serif" }}>
+                    {p.knowledge_base_chunks} chunks indexed
+                  </p>
                 )}
-                {kbActiveTab === "code" && (
-                  <div className="space-y-4">
-                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Code (flattened repository)</p>
-                    {(p.tech_stack_tags?.length ?? 0) > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {(p.tech_stack_tags ?? []).map((t) => (
-                          <span key={t} className="px-2 py-1 rounded-md bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-200 text-xs font-medium">
-                            {String(t)}
-                          </span>
-                        ))}
+
+                {/* Tab pills */}
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {(p.kb_sections as string[]).map((source) => {
+                    const meta = KB_TABS[source] ?? { label: source, icon: FileText };
+                    const Icon = meta.icon;
+                    const isActive = kbActiveTab === source;
+                    return (
+                      <button
+                        key={source}
+                        type="button"
+                        onClick={() => setKbActiveTab(isActive ? null : source)}
+                        className="inline-flex items-center gap-1.5 rounded-full text-[9px] tracking-[0.12em] uppercase font-bold px-3.5 py-2 border-none cursor-pointer transition-all"
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          backgroundColor: isActive ? "#d6cfc0" : "rgba(240,235,224,0.1)",
+                          color: isActive ? "#2d4a3e" : "rgba(240,235,224,0.5)",
+                        }}
+                      >
+                        <Icon size={10} /> {meta.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Active tab content */}
+                {kbActiveTab && (
+                  <div
+                    className="rounded-2xl p-5"
+                    style={{ backgroundColor: "rgba(240,235,224,0.07)", border: "1px solid rgba(240,235,224,0.08)" }}
+                  >
+                    {kbActiveTab === "profile" && (
+                      <p className="text-[13px] text-[#f0ebe0]/70 leading-relaxed whitespace-pre-wrap" style={{ fontFamily: "Georgia, serif" }}>
+                        {desc || "No description."}
+                      </p>
+                    )}
+
+                    {kbActiveTab === "code" && (
+                      <div className="flex flex-col gap-3">
+                        {p.github_url && (
+                          <Link href={p.github_url} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 no-underline text-[#f0ebe0]/70 hover:text-[#f0ebe0] text-[12px]"
+                            style={{ fontFamily: "Georgia, serif" }}>
+                            <Github size={13} /> {p.github_url}
+                          </Link>
+                        )}
+                        {tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {tags.map((t) => (
+                              <span key={t} className="text-[10px] rounded-lg px-2.5 py-1" style={{ backgroundColor: "rgba(240,235,224,0.1)", color: "rgba(240,235,224,0.6)", fontFamily: "Georgia, serif" }}>
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {p.flattened_codebase && (
+                          <div>
+                            <p className="text-[10px] text-[#f0ebe0]/35 mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>
+                              {`${(String(p.flattened_codebase).length / 1024).toFixed(1)} KB`}
+                            </p>
+                            <div className="rounded-xl overflow-auto max-h-52" style={{ backgroundColor: "rgba(0,0,0,0.2)" }}>
+                              <pre className="p-4 text-[11px] text-[#f0ebe0]/60 whitespace-pre-wrap break-words font-mono">
+                                {String(p.flattened_codebase).slice(0, 60_000)}
+                              </pre>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
-                    {p.github_url && (
-                      <a href={p.github_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-violet-600 dark:text-violet-400 hover:underline text-sm">
-                        <Github className="w-4 h-4" /> {p.github_url}
-                      </a>
+
+                    {kbActiveTab === "demo" && (
+                      <div className="flex flex-col gap-3">
+                        {p.youtube_url && (
+                          <Link href={p.youtube_url} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 no-underline text-[#f0ebe0]/70 hover:text-[#f0ebe0] text-[12px]"
+                            style={{ fontFamily: "Georgia, serif" }}>
+                            <Video size={13} /> Watch demo
+                          </Link>
+                        )}
+                        {features.length > 0 && (
+                          <ul className="flex flex-col gap-1.5">
+                            {features.slice(0, 5).map((f, i) => (
+                              <li key={i} className="flex items-start gap-2 text-[12px] text-[#f0ebe0]/60" style={{ fontFamily: "Georgia, serif" }}>
+                                <span className="shrink-0 mt-0.5 opacity-40">→</span> {f}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     )}
-                    {p.flattened_codebase && (
-                      <>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                          {`${(String(p.flattened_codebase).length / 1024).toFixed(1)} KB · scroll to browse`}
-                        </p>
-                        <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 max-h-[420px] overflow-auto">
-                          <pre className="p-4 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap break-words font-mono">
-                            {String(p.flattened_codebase).length > 120_000
-                              ? String(p.flattened_codebase).slice(0, 120_000) + "\n\n... (truncated for display)"
-                              : p.flattened_codebase}
-                          </pre>
+
+                    {kbActiveTab === "theme" && (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {[
+                            { label: "Primary",   value: p.primary_color   },
+                            { label: "Accent",    value: p.accent_color    },
+                            { label: "Secondary", value: p.secondary_color },
+                          ].filter((c) => c.value).map(({ label, value }) => (
+                            <div key={label} className="flex flex-col items-center gap-1.5">
+                              <span className="w-10 h-10 rounded-xl border border-[#f0ebe0]/15" style={{ backgroundColor: String(value), display: "block" }} />
+                              <span className="text-[9px] tracking-widest uppercase text-[#f0ebe0]/40" style={{ fontFamily: "'Inter', sans-serif" }}>{label}</span>
+                            </div>
+                          ))}
+                          {p.theme_label && (
+                            <span className="text-[11px] text-[#f0ebe0]/50 capitalize" style={{ fontFamily: "Georgia, serif" }}>
+                              {String(p.theme_label).replace(/-/g, " ")}
+                            </span>
+                          )}
                         </div>
-                      </>
+                      </div>
                     )}
-                    {!p.flattened_codebase && !p.github_url && (
-                      <p className="text-sm text-zinc-500">No code content. Add a GitHub URL when creating the profile to include flattened code.</p>
-                    )}
-                  </div>
-                )}
-                {kbActiveTab === "demo" && (
-                  <div className="space-y-4">
-                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Demo (YouTube)</p>
-                    {p.youtube_url && (
-                      <a href={p.youtube_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-violet-600 dark:text-violet-400 hover:underline text-sm">
-                        <Video className="w-4 h-4" /> Watch demo
-                      </a>
-                    )}
-                    {(p.key_features?.length ?? 0) > 0 ? (
-                      <ul className="list-disc list-inside space-y-1.5 text-sm text-zinc-600 dark:text-zinc-400">
-                        {(p.key_features ?? []).map((f, i) => (
-                          <li key={i}>{String(f)}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-zinc-500">Demo summary and transcript are in the knowledge base.</p>
-                    )}
-                  </div>
-                )}
-                {kbActiveTab === "theme" && (
-                  <div className="space-y-4">
-                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Theme & colors</p>
-                    <div className="flex flex-wrap gap-6 items-center">
-                      {Boolean(p.primary_color) && (
-                        <div className="flex flex-col items-center gap-2">
-                          <span className="w-14 h-14 rounded-xl border border-zinc-300 dark:border-zinc-600" style={{ backgroundColor: String(p.primary_color) }} />
-                          <span className="text-xs text-zinc-500">Primary</span>
-                        </div>
-                      )}
-                      {Boolean(p.accent_color) && (
-                        <div className="flex flex-col items-center gap-2">
-                          <span className="w-14 h-14 rounded-xl border border-zinc-300 dark:border-zinc-600" style={{ backgroundColor: String(p.accent_color) }} />
-                          <span className="text-xs text-zinc-500">Accent</span>
-                        </div>
-                      )}
-                      {Boolean(p.secondary_color) && (
-                        <div className="flex flex-col items-center gap-2">
-                          <span className="w-14 h-14 rounded-xl border border-zinc-300 dark:border-zinc-600" style={{ backgroundColor: String(p.secondary_color) }} />
-                          <span className="text-xs text-zinc-500">Secondary</span>
-                        </div>
-                      )}
-                      {Boolean(p.theme_label) && <span className="text-sm text-zinc-600 dark:text-zinc-400 capitalize">{String(p.theme_label).replace(/-/g, " ")}</span>}
-                    </div>
                   </div>
                 )}
               </div>
             )}
-          </div>
-        </section>
-      )}
 
+            {/* Tech stack (if no KB) */}
+            {tags.length > 0 && !(p.kb_sections?.length ?? 0) && (
+              <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#2d4a3e" }}>
+                <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/40 mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  Tech Stack
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {tags.map((t) => (
+                    <span key={t} className="rounded-lg px-3 py-1.5 text-[11px]" style={{ fontFamily: "Georgia, serif", backgroundColor: "rgba(214,207,192,0.1)", color: "rgba(240,235,224,0.65)" }}>
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
+      </div>
+
+      {/* ── Ticker ───────────────────────────────────────────────────── */}
+      <div className="mt-16 overflow-hidden border-t border-[#2d4a3e]/10 py-3" style={{ backgroundColor: "#e8e2d4" }}>
+        <div className="flex gap-10 whitespace-nowrap" style={{ animation: "ticker 28s linear infinite" }}>
+          {[...Array(3)].map((_, ri) =>
+            [p.name.toUpperCase(), "★", "BUILDER DASHBOARD", "★", "PROFILE CREATOR", "★"].map((t, i) => (
+              <span
+                key={`${ri}-${i}`}
+                className="text-[10px] tracking-[0.2em] uppercase font-bold shrink-0"
+                style={{ fontFamily: "'Inter', sans-serif", color: t === "★" ? "#2d4a3e" : "rgba(45,74,62,0.4)" }}
+              >
+                {t}
+              </span>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* ── Edit modal ───────────────────────────────────────────────── */}
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center pt-16 px-4 overflow-y-auto">
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-2xl p-6 mb-16">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Edit Profile</h2>
-              <button onClick={() => setEditing(false)} className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800">
-                <X className="w-5 h-5 text-zinc-500" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project Name</label>
-                <input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tagline</label>
-                <input type="text" value={editForm.tagline} onChange={(e) => setEditForm({ ...editForm, tagline: e.target.value })}
-                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Description</label>
-                <textarea rows={4} value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Category</label>
-                <input type="text" value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tech Stack (comma-separated)</label>
-                <input type="text" value={editForm.tech_stack_tags} onChange={(e) => setEditForm({ ...editForm, tech_stack_tags: e.target.value })}
-                  placeholder="React, TypeScript, Supabase"
-                  className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Website URL</label>
-                  <input type="url" value={editForm.website_url} onChange={(e) => setEditForm({ ...editForm, website_url: e.target.value })}
-                    className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">GitHub URL</label>
-                  <input type="url" value={editForm.github_url} onChange={(e) => setEditForm({ ...editForm, github_url: e.target.value })}
-                    className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">YouTube Demo URL</label>
-                  <input type="url" value={editForm.youtube_url} onChange={(e) => setEditForm({ ...editForm, youtube_url: e.target.value })}
-                    className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Logo URL</label>
-                  <input type="url" value={editForm.logo_url} onChange={(e) => setEditForm({ ...editForm, logo_url: e.target.value })}
-                    className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-sm" />
-                </div>
-              </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                <button onClick={() => setEditing(false)}
-                  className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-                  Cancel
-                </button>
-                <button onClick={handleSave} disabled={saving || !editForm.name}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 disabled:opacity-50 transition-colors">
-                  <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <EditModal
+          form={editForm}
+          onChange={(key, value) => setEditForm((f) => ({ ...f, [key]: value }))}
+          onSave={handleSave}
+          onClose={() => setEditing(false)}
+          saving={saving}
+        />
       )}
 
-      {socialResult && (
-        <div className="mt-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4">
-          <h2 className="font-semibold text-zinc-900 dark:text-white">Generated posts</h2>
-          {socialResult.linkedin_post && (
-            <div>
-              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">LinkedIn</p>
-              <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{socialResult.linkedin_post}</p>
-            </div>
-          )}
-          {socialResult.twitter_post && (
-            <div>
-              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Twitter / X</p>
-              <p className="text-sm text-zinc-700 dark:text-zinc-300">{socialResult.twitter_post}</p>
-            </div>
-          )}
-          {socialResult.suggested_hashtags && socialResult.suggested_hashtags.length > 0 && (
-            <p className="text-xs text-zinc-500">Hashtags: {socialResult.suggested_hashtags.join(" ")}</p>
-          )}
-          {typeof socialResult.twitter_post === "string" && socialResult.twitter_post.startsWith("Error") && (
-            <p className="text-sm text-red-600">{socialResult.twitter_post}</p>
-          )}
-        </div>
-      )}
+      <style>{`
+        @keyframes ticker {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-33.333%); }
+        }
+      `}</style>
     </div>
   );
 }

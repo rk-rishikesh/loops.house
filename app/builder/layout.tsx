@@ -1,13 +1,13 @@
-import Link from "next/link";
-import { Hammer, Lightbulb, FolderOpen, Users, Share2, MessageSquare, FlaskConical } from "lucide-react";
-import { LogoutButton } from "@/components/logout-button";
+// import Link from "next/link";
+// import { Hammer, Lightbulb, FolderOpen, Users, Share2, MessageSquare, FlaskConical } from "lucide-react";
+// import { LogoutButton } from "@/components/logout-button";
 
 export default function BuilderLayout({
   children,
 }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+      {/* <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
           <Link href="/" className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 hover:text-violet-600">
             <Hammer className="w-5 h-5" />
@@ -40,8 +40,8 @@ export default function BuilderLayout({
             <LogoutButton />
           </nav>
         </div>
-      </header>
-      <main className="container mx-auto px-4 py-8">{children}</main>
+      </header> */}
+      <main>{children}</main>
     </div>
   );
 }

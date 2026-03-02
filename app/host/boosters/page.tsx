@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Save } from "lucide-react";
-import { getBoosters, saveBooster, type StoredBooster, type BoosterType } from "@/lib/storage";
+import { useBoosters, useSaveBooster } from "@/lib/queries";
+import type { StoredBooster, BoosterType } from "@/lib/storage";
 
 const BOOSTER_TYPES: { value: BoosterType; label: string }[] = [
   { value: "idea", label: "Idea" },
@@ -70,7 +71,8 @@ interface ResourcePlanResponse {
 }
 
 export default function HostBoostersPage() {
-  const [boosters, setBoosters] = useState<StoredBooster[]>([]);
+  const { data: boosters = [] } = useBoosters();
+  const saveBoosterMutation = useSaveBooster();
   const [editing, setEditing] = useState<StoredBooster | null>(null);
   const [programDraft, setProgramDraft] = useState<ProgramDraftResponse | null>(null);
   const [resourcePlan, setResourcePlan] = useState<ResourcePlanResponse | null>(null);
@@ -89,10 +91,6 @@ export default function HostBoostersPage() {
     timeline: "",
     organizer_notes: "",
   });
-
-  useEffect(() => {
-    getBoosters().then(setBoosters);
-  }, []);
 
   const handleSave = async () => {
     const id = form.id || crypto.randomUUID();
@@ -126,8 +124,7 @@ export default function HostBoostersPage() {
       organizer_notes: form.organizer_notes || undefined,
       created_at: editing?.created_at ?? new Date().toISOString(),
     };
-    await saveBooster(b);
-    setBoosters(await getBoosters());
+    await saveBoosterMutation.mutateAsync(b);
     setEditing(null);
     setProgramDraft(null);
     setResourcePlan(null);

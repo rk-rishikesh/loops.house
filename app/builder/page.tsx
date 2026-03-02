@@ -7,353 +7,508 @@ import {
   Users,
   ArrowRight,
   Sparkles,
+  ArrowLeft,
+  Zap,
+  TrendingUp,
+  DollarSign,
+  ArrowUpRight,
 } from "lucide-react";
-import { useProjects, useTeams } from "@/lib/queries";
-import { getBoosters, type StoredBooster, type BoosterType } from "@/lib/storage";
 import Image from "next/image";
 
-function CardSkeleton() {
+// ─── Types ────────────────────────────────────────────────────────────────────
+type Section = "home" | "projects" | "teams" | "boosters";
+type BoosterType = "idea" | "momentum" | "capital";
+
+// ─── Mock data (replace with your hooks) ─────────────────────────────────────
+const mockProjects = [
+  { project_id: "1", name: "Alpha Initiative", tagline: "Early-stage startup" },
+  { project_id: "2", name: "Beta Labs", tagline: "Research project" },
+];
+const mockTeams = [
+  { id: "1", name: "Core Team" },
+  { id: "2", name: "Design Squad" },
+];
+const mockBoosters = [
+  { id: "1", name: "Concept Validator", booster_type: "idea" as BoosterType, theme: "Validation", problem_statements: ["a", "b"] },
+  { id: "2", name: "Sprint Engine", booster_type: "momentum" as BoosterType, theme: "Acceleration", problem_statements: ["a"] },
+  { id: "3", name: "Seed Connect", booster_type: "capital" as BoosterType, theme: "Funding", problem_statements: ["a", "b", "c"] },
+];
+
+// ─── Booster meta ─────────────────────────────────────────────────────────────
+const BOOSTER_META: Record<BoosterType, { icon: React.ReactNode; label: string; index: string }> = {
+  idea: { icon: <Zap size={15} />, label: "Idea Booster", index: "01" },
+  momentum: { icon: <TrendingUp size={15} />, label: "Momentum Booster", index: "02" },
+  capital: { icon: <DollarSign size={15} />, label: "Capital Booster", index: "03" },
+};
+
+// ─── Arrow circle button ──────────────────────────────────────────────────────
+function ArrowCircle({ dark = false, size = 40 }: { dark?: boolean; size?: number }) {
   return (
-    <div className="p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 animate-pulse">
-      <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-xl bg-zinc-200 dark:bg-zinc-700" />
-        <div className="flex-1 space-y-2">
-          <div className="h-4 w-32 bg-zinc-200 dark:bg-zinc-700 rounded" />
-          <div className="h-3 w-48 bg-zinc-100 dark:bg-zinc-800 rounded" />
-        </div>
-      </div>
-      <div className="mt-4 flex gap-2">
-        <div className="h-7 w-24 bg-zinc-100 dark:bg-zinc-800 rounded-lg" />
-        <div className="h-7 w-28 bg-zinc-100 dark:bg-zinc-800 rounded-lg" />
-      </div>
+    <span
+      style={{ width: size, height: size }}
+      className={`inline-flex items-center justify-center rounded-full shrink-0 ${dark ? "bg-[#2d4a3e] text-[#f5f0e8]" : "bg-[#2d4a3e] text-[#f5f0e8]"
+        }`}
+    >
+      <ArrowUpRight size={size * 0.4} />
+    </span>
+  );
+}
+
+// ─── SlideIn wrapper ──────────────────────────────────────────────────────────
+function SlideIn({ children, active }: { children: React.ReactNode; active: boolean }) {
+  return (
+    <div
+      className="transition-all duration-[400ms] ease-out"
+      style={{
+        opacity: active ? 1 : 0,
+        transform: active ? "translateY(0)" : "translateY(16px)",
+        pointerEvents: active ? "auto" : "none",
+      }}
+    >
+      {children}
     </div>
   );
 }
 
+// ─── Back button ──────────────────────────────────────────────────────────────
+function BackBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-2 text-xs tracking-widest uppercase font-medium text-[#2d4a3e] mb-10 opacity-60 hover:opacity-100 transition-opacity bg-transparent border-none cursor-pointer"
+    >
+      <ArrowLeft size={13} /> Hub
+    </button>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ProjectHubPage() {
-  const { data: projects = [], isLoading: loadingProjects } = useProjects();
-  const { data: teams = [], isLoading: loadingTeams } = useTeams();
-  const loading = loadingProjects || loadingTeams;
-  const [section, setSection] = useState<"home" | "projects" | "teams" | "boosters">("home");
+  const projects = mockProjects;
+  const teams = mockTeams;
+  const boosters = mockBoosters;
+  const loading = false;
+
+  const [section, setSection] = useState<Section>("home");
+  const [mounted, setMounted] = useState(false);
   const [boosterType, setBoosterType] = useState<BoosterType>("idea");
-  const [boosters, setBoosters] = useState<StoredBooster[]>([]);
+  const [navHighlightIndex, setNavHighlightIndex] = useState(0);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      const list = await getBoosters();
-      if (active) setBoosters(list);
-    })();
-    return () => {
-      active = false;
-    };
+    const id = setInterval(() => setNavHighlightIndex((i) => (i + 1) % 5), 2200);
+    return () => clearInterval(id);
   }, []);
 
-  const boostersForType = boosters.filter((b) => (b.booster_type ?? "idea") === boosterType);
+  const boostersForType = boosters.filter((b) => b.booster_type === boosterType);
+
+  const goTo = (s: Section) => {
+    setMounted(false);
+    setTimeout(() => { setSection(s); setMounted(true); }, 80);
+  };
 
   return (
-    <div className="max-w-7xl">
-      <div className="flex items-center justify-between">
-        {section !== "home" && (
-          <button
-            type="button"
-            onClick={() => setSection("home")}
-            className="text-sm text-zinc-600 dark:text-zinc-300 hover:underline"
-          >
-            <Image
-              src="/builder/back.svg"
-              alt="Back to sections"
-              width={24}
-              height={24}
-              unoptimized
-            />
-          </button>
-        )}
-      </div>
-
+    <div className="h-full bg-[#f0ebe0] font-sans">
+      {/* ── HOME ──────────────────────────────────────────────────────────── */}
       {section === "home" && (
-        <div className="flex flex-col gap-8 lg:flex-row">
-          {/* Left hero text */}
-          <div className="flex-1 flex items-center">
-            <div>
-              <p className="text-xs font-semibold tracking-[0.35em] text-zinc-300 uppercase">
-                Builder hub
-              </p>
-              <h2 className="mt-3 text-4xl sm:text-5xl lg:text-6xl font-black leading-tight text-zinc-900 dark:text-zinc-50">
-                BOOST
-                <br />
-                YOUR
-                <br />
-                PROJECT
-              </h2>
+        <SlideIn active={mounted}>
+          {/* Full viewport hero */}
+          <div className="relative min-h-screen overflow-hidden flex flex-col">
+            {/* Large hero typography */}
+            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none select-none">
+              <div className="pl-16">
+                <h1
+                  className="text-[clamp(80px,11vw,160px)] font-extrabold leading-[0.9] tracking-tight text-[#1a1a1a]"
+                  style={{ fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}
+                >
+                  Build
+                </h1>
+              </div>
+              <div className="pb-12 pr-16 flex justify-end">
+                <h1
+                  className="text-[clamp(80px,11vw,160px)] font-extrabold leading-[0.9] tracking-tight text-[#1a1a1a]"
+                  style={{ fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}
+                >
+                  Ship.
+                </h1>
+              </div>
             </div>
-          </div>
 
-          {/* Right cards */}
-          <div className="flex-[1.4] grid gap-4 grid-cols-1 lg:grid-cols-2 lg:grid-rows-3 lg:h-[580px]">
-            {/* Boosters – tall card spanning full height */}
-            <div
-              className="relative col-span-1 row-span-3 rounded-3xl bg-[#20332b] text-[#ECEEE5] p-6 lg:p-8 flex flex-col justify-between hover:bg-[#1a2922] transition-colors"
-            >
-              <div className="mt-6">
-                <div className="rounded-4xl text-[#ECEEE5] divide-y divide-[#ECEEE5]/25">
-                  {(
-                    [
-                      ["idea", "Idea booster"],
-                      ["momentum", "Momentum booster"],
-                      ["capital", "Capital booster"],
-                    ] as [BoosterType, string][]
-                  ).map(([type, label], index) => {
-                    const active = boosterType === type;
+            {/* Content grid over hero */}
+            <div className="relative z-10 grid grid-cols-12 gap-5 px-16 py-20 min-h-screen items-center">
+
+              {/* Left description — col 1-3 */}
+              <div className="col-span-3 self-center mt-20">
+                <p className="text-[#1a1a1a]/60 text-sm leading-relaxed max-w-[220px]" style={{ fontFamily: "Georgia, serif" }}>
+                  Loops House is home for builders—validate ideas, gain momentum, and connect with capital. Your dashboard to projects, boosters, and teams.
+                </p>
+              </div>
+
+              {/* Boosters card — col 4-8, centered */}
+              <div className="col-span-4 col-start-5 self-center top-12 relative">
+                <div
+                  className="rounded-2xl p-10 shadow-xl"
+                  style={{ backgroundColor: "#d6cfc0" }}
+                >
+                  {(["idea", "momentum", "capital"] as BoosterType[]).map((type, i) => {
+                    const meta = BOOSTER_META[type];
                     return (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => {
-                          setBoosterType(type);
-                          setSection("boosters");
-                        }}
-                        className={`w-full flex items-center justify-between gap-4 py-4 ${
-                          active ? "opacity-100" : "opacity-70 hover:opacity-100"
-                        } transition-opacity`}
-                      >
-                        <div className="flex items-baseline gap-4">
-                          <span className="text-2xl font-extrabold tracking-[0.25em]">
-                            {String(index + 1).padStart(2, "0")}
-                          </span>
-                          <span className="text-xs uppercase tracking-[0.18em] text-[#ECEEE5]">
-                            {label}
-                          </span>
-                        </div>
-                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#ECEEE5] text-[#20332b]">
-                          <ArrowRight className="w-4 h-4" />
-                        </span>
-                      </button>
+                      <div key={type}>
+                        <button
+                          type="button"
+                          onClick={() => { setBoosterType(type); goTo("boosters"); }}
+                          className="w-full flex items-center justify-between py-7 group cursor-pointer bg-transparent border-none text-left"
+                        >
+                          <div className="flex items-center gap-8">
+                            <span
+                              className="text-[#2d4a3e] font-black leading-none"
+                              style={{ fontSize: "clamp(36px, 5vw, 52px)", fontFamily: "'Inter', sans-serif", letterSpacing: "-0.02em" }}
+                            >
+                              {meta.index}
+                            </span>
+                            <div>
+                              <p className="text-[10px] tracking-[0.18em] uppercase font-semibold text-[#2d4a3e]/80 leading-none mb-1">
+                                {type.toUpperCase()}
+                              </p>
+                              <p className="text-[10px] tracking-[0.18em] uppercase font-semibold text-[#2d4a3e]/80 leading-none">
+                                BOOSTER
+                              </p>
+                            </div>
+                          </div>
+                          <ArrowCircle />
+                        </button>
+                        {i < 2 && <div className="h-px bg-[#2d4a3e]/20" />}
+                      </div>
                     );
                   })}
                 </div>
-                <div className="mt-8 flex justify-center">
-                  <img
-                    src="/builder/woolCat.svg"
-                    alt="Loops House builder mascot"
-                    className="h-40 w-auto opacity-90"
+              </div>
+
+              {/* Right nav — col 10-12 */}
+              <div className="col-span-3 col-start-10 self-start mt-24">
+                {/* Section nav — clearer labels, rotating highlight */}
+                <nav className="mb-10">
+                  {[
+                    { label: "Dashboard", section: "home" as Section },
+                    { label: "My Projects", section: "projects" as Section },
+                    { label: "Boosters", section: "boosters" as Section },
+                    { label: "My Teams", section: "teams" as Section },
+                    { label: "Residency", section: "teams" as Section },
+                  ].map((item, i) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => goTo(item.section)}
+                      className="w-full text-left text-lg font-semibold leading-[1.7] cursor-pointer hover:text-[#1a1a1a] transition-colors duration-300 border-none bg-transparent p-0"
+                      style={{
+                        color: i === navHighlightIndex ? "#1a1a1a" : "#1a1a1a40",
+                        fontFamily: "'Inter', sans-serif",
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </nav>
+
+                {/* Project Hub CTA */}
+                <button
+                  type="button"
+                  onClick={() => goTo("projects")}
+                  className="flex items-center gap-0 rounded-full overflow-hidden cursor-pointer border-none mb-6 shadow-sm hover:shadow-md transition-shadow"
+                  style={{ backgroundColor: "#2d4a3e" }}
+                >
+                  <span className="px-6 py-3 text-[11px] tracking-[0.18em] uppercase font-bold text-[#f0ebe0]">
+                    Project Hub
+                  </span>
+                  <span className="w-10 h-10 flex items-center justify-center bg-[#d6cfc0] rounded-full m-1">
+                    <ArrowUpRight size={14} className="text-[#2d4a3e]" />
+                  </span>
+                </button>
+
+                <p className="text-xs text-[#1a1a1a]/50 leading-relaxed max-w-[200px]" style={{ fontFamily: "Georgia, serif" }}>
+                  Your command center for hackathon projects, boosters, and teams.
+                </p>
+              </div>
+
+              {/* Residency card — bottom left */}
+              <div className="col-span-3 self-end">
+                <button
+                  type="button"
+                  onClick={() => goTo("teams")}
+                  className="rounded-2xl w-[180px] h-[180px] flex flex-col cursor-pointer border-none text-left hover:scale-[1.02] transition-transform"
+                  style={{ backgroundColor: "#c5bd9e" }}
+                >
+                  <Image
+                    alt=""
+                    width={190}
+                    height={190}
+                    src="/residency/cats.png"
+                    className="-top-8 relative flex justify-end"
                   />
-                </div>
+                  <div className="flex flex-row justify-between align-middle items-center">
+                    <p className="text-[24px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]">
+                      Residency
+                    </p>
+                    <div className="flex justify-center">
+                      <ArrowCircle size={24} />
+                    </div>
+                  </div>
+
+                </button>
               </div>
             </div>
-
-            {/* Projects card */}
-            <button
-              type="button"
-              onClick={() => setSection("projects")}
-              className="relative rounded-3xl bg-[#20332b] text-[#ECEEE5] p-6 lg:p-8 flex flex-col justify-between hover:bg-[#1a2922] transition-colors col-span-1 row-span-2"
-            >
-              <span className="absolute top-4 right-4 inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#ECEEE5] text-[#20332b]">
-                <ArrowRight className="w-4 h-4" />
-              </span>
-              <div className="mt-4 flex-1 flex items-center justify-center">
-                <span className="text-sm tracking-[0.2em] uppercase">Projects</span>
-              </div>
-            </button>
-
-            {/* My teams card */}
-            <button
-              type="button"
-              onClick={() => setSection("teams")}
-              className="relative rounded-3xl bg-[#20332b] text-[#ECEEE5] p-6 lg:p-8 flex flex-col justify-between hover:bg-[#1a2922] transition-colors col-span-1 row-span-1"
-            >
-              <span className="absolute top-4 right-4 inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#ECEEE5] text-[#20332b]">
-                <ArrowRight className="w-4 h-4" />
-              </span>
-              <div className="mt-4 flex-1 flex items-center justify-center">
-                <span className="text-sm tracking-[0.2em] uppercase">My teams</span>
-              </div>
-            </button>
           </div>
-        </div>
+        </SlideIn>
       )}
 
+      {/* ── PROJECTS ──────────────────────────────────────────────────────── */}
       {section === "projects" && (
-        <>
-          <section className="mt-4">
-            {loading ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <CardSkeleton />
-                <CardSkeleton />
-              </div>
-            ) : projects.length === 0 ? (
-              <div className="py-10 px-6 rounded-3xl border border-zinc-800 bg-[#20332b] text-center text-[#20332b]">
-                <Sparkles className="w-10 h-10 mx-auto text-[#A1AA97]" />
-                <p className="mt-3 text-sm">No projects yet.</p>
-                <Link
-                  href="/builder/new"
-                  className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#20332b]/50 px-4 py-1.5 text-xs uppercase tracking-[0.18em] hover:bg-[#20332b] hover:text-[#20332b] transition-colors"
+        <SlideIn active={mounted}>
+          <div className="min-h-screen px-16 py-12">
+            <BackBtn onClick={() => goTo("home")} />
+            <div className="flex gap-16 flex-wrap">
+              <div className="flex-1 min-w-0 basis-[420px]">
+                <p className="text-[10px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/60 mb-4">Projects</p>
+                <h2
+                  className="text-[clamp(36px,5vw,60px)] font-extrabold tracking-tight text-[#1a1a1a] mb-10 leading-tight"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
                 >
-                  <PlusCircle className="w-3 h-3" />
-                  Create new project
-                </Link>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-24 lg:flex-row top-8 relative">
-                {/* Left: numbered project list */}
-                <div className="flex-1">
-                  <div className="space-y-4 max-h-[515px] overflow-y-auto pr-2 no-scrollbar">
+                  {projects.length === 0 ? "No projects\nyet." : `${projects.length} Projects`}
+                </h2>
+
+                {projects.length === 0 ? (
+                  <div className="p-12 border-2 border-dashed border-[#1a1a1a]/20 rounded-xl text-center">
+                    <Sparkles size={28} className="text-[#2d4a3e] mx-auto mb-4" />
+                    <p className="text-sm text-[#2d4a3e] mb-6" style={{ fontFamily: "Georgia, serif" }}>No projects yet. Build something great.</p>
+                    <Link href="/builder/new" className="inline-flex items-center gap-2 bg-[#2d4a3e] text-[#f0ebe0] py-3 px-6 rounded-full text-xs tracking-widest uppercase font-bold no-underline">
+                      Create first project <ArrowRight size={12} />
+                    </Link>
+                  </div>
+                ) : (
+                  <div>
                     {projects.map((p, idx) => (
-                      <div key={p.project_id} className="space-y-8">
-                        <Link
-                          href={`/builder/projects/${p.project_id}`}
-                          className="flex items-center justify-between gap-4 text-left group"
-                        >
-                          <div className="flex items-center gap-4">
-                            <span className="text-3xl font-extrabold tracking-[0.25em] text-[#20332b]">
-                              {String(idx + 1).padStart(2, "0")}
-                            </span>
-                            <div className="flex flex-col">
-                              <span className="text-xs uppercase tracking-[0.18em] text-[#20332b]">
-                                {p.name}
-                              </span>
-                              {p.tagline && (
-                                <span className="text-[11px] text-[#727a69] line-clamp-1">
-                                  {p.tagline}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#ECEEE5] text-[#20332b] group-hover:bg-white transition-colors">
-                            <ArrowRight className="w-4 h-4" />
+                      <Link key={p.project_id} href={`/builder/projects/${p.project_id}`} className="flex items-center justify-between py-5 border-b border-[#1a1a1a]/10 no-underline group">
+                        <div className="flex items-center gap-6">
+                          <span className="text-2xl font-black text-[#1a1a1a]/20 tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            {String(idx + 1).padStart(2, "0")}
                           </span>
-                        </Link>
-                        {idx !== projects.length - 1 && (
-                          <div className="h-px w-full bg-[#ECEEE5]/30" />
-                        )}
-                      </div>
+                          <div>
+                            <p className="text-[10px] tracking-[0.15em] uppercase font-bold text-[#1a1a1a]">{p.name}</p>
+                            {p.tagline && <p className="text-xs text-[#2d4a3e]/60 mt-0.5" style={{ fontFamily: "Georgia, serif" }}>{p.tagline}</p>}
+                          </div>
+                        </div>
+                        <ArrowCircle size={38} />
+                      </Link>
                     ))}
                   </div>
-                </div>
+                )}
+              </div>
 
-                {/* Right: create new project card */}
-                <div className="w-full lg:w-1/3">
-                  <Link
-                    href="/builder/new"
-                    className="relative block h-[515px] rounded-3xl bg-[#20332b] text-[#ECEEE5] p-6 lg:p-8 hover:bg-[#1a2922] transition-colors"
-                  >
-                    <Image
-                      src="/builder/flower.svg"
-                      alt="Decorative flower"
-                      width={40}
-                      height={40}
-                      unoptimized
-                      className="absolute -left-14 top-6 h-24 w-24"
-                    />
-                    <div className="flex h-full items-center justify-center">
-                      <span className="text-xs uppercase tracking-[0.2em]">
-                        Create new project
+              <div className="shrink-0 w-full max-w-[260px] pt-24">
+                <Link href="/builder/new" className="no-underline">
+                  <div className="rounded-2xl p-8 h-[380px] flex flex-col justify-between cursor-pointer hover:scale-[1.02] transition-transform" style={{ backgroundColor: "#2d4a3e" }}>
+                    <div>
+                      <p className="text-[10px] tracking-[0.18em] uppercase font-bold text-[#f0ebe0]/50 mb-5">New</p>
+                      <p className="text-xl font-extrabold text-[#f0ebe0] leading-tight" style={{ fontFamily: "'Inter', sans-serif" }}>Create<br />Profile</p>
+                    </div>
+                    <div className="flex justify-end">
+                      <span className="w-10 h-10 flex items-center justify-center rounded-full bg-[#d6cfc0]">
+                        <ArrowUpRight size={16} className="text-[#2d4a3e]" />
                       </span>
                     </div>
-                  </Link>
-                </div>
+                  </div>
+                </Link>
+                <button type="button" onClick={() => goTo("teams")} className="flex items-center gap-2 mt-4 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/60 hover:text-[#2d4a3e] bg-transparent border-none cursor-pointer transition-colors">
+                  <Users size={12} /> Teams
+                </button>
               </div>
-            )}
-          </section>
-
-          <section className="mt-6">
-            <button
-              type="button"
-              onClick={() => setSection("teams")}
-              className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-[#ECEEE5]/80 hover:text-white"
-            >
-              <Users className="w-4 h-4" /> Manage teams
-            </button>
-          </section>
-        </>
+            </div>
+          </div>
+        </SlideIn>
       )}
 
+      {/* ── TEAMS ─────────────────────────────────────────────────────────── */}
       {section === "teams" && (
-        <section className="pt-2">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">Manage teams</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Link
-              href="/builder/teams"
-              className="flex items-center gap-4 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-sky-500 hover:bg-sky-50/30 dark:hover:bg-sky-900/10 transition-colors group"
-            >
-              <div className="p-2.5 rounded-xl bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400">
-                <Users className="w-6 h-6" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-zinc-900 dark:text-white">My teams</h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {teams.length === 0 ? "No teams yet" : `${teams.length} team${teams.length !== 1 ? "s" : ""}`}
-                </p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-sky-500 shrink-0" />
-            </Link>
-            <Link
-              href="/builder/teams"
-              className="flex items-center gap-4 p-5 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-sky-500 hover:bg-sky-50/30 dark:hover:bg-sky-900/10 transition-colors group"
-            >
-              <div className="p-2.5 rounded-xl bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400">
-                <PlusCircle className="w-6 h-6" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-zinc-900 dark:text-white">Create new team</h3>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  Add a team, then create projects under it.
-                </p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-zinc-400 group-hover:text-sky-500 shrink-0" />
-            </Link>
+        <SlideIn active={mounted}>
+          <div className="min-h-screen px-16 py-12">
+            <BackBtn onClick={() => goTo("home")} />
+            <p className="text-[10px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/60 mb-4">Teams</p>
+            <h2 className="text-[clamp(36px,5vw,60px)] font-extrabold tracking-tight text-[#1a1a1a] mb-12 leading-tight" style={{ fontFamily: "'Inter', sans-serif" }}>
+              {teams.length === 0 ? "No teams yet." : `${teams.length} Teams`}
+            </h2>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
+              {teams.map((t, i) => (
+                <Link key={t.id} href={`/builder/teams/${t.id}`} className="no-underline">
+                  <div className="rounded-2xl p-7 min-h-[160px] flex flex-col justify-between hover:scale-[1.02] transition-transform" style={{ backgroundColor: "#2d4a3e" }}>
+                    <div>
+                      <p className="text-[10px] tracking-widest text-[#f0ebe0]/40 mb-3">Team {String(i + 1).padStart(2, "0")}</p>
+                      <p className="text-[11px] tracking-[0.15em] uppercase font-bold text-[#f0ebe0]">{t.name}</p>
+                    </div>
+                    <div className="flex justify-end mt-6">
+                      <span className="w-9 h-9 flex items-center justify-center rounded-full bg-[#d6cfc0]">
+                        <ArrowUpRight size={14} className="text-[#2d4a3e]" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+              <Link href="/builder/teams" className="no-underline">
+                <div className="rounded-2xl p-7 min-h-[160px] flex flex-col justify-between border-2 border-dashed border-[#1a1a1a]/20">
+                  <div>
+                    <PlusCircle size={20} className="text-[#2d4a3e] mb-3.5" />
+                    <p className="text-[11px] tracking-[0.15em] uppercase font-bold text-[#1a1a1a]">New Team</p>
+                  </div>
+                  <p className="text-xs text-[#2d4a3e]/60 mt-3 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>Add a team, then create projects under it.</p>
+                </div>
+              </Link>
+            </div>
           </div>
-        </section>
+        </SlideIn>
       )}
 
+      {/* ── BOOSTERS ──────────────────────────────────────────────────────── */}
       {section === "boosters" && (
-        <section className="pt-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
-              Boosters
-            </h2>
+        <SlideIn active={mounted}>
+          <div className="min-h-screen px-12 py-10" style={{ backgroundColor: "#f0ebe0" }}>
+            <BackBtn onClick={() => goTo("home")} />
 
-          </div>
+            {/* Type tabs */}
+            {/* <div className="flex gap-2 mb-10 flex-wrap">
+        {(["idea", "momentum", "capital"] as BoosterType[]).map((type) => {
+          const active = boosterType === type;
+          return (
+            <button
+              key={type}
+              type="button"
+              onClick={() => setBoosterType(type)}
+              className={`inline-flex items-center gap-1.5 py-2 px-5 rounded-full text-[9px] tracking-widest uppercase font-bold cursor-pointer transition-all border-none ${
+                active ? "bg-[#2d4a3e] text-[#f0ebe0]" : "bg-transparent text-[#2d4a3e]"
+              }`}
+              style={active ? {} : { border: "2px solid rgba(45,74,62,0.25)" }}
+            >
+              {BOOSTER_META[type].icon}
+              {BOOSTER_META[type].label.split(" ")[0]}
+            </button>
+          );
+        })}
+      </div> */}
 
-          {boostersForType.length === 0 ? (
-            <div className="py-8 px-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center">
-              <Sparkles className="w-8 h-8 mx-auto text-zinc-400" />
-              <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
-                No boosters of this type yet. Ask a host to create one.
-              </p>
-              <p className="mt-1 text-xs text-zinc-400">
-                You&apos;ll see idea, momentum, or capital boosters here once they exist in this browser.
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {boostersForType.map((b) => (
-                <div
-                  key={b.id}
-                  className="p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"
+            {/* Main layout */}
+            <div className="flex gap-8 items-start">
+
+              {/* LEFT — heading + booster cards */}
+              <div className="flex-1 min-w-0">
+                {/* Large heading */}
+                <h1
+                  className="font-black text-[#2d4a3e] leading-[0.88] mb-12 uppercase"
+                  style={{
+                    fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+                    fontSize: "clamp(52px, 8vw, 100px)",
+                    letterSpacing: "-0.01em",
+                  }}
                 >
-                  <h3 className="font-semibold text-zinc-900 dark:text-white">{b.name}</h3>
-                  {b.theme && (
-                    <p className="mt-1 text-xs uppercase tracking-wide text-amber-700 dark:text-amber-400">
-                      {b.theme}
-                    </p>
+                  {BOOSTER_META[boosterType].label.split(" ")[0]}
+                  <br />
+                  {BOOSTER_META[boosterType].label.split(" ")[1]}S
+                </h1>
+
+                {/* Booster cards list */}
+                <div className="flex flex-col gap-4 max-w-[560px]">
+                  {boostersForType.length === 0 ? (
+                    <div
+                      className="rounded-2xl p-10 border-2 border-dashed border-[#2d4a3e]/20 text-center"
+                      style={{ backgroundColor: "#e8e2d4" }}
+                    >
+                      <Sparkles size={24} className="text-[#2d4a3e] mx-auto mb-3" />
+                      <p className="text-sm text-[#2d4a3e]/70" style={{ fontFamily: "Georgia, serif" }}>
+                        No boosters of this type yet.
+                      </p>
+                    </div>
+                  ) : (
+                    boostersForType.map((b, idx) => (
+                      <Link
+                        key={b.id}
+                        href={`/boosters/${b.booster_type ?? "idea"}/${b.id}`}
+                        className="no-underline group"
+                      >
+                        <div
+                          className="rounded-2xl px-8 py-9 flex items-center gap-8 transition-all duration-200 group-hover:scale-[1.015]"
+                          style={{ backgroundColor: "#d9d2c2" }}
+                        >
+                          {/* Index number */}
+                          <span
+                            className="font-black text-[#2d4a3e] leading-none shrink-0 w-16"
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontSize: "clamp(40px, 5vw, 60px)",
+                              letterSpacing: "-0.02em",
+                            }}
+                          >
+                            {String(idx + 1).padStart(2, "0")}
+                          </span>
+
+                          {/* Name & meta */}
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className="text-[11px] tracking-[0.2em] uppercase font-semibold text-[#2d4a3e]"
+                              style={{ fontFamily: "'Inter', sans-serif" }}
+                            >
+                              {b.name}
+                            </p>
+                            {b.theme && (
+                              <p className="text-[11px] text-[#2d4a3e]/50 mt-1" style={{ fontFamily: "Georgia, serif" }}>
+                                {b.theme}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))
                   )}
-                  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                    {(b.problem_statements ?? []).length} problem statements ·{" "}
-                    {(b.booster_type ?? "idea")}
-                  </p>
-                  <Link
-                    href={`/boosters/${b.booster_type ?? "idea"}/${b.id}`}
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                  >
-                    View booster
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
                 </div>
-              ))}
+              </div>
+
+              {/* RIGHT — large poster card */}
+              <div className="shrink-0 self-stretch" style={{ width: "clamp(300px, 38vw, 580px)" }}>
+                <div
+                  className="relative w-full rounded-3xl overflow-hidden"
+                  style={{
+                    aspectRatio: "1/1",
+                    backgroundColor: "#d9d2c2",
+                  }}
+                >
+                  {/* Arrow circle top-right */}
+                  <div className="absolute top-5 right-5">
+                    <span
+                      className="inline-flex items-center justify-center rounded-full bg-[#2d4a3e] text-[#f0ebe0]"
+                      style={{ width: 48, height: 48 }}
+                    >
+                      <ArrowUpRight size={20} />
+                    </span>
+                  </div>
+
+                  {/* Bottom label */}
+                  <div className="absolute bottom-6 left-7">
+                    <p
+                      className="text-[10px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e] opacity-70"
+                    >
+                      {BOOSTER_META[boosterType].label}
+                    </p>
+                    <p
+                      className="text-[11px] mt-1 text-[#2d4a3e] opacity-50"
+                      style={{ fontFamily: "Georgia, serif" }}
+                    >
+                      {boostersForType.length} booster{boostersForType.length !== 1 ? "s" : ""} available
+                    </p>
+                  </div>
+                </div>
+              </div>
+
             </div>
-          )}
-        </section>
+          </div>
+        </SlideIn>
       )}
     </div>
   );

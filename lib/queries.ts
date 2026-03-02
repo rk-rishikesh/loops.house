@@ -10,6 +10,8 @@ import {
   getBoosterSubmissions,
   getSubmissionsForBoosters,
   saveTeam,
+  saveProject,
+  saveBooster,
   submitProjectToBooster,
 } from "@/lib/storage";
 import type { StoredProject, StoredBooster, StoredTeam, StoredSubmission, BoosterType } from "@/lib/storage";
@@ -128,6 +130,30 @@ export function useSubmitProject(boosterId: string) {
       submitProjectToBooster(boosterId, teamId, projectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.submissions.forBooster(boosterId) });
+    },
+  });
+}
+
+export function useSaveProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (project: Parameters<typeof saveProject>[0]) => saveProject(project),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.list() });
+      if (variables.project_id) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(variables.project_id) });
+      }
+    },
+  });
+}
+
+export function useSaveBooster() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (booster: Parameters<typeof saveBooster>[0]) => saveBooster(booster),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] === "boosters" });
     },
   });
 }

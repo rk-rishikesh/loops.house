@@ -1,7 +1,7 @@
 /**
  * Storage abstraction layer.
  *
- * Previously localStorage-backed. Now delegates to Supabase via lib/db/*.
+ * Delegates to Supabase via lib/db/*.
  * Exports keep the same names so existing page imports continue to work,
  * but all functions are now async.
  *
