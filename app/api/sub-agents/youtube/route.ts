@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { analyzeYoutube } from "@/lib/agents/youtube";
 
 export const maxDuration = 120;
 
 export async function POST(req: Request) {
+  const auth = await requireAuth();
+  if (!auth) return unauthorized();
+
   try {
     const { url } = await req.json();
     const data = await analyzeYoutube(url);

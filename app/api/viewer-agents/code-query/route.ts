@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { queryCode } from "../../sub-agents/code-reader/route";
-import { checkRateLimit, getClientIP } from "../../lib/rate-limiter";
+import { checkRateLimit } from "../../lib/rate-limiter";
 import { generateContent } from "../../lib/gemini-client";
 
 const RATE_LIMIT = parseInt(process.env.RATE_LIMIT_CODE_QUERY || "20", 10);
@@ -31,8 +32,10 @@ function buildKbContext(project: ProjectContext): string {
 }
 
 export async function POST(request: NextRequest) {
-  const ip = getClientIP(request);
-  const { allowed, remaining, resetAt } = checkRateLimit(`code-query:${ip}`, RATE_LIMIT);
+  const auth = await requireAuth();
+  if (!auth) return unauthorized();
+
+  const { allowed, remaining, resetAt } = await checkRateLimit(`code-query:${auth.user.id}`, RATE_LIMIT);
 
   if (!allowed) {
     return NextResponse.json(

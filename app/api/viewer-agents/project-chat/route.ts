@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { streamContent } from "../../lib/gemini-client";
 import { queryTopK } from "../../lib/vector-store";
-import { checkRateLimit, getClientIP } from "../../lib/rate-limiter";
+import { checkRateLimit } from "../../lib/rate-limiter";
 
 interface ProjectContext {
   name?: string;
@@ -43,8 +44,10 @@ const NO_INFO_RESPONSE =
   "I don't have enough information about that in this project's profile. You can check their GitHub or website for more details.";
 
 export async function POST(request: NextRequest) {
-  const ip = getClientIP(request);
-  const { allowed } = checkRateLimit(`project-chat:${ip}`, RATE_LIMIT, 3600000);
+  const auth = await requireAuth();
+  if (!auth) return unauthorized();
+
+  const { allowed } = await checkRateLimit(`project-chat:${auth.user.id}`, RATE_LIMIT, 3600000);
 
   if (!allowed) {
     return new Response(

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { streamContent } from "../../lib/gemini-client";
 import { embedText, embedBatch, cosineSimilarity } from "../../lib/embeddings";
 
@@ -27,7 +28,19 @@ interface ResourceChunk {
   source: string;
 }
 
+const MAX_CACHED_BOOSTERS = 50;
 const boosterResources = new Map<string, ResourceChunk[]>();
+
+function evictIfNeeded() {
+  if (boosterResources.size <= MAX_CACHED_BOOSTERS) return;
+  // Evict oldest entries (first inserted) until under limit
+  const excess = boosterResources.size - MAX_CACHED_BOOSTERS;
+  const keys = boosterResources.keys();
+  for (let i = 0; i < excess; i++) {
+    const { value } = keys.next();
+    if (value) boosterResources.delete(value);
+  }
+}
 
 const SIMILARITY_THRESHOLD = 0.75;
 const MAX_HISTORY = 20;
@@ -90,6 +103,7 @@ export async function loadResources(
   }));
 
   boosterResources.set(boosterId, resourceChunks);
+  evictIfNeeded();
 }
 
 function splitIntoChunks(text: string, maxWords: number): string[] {
@@ -123,6 +137,9 @@ async function retrieveChunks(
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth();
+  if (!auth) return unauthorized();
+
   try {
     const body = await request.json();
 

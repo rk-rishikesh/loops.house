@@ -1,4 +1,6 @@
 import { NextRequest } from "next/server";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { flattenAndIndex } from "../../sub-agents/code-reader/route";
 import { analyzeYoutube } from "../../sub-agents/demo-reader/route";
 import { analyzeTheme } from "../../sub-agents/theme-reader/route";
@@ -7,7 +9,7 @@ import { createSSEStream, sseResponse } from "../../lib/sse";
 import { generateJSON } from "../../lib/gemini-client";
 
 interface ProfileInput {
-  project_id: string;
+  project_id?: string;
   team_id: string;
   name: string;
   description: string;
@@ -32,11 +34,34 @@ function mergeTechStack(
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth(["builder", "host", "admin"]);
+  if (!auth) return unauthorized();
+
   const input: ProfileInput = await request.json();
 
-  if (!input.project_id || !input.name || !input.description) {
+  if (!input.team_id || !input.name || !input.description) {
     return new Response(
-      JSON.stringify({ error: "project_id, name, and description are required" }),
+      JSON.stringify({ error: "team_id, name, and description are required" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  // Input size validation
+  if (input.name.length > 500) {
+    return new Response(
+      JSON.stringify({ error: "name must be 500 characters or fewer" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+  if (input.description.length > 50_000) {
+    return new Response(
+      JSON.stringify({ error: "description must be 50,000 characters or fewer" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+  if (input.screenshot_urls && input.screenshot_urls.length > 10) {
+    return new Response(
+      JSON.stringify({ error: "screenshot_urls must have 10 items or fewer" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -107,6 +132,28 @@ export async function POST(request: NextRequest) {
 
       send("progress", { step: "knowledge-base", status: "started" });
 
+      // Create the loops_profiles row with all user-provided fields upfront.
+      // AI-enriched fields (tagline, colors, tech_stack, etc.) are added via update later.
+      const { data: profileRow } = await supabaseAdmin
+        .from("loops_profiles")
+        .insert({
+          team_id: input.team_id,
+          name: input.name,
+          description: input.description,
+          github_url: input.github_url ?? null,
+          youtube_url: input.youtube_url ?? null,
+          logo_url: input.logo_url ?? null,
+          website_url: input.website_url ?? null,
+          screenshot_urls: input.screenshot_urls ?? [],
+          additional_links: (input.additional_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+          social_links: (input.social_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+        })
+        .select("id")
+        .single();
+
+      if (!profileRow) throw new Error("Failed to create project profile");
+      const projectId = profileRow.id;
+
       const kbSections: { source: "code" | "demo" | "theme" | "profile"; content: string }[] = [
         { source: "profile", content: `${input.name}\n\n${input.description}` },
       ];
@@ -138,7 +185,6 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      const projectId = codeResult?.project_id || input.project_id;
       const { chunkCount } = await buildKnowledgeBase({
         projectId,
         sections: kbSections,
@@ -152,21 +198,29 @@ export async function POST(request: NextRequest) {
       );
 
       let tagline: string;
+      let category = "Other";
       try {
-        const taglineResult = await generateJSON<{ tagline: string }>(
-          "flash",
-          `Generate a single, punchy tagline for this project (max 120 characters). It should be compelling and descriptive.
+        const consolidation = await generateJSON<{ tagline: string; category: string }>(
+          "pro",
+          `You are generating metadata for a developer project profile.
 
 Project name: ${input.name}
 Description: ${input.description.slice(0, 800)}
 ${techStackTags.length ? `Tech stack: ${techStackTags.slice(0, 15).join(", ")}` : ""}
 ${demoResult?.key_features?.length ? `Key points: ${demoResult.key_features.slice(0, 5).join("; ")}` : ""}
 
-Return JSON only: { "tagline": "Your tagline here" }`
+Generate:
+1. A single, punchy tagline (max 120 characters). Compelling and descriptive.
+2. A project category. Choose the BEST fit from: AI/ML, Web3/Blockchain, Developer Tools, SaaS, Mobile, Data/Analytics, IoT/Hardware, Social/Community, Education, Health, Finance, Gaming, Infrastructure, Security, Other.
+
+Return JSON only: { "tagline": "...", "category": "..." }`
         );
-        tagline = typeof taglineResult?.tagline === "string" && taglineResult.tagline.trim().length > 0
-          ? taglineResult.tagline.trim().slice(0, 120)
+        tagline = typeof consolidation?.tagline === "string" && consolidation.tagline.trim().length > 0
+          ? consolidation.tagline.trim().slice(0, 120)
           : "";
+        category = typeof consolidation?.category === "string" && consolidation.category.trim().length > 0
+          ? consolidation.category.trim()
+          : "Other";
       } catch {
         tagline = "";
       }
@@ -185,7 +239,7 @@ Return JSON only: { "tagline": "Your tagline here" }`
       const profileResponse = {
         project_id: projectId,
         tagline,
-        category: "Other",
+        category,
         refined_description: input.description,
         tech_stack_tags: techStackTags,
         primary_color: themeResult?.primary_color ?? "#1A1A2E",
@@ -208,6 +262,39 @@ Return JSON only: { "tagline": "Your tagline here" }`
         social_links: input.social_links,
         booster_id: input.booster_id,
       };
+
+      // Persist all enriched data server-side (bypasses RLS via admin client)
+      const { error: updateError } = await supabaseAdmin
+        .from("loops_profiles")
+        .update({
+          tagline,
+          category,
+          refined_description: input.description,
+          tech_stack: techStackTags,
+          colors: {
+            primary_color: profileResponse.primary_color,
+            secondary_color: profileResponse.secondary_color,
+            accent_color: profileResponse.accent_color,
+            theme_label: profileResponse.theme_label,
+          },
+          key_features: profileResponse.key_features,
+          logo_url: input.logo_url ?? null,
+          website_url: input.website_url ?? null,
+          github_url: input.github_url ?? null,
+          youtube_url: input.youtube_url ?? null,
+          screenshot_urls: input.screenshot_urls ?? [],
+          additional_links: (input.additional_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+          social_links: (input.social_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+          flattened_codebase: flattened_codebase ?? null,
+          knowledge_base_id: projectId,
+          knowledge_base_chunks: chunkCount,
+          kb_sections: kbSections.map((s) => s.source),
+        })
+        .eq("id", projectId);
+
+      if (updateError) {
+        console.error("[profile-creator] Failed to persist enriched data:", updateError.message);
+      }
 
       send("complete", profileResponse);
       if (flattened_codebase) {

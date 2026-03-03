@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { generateJSON } from "../../lib/gemini-client";
 
 interface BoosterPayload {
@@ -63,6 +64,9 @@ async function fetchMetrics(_boosterId: string): Promise<BoosterMetrics> {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth(["host", "admin"]);
+  if (!auth) return unauthorized();
+
   try {
     const input: MetricInput = await request.json();
 

@@ -46,6 +46,6 @@ export async function buildKnowledgeBase(
     },
   }));
 
-  upsertChunks(entry.projectId, vectorChunks);
+  await upsertChunks(entry.projectId, vectorChunks);
   return { chunkCount: vectorChunks.length };
 }

@@ -63,8 +63,8 @@ export default function RepoFlattener() {
             }
 
             setResponse(data);
-        } catch (err: any) {
-            setError(err.message || 'An unexpected error occurred');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'An unexpected error occurred');
         } finally {
             setLoading(false);
         }

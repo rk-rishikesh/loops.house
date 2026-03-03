@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { generateJSON } from "../../lib/gemini-client";
 
 interface SocialInput {
@@ -25,6 +26,9 @@ interface SocialOutput {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth(["builder", "host", "admin"]);
+  if (!auth) return unauthorized();
+
   try {
     const input: SocialInput = await request.json();
 

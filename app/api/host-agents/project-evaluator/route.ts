@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { generateJSON } from "../../lib/gemini-client";
 import { getChunks } from "../../lib/vector-store";
+import type { Json } from "@/lib/supabase/types";
 
 interface JudgingCriterion {
   name: string;
@@ -82,6 +85,9 @@ const DEFAULT_CRITERIA: JudgingCriterion[] = [
 ];
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth(["host", "judge", "admin"]);
+  if (!auth) return unauthorized();
+
   try {
     const input: EvaluatorInput = await request.json();
 
@@ -112,7 +118,7 @@ export async function POST(request: NextRequest) {
       kbSize = kbSummary.length;
       kbChunks = 1;
     } else {
-      const chunks = getChunks(input.project_id);
+      const chunks = await getChunks(input.project_id);
       if (!chunks || chunks.length === 0) {
         return NextResponse.json(
           { error: "No knowledge base found for this project. Send project data from the Host Judging page or run profile-creator first." },
@@ -134,8 +140,10 @@ export async function POST(request: NextRequest) {
       ? `\nBOOSTER CONTEXT (use for Track/Sponsor Fit):\nName: ${booster.name}\nTheme: ${booster.theme ?? "N/A"}\nProblem statements: ${(booster.problem_statements ?? []).join("; ")}\nSponsor tracks: ${(booster.sponsor_tracks ?? []).map((t) => `${t.sponsor}: ${t.track_description}`).join("; ") || "N/A"}`
       : "";
 
-    for (const criterion of criteria) {
-      const prompt = `You are an AI judge for a booster (idea/momentum/capital). Evaluate this project on a single criterion.
+    // Evaluate all criteria in parallel for ~5x speedup
+    const criteriaResults = await Promise.all(
+      criteria.map(async (criterion) => {
+        const prompt = `You are an AI judge for a booster (idea/momentum/capital). Evaluate this project on a single criterion.
 
 PROJECT KNOWLEDGE BASE:
 ${kbSummary.slice(0, 100000)}
@@ -158,22 +166,24 @@ Return JSON:
   "improvement": "one specific improvement suggestion"
 }`;
 
-      const result = await generateJSON<{
-        score: number;
-        justification: string;
-        strength: string;
-        improvement: string;
-      }>("pro", prompt);
+        const result = await generateJSON<{
+          score: number;
+          justification: string;
+          strength: string;
+          improvement: string;
+        }>("pro", prompt);
 
-      criteriaScores.push({
-        criterion_name: criterion.name,
-        score: Math.min(Math.max(result.score || 40, 0), criterion.max_score),
-        max_score: criterion.max_score,
-        justification: result.justification || "Insufficient data for evaluation.",
-        strength: result.strength || "N/A",
-        improvement: result.improvement || "N/A",
-      });
-    }
+        return {
+          criterion_name: criterion.name,
+          score: Math.min(Math.max(result.score || 40, 0), criterion.max_score),
+          max_score: criterion.max_score,
+          justification: result.justification || "Insufficient data for evaluation.",
+          strength: result.strength || "N/A",
+          improvement: result.improvement || "N/A",
+        } satisfies CriterionScore;
+      })
+    );
+    criteriaScores.push(...criteriaResults);
 
     const overallScore = criteria.reduce((sum, criterion, i) => {
       const normalized = criteriaScores[i].score / criterion.max_score;
@@ -191,7 +201,7 @@ Return JSON: { "summary": "the paragraph" }`;
 
     const summaryResult = await generateJSON<{ summary: string }>("pro", summaryPrompt);
 
-    return NextResponse.json({
+    const evalResult = {
       project_id: input.project_id,
       booster_id: boosterId,
       overall_score: Math.round(overallScore),
@@ -204,7 +214,54 @@ Return JSON: { "summary": "the paragraph" }`;
         kb_size: kbSize,
         kb_chunks: kbChunks,
       },
-    });
+    };
+
+    // Persist AI evaluation to DB (server-side, bypasses RLS)
+    let saved = false;
+    const { data: updated, error: saveError } = await supabaseAdmin
+      .from("submissions")
+      .update({ ai_score: evalResult as unknown as Json })
+      .eq("project_id", input.project_id)
+      .eq("booster_id", boosterId)
+      .select("id")
+      .maybeSingle();
+
+    if (saveError) {
+      console.error("[project-evaluator] Failed to save ai_score:", saveError.message);
+    } else if (!updated) {
+      // No submission row exists — create one via upsert
+      const { data: profile } = await supabaseAdmin
+        .from("loops_profiles")
+        .select("team_id")
+        .eq("id", input.project_id)
+        .single();
+
+      if (profile?.team_id) {
+        const { error: upsertError } = await supabaseAdmin
+          .from("submissions")
+          .upsert(
+            {
+              booster_id: boosterId,
+              project_id: input.project_id,
+              team_id: profile.team_id,
+              ai_score: evalResult as unknown as Json,
+              status: "under_review" as const,
+            },
+            { onConflict: "booster_id,project_id" },
+          );
+        if (upsertError) {
+          console.error("[project-evaluator] Upsert fallback failed:", upsertError.message);
+        } else {
+          saved = true;
+        }
+      } else {
+        console.error("[project-evaluator] Cannot create submission — project has no team_id");
+      }
+    } else {
+      saved = true;
+    }
+
+    return NextResponse.json({ ...evalResult, saved });
   } catch (error) {
     const message = error instanceof Error ? error.message : "An unexpected error occurred";
     console.error("project-evaluator error:", message);

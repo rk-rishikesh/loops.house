@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { ai, MODELS } from "../../lib/gemini-client";
 
 export interface DemoReaderOutput {
@@ -91,6 +92,9 @@ Return a STRICT JSON object:
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth();
+  if (!auth) return unauthorized();
+
   try {
     const { youtube_url, problem_statement } = await request.json();
 

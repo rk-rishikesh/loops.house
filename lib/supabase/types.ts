@@ -1,0 +1,22 @@
+/**
+ * Supabase Database types — barrel re-exports.
+ *
+ * `database.types.ts` is auto-generated from the live schema:
+ *   npm run db:gen-types
+ *
+ * This file re-exports the generated types and adds convenience aliases
+ * so the rest of the codebase can import named enums directly.
+ */
+
+export type { Database, Json, Tables, TablesInsert, TablesUpdate, Enums } from "./database.types";
+
+import type { Database } from "./database.types";
+
+// ---------------------------------------------------------------------------
+// Convenience enum aliases — import { AppRole } from "@/lib/supabase/types"
+// ---------------------------------------------------------------------------
+export type AppRole = Database["public"]["Enums"]["app_role"];
+export type BoosterType = Database["public"]["Enums"]["booster_type"];
+export type BoosterStatus = Database["public"]["Enums"]["booster_status"];
+export type SubmissionStatus = Database["public"]["Enums"]["submission_status"];
+export type HostApplicationStatus = Database["public"]["Enums"]["host_application_status"];
