@@ -148,7 +148,7 @@ export async function saveBoosterAction(
 
 export async function saveTeamAction(
   data: { name: string },
-): Promise<ActionResult> {
+): Promise<ActionResult<{ id: string; name: string }>> {
   const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
@@ -172,7 +172,7 @@ export async function saveTeamAction(
   }
 
   revalidatePath("/builder/teams");
-  return { success: true, data: undefined };
+  return { success: true, data: { id: team.id, name: team.name } };
 }
 
 // --- Submission actions ---

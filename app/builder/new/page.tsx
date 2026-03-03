@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTeams, useBoosters, useSaveProject } from "@/lib/queries";
 import { useAuth } from "@/app/providers";
 import { createProfileSchema, type CreateProfileSchema } from "@/lib/validations/schemas";
+import { saveTeamAction } from "@/lib/actions";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 const STEPS = ["code-reader", "demo-reader", "theme-reader", "knowledge-base"] as const;
@@ -219,13 +220,12 @@ function NewProfileContent() {
   useEffect(() => {
     if (hasAppliedDefaults.current) return;
     const validUrlTeam = teamIdFromUrl && teams.some((t) => t.id === teamIdFromUrl) ? teamIdFromUrl : null;
-    const fallbackTeamId = teams[0]?.id ?? "";
     const validUrlBooster = boosterIdFromUrl && boosters.some((b) => b.id === boosterIdFromUrl) ? boosterIdFromUrl : null;
-    if (!validUrlTeam && !fallbackTeamId && !validUrlBooster) return;
+    if (!validUrlTeam && !validUrlBooster) return;
     reset((prev) => ({
       ...prev,
-      team_id: validUrlTeam ?? (prev.team_id || fallbackTeamId),
-      booster_id: validUrlBooster ?? prev.booster_id,
+      ...(validUrlTeam ? { team_id: validUrlTeam } : {}),
+      ...(validUrlBooster ? { booster_id: validUrlBooster } : {}),
     }));
     hasAppliedDefaults.current = true;
   }, [teamIdFromUrl, boosterIdFromUrl, teams, boosters, reset]);
@@ -239,7 +239,6 @@ function NewProfileContent() {
     type?: string;
     multiline?: boolean;
   }[] = [
-    { key: "team_id",         label: "Which team is this for?",   sub: "Select the team this profile belongs to." },
     { key: "name",            label: "Name your project.",         sub: "A great name is memorable and clear.",                        placeholder: "My awesome project…" },
     { key: "description",     label: "Describe what it does.",     sub: "A few sentences about what makes it special.",               placeholder: "A platform that helps teams…",             multiline: true },
     { key: "github_url",      label: "Where's the code?",          sub: "Link your GitHub repository.",             optional: true,   placeholder: "https://github.com/user/repo",             type: "url" },
@@ -248,13 +247,14 @@ function NewProfileContent() {
     { key: "screenshot_urls", label: "Any screenshots?",           sub: "One URL per line — show what you built.",  optional: true,   placeholder: "https://example.com/screen.png",           multiline: true },
     { key: "website_url",     label: "Where can people find it?",  sub: "Your live project URL.",                   optional: true,   placeholder: "https://myproject.com",                    type: "url" },
     { key: "social_links",    label: "Social links to share?",     sub: "Format: Label, URL — one per line.",       optional: true,   placeholder: "Twitter, https://twitter.com/…",            multiline: true },
+    ...(teams.length > 0 ? [{ key: "team_id" as keyof CreateProfileSchema, label: "Assign to an existing team?", sub: "Or we\u2019ll auto-create one for you.", optional: true }] : []),
     ...(boosters.length > 0 ? [{ key: "booster_id" as keyof CreateProfileSchema, label: "Link a booster.", sub: "Connect this profile to a booster.", optional: true }] : []),
   ];
 
   const totalSteps = FORM_STEPS.length;
   const activeStep = FORM_STEPS[Math.min(currentStep, totalSteps - 1)];
   const isLastStep = currentStep === totalSteps - 1;
-  const teamId = watch("team_id");
+  const projectName = watch("name");
 
   const navigateTo = (next: number, dir: 1 | -1) => {
     setAnimDir(dir);
@@ -279,6 +279,19 @@ function NewProfileContent() {
     setLoading(true);
     STEPS.forEach((s) => setProgress((p) => ({ ...p, [s]: "pending" })));
 
+    // Auto-create team if none selected
+    let resolvedTeamId = data.team_id;
+    if (!resolvedTeamId) {
+      const teamName = `${data.name}(Team)`;
+      const result = await saveTeamAction({ name: teamName });
+      if (!result.success) {
+        setError(result.error || "Failed to auto-create team");
+        setLoading(false);
+        return;
+      }
+      resolvedTeamId = result.data.id;
+    }
+
     const screenshotUrls = data.screenshot_urls
       ? data.screenshot_urls.split("\n").map((u) => u.trim()).filter(Boolean)
       : undefined;
@@ -296,7 +309,7 @@ function NewProfileContent() {
       const res = await fetch("/api/builder-agents/profile-creator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, screenshot_urls: screenshotUrls, social_links: socialLinks }),
+        body: JSON.stringify({ ...data, team_id: resolvedTeamId, screenshot_urls: screenshotUrls, social_links: socialLinks }),
       });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
@@ -340,7 +353,7 @@ function NewProfileContent() {
 
       if (serverError && !lastComplete) throw new Error(serverError);
       if (lastComplete && typeof lastComplete.project_id === "string") {
-        await saveProjectMutation.mutateAsync({ ...lastComplete, team_id: data.team_id, created_at: new Date().toISOString() } as import("@/lib/storage").StoredProject);
+        await saveProjectMutation.mutateAsync({ ...lastComplete, team_id: resolvedTeamId, created_at: new Date().toISOString() } as import("@/lib/storage").StoredProject);
         router.push(`/builder/projects/${lastComplete.project_id}`);
         return;
       }
@@ -439,35 +452,23 @@ function NewProfileContent() {
             {/* Input */}
             <div key={`inp-${animKey}`} style={{ ...animStyle, animationDelay: "0.06s" }}>
 
-              {/* team_id */}
-              {activeStep?.key === "team_id" && (
-                teams.length === 0 ? (
-                  <div>
-                    <p className="text-sm text-[#2d4a3e]/50 mb-6" style={{ fontFamily: "Georgia, serif" }}>
-                      You don&apos;t have any teams yet.
-                    </p>
-                    <Link
-                      href="/builder/teams"
-                      className="inline-flex items-center gap-2 rounded-full no-underline text-[#f0ebe0] text-[10px] tracking-widest uppercase font-bold px-6 py-3"
-                      style={{ backgroundColor: "#2d4a3e", fontFamily: "'Inter', sans-serif" }}
-                    >
-                      Create a team <ArrowRight size={12} />
-                    </Link>
-                  </div>
-                ) : (
-                  <Controller
-                    name="team_id"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomDropdown
-                        options={teams.map((t) => ({ value: t.id, label: t.name }))}
-                        value={field.value ?? ""}
-                        onChange={field.onChange}
-                        placeholder="Select a team…"
-                      />
-                    )}
-                  />
-                )
+              {/* team_id — optional, only shown when user has teams */}
+              {activeStep?.key === "team_id" && teams.length > 0 && (
+                <Controller
+                  name="team_id"
+                  control={control}
+                  render={({ field }) => (
+                    <CustomDropdown
+                      options={[
+                        { value: "", label: `Auto-create: ${projectName || "Project"}(Team)` },
+                        ...teams.map((t) => ({ value: t.id, label: t.name })),
+                      ]}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      placeholder={`Auto-create: ${projectName || "Project"}(Team)`}
+                    />
+                  )}
+                />
               )}
 
               {/* booster_id */}
@@ -569,7 +570,7 @@ function NewProfileContent() {
               ) : (
                 <button
                   type="submit"
-                  disabled={loading || !isValid || !teamId}
+                  disabled={loading || !isValid}
                   className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all duration-200 hover:opacity-90 disabled:opacity-40 text-[10px] tracking-widest uppercase font-bold px-7 py-3"
                   style={{ backgroundColor: "#2d4a3e", color: "#f0ebe0", fontFamily: "'Inter', sans-serif" }}
                 >

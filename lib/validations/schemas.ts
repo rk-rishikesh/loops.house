@@ -17,7 +17,7 @@ export const createTeamSchema = z.object({
 export type CreateTeamSchema = z.infer<typeof createTeamSchema>;
 
 export const createProfileSchema = z.object({
-  team_id: z.string().min(1, "Please select a team"),
+  team_id: z.string().optional(),
   name: z.string().min(1, "Project name is required"),
   description: z.string().min(1, "Description is required"),
   github_url: z.string().url("Must be a valid URL").or(z.literal("")).optional(),

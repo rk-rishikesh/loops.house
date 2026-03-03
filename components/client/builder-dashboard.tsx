@@ -215,9 +215,7 @@ export function BuilderDashboard({
                             </p>
                           </div>
                         </div>
-                        <Link href={`/builder/boosters/${type}`}>
-                          <ArrowCircle />
-                        </Link>
+                        <ArrowCircle />
                       </button>
                     );
                   },

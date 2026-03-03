@@ -132,11 +132,22 @@ export async function POST(request: NextRequest) {
 
       send("progress", { step: "knowledge-base", status: "started" });
 
-      // Create a preliminary loops_profiles row so the FK on knowledge_bases is satisfied.
-      // Use the DB-generated UUID as the canonical project ID.
+      // Create the loops_profiles row with all user-provided fields upfront.
+      // AI-enriched fields (tagline, colors, tech_stack, etc.) are added via update later.
       const { data: profileRow } = await supabaseAdmin
         .from("loops_profiles")
-        .insert({ team_id: input.team_id, name: input.name, description: input.description })
+        .insert({
+          team_id: input.team_id,
+          name: input.name,
+          description: input.description,
+          github_url: input.github_url ?? null,
+          youtube_url: input.youtube_url ?? null,
+          logo_url: input.logo_url ?? null,
+          website_url: input.website_url ?? null,
+          screenshot_urls: input.screenshot_urls ?? [],
+          additional_links: (input.additional_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+          social_links: (input.social_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+        })
         .select("id")
         .single();
 
@@ -251,6 +262,39 @@ Return JSON only: { "tagline": "...", "category": "..." }`
         social_links: input.social_links,
         booster_id: input.booster_id,
       };
+
+      // Persist all enriched data server-side (bypasses RLS via admin client)
+      const { error: updateError } = await supabaseAdmin
+        .from("loops_profiles")
+        .update({
+          tagline,
+          category,
+          refined_description: input.description,
+          tech_stack: techStackTags,
+          colors: {
+            primary_color: profileResponse.primary_color,
+            secondary_color: profileResponse.secondary_color,
+            accent_color: profileResponse.accent_color,
+            theme_label: profileResponse.theme_label,
+          },
+          key_features: profileResponse.key_features,
+          logo_url: input.logo_url ?? null,
+          website_url: input.website_url ?? null,
+          github_url: input.github_url ?? null,
+          youtube_url: input.youtube_url ?? null,
+          screenshot_urls: input.screenshot_urls ?? [],
+          additional_links: (input.additional_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+          social_links: (input.social_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+          flattened_codebase: flattened_codebase ?? null,
+          knowledge_base_id: projectId,
+          knowledge_base_chunks: chunkCount,
+          kb_sections: kbSections.map((s) => s.source),
+        })
+        .eq("id", projectId);
+
+      if (updateError) {
+        console.error("[profile-creator] Failed to persist enriched data:", updateError.message);
+      }
 
       send("complete", profileResponse);
       if (flattened_codebase) {
