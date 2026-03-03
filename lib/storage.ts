@@ -163,9 +163,23 @@ function sb() {
   return createClient();
 }
 
+let authInit: Promise<void> | null = null;
+async function ensureAuthReady() {
+  // Storage is primarily used from client components.
+  // Ensure Supabase has loaded the persisted session before queries run,
+  // otherwise RLS-protected tables can appear "empty" until a hard refresh.
+  if (typeof window === "undefined") return;
+  const client = sb();
+  if (!authInit) {
+    authInit = client.auth.getSession().then(() => undefined);
+  }
+  await authInit;
+}
+
 // --- Projects ---
 
 export async function getProjects(): Promise<StoredProject[]> {
+  await ensureAuthReady();
   const { data } = await sb()
     .from("loops_profiles")
     .select("*")
@@ -174,6 +188,7 @@ export async function getProjects(): Promise<StoredProject[]> {
 }
 
 export async function getProject(projectId: string): Promise<StoredProject | null> {
+  await ensureAuthReady();
   const { data } = await sb()
     .from("loops_profiles")
     .select("*")
@@ -183,6 +198,7 @@ export async function getProject(projectId: string): Promise<StoredProject | nul
 }
 
 export async function saveProject(project: StoredProject): Promise<void> {
+  await ensureAuthReady();
   const payload = storedToProfileInsert(project);
   if (project.project_id) {
     const { id: _id, ...updates } = payload as typeof payload & { id?: string };
@@ -196,12 +212,14 @@ export async function saveProject(project: StoredProject): Promise<void> {
 }
 
 export async function removeProject(projectId: string): Promise<void> {
+  await ensureAuthReady();
   await sb().from("loops_profiles").delete().eq("id", projectId);
 }
 
 // --- Boosters ---
 
 export async function getBoosters(): Promise<StoredBooster[]> {
+  await ensureAuthReady();
   const { data } = await sb()
     .from("boosters")
     .select("*")
@@ -210,6 +228,7 @@ export async function getBoosters(): Promise<StoredBooster[]> {
 }
 
 export async function getBooster(id: string): Promise<StoredBooster | null> {
+  await ensureAuthReady();
   const { data } = await sb()
     .from("boosters")
     .select("*")
@@ -219,6 +238,7 @@ export async function getBooster(id: string): Promise<StoredBooster | null> {
 }
 
 export async function saveBooster(booster: StoredBooster & { host_id?: string }): Promise<void> {
+  await ensureAuthReady();
   await sb()
     .from("boosters")
     .upsert({
@@ -242,6 +262,7 @@ export async function saveBooster(booster: StoredBooster & { host_id?: string })
 // --- Teams ---
 
 export async function getTeams(userId?: string): Promise<StoredTeam[]> {
+  await ensureAuthReady();
   if (userId) {
     const { data } = await sb()
       .from("team_members")
@@ -257,6 +278,7 @@ export async function getTeams(userId?: string): Promise<StoredTeam[]> {
 }
 
 export async function getTeam(id: string): Promise<StoredTeam | null> {
+  await ensureAuthReady();
   const { data } = await sb()
     .from("teams")
     .select("*")
@@ -266,6 +288,7 @@ export async function getTeam(id: string): Promise<StoredTeam | null> {
 }
 
 export async function saveTeam(team: { id?: string; name: string; owner_id: string; created_at?: string }): Promise<void> {
+  await ensureAuthReady();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const payload: any = { name: team.name, owner_id: team.owner_id };
   if (team.id) payload.id = team.id;
@@ -318,6 +341,7 @@ export async function submitProjectToBooster(
   teamId: string,
   projectId: string,
 ): Promise<StoredSubmission | null> {
+  await ensureAuthReady();
   const { data } = await sb()
     .from("submissions")
     .upsert(
@@ -335,6 +359,7 @@ export async function submitProjectToBooster(
 }
 
 export async function getProjectSubmissions(projectId: string): Promise<StoredSubmission[]> {
+  await ensureAuthReady();
   const { data } = await sb()
     .from("submissions")
     .select("*")
@@ -344,6 +369,7 @@ export async function getProjectSubmissions(projectId: string): Promise<StoredSu
 }
 
 export async function getBoosterSubmissions(boosterId: string): Promise<StoredSubmission[]> {
+  await ensureAuthReady();
   const { data } = await sb()
     .from("submissions")
     .select("*")
@@ -354,6 +380,7 @@ export async function getBoosterSubmissions(boosterId: string): Promise<StoredSu
 
 /** Fetch multiple boosters by IDs in a single query. */
 export async function getBoostersByIds(ids: string[]): Promise<Record<string, StoredBooster>> {
+  await ensureAuthReady();
   if (ids.length === 0) return {};
   const { data } = await sb()
     .from("boosters")
@@ -366,6 +393,7 @@ export async function getBoostersByIds(ids: string[]): Promise<Record<string, St
 
 /** Fetch all submissions across multiple boosters in a single query. */
 export async function getSubmissionsForBoosters(boosterIds: string[]): Promise<StoredSubmission[]> {
+  await ensureAuthReady();
   if (boosterIds.length === 0) return [];
   const { data } = await sb()
     .from("submissions")
@@ -377,6 +405,7 @@ export async function getSubmissionsForBoosters(boosterIds: string[]): Promise<S
 
 /** Fetch booster with its sponsor tracks from the booster_tracks table. */
 export async function getBoosterWithTracks(id: string): Promise<StoredBooster | null> {
+  await ensureAuthReady();
   const { data: booster } = await sb()
     .from("boosters")
     .select("*")

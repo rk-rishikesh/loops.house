@@ -492,7 +492,7 @@ export default function IndividualBoosterPage() {
                 {/* Apply — builders */}
                 {mounted && role === "builder" && (
                   <ActionCard
-                    href={`/builder/boosters/${id}/submit`}
+                    href={`/builder/boosters/${type}/${id}/submit`}
                     icon={Send}
                     iconBg="#0F2C23"
                     iconColor="#E2FEA5"

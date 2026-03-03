@@ -201,23 +201,37 @@ export default function ViewerPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
 
-      {/* ── Nav ─────────────────────────────────────────────────────────────── */}
-      <div className="px-10 pt-8 flex items-center justify-between">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
+      {/* ── Top strip nav ───────────────────────────────────────────────────── */}
+      <div className="pt-0">
+        <div
+          className="flex w-full border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
-          <ArrowLeft size={12} /> Portal
-        </Link>
-        {!loading && (
-          <span
-            className="text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/30"
-            style={{ fontFamily: "'Inter', sans-serif" }}
+          <Link
+            href="/"
+            className="flex-1 min-w-0 py-8 flex items-center justify-center border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf]"
           >
-            {projects.length} project{projects.length !== 1 ? "s" : ""}
-          </span>
-        )}
+            <span className="flex items-center gap-2">
+              <ArrowLeft size={11} />
+              <span>Portal</span>
+            </span>
+          </Link>
+          <div className="flex-1 min-w-0 py-8 flex items-center justify-center border-r border-[#1a1a1a]">
+            <span>Loops Repository</span>
+          </div>
+          <div className="flex-1 min-w-0 py-8 flex items-center justify-center border-r border-[#1a1a1a]">
+            <span>Category</span>
+          </div>
+          <div className="flex-1 min-w-0 py-8 flex items-center justify-center">
+            {!loading ? (
+              <span>
+                {projects.length} project{projects.length !== 1 ? "s" : ""}
+              </span>
+            ) : (
+              <span>Loading…</span>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="px-10 pt-10 pb-24">

@@ -7,10 +7,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useBooster, useProjects, useSubmissions, useSubmitProject } from "@/lib/queries";
 import { submitProjectSchema, type SubmitProjectSchema } from "@/lib/validations/schemas";
+import type { BoosterType } from "@/lib/storage";
+
+const TYPES: BoosterType[] = ["idea", "momentum", "capital"];
 
 export default function SubmitProjectToBoosterPage() {
   const params = useParams();
   const router = useRouter();
+
+  const typeParam = (params.type as string | undefined)?.toLowerCase();
+  const type: BoosterType = TYPES.includes(typeParam as BoosterType) ? (typeParam as BoosterType) : "idea";
   const boosterId = params.id as string;
 
   const { data: booster, isLoading: boosterLoading } = useBooster(boosterId);
@@ -38,7 +44,10 @@ export default function SubmitProjectToBoosterPage() {
   if (boosterLoading) {
     return (
       <div>
-        <Link href="/builder/boosters" className="inline-flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-400 hover:text-violet-600 mb-6">
+        <Link
+          href={`/builder/boosters/${type}`}
+          className="inline-flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-400 hover:text-violet-600 mb-6"
+        >
           <ArrowLeft className="w-4 h-4" /> Back to boosters
         </Link>
         <p className="text-zinc-500">Loading…</p>
@@ -49,7 +58,10 @@ export default function SubmitProjectToBoosterPage() {
   if (!booster) {
     return (
       <div>
-        <Link href="/builder/boosters" className="inline-flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-400 hover:text-violet-600 mb-6">
+        <Link
+          href={`/builder/boosters/${type}`}
+          className="inline-flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-400 hover:text-violet-600 mb-6"
+        >
           <ArrowLeft className="w-4 h-4" /> Back to boosters
         </Link>
         <p className="text-zinc-500">Booster not found.</p>
@@ -60,14 +72,15 @@ export default function SubmitProjectToBoosterPage() {
   return (
     <div>
       <Link
-        href="/builder/boosters"
+        href={`/builder/boosters/${type}`}
         className="inline-flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-400 hover:text-violet-600 mb-6"
       >
         <ArrowLeft className="w-4 h-4" /> Back to boosters
       </Link>
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Submit project</h1>
       <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-        Submit one of your projects to <span className="font-medium text-zinc-800 dark:text-zinc-200">{booster.name}</span>.
+        Submit one of your projects to{" "}
+        <span className="font-medium text-zinc-800 dark:text-zinc-200">{booster.name}</span>.
       </p>
 
       {submitMutation.isSuccess ? (
@@ -107,7 +120,9 @@ export default function SubmitProjectToBoosterPage() {
                       <p className="text-sm text-zinc-500 dark:text-zinc-400 truncate">{p.tagline}</p>
                     )}
                     {submittedProjectIds.has(p.project_id) && (
-                      <span className="text-xs text-emerald-600 dark:text-emerald-400">Already submitted to this booster</span>
+                      <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                        Already submitted to this booster
+                      </span>
                     )}
                   </div>
                 </label>
@@ -126,3 +141,4 @@ export default function SubmitProjectToBoosterPage() {
     </div>
   );
 }
+

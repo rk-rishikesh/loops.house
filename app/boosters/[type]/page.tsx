@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, FileText, Lightbulb, Zap, DollarSign, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, Lightbulb, Zap, DollarSign } from "lucide-react";
 import { useBoosters } from "@/lib/queries";
 import type { BoosterType } from "@/lib/storage";
 import Image from "next/image";
@@ -11,56 +11,52 @@ const TYPES: BoosterType[] = ["idea", "momentum", "capital"];
 
 const TYPE_META: Record<BoosterType, {
   label: string;
-  sublabel: string;
   tagline: string;
   icon: React.ElementType;
   index: string;
 }> = {
   idea: {
-    label: "IDEA",
-    sublabel: "BOOSTERS",
+    label: "Idea Boosters",
     tagline: "Validate before you scale.",
     icon: Lightbulb,
     index: "01",
   },
   momentum: {
-    label: "MOMENTUM",
-    sublabel: "BOOSTERS",
+    label: "Momentum Boosters",
     tagline: "Ship with conviction.",
     icon: Zap,
     index: "02",
   },
   capital: {
-    label: "CAPITAL",
-    sublabel: "BOOSTERS",
+    label: "Capital Boosters",
     tagline: "Build for the long term.",
     icon: DollarSign,
     index: "03",
   },
 };
 
-function ArrowCircle({ size = 48 }: { size?: number }) {
-  return (
-    <span
-      style={{ width: size, height: size }}
-      className="inline-flex items-center justify-center rounded-full bg-[#2d4a3e] text-[#f0ebe0] shrink-0"
-    >
-      <ArrowUpRight size={size * 0.38} />
-    </span>
-  );
-}
-
-function SkeletonCard() {
+// ─── Skeleton row ─────────────────────────────────────────────────────────────
+function SkeletonRow() {
   return (
     <div
-      className="rounded-2xl px-8 py-7 flex items-center gap-6 animate-pulse"
-      style={{ backgroundColor: "#d6cfc0" }}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "24px 0",
+        borderBottom: "1px solid rgba(15,44,35,0.1)",
+        background: "linear-gradient(90deg, rgba(15,44,35,0.04) 25%, rgba(15,44,35,0.08) 50%, rgba(15,44,35,0.04) 75%)",
+        backgroundSize: "600px 100%",
+        animation: "shimmer 1.4s infinite linear",
+        borderRadius: 2,
+      }}
     >
-      <div className="w-14 h-10 rounded bg-[#2d4a3e]/10" />
-      <div>
-        <div className="w-40 h-3 rounded bg-[#2d4a3e]/10 mb-2" />
-        <div className="w-24 h-2.5 rounded bg-[#2d4a3e]/07" />
+      <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+        <div style={{ width: 36, height: 16, borderRadius: 2, background: "rgba(15,44,35,0.08)" }} />
+        <div>
+          <div style={{ width: 160, height: 12, borderRadius: 2, background: "rgba(15,44,35,0.08)", marginBottom: 8 }} />
+          <div style={{ width: 100, height: 10, borderRadius: 2, background: "rgba(15,44,35,0.05)" }} />
+        </div>
       </div>
+      <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(15,44,35,0.07)" }} />
     </div>
   );
 }
@@ -74,231 +70,316 @@ export default function BoosterTypePage() {
   const TypeIcon = meta.icon;
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
+    <main className="min-h-screen bg-cream">
 
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
-      <div className="px-10 pt-8 flex items-center justify-between">
+      <nav
+        style={{
+          borderBottom: "1px solid rgba(15,44,35,0.1)",
+          padding: "0 32px",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          height: 60,
+        }}
+      >
         <Link
           href="/boosters"
-          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
-          style={{ fontFamily: "'Inter', sans-serif" }}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            fontFamily: "'Press Start 2P', monospace", fontSize: 9,
+            letterSpacing: "0.12em", color: "#3C574B", textDecoration: "none",
+            opacity: 0.7, transition: "opacity 0.15s",
+          }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.opacity = "1")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.opacity = "0.7")}
         >
-          <ArrowLeft size={12} /> Hub
+          <ArrowLeft size={13} /> Boosters
         </Link>
-        {/* User avatar placeholder — bottom-left in image but nav works too */}
-      </div>
 
-      {/* ── Main two-column layout ───────────────────────────────────────────── */}
-      <div className="flex gap-6 px-10 pt-10 pb-20 min-h-[calc(100vh-60px)] items-start">
+        <span
+          style={{
+            fontFamily: "'Press Start 2P', monospace", fontSize: 8,
+            letterSpacing: "0.15em", color: "#3C574B", opacity: 0.45,
+          }}
+        >
+          {meta.index}
+        </span>
+      </nav>
 
-        {/* ══ LEFT COLUMN ══════════════════════════════════════════════════════ */}
-        <div className="flex flex-col flex-1 min-w-0 basis-[480px]">
+      {/* ── Body ────────────────────────────────────────────────────────────── */}
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "56px 32px 0" }}>
 
-          {/* Big stacked heading */}
-          <h1
-            className="font-black text-[#2d4a3e] leading-[0.88] mb-12 uppercase"
-            style={{
-              fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
-              fontSize: "clamp(56px, 8.5vw, 120px)",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            {meta.label}
-            <br />
-            {meta.sublabel}
-          </h1>
-
-          {/* Booster cards */}
-          <div className="flex flex-col gap-4 max-w-[580px]">
-            {loading ? (
-              <>
-                <SkeletonCard />
-                <SkeletonCard />
-              </>
-            ) : list.length === 0 ? (
-              <div
-                className="rounded-2xl p-10 border-2 border-dashed border-[#2d4a3e]/20 text-center"
-                style={{ backgroundColor: "#e8e2d4" }}
+        {/* ── Hero ──────────────────────────────────────────────────────────── */}
+        <div
+          className="s1"
+          style={{
+            display: "flex", alignItems: "flex-end", justifyContent: "space-between",
+            gap: 24, marginBottom: 52, flexWrap: "wrap",
+          }}
+        >
+          <div>
+            {/* Type icon + label */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+              <span
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 44, height: 44, borderRadius: 4,
+                  background: "#0F2C23", color: "#E2FEA5",
+                }}
               >
-                <div
-                  className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4"
-                  style={{ backgroundColor: "rgba(45,74,62,0.1)" }}
-                >
-                  <TypeIcon size={20} style={{ color: "#2d4a3e" }} />
-                </div>
-                <p
-                  className="font-bold text-[#2d4a3e] mb-2"
-                  style={{ fontFamily: "'Inter', sans-serif", fontSize: 15 }}
-                >
-                  No boosters yet.
-                </p>
-                <p
-                  className="text-sm text-[#2d4a3e]/55 mb-8 leading-relaxed"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
-                  Hosts can add boosters from the Host dashboard.
-                </p>
-                <Link
-                  href="/boosters"
-                  className="inline-flex items-center gap-2 rounded-full no-underline text-[#f0ebe0] text-[10px] tracking-widest uppercase font-bold px-6 py-3"
-                  style={{ backgroundColor: "#2d4a3e", fontFamily: "'Inter', sans-serif" }}
-                >
-                  <ArrowLeft size={11} /> All Boosters
-                </Link>
+                <TypeIcon size={20} />
+              </span>
+              <p
+                style={{
+                  fontFamily: "'Press Start 2P', monospace", fontSize: 9,
+                  letterSpacing: "0.18em", color: "#3C574B", opacity: 0.55,
+                }}
+              >
+                {meta.index} / 03
+              </p>
+            </div>
+
+            <h1
+              style={{
+                fontFamily: "'Press Start 2P', monospace",
+                fontSize: "clamp(24px, 4.5vw, 50px)",
+                color: "#0F2C23", lineHeight: 1.65,
+                letterSpacing: "-0.01em", marginBottom: 14,
+              }}
+            >
+              {meta.label}
+            </h1>
+            <p
+              style={{
+                fontFamily: "'DM Mono', monospace", fontSize: 15,
+                color: "#3C574B", opacity: 0.7, lineHeight: 1.6,
+              }}
+            >
+              {meta.tagline}
+            </p>
+          </div>
+
+          {/* Cat mascot */}
+          <div style={{ flexShrink: 0, opacity: 0.85 }}>
+            <Image
+              src="/builder/woolCat.svg"
+              alt="Loops mascot"
+              width={110}
+              height={110}
+              unoptimized
+              style={{ objectFit: "contain" }}
+            />
+          </div>
+        </div>
+
+        {/* ── Type switcher tabs ─────────────────────────────────────────────── */}
+        <div className="s2" style={{ display: "flex", gap: 8, marginBottom: 48, flexWrap: "wrap" }}>
+          {TYPES.map((t) => {
+            const Icon = TYPE_META[t].icon;
+            return (
+              <Link
+                key={t}
+                href={`/boosters/${t}`}
+                className={`type-tab ${t === validType ? "active" : "inactive"}`}
+              >
+                <Icon size={13} />
+                {TYPE_META[t].label.split(" ")[0]}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* ── List ──────────────────────────────────────────────────────────── */}
+        <div className="s3">
+          {loading ? (
+            <div>
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+            </div>
+          ) : list.length === 0 ? (
+            /* Empty state */
+            <div
+              style={{
+                padding: "64px 48px",
+                border: "2px dashed rgba(15,44,35,0.15)",
+                borderRadius: 4,
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 56, height: 56, borderRadius: 4,
+                  background: "rgba(15,44,35,0.06)", color: "#3C574B",
+                  margin: "0 auto 24px",
+                }}
+              >
+                <TypeIcon size={24} />
               </div>
-            ) : (
-              list.map((b, idx) => (
+              <p
+                style={{
+                  fontFamily: "'Press Start 2P', monospace", fontSize: 11,
+                  color: "#0F2C23", letterSpacing: "0.08em", lineHeight: 1.8,
+                  marginBottom: 12,
+                }}
+              >
+                No boosters yet.
+              </p>
+              <p
+                style={{
+                  fontFamily: "'DM Mono', monospace", fontSize: 13,
+                  color: "#3C574B", opacity: 0.65, lineHeight: 1.7, marginBottom: 32,
+                }}
+              >
+                Hosts can add boosters from the Host dashboard.
+              </p>
+              <Link
+                href="/boosters"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 8,
+                  background: "#0F2C23", color: "#E2FEA5",
+                  fontFamily: "'Press Start 2P', monospace", fontSize: 9,
+                  letterSpacing: "0.1em", padding: "12px 22px", borderRadius: 2,
+                  textDecoration: "none",
+                }}
+              >
+                <ArrowLeft size={12} /> All Boosters
+              </Link>
+            </div>
+          ) : (
+            /* Booster rows */
+            <div>
+              {list.map((b, idx) => (
                 <Link
                   key={b.id}
                   href={`/boosters/${validType}/${b.id}`}
-                  className="no-underline group"
+                  className="booster-list-row"
                 >
-                  <div
-                    className="rounded-2xl px-8 py-7 flex items-center gap-7 transition-transform duration-200 group-hover:scale-[1.015]"
-                    style={{ backgroundColor: "#d6cfc0" }}
-                  >
-                    {/* Index */}
+                  {/* Left: index + info */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 22, minWidth: 0 }}>
                     <span
-                      className="font-black text-[#2d4a3e] leading-none shrink-0"
                       style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: "clamp(36px, 5vw, 56px)",
-                        letterSpacing: "-0.03em",
+                        fontFamily: "'DM Mono', monospace",
+                        fontSize: 22, fontWeight: 700,
+                        color: "rgba(15,44,35,0.18)",
+                        letterSpacing: "0.2em",
+                        flexShrink: 0, lineHeight: 1,
                       }}
                     >
                       {String(idx + 1).padStart(2, "0")}
                     </span>
 
-                    {/* Name + theme */}
-                    <div className="flex-1 min-w-0">
+                    <div style={{ minWidth: 0 }}>
                       <p
-                        className="font-semibold text-[#2d4a3e] uppercase tracking-[0.15em] mb-1 truncate"
                         style={{
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: "clamp(10px, 1.2vw, 13px)",
+                          fontFamily: "'Press Start 2P', monospace",
+                          fontSize: "clamp(9px, 1.2vw, 12px)",
+                          color: "#0F2C23",
+                          letterSpacing: "0.06em",
+                          lineHeight: 1.7,
+                          marginBottom: 6,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
                         }}
                       >
                         {b.name}
                       </p>
-                      {b.theme && (
-                        <p
-                          className="text-[#2d4a3e]/50 text-xs"
-                          style={{ fontFamily: "Georgia, serif" }}
-                        >
-                          {b.theme}
-                        </p>
-                      )}
-                      {b.problem_statements?.length > 0 && (
-                        <p
-                          className="inline-flex items-center gap-1 text-[11px] text-[#2d4a3e]/40 mt-1"
-                          style={{ fontFamily: "Georgia, serif" }}
-                        >
-                          <FileText size={10} />
-                          {b.problem_statements.length} problem statement{b.problem_statements.length !== 1 ? "s" : ""}
-                        </p>
-                      )}
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                        {b.theme && (
+                          <span
+                            style={{
+                              display: "inline-block",
+                              background: "#E2FEA5", color: "#0F2C23",
+                              fontFamily: "'Press Start 2P', monospace",
+                              fontSize: 7, letterSpacing: "0.1em",
+                              padding: "4px 10px", borderRadius: 2,
+                            }}
+                          >
+                            {b.theme}
+                          </span>
+                        )}
+                        {b.problem_statements.length > 0 && (
+                          <span
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 6,
+                              fontFamily: "'DM Mono', monospace", fontSize: 12,
+                              color: "#3C574B", opacity: 0.6,
+                            }}
+                          >
+                            <FileText size={12} />
+                            {b.problem_statements.length} problem statement{b.problem_statements.length !== 1 ? "s" : ""}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </Link>
-              ))
-            )}
-          </div>
 
-          {/* Bottom-left avatar (as seen in image) */}
-          <div className="mt-auto pt-16">
-            <div
-              className="w-10 h-10 rounded-full bg-[#2d4a3e] flex items-center justify-center text-[#f0ebe0] text-xs font-bold"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              N
+                  {/* Right: arrow */}
+                  <span className="row-arrow">
+                    <ArrowRight size={15} />
+                  </span>
+                </Link>
+              ))}
             </div>
-          </div>
+          )}
         </div>
 
-        {/* ══ RIGHT COLUMN — large poster card ════════════════════════════════ */}
-        <div
-          className="shrink-0 sticky top-10"
-          style={{ width: "clamp(320px, 42vw, 620px)" }}
-        >
+        {/* ── Count strip ─────────────────────────────────────────────────────── */}
+        {!loading && list.length > 0 && (
           <div
-            className="relative w-full rounded-3xl overflow-hidden"
             style={{
-              aspectRatio: "3/4",
-              backgroundColor: "#d6cfc0",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              marginTop: 32, paddingTop: 20,
+              borderTop: "1px solid rgba(15,44,35,0.08)",
             }}
           >
-            {/* Arrow circle — top right */}
-            <div className="absolute top-5 right-5 z-10">
-              <ArrowCircle size={52} />
-            </div>
-
-            {/* Large faint index watermark */}
-            <span
-              className="absolute inset-0 flex items-center justify-center select-none pointer-events-none font-black text-[#2d4a3e]/05"
+            <p
               style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: "clamp(160px, 22vw, 320px)",
-                letterSpacing: "-0.05em",
-                lineHeight: 1,
+                fontFamily: "'DM Mono', monospace", fontSize: 13,
+                color: "#3C574B", opacity: 0.55,
               }}
             >
-              {meta.index}
-            </span>
-
-            {/* Bottom labels */}
-            <div className="absolute bottom-8 left-8 z-10">
-              <p
-                className="text-[10px] tracking-[0.22em] uppercase font-bold text-[#2d4a3e]/60 mb-1"
-                style={{ fontFamily: "'Inter', sans-serif" }}
-              >
-                {meta.label} {meta.sublabel.slice(0, -1)}
-              </p>
-              <p
-                className="text-[11px] text-[#2d4a3e]/40"
-                style={{ fontFamily: "Georgia, serif" }}
-              >
-                {loading ? "…" : `${list.length} booster${list.length !== 1 ? "s" : ""} available`}
-              </p>
-            </div>
+              {list.length} booster{list.length !== 1 ? "s" : ""} in this category
+            </p>
+            <Link
+              href="/boosters"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                fontFamily: "'Press Start 2P', monospace", fontSize: 8,
+                letterSpacing: "0.1em", color: "#3C574B",
+                opacity: 0.55, textDecoration: "none",
+                transition: "opacity 0.15s",
+              }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.opacity = "1")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.opacity = "0.55")}
+            >
+              <ArrowLeft size={11} /> All types
+            </Link>
           </div>
-        </div>
-
+        )}
       </div>
 
       {/* ── Ticker ──────────────────────────────────────────────────────────── */}
       <div
-        className="overflow-hidden border-t border-[#2d4a3e]/10 py-3"
-        style={{ backgroundColor: "#e8e2d4" }}
+        style={{
+          marginTop: 80,
+          borderTop: "1px solid rgba(15,44,35,0.1)",
+          background: "#0F2C23",
+          overflow: "hidden",
+          padding: "14px 0",
+        }}
       >
-        <div
-          className="flex gap-10 whitespace-nowrap"
-          style={{ animation: "ticker 28s linear infinite" }}
-        >
-          {[...Array(3)].map((_, ri) =>
-            ["VALIDATE BEFORE YOU SCALE", "★", "SHIP WITH CONVICTION", "★", "BUILD FOR THE LONG TERM", "★"].map(
-              (t, i) => (
-                <span
-                  key={`${ri}-${i}`}
-                  className="text-[10px] tracking-[0.2em] uppercase font-bold shrink-0"
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    color: t === "★" ? "#2d4a3e" : "rgba(45,74,62,0.4)",
-                  }}
-                >
-                  {t}
-                </span>
-              )
-            )
+        <div className="ticker-inner">
+          {[...Array(2)].map((_, r) =>
+            ["VALIDATE BEFORE YOU SCALE", "✦", "SHIP WITH CONVICTION", "✦", "BUILD FOR THE LONG TERM", "✦",
+             "VALIDATE BEFORE YOU SCALE", "✦", "SHIP WITH CONVICTION", "✦", "BUILD FOR THE LONG TERM", "✦"].map((t, i) => (
+              <span key={`${r}-${i}`} className={`tick ${t === "✦" ? "hi" : ""}`}>{t}</span>
+            ))
           )}
         </div>
       </div>
-
-      <style>{`
-        @keyframes ticker {
-          0%  { transform: translateX(0); }
-          100%{ transform: translateX(-33.333%); }
-        }
-      `}</style>
     </main>
   );
 }
