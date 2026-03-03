@@ -8,7 +8,7 @@ const ROLE_DASHBOARDS: Record<AppRole, string> = {
   host: "/host",
   viewer: "/boosters",
   judge: "/host/judging",
-  admin: "/host",
+  admin: "/admin",
 };
 
 export async function GET(request: Request) {
@@ -18,17 +18,15 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createServerSupabase();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       // If middleware set an explicit redirect (e.g. user tried /host while logged out), honour it
       if (explicitRedirect) {
         return NextResponse.redirect(new URL(explicitRedirect, origin));
       }
 
-      // Otherwise redirect based on role
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // Use user from exchangeCodeForSession response — no need for a second getUser() call
+      const user = sessionData.session?.user;
       if (user) {
         const { data } = await supabaseAdmin
           .from("users")

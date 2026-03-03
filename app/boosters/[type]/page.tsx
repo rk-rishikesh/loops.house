@@ -1,10 +1,7 @@
-"use client";
-
-import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, FileText, Lightbulb, Zap, DollarSign } from "lucide-react";
-import { useBoosters } from "@/lib/queries";
-import type { BoosterType } from "@/lib/storage";
+import { getBoostersServer } from "@/lib/server-data";
+import type { BoosterType } from "@/lib/data-mappers";
 import Image from "next/image";
 
 const TYPES: BoosterType[] = ["idea", "momentum", "capital"];
@@ -35,37 +32,15 @@ const TYPE_META: Record<BoosterType, {
   },
 };
 
-// ─── Skeleton row ─────────────────────────────────────────────────────────────
-function SkeletonRow() {
-  return (
-    <div
-      style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "24px 0",
-        borderBottom: "1px solid rgba(15,44,35,0.1)",
-        background: "linear-gradient(90deg, rgba(15,44,35,0.04) 25%, rgba(15,44,35,0.08) 50%, rgba(15,44,35,0.04) 75%)",
-        backgroundSize: "600px 100%",
-        animation: "shimmer 1.4s infinite linear",
-        borderRadius: 2,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-        <div style={{ width: 36, height: 16, borderRadius: 2, background: "rgba(15,44,35,0.08)" }} />
-        <div>
-          <div style={{ width: 160, height: 12, borderRadius: 2, background: "rgba(15,44,35,0.08)", marginBottom: 8 }} />
-          <div style={{ width: 100, height: 10, borderRadius: 2, background: "rgba(15,44,35,0.05)" }} />
-        </div>
-      </div>
-      <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(15,44,35,0.07)" }} />
-    </div>
-  );
-}
-
-export default function BoosterTypePage() {
-  const params = useParams();
-  const type = (params.type as string)?.toLowerCase() || "idea";
+export default async function BoosterTypePage({
+  params,
+}: {
+  params: Promise<{ type: string }>;
+}) {
+  const { type: rawType } = await params;
+  const type = rawType?.toLowerCase() || "idea";
   const validType = TYPES.includes(type as BoosterType) ? (type as BoosterType) : "idea";
-  const { data: list = [], isLoading: loading } = useBoosters(validType);
+  const list = await getBoostersServer(validType);
   const meta = TYPE_META[validType];
   const TypeIcon = meta.icon;
 
@@ -87,10 +62,8 @@ export default function BoosterTypePage() {
             display: "inline-flex", alignItems: "center", gap: 8,
             fontFamily: "'Press Start 2P', monospace", fontSize: 9,
             letterSpacing: "0.12em", color: "#3C574B", textDecoration: "none",
-            opacity: 0.7, transition: "opacity 0.15s",
+            opacity: 0.7,
           }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.opacity = "1")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.opacity = "0.7")}
         >
           <ArrowLeft size={13} /> Boosters
         </Link>
@@ -117,7 +90,6 @@ export default function BoosterTypePage() {
           }}
         >
           <div>
-            {/* Type icon + label */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
               <span
                 style={{
@@ -158,7 +130,6 @@ export default function BoosterTypePage() {
             </p>
           </div>
 
-          {/* Cat mascot */}
           <div style={{ flexShrink: 0, opacity: 0.85 }}>
             <Image
               src="/builder/woolCat.svg"
@@ -190,14 +161,7 @@ export default function BoosterTypePage() {
 
         {/* ── List ──────────────────────────────────────────────────────────── */}
         <div className="s3">
-          {loading ? (
-            <div>
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
-            </div>
-          ) : list.length === 0 ? (
-            /* Empty state */
+          {list.length === 0 ? (
             <div
               style={{
                 padding: "64px 48px",
@@ -216,21 +180,10 @@ export default function BoosterTypePage() {
               >
                 <TypeIcon size={24} />
               </div>
-              <p
-                style={{
-                  fontFamily: "'Press Start 2P', monospace", fontSize: 11,
-                  color: "#0F2C23", letterSpacing: "0.08em", lineHeight: 1.8,
-                  marginBottom: 12,
-                }}
-              >
+              <p style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 11, color: "#0F2C23", letterSpacing: "0.08em", lineHeight: 1.8, marginBottom: 12 }}>
                 No boosters yet.
               </p>
-              <p
-                style={{
-                  fontFamily: "'DM Mono', monospace", fontSize: 13,
-                  color: "#3C574B", opacity: 0.65, lineHeight: 1.7, marginBottom: 32,
-                }}
-              >
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: "#3C574B", opacity: 0.65, lineHeight: 1.7, marginBottom: 32 }}>
                 Hosts can add boosters from the Host dashboard.
               </p>
               <Link
@@ -247,7 +200,6 @@ export default function BoosterTypePage() {
               </Link>
             </div>
           ) : (
-            /* Booster rows */
             <div>
               {list.map((b, idx) => (
                 <Link
@@ -255,59 +207,22 @@ export default function BoosterTypePage() {
                   href={`/boosters/${validType}/${b.id}`}
                   className="booster-list-row"
                 >
-                  {/* Left: index + info */}
                   <div style={{ display: "flex", alignItems: "center", gap: 22, minWidth: 0 }}>
-                    <span
-                      style={{
-                        fontFamily: "'DM Mono', monospace",
-                        fontSize: 22, fontWeight: 700,
-                        color: "rgba(15,44,35,0.18)",
-                        letterSpacing: "0.2em",
-                        flexShrink: 0, lineHeight: 1,
-                      }}
-                    >
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 22, fontWeight: 700, color: "rgba(15,44,35,0.18)", letterSpacing: "0.2em", flexShrink: 0, lineHeight: 1 }}>
                       {String(idx + 1).padStart(2, "0")}
                     </span>
-
                     <div style={{ minWidth: 0 }}>
-                      <p
-                        style={{
-                          fontFamily: "'Press Start 2P', monospace",
-                          fontSize: "clamp(9px, 1.2vw, 12px)",
-                          color: "#0F2C23",
-                          letterSpacing: "0.06em",
-                          lineHeight: 1.7,
-                          marginBottom: 6,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
+                      <p style={{ fontFamily: "'Press Start 2P', monospace", fontSize: "clamp(9px, 1.2vw, 12px)", color: "#0F2C23", letterSpacing: "0.06em", lineHeight: 1.7, marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {b.name}
                       </p>
-
                       <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                         {b.theme && (
-                          <span
-                            style={{
-                              display: "inline-block",
-                              background: "#E2FEA5", color: "#0F2C23",
-                              fontFamily: "'Press Start 2P', monospace",
-                              fontSize: 7, letterSpacing: "0.1em",
-                              padding: "4px 10px", borderRadius: 2,
-                            }}
-                          >
+                          <span style={{ display: "inline-block", background: "#E2FEA5", color: "#0F2C23", fontFamily: "'Press Start 2P', monospace", fontSize: 7, letterSpacing: "0.1em", padding: "4px 10px", borderRadius: 2 }}>
                             {b.theme}
                           </span>
                         )}
                         {b.problem_statements.length > 0 && (
-                          <span
-                            style={{
-                              display: "inline-flex", alignItems: "center", gap: 6,
-                              fontFamily: "'DM Mono', monospace", fontSize: 12,
-                              color: "#3C574B", opacity: 0.6,
-                            }}
-                          >
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'DM Mono', monospace", fontSize: 12, color: "#3C574B", opacity: 0.6 }}>
                             <FileText size={12} />
                             {b.problem_statements.length} problem statement{b.problem_statements.length !== 1 ? "s" : ""}
                           </span>
@@ -315,11 +230,7 @@ export default function BoosterTypePage() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Right: arrow */}
-                  <span className="row-arrow">
-                    <ArrowRight size={15} />
-                  </span>
+                  <span className="row-arrow"><ArrowRight size={15} /></span>
                 </Link>
               ))}
             </div>
@@ -327,33 +238,14 @@ export default function BoosterTypePage() {
         </div>
 
         {/* ── Count strip ─────────────────────────────────────────────────────── */}
-        {!loading && list.length > 0 && (
-          <div
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              marginTop: 32, paddingTop: 20,
-              borderTop: "1px solid rgba(15,44,35,0.08)",
-            }}
-          >
-            <p
-              style={{
-                fontFamily: "'DM Mono', monospace", fontSize: 13,
-                color: "#3C574B", opacity: 0.55,
-              }}
-            >
+        {list.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 32, paddingTop: 20, borderTop: "1px solid rgba(15,44,35,0.08)" }}>
+            <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: "#3C574B", opacity: 0.55 }}>
               {list.length} booster{list.length !== 1 ? "s" : ""} in this category
             </p>
             <Link
               href="/boosters"
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                fontFamily: "'Press Start 2P', monospace", fontSize: 8,
-                letterSpacing: "0.1em", color: "#3C574B",
-                opacity: 0.55, textDecoration: "none",
-                transition: "opacity 0.15s",
-              }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.opacity = "1")}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.opacity = "0.55")}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'Press Start 2P', monospace", fontSize: 8, letterSpacing: "0.1em", color: "#3C574B", opacity: 0.55, textDecoration: "none" }}
             >
               <ArrowLeft size={11} /> All types
             </Link>
@@ -362,20 +254,12 @@ export default function BoosterTypePage() {
       </div>
 
       {/* ── Ticker ──────────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          marginTop: 80,
-          borderTop: "1px solid rgba(15,44,35,0.1)",
-          background: "#0F2C23",
-          overflow: "hidden",
-          padding: "14px 0",
-        }}
-      >
+      <div style={{ marginTop: 80, borderTop: "1px solid rgba(15,44,35,0.1)", background: "#0F2C23", overflow: "hidden", padding: "14px 0" }}>
         <div className="ticker-inner">
           {[...Array(2)].map((_, r) =>
-            ["VALIDATE BEFORE YOU SCALE", "✦", "SHIP WITH CONVICTION", "✦", "BUILD FOR THE LONG TERM", "✦",
-             "VALIDATE BEFORE YOU SCALE", "✦", "SHIP WITH CONVICTION", "✦", "BUILD FOR THE LONG TERM", "✦"].map((t, i) => (
-              <span key={`${r}-${i}`} className={`tick ${t === "✦" ? "hi" : ""}`}>{t}</span>
+            ["VALIDATE BEFORE YOU SCALE", "\u2726", "SHIP WITH CONVICTION", "\u2726", "BUILD FOR THE LONG TERM", "\u2726",
+             "VALIDATE BEFORE YOU SCALE", "\u2726", "SHIP WITH CONVICTION", "\u2726", "BUILD FOR THE LONG TERM", "\u2726"].map((t, i) => (
+              <span key={`${r}-${i}`} className={`tick ${t === "\u2726" ? "hi" : ""}`}>{t}</span>
             ))
           )}
         </div>

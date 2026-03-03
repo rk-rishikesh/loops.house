@@ -1,10 +1,8 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, ArrowUpRight, Code2, PlusCircle, FolderOpen } from "lucide-react";
-import { useProjects } from "@/lib/queries";
-import type { StoredProject } from "@/lib/storage";
+import { getProjectsServer } from "@/lib/server-data";
+import type { StoredProject } from "@/lib/data-mappers";
 
 // ─── Arrow circle ─────────────────────────────────────────────────────────────
 function ArrowCircle({ size = 44 }: { size?: number }) {
@@ -112,27 +110,9 @@ function ProjectRow({ project: p, index }: { project: StoredProject; index: numb
   );
 }
 
-// ─── Skeleton row ─────────────────────────────────────────────────────────────
-function SkeletonRow() {
-  return (
-    <div
-      className="grid py-7 border-b border-[#2d4a3e]/10 animate-pulse"
-      style={{ gridTemplateColumns: "80px 1fr 1.6fr 56px", gap: "0 24px" }}
-    >
-      <div className="h-4 w-8 rounded bg-[#2d4a3e]/08" />
-      <div>
-        <div className="h-4 w-36 rounded bg-[#2d4a3e]/08 mb-2" />
-        <div className="h-3 w-24 rounded bg-[#2d4a3e]/05" />
-      </div>
-      <div className="h-3 w-full rounded bg-[#2d4a3e]/05" />
-      <div className="w-11 h-11 rounded-full bg-[#2d4a3e]/07 ml-auto" />
-    </div>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
-export default function BuilderProjectsPage() {
-  const { data: projects = [], isLoading: loading } = useProjects();
+export default async function BuilderProjectsPage() {
+  const projects = await getProjectsServer();
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
@@ -146,14 +126,12 @@ export default function BuilderProjectsPage() {
         >
           <ArrowLeft size={12} /> Builder
         </Link>
-        {!loading && (
-          <span
-            className="text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/30"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            {projects.length} project{projects.length !== 1 ? "s" : ""}
-          </span>
-        )}
+        <span
+          className="text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/30"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >
+          {projects.length} project{projects.length !== 1 ? "s" : ""}
+        </span>
       </div>
 
       <div className="px-10 pt-10 pb-24">
@@ -221,13 +199,7 @@ export default function BuilderProjectsPage() {
         </div>
 
         {/* ── Table body ───────────────────────────────────────────────────── */}
-        {loading ? (
-          <>
-            <SkeletonRow />
-            <SkeletonRow />
-            <SkeletonRow />
-          </>
-        ) : projects.length === 0 ? (
+        {projects.length === 0 ? (
           <div className="py-24 text-center border-b border-[#2d4a3e]/12">
             <div
               className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-6"
@@ -266,7 +238,7 @@ export default function BuilderProjectsPage() {
         )}
 
         {/* Footer strip */}
-        {!loading && projects.length > 0 && (
+        {projects.length > 0 && (
           <div className="flex items-center justify-between mt-8 pt-5 border-t border-[#2d4a3e]/08">
             <p
               className="text-[11px] text-[#2d4a3e]/40"
@@ -295,13 +267,13 @@ export default function BuilderProjectsPage() {
           style={{ animation: "ticker 28s linear infinite" }}
         >
           {[...Array(3)].map((_, ri) =>
-            ["MY PROJECTS", "★", "PROFILE CREATOR", "★", "APPLY TO BOOSTERS", "★"].map((t, i) => (
+            ["MY PROJECTS", "\u2605", "PROFILE CREATOR", "\u2605", "APPLY TO BOOSTERS", "\u2605"].map((t, i) => (
               <span
                 key={`${ri}-${i}`}
                 className="text-[10px] tracking-[0.2em] uppercase font-bold shrink-0"
                 style={{
                   fontFamily: "'Inter', sans-serif",
-                  color: t === "★" ? "#2d4a3e" : "rgba(45,74,62,0.4)",
+                  color: t === "\u2605" ? "#2d4a3e" : "rgba(45,74,62,0.4)",
                 }}
               >
                 {t}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { generateJSON } from "../../lib/gemini-client";
 import { getChunks } from "../../lib/vector-store";
 
@@ -199,7 +200,7 @@ Return JSON: { "summary": "the paragraph" }`;
 
     const summaryResult = await generateJSON<{ summary: string }>("pro", summaryPrompt);
 
-    return NextResponse.json({
+    const evalResult = {
       project_id: input.project_id,
       booster_id: boosterId,
       overall_score: Math.round(overallScore),
@@ -212,7 +213,57 @@ Return JSON: { "summary": "the paragraph" }`;
         kb_size: kbSize,
         kb_chunks: kbChunks,
       },
-    });
+    };
+
+    // Persist AI evaluation to DB (server-side, bypasses RLS)
+    let saved = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: updated, error: saveError } = await supabaseAdmin
+      .from("submissions")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ ai_score: evalResult as any })
+      .eq("project_id", input.project_id)
+      .eq("booster_id", boosterId)
+      .select("id")
+      .maybeSingle();
+
+    if (saveError) {
+      console.error("[project-evaluator] Failed to save ai_score:", saveError.message);
+    } else if (!updated) {
+      // No submission row exists — create one via upsert
+      const { data: profile } = await supabaseAdmin
+        .from("loops_profiles")
+        .select("team_id")
+        .eq("id", input.project_id)
+        .single();
+
+      if (profile?.team_id) {
+        const { error: upsertError } = await supabaseAdmin
+          .from("submissions")
+          .upsert(
+            {
+              booster_id: boosterId,
+              project_id: input.project_id,
+              team_id: profile.team_id,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ai_score: evalResult as any,
+              status: "under_review" as const,
+            },
+            { onConflict: "booster_id,project_id" },
+          );
+        if (upsertError) {
+          console.error("[project-evaluator] Upsert fallback failed:", upsertError.message);
+        } else {
+          saved = true;
+        }
+      } else {
+        console.error("[project-evaluator] Cannot create submission — project has no team_id");
+      }
+    } else {
+      saved = true;
+    }
+
+    return NextResponse.json({ ...evalResult, saved });
   } catch (error) {
     const message = error instanceof Error ? error.message : "An unexpected error occurred";
     console.error("project-evaluator error:", message);

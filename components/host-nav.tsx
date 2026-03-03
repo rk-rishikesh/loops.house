@@ -1,12 +1,9 @@
-"use client";
-
 import Link from "next/link";
 import { LayoutDashboard, BarChart3, Gavel, Settings, UserPlus } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
-import { useRole } from "@/lib/queries";
+import type { AppRole } from "@/lib/supabase/types";
 
-export function HostNav() {
-  const { data: role } = useRole();
+export function HostNav({ role }: { role: AppRole | null }) {
   const isJudge = role === "judge";
 
   return (
@@ -14,7 +11,7 @@ export function HostNav() {
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 hover:text-amber-600">
           <LayoutDashboard className="w-5 h-5" />
-          <span className="font-semibold">{isJudge ? "Loops · Judge" : "Loops · Host"}</span>
+          <span className="font-semibold">{isJudge ? "Loops \u00b7 Judge" : "Loops \u00b7 Host"}</span>
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           {!isJudge && (

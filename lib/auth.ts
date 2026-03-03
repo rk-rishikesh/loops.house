@@ -12,14 +12,22 @@ export async function getUser() {
   return user;
 }
 
-export async function getRole(): Promise<AppRole | null> {
-  const user = await getUser();
-  if (!user) return null;
+export async function getRole(userId?: string): Promise<AppRole | null> {
+  // When userId is provided we skip every Supabase Auth call, avoiding
+  // the Navigator Lock entirely. This is the preferred path on the client
+  // — callers should get userId from AuthContext (useAuth()).
+  let uid = userId;
+  if (!uid) {
+    // Fallback: server-side or rare cases where context isn't available.
+    const { data: { session } } = await supabase.auth.getSession();
+    uid = session?.user?.id;
+  }
+  if (!uid) return null;
 
   const { data } = await supabase
     .from("users")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", uid)
     .single();
 
   return (data?.role as AppRole) ?? null;

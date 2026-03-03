@@ -1,161 +1,37 @@
 /**
  * Storage abstraction layer.
  *
- * Delegates to Supabase via lib/db/*.
+ * Delegates to Supabase via the browser client.
  * Exports keep the same names so existing page imports continue to work,
  * but all functions are now async.
  *
- * Legacy interfaces (StoredProject, StoredBooster, StoredTeam) are
- * maintained as type aliases mapping to the DB row shapes for smooth migration.
+ * Mapping functions & interfaces are defined in lib/data-mappers.ts
+ * and re-exported here for backward compatibility.
  */
 
 import { createClient } from "@/lib/supabase/client";
-import type { Database, Json, BoosterType as DBBoosterType, SubmissionStatus } from "@/lib/supabase/types";
+import type { Json } from "@/lib/supabase/types";
+import {
+  profileToStored,
+  storedToProfileInsert,
+  boosterToStored,
+  teamToStored,
+  submissionToStored,
+} from "@/lib/data-mappers";
+import type { TeamRow, SubmissionStatus } from "@/lib/data-mappers";
 
-// Re-export BoosterType from the DB types
-export type BoosterType = DBBoosterType;
-
-// --- Legacy-compatible interfaces (used across all pages) ---
-
-export interface StoredProject {
-  project_id: string;
-  team_id?: string;
-  name: string;
-  tagline?: string;
-  category?: string;
-  description?: string;
-  refined_description?: string;
-  tech_stack_tags?: string[];
-  primary_color?: string;
-  secondary_color?: string;
-  accent_color?: string;
-  theme_label?: string;
-  key_features?: string[];
-  logo_url?: string;
-  website_url?: string;
-  github_url?: string;
-  youtube_url?: string;
-  screenshot_urls?: string[];
-  additional_links?: { label: string; url: string }[];
-  social_links?: { label: string; url: string }[];
-  created_at: string;
-  knowledge_base_chunks?: number;
-  kb_sections?: string[];
-  flattened_codebase?: string;
-  [key: string]: unknown;
-}
-
-export interface StoredBooster {
-  id: string;
-  name: string;
-  problem_statements: string[];
-  theme?: string;
-  booster_type?: BoosterType;
-  website_url?: string;
-  technical_resources?: { url: string; description: string }[];
-  technical_docs?: string;
-  bounty_pool_summary?: string;
-  program_goal?: string;
-  timeline?: string;
-  organizer_notes?: string;
-  sponsor_tracks?: { sponsor: string; track_description: string }[];
-  created_at: string;
-}
-
-export interface StoredTeam {
-  id: string;
-  name: string;
-  created_at: string;
-}
-
-// --- Helpers: map DB rows ↔ legacy shapes ---
-
-type ProfileRow = Database["public"]["Tables"]["loops_profiles"]["Row"];
-type BoosterRow = Database["public"]["Tables"]["boosters"]["Row"];
-type TeamRow = Database["public"]["Tables"]["teams"]["Row"];
-type SubmissionRow = Database["public"]["Tables"]["submissions"]["Row"];
-
-function profileToStored(p: ProfileRow): StoredProject {
-  const colors = (p.colors ?? {}) as Record<string, string>;
-  return {
-    project_id: p.id,
-    team_id: p.team_id,
-    name: p.name,
-    tagline: p.tagline ?? undefined,
-    category: p.category ?? undefined,
-    description: p.description ?? undefined,
-    refined_description: p.refined_description ?? undefined,
-    tech_stack_tags: p.tech_stack ?? undefined,
-    primary_color: colors.primary_color ?? undefined,
-    secondary_color: colors.secondary_color ?? undefined,
-    accent_color: colors.accent_color ?? undefined,
-    theme_label: colors.theme_label ?? undefined,
-    key_features: p.key_features ?? undefined,
-    logo_url: p.logo_url ?? undefined,
-    website_url: p.website_url ?? undefined,
-    github_url: p.github_url ?? undefined,
-    youtube_url: p.youtube_url ?? undefined,
-    screenshot_urls: p.screenshot_urls ?? undefined,
-    additional_links: p.additional_links as { label: string; url: string }[] | undefined,
-    social_links: p.social_links as { label: string; url: string }[] | undefined,
-    created_at: p.created_at,
-    knowledge_base_chunks: p.knowledge_base_chunks ?? undefined,
-    kb_sections: p.kb_sections ?? undefined,
-    flattened_codebase: p.flattened_codebase ?? undefined,
-  };
-}
-
-function storedToProfileInsert(s: StoredProject) {
-  return {
-    ...(s.project_id ? { id: s.project_id } : {}),
-    team_id: s.team_id!,
-    name: s.name,
-    tagline: s.tagline ?? null,
-    category: s.category ?? null,
-    description: s.description ?? null,
-    refined_description: s.refined_description ?? null,
-    tech_stack: s.tech_stack_tags ?? [],
-    colors: {
-      primary_color: s.primary_color ?? null,
-      secondary_color: s.secondary_color ?? null,
-      accent_color: s.accent_color ?? null,
-      theme_label: s.theme_label ?? null,
-    },
-    key_features: s.key_features ?? [],
-    logo_url: s.logo_url ?? null,
-    website_url: s.website_url ?? null,
-    github_url: s.github_url ?? null,
-    youtube_url: s.youtube_url ?? null,
-    screenshot_urls: s.screenshot_urls ?? [],
-    additional_links: s.additional_links ?? [],
-    social_links: s.social_links ?? [],
-    flattened_codebase: s.flattened_codebase ?? null,
-    knowledge_base_chunks: s.knowledge_base_chunks ?? 0,
-    kb_sections: s.kb_sections ?? [],
-  };
-}
-
-function boosterToStored(b: BoosterRow): StoredBooster {
-  return {
-    id: b.id,
-    name: b.name,
-    problem_statements: b.problem_statements ?? [],
-    theme: b.theme ?? undefined,
-    booster_type: b.booster_type,
-    website_url: b.website_url ?? undefined,
-    technical_resources: b.technical_resources as { url: string; description: string }[] | undefined,
-    technical_docs: b.technical_docs ?? undefined,
-    bounty_pool_summary: b.bounty_pool_summary ?? undefined,
-    program_goal: b.program_goal ?? undefined,
-    timeline: b.timeline ?? undefined,
-    organizer_notes: b.organizer_notes ?? undefined,
-    created_at: b.created_at,
-  };
-}
-
-function teamToStored(t: TeamRow): StoredTeam {
-  return { id: t.id, name: t.name, created_at: t.created_at };
-}
+// Re-export all types and interfaces for backward compatibility
+export type {
+  StoredProject,
+  StoredBooster,
+  StoredTeam,
+  StoredSubmission,
+  BoosterType,
+  ProfileRow,
+  BoosterRow,
+  TeamRow,
+  SubmissionRow,
+} from "@/lib/data-mappers";
 
 // --- Supabase client ---
 
@@ -163,87 +39,92 @@ function sb() {
   return createClient();
 }
 
-let authInit: Promise<void> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-empty-function
 async function ensureAuthReady() {
-  // Storage is primarily used from client components.
-  // Ensure Supabase has loaded the persisted session before queries run,
-  // otherwise RLS-protected tables can appear "empty" until a hard refresh.
-  if (typeof window === "undefined") return;
-  const client = sb();
-  if (!authInit) {
-    authInit = client.auth.getSession().then(() => undefined);
-  }
-  await authInit;
+  // Intentional no-op. Session management is handled by AuthProvider's
+  // onAuthStateChange(INITIAL_SESSION). Calling getSession() here caused
+  // NavigatorLockAcquireTimeoutError due to lock contention with the
+  // AuthProvider and getRole() all competing for the same exclusive lock.
+  //
+  // With staleTime:0 + refetchOnMount:'always', queries automatically
+  // refetch once AuthProvider finishes loading and triggers a re-render.
 }
 
 // --- Projects ---
 
-export async function getProjects(): Promise<StoredProject[]> {
+export async function getProjects() {
   await ensureAuthReady();
-  const { data } = await sb()
+  const { data, error } = await sb()
     .from("loops_profiles")
     .select("*")
     .order("created_at", { ascending: false });
+  if (error) console.error("[storage] getProjects:", error.message);
   return (data ?? []).map(profileToStored);
 }
 
-export async function getProject(projectId: string): Promise<StoredProject | null> {
+export async function getProject(projectId: string) {
   await ensureAuthReady();
-  const { data } = await sb()
+  const { data, error } = await sb()
     .from("loops_profiles")
     .select("*")
     .eq("id", projectId)
     .single();
+  if (error) console.error("[storage] getProject:", error.message);
   return data ? profileToStored(data) : null;
 }
 
-export async function saveProject(project: StoredProject): Promise<void> {
+export async function saveProject(project: import("@/lib/data-mappers").StoredProject) {
   await ensureAuthReady();
   const payload = storedToProfileInsert(project);
   if (project.project_id) {
     const { id: _id, ...updates } = payload as typeof payload & { id?: string };
-    await sb()
+    const { error } = await sb()
       .from("loops_profiles")
       .upsert({ id: project.project_id, ...updates })
       .select();
+    if (error) console.error("[storage] saveProject upsert:", error.message);
   } else {
-    await sb().from("loops_profiles").insert(payload).select();
+    const { error } = await sb().from("loops_profiles").insert(payload).select();
+    if (error) console.error("[storage] saveProject insert:", error.message);
   }
 }
 
-export async function removeProject(projectId: string): Promise<void> {
+export async function removeProject(projectId: string) {
   await ensureAuthReady();
-  await sb().from("loops_profiles").delete().eq("id", projectId);
+  const { error } = await sb().from("loops_profiles").delete().eq("id", projectId);
+  if (error) console.error("[storage] removeProject:", error.message);
 }
 
 // --- Boosters ---
 
-export async function getBoosters(): Promise<StoredBooster[]> {
+export async function getBoosters() {
   await ensureAuthReady();
-  const { data } = await sb()
+  const { data, error } = await sb()
     .from("boosters")
     .select("*")
     .order("created_at", { ascending: false });
+  if (error) console.error("[storage] getBoosters:", error.message);
   return (data ?? []).map(boosterToStored);
 }
 
-export async function getBooster(id: string): Promise<StoredBooster | null> {
+export async function getBooster(id: string) {
   await ensureAuthReady();
-  const { data } = await sb()
+  const { data, error } = await sb()
     .from("boosters")
     .select("*")
     .eq("id", id)
     .single();
+  if (error) console.error("[storage] getBooster:", error.message);
   return data ? boosterToStored(data) : null;
 }
 
-export async function saveBooster(booster: StoredBooster & { host_id?: string }): Promise<void> {
+export async function saveBooster(booster: import("@/lib/data-mappers").StoredBooster & { host_id?: string }) {
   await ensureAuthReady();
-  await sb()
+  const { error } = await sb()
     .from("boosters")
     .upsert({
       id: booster.id,
-      host_id: booster.host_id ?? "",
+      host_id: booster.host_id!,
       name: booster.name,
       problem_statements: booster.problem_statements,
       theme: booster.theme ?? null,
@@ -257,92 +138,72 @@ export async function saveBooster(booster: StoredBooster & { host_id?: string })
       organizer_notes: booster.organizer_notes ?? null,
     })
     .select();
+  if (error) throw new Error(`[storage] saveBooster: ${error.message}`);
 }
 
 // --- Teams ---
 
-export async function getTeams(userId?: string): Promise<StoredTeam[]> {
+export async function getTeams(userId?: string) {
   await ensureAuthReady();
   if (userId) {
-    const { data } = await sb()
+    const { data, error } = await sb()
       .from("team_members")
       .select("teams(*)")
       .eq("user_id", userId);
+    if (error) console.error("[storage] getTeams(userId):", error.message);
     return (data?.map((d) => (d as Record<string, unknown>).teams as TeamRow).filter(Boolean) ?? []).map(teamToStored);
   }
-  const { data } = await sb()
+  const { data, error } = await sb()
     .from("teams")
     .select("*")
     .order("created_at", { ascending: false });
+  if (error) console.error("[storage] getTeams:", error.message);
   return (data ?? []).map(teamToStored);
 }
 
-export async function getTeam(id: string): Promise<StoredTeam | null> {
+export async function getTeam(id: string) {
   await ensureAuthReady();
-  const { data } = await sb()
+  const { data, error } = await sb()
     .from("teams")
     .select("*")
     .eq("id", id)
     .single();
+  if (error) console.error("[storage] getTeam:", error.message);
   return data ? teamToStored(data) : null;
 }
 
-export async function saveTeam(team: { id?: string; name: string; owner_id: string; created_at?: string }): Promise<void> {
+export async function saveTeam(team: { id?: string; name: string; owner_id: string; created_at?: string }) {
   await ensureAuthReady();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const payload: any = { name: team.name, owner_id: team.owner_id };
   if (team.id) payload.id = team.id;
 
-  const { data } = await sb()
+  const { data, error } = await sb()
     .from("teams")
     .upsert(payload, { onConflict: "id" })
     .select()
     .single();
+  if (error) console.error("[storage] saveTeam:", error.message);
 
   // Auto-add owner as member
   if (data) {
-    await sb().from("team_members").upsert(
+    const { error: memberError } = await sb().from("team_members").upsert(
       { team_id: data.id, user_id: data.owner_id, role: "owner" },
       { onConflict: "team_id,user_id" },
     );
+    if (memberError) console.error("[storage] saveTeam member:", memberError.message);
   }
 }
 
 // --- Submissions ---
 
-export interface StoredSubmission {
-  id: string;
-  booster_id: string;
-  team_id: string;
-  project_id: string;
-  status: SubmissionStatus;
-  ai_score: Record<string, unknown>;
-  human_score: Record<string, unknown>;
-  momentum_score: number;
-  created_at: string;
-}
-
-function submissionToStored(s: SubmissionRow): StoredSubmission {
-  return {
-    id: s.id,
-    booster_id: s.booster_id,
-    team_id: s.team_id,
-    project_id: s.project_id,
-    status: s.status,
-    ai_score: (s.ai_score ?? {}) as Record<string, unknown>,
-    human_score: (s.human_score ?? {}) as Record<string, unknown>,
-    momentum_score: Number(s.momentum_score ?? 0),
-    created_at: s.created_at,
-  };
-}
-
 export async function submitProjectToBooster(
   boosterId: string,
   teamId: string,
   projectId: string,
-): Promise<StoredSubmission | null> {
+) {
   await ensureAuthReady();
-  const { data } = await sb()
+  const { data, error } = await sb()
     .from("submissions")
     .upsert(
       {
@@ -355,68 +216,75 @@ export async function submitProjectToBooster(
     )
     .select()
     .single();
+  if (error) console.error("[storage] submitProjectToBooster:", error.message);
   return data ? submissionToStored(data) : null;
 }
 
-export async function getProjectSubmissions(projectId: string): Promise<StoredSubmission[]> {
+export async function getProjectSubmissions(projectId: string) {
   await ensureAuthReady();
-  const { data } = await sb()
+  const { data, error } = await sb()
     .from("submissions")
     .select("*")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
+  if (error) console.error("[storage] getProjectSubmissions:", error.message);
   return (data ?? []).map(submissionToStored);
 }
 
-export async function getBoosterSubmissions(boosterId: string): Promise<StoredSubmission[]> {
+export async function getBoosterSubmissions(boosterId: string) {
   await ensureAuthReady();
-  const { data } = await sb()
+  const { data, error } = await sb()
     .from("submissions")
     .select("*")
     .eq("booster_id", boosterId)
     .order("created_at", { ascending: false });
+  if (error) console.error("[storage] getBoosterSubmissions:", error.message);
   return (data ?? []).map(submissionToStored);
 }
 
 /** Fetch multiple boosters by IDs in a single query. */
-export async function getBoostersByIds(ids: string[]): Promise<Record<string, StoredBooster>> {
+export async function getBoostersByIds(ids: string[]) {
   await ensureAuthReady();
   if (ids.length === 0) return {};
-  const { data } = await sb()
+  const { data, error } = await sb()
     .from("boosters")
     .select("*")
     .in("id", ids);
-  const map: Record<string, StoredBooster> = {};
+  if (error) console.error("[storage] getBoostersByIds:", error.message);
+  const map: Record<string, import("@/lib/data-mappers").StoredBooster> = {};
   (data ?? []).forEach((b) => { map[b.id] = boosterToStored(b); });
   return map;
 }
 
 /** Fetch all submissions across multiple boosters in a single query. */
-export async function getSubmissionsForBoosters(boosterIds: string[]): Promise<StoredSubmission[]> {
+export async function getSubmissionsForBoosters(boosterIds: string[]) {
   await ensureAuthReady();
   if (boosterIds.length === 0) return [];
-  const { data } = await sb()
+  const { data, error } = await sb()
     .from("submissions")
     .select("*")
     .in("booster_id", boosterIds)
     .order("created_at", { ascending: false });
+  if (error) console.error("[storage] getSubmissionsForBoosters:", error.message);
   return (data ?? []).map(submissionToStored);
 }
 
 /** Fetch booster with its sponsor tracks from the booster_tracks table. */
-export async function getBoosterWithTracks(id: string): Promise<StoredBooster | null> {
+export async function getBoosterWithTracks(id: string) {
   await ensureAuthReady();
-  const { data: booster } = await sb()
+  const { data: booster, error } = await sb()
     .from("boosters")
     .select("*")
     .eq("id", id)
     .single();
+  if (error) console.error("[storage] getBoosterWithTracks:", error.message);
   if (!booster) return null;
 
-  const { data: tracks } = await sb()
+  const { data: tracks, error: tracksError } = await sb()
     .from("booster_tracks")
     .select("sponsor_name, track_description")
     .eq("booster_id", id);
+  if (tracksError) console.error("[storage] getBoosterWithTracks tracks:", tracksError.message);
 
   const stored = boosterToStored(booster);
   stored.sponsor_tracks = (tracks ?? []).map((t) => ({

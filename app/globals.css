@@ -25,6 +25,10 @@
   --font-loops-mono: var(--font-dm-mono);
 }
 
+@view-transition {
+  navigation: auto;
+}
+
 /* Keyframes — shared across pages */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }

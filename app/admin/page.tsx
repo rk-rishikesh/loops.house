@@ -1,48 +1,33 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { Users, FolderOpen, Rocket, FileText, Clock } from "lucide-react";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getServerAuth } from "@/lib/server-auth";
+import { redirect } from "next/navigation";
 
-type Metrics = {
-  total_users: number;
-  total_profiles: number;
-  total_boosters: number;
-  total_submissions: number;
-  pending_host_applications: number;
-};
-
-export default function AdminDashboardPage() {
-  const [metrics, setMetrics] = useState<Metrics | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/admin?view=metrics")
-      .then((r) => {
-        if (!r.ok) throw new Error("Unauthorized or fetch error");
-        return r.json();
-      })
-      .then(setMetrics)
-      .catch((err) => setError(err.message));
-  }, []);
-
-  if (error) {
-    return (
-      <div className="text-center py-20">
-        <p className="text-red-500">{error}</p>
-        <p className="text-sm text-zinc-500 mt-2">
-          You need admin role to access this page.
-        </p>
-      </div>
-    );
+export default async function AdminDashboardPage() {
+  const auth = await getServerAuth();
+  if (!auth || auth.role !== "admin") {
+    redirect("/login");
   }
 
-  if (!metrics) {
-    return (
-      <div className="text-center py-20">
-        <p className="text-zinc-500 animate-pulse">Loading metrics...</p>
-      </div>
-    );
-  }
+  const [users, profiles, boosters, submissions, pendingApps] =
+    await Promise.all([
+      supabaseAdmin.from("users").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("loops_profiles").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("boosters").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("submissions").select("id", { count: "exact", head: true }),
+      supabaseAdmin
+        .from("host_applications")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+    ]);
+
+  const metrics = {
+    total_users: users.count ?? 0,
+    total_profiles: profiles.count ?? 0,
+    total_boosters: boosters.count ?? 0,
+    total_submissions: submissions.count ?? 0,
+    pending_host_applications: pendingApps.count ?? 0,
+  };
 
   const cards = [
     { label: "Total Users", value: metrics.total_users, icon: Users, color: "text-blue-600" },

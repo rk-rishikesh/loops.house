@@ -73,13 +73,13 @@ export type IdeateInputSchema = z.infer<typeof ideateInputSchema>;
 
 // Judge invites
 export const judgeInviteCreateSchema = z.object({
-  booster_id: z.string().uuid(),
+  booster_id: z.string().min(1, "Booster ID is required"),
   judge_email: z.string().email(),
   assigned_tracks: z.array(z.string()).optional(),
 });
 
 export const judgeInviteAcceptSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1, "Invite ID is required"),
 });
 
 // Host applications
@@ -92,12 +92,12 @@ export const hostApplicationCreateSchema = z.object({
 });
 
 export const hostApplicationReviewSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1, "Application ID is required"),
   status: z.enum(["approved", "rejected"]),
 });
 
 // Admin
 export const adminRoleUpdateSchema = z.object({
-  user_id: z.string().uuid(),
+  user_id: z.string().min(1, "User ID is required"),
   role: appRoleSchema,
 });

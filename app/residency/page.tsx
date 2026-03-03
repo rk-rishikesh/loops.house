@@ -1,23 +1,11 @@
-"use client";
-
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
-import { useAuth } from "@/app/providers";
+import { getServerAuth } from "@/lib/server-auth";
 
-export default function ResidencyLandingPage() {
-  const router = useRouter();
-  const { user, loading } = useAuth();
+export default async function ResidencyLandingPage() {
+  const auth = await getServerAuth();
 
-  const handleApplyClick = () => {
-    if (loading) return;
-    if (!user) {
-      router.push("/login?redirect=/residency");
-      return;
-    }
-    // For now route to a generic residency id, this can be parameterized later.
-    router.push("/residency/default/new");
-  };
+  const href = auth ? "/residency/default/new" : "/login?redirect=/residency";
 
   return (
     <main className="min-h-screen bg-[#EBECE7] flex items-center justify-center px-4">
@@ -36,16 +24,14 @@ export default function ResidencyLandingPage() {
             </p>
           </div>
           <div className="sm:text-right">
-            <button
-              type="button"
-              onClick={handleApplyClick}
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-full bg-[#20332b] text-[#ECEEE5] px-5 py-2.5 text-sm font-medium hover:bg-[#17241d] disabled:opacity-60"
+            <Link
+              href={href}
+              className="inline-flex items-center gap-2 rounded-full bg-[#20332b] text-[#ECEEE5] px-5 py-2.5 text-sm font-medium hover:bg-[#17241d] no-underline"
             >
               Apply now
               <ArrowRight className="w-4 h-4" />
-            </button>
-            {!user && !loading && (
+            </Link>
+            {!auth && (
               <p className="mt-2 text-xs text-zinc-500">
                 You&apos;ll be asked to log in before continuing.
               </p>

@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
     ],
     dangerouslyAllowSVG: true,
   },
+  experimental: {
+    viewTransition: true
+  },
   async headers() {
     return [
       {

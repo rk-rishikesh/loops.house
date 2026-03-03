@@ -19,9 +19,10 @@ const ROLE_DASHBOARDS: Record<string, string> = {
 };
 
 const ROLE_COOKIE = "x-user-role";
+const ROLE_HINT_COOKIE = "x-user-role-hint"; // JS-readable twin for AuthProvider
 const ROLE_COOKIE_TTL = 30; // 30s — keep short so role changes (e.g. admin promotion) propagate without hard refresh
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   let response = NextResponse.next({ request });
@@ -47,18 +48,60 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Refresh session (important for SSR)
+  // Use getSession() instead of getUser() — reads JWT from cookie locally (~5ms)
+  // instead of making a network call to Supabase auth servers (~150ms).
+  // RLS on actual data access still validates the JWT server-side.
+  // We extract the user ID from the JWT `sub` claim rather than accessing
+  // session.user, which avoids the Supabase "insecure user" warning proxy.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  if (!user) {
+  // Authenticated user hitting /login → redirect them away immediately
+  if (session && pathname === "/login") {
+    const userId = JSON.parse(atob(session.access_token.split(".")[1])).sub as string;
+    const explicit = request.nextUrl.searchParams.get("redirect");
+    if (explicit) {
+      return NextResponse.redirect(new URL(explicit, request.url));
+    }
+    // Resolve role for dashboard redirect
+    let role: string | undefined;
+    const cached = request.cookies.get(ROLE_COOKIE)?.value;
+    if (cached) {
+      const sep = cached.indexOf(":");
+      if (sep !== -1 && cached.slice(0, sep) === userId) {
+        role = cached.slice(sep + 1);
+      }
+    }
+    if (!role) {
+      const { data } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", userId)
+        .single();
+      role = (data?.role as string) ?? "builder";
+    }
+    return NextResponse.redirect(new URL(ROLE_DASHBOARDS[role] ?? "/builder", request.url));
+  }
+
+  // Unauthenticated user on a protected route → send to login
+  // (Skip if already on /login to avoid redirect loop)
+  if (!session && pathname !== "/login") {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     const redirect = NextResponse.redirect(loginUrl);
     redirect.cookies.delete(ROLE_COOKIE);
+    redirect.cookies.delete(ROLE_HINT_COOKIE);
     return redirect;
   }
+
+  // Unauthenticated user on /login → let through
+  if (!session) {
+    return response;
+  }
+
+  // Extract user ID from JWT sub claim (avoids touching the proxied session.user)
+  const userId = JSON.parse(atob(session.access_token.split(".")[1])).sub as string;
 
   // Role check — use cached cookie first, fall back to DB.
   // Cookie format: "userId:role" to prevent cross-user contamination.
@@ -66,7 +109,7 @@ export async function proxy(request: NextRequest) {
   const cached = request.cookies.get(ROLE_COOKIE)?.value;
   if (cached) {
     const sep = cached.indexOf(":");
-    if (sep !== -1 && cached.slice(0, sep) === user.id) {
+    if (sep !== -1 && cached.slice(0, sep) === userId) {
       role = cached.slice(sep + 1);
     }
   }
@@ -74,12 +117,20 @@ export async function proxy(request: NextRequest) {
     const { data } = await supabase
       .from("users")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", userId)
       .single();
     role = (data?.role as string) ?? "builder";
     // Cache role in a short-lived HTTP-only cookie, bound to this user
-    response.cookies.set(ROLE_COOKIE, `${user.id}:${role}`, {
+    response.cookies.set(ROLE_COOKIE, `${userId}:${role}`, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: ROLE_COOKIE_TTL,
+      path: "/",
+    });
+    // JS-readable twin so AuthProvider can read role instantly without a DB query
+    response.cookies.set(ROLE_HINT_COOKIE, role, {
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: ROLE_COOKIE_TTL,
@@ -105,5 +156,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/(builder|host|admin)(.*)"],
+  matcher: ["/(builder|host|admin|login)(.*)"],
 };
