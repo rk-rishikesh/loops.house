@@ -200,6 +200,71 @@ Client at `app/api/lib/gemini-client.ts` with `generateContent`, `generateJSON<T
 
 See `.env.example`: `GEMINI_API_KEY`, `GITHUB_TOKEN`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
 
+## SSR Rules & Data Flow
+
+This app is **server-first**. Pages are async server components that fetch data and pass it as props to `"use client"` components. Mutations always go through Server Actions in `lib/actions.ts`, never direct client-side Supabase calls.
+
+### Data Flow
+
+```
+Page request
+  → app/[role]/page.tsx (async server component)
+    → Promise.all([ getXxxServer(), ... ])           // lib/server-data.ts
+      → createServerSupabase() → Supabase query      // lib/supabase/server.ts
+      → map rows via data-mappers.ts                  // lib/data-mappers.ts
+    → <ClientComponent data={serverData} />           // props, no waterfall
+      → user interaction → form submit
+        → react-hook-form validates with Zod           // lib/validations/schemas.ts
+        → startTransition() → saveXxxAction()         // lib/actions.ts
+          → auth check → Zod revalidation → DB mutation → revalidatePath()
+        → router.refresh()                             // re-runs server component
+```
+
+### Rules
+
+**Data fetching — always server-side for page loads:**
+- Fetch in `page.tsx` using `lib/server-data.ts` functions (`getProjectsServer()`, `getBoostersServer()`, etc.)
+- Use `Promise.all()` for parallel queries — never sequential awaits when data is independent
+- Pre-join/map data on the server before passing as props (e.g., build a `projectMap` Record for O(1) lookups)
+- Never use `useQuery()` for initial page data — TanStack Query is for secondary/interactive data only
+
+**Mutations — always Server Actions, never client-side:**
+- All writes go through `lib/actions.ts` Server Actions (e.g., `saveProjectAction`, `saveTeamAction`)
+- Server Actions authenticate with `getAuthUser()`, validate with Zod, mutate, then call `revalidatePath()`
+- Return `ActionResult<T>` (`{ success: true, data } | { success: false, error }`) — never throw
+- Client calls `router.refresh()` after a successful action to get fresh SSR data
+
+**Forms — react-hook-form + Zod + Server Action:**
+- Use `useForm({ resolver: zodResolver(schema) })` from `lib/validations/schemas.ts`
+- Wrap Server Action call in `useTransition()` for pending state — no extra `useState` for loading
+- On success: `reset()` form + `router.refresh()` or navigate
+- On error: display `result.error` in the UI
+
+**Supabase client selection:**
+
+| Context | Client | Import |
+|---------|--------|--------|
+| Server components / `page.tsx` | `createServerSupabase()` | `lib/supabase/server.ts` |
+| Server Actions (`lib/actions.ts`) | `createServerSupabase()` | `lib/supabase/server.ts` |
+| API routes | `requireAuth()` | `lib/supabase/middleware.ts` |
+| Data-access layer (`lib/db/*`) | `supabaseAdmin` | `lib/supabase/admin.ts` |
+| Browser client components | `sb()` via `lib/storage.ts` | `lib/supabase/client.ts` |
+
+**Auth in server components:**
+- Use `getServerAuth()` from `lib/server-auth.ts` — reads the `x-user-role` cookie set by middleware (zero DB round-trip)
+- Falls back to DB query if cookie is missing
+- Returns `{ userId, role }` or `null`
+
+### Anti-Patterns (do NOT do these)
+
+- Calling Supabase directly from a `"use client"` component to write data — use a Server Action
+- Using `lib/storage.ts` in server components — use `lib/server-data.ts` instead
+- Fetching data in `useEffect` on mount when the page could be a server component
+- Skipping Zod validation in Server Actions
+- Forgetting `revalidatePath()` after a mutation — the page will show stale data
+- N+1 queries in server components — use bulk functions like `getSubmissionsForBoostersServer(ids)`
+- Storing auth state in localStorage — use session cookies via `app/providers.tsx`
+
 ## Conventions
 
 - **TypeScript strict mode** with path aliases (`@/*`, `@/components/*`, `@/types/*`, `@/lib/*`)

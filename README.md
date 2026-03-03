@@ -253,6 +253,118 @@ All 19 API routes use `requireAuth()` from `lib/supabase/middleware.ts`:
 | `host-applications` | any authenticated (POST/GET), admin (PATCH) |
 | `judge-invites` | host/admin (POST), any authenticated (GET/PATCH) |
 
+## Contributing Guide
+
+### SSR Data Flow
+
+This app is **server-first**. Pages are async server components that fetch data and pass it as props to `"use client"` components.
+
+```
+app/[role]/page.tsx          → async server component, fetches data
+  lib/server-data.ts         → getProjectsServer(), getBoostersServer(), etc.
+    lib/data-mappers.ts      → DB rows → StoredProject/StoredBooster/StoredTeam
+  <ClientComponent data={} /> → receives server data as props
+    lib/actions.ts           → Server Actions for all mutations
+```
+
+### Page Pattern
+
+```typescript
+// app/host/page.tsx — async server component
+export default async function HostPage() {
+  // 1. Parallel data fetching
+  const [boosters, projects] = await Promise.all([
+    getBoostersServer(),
+    getProjectsServer(),
+  ]);
+
+  // 2. Pre-join on server (avoid N+1 in client)
+  const projectMap: Record<string, StoredProject> = {};
+  projects.forEach((p) => { projectMap[p.project_id] = p; });
+
+  // 3. Pass as props — client receives fully hydrated data
+  return <HostDashboard boosters={boosters} projectMap={projectMap} />;
+}
+```
+
+### Mutation Pattern
+
+All writes go through **Server Actions** in `lib/actions.ts` — never call Supabase directly from a client component to mutate data.
+
+```typescript
+// lib/actions.ts
+"use server";
+export async function saveProjectAction(project: StoredProject): Promise<ActionResult<string>> {
+  const user = await getAuthUser();          // 1. Authenticate
+  if (!user) return { success: false, error: "Not authenticated" };
+
+  const parsed = projectSchema.safeParse(project); // 2. Validate with Zod
+  if (!parsed.success) return { success: false, error: parsed.error.message };
+
+  // 3. Mutate via server Supabase client
+  const { error } = await supabase.from("loops_profiles").upsert(row);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/builder/projects");       // 4. Invalidate SSR cache
+  return { success: true, data: project.project_id };
+}
+```
+
+### Form Pattern
+
+```typescript
+// components/client/some-form.tsx
+"use client";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { someSchema } from "@/lib/validations/schemas";
+import { someAction } from "@/lib/actions";
+
+export function SomeForm({ data }: { data: ServerData }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(someSchema),
+  });
+
+  const onSubmit = handleSubmit(async (values) => {
+    startTransition(async () => {
+      const result = await someAction(values);
+      if (result.success) {
+        reset();
+        router.refresh();  // Re-runs server component with fresh data
+      }
+    });
+  });
+  // ...
+}
+```
+
+### Supabase Client Selection
+
+| Context | Client | Import |
+|---------|--------|--------|
+| Server components / `page.tsx` | `createServerSupabase()` | `lib/supabase/server.ts` |
+| Server Actions | `createServerSupabase()` | `lib/supabase/server.ts` |
+| API routes | `requireAuth()` | `lib/supabase/middleware.ts` |
+| Data-access layer (`lib/db/*`) | `supabaseAdmin` | `lib/supabase/admin.ts` |
+| Browser client components | `sb()` via `lib/storage.ts` | `lib/supabase/client.ts` |
+
+### Rules
+
+- Fetch data in server components using `lib/server-data.ts` — never `useEffect` + fetch on mount
+- Use `Promise.all()` for parallel queries — never sequential awaits for independent data
+- All mutations go through `lib/actions.ts` Server Actions — never write directly from client components
+- Server Actions must: authenticate, validate with Zod, mutate, call `revalidatePath()`
+- Return `ActionResult<T>` from Server Actions — never throw errors
+- Use `useTransition()` for form pending state — no extra `useState({ loading })`
+- Call `router.refresh()` after successful Server Actions to get fresh SSR data
+- Use `getServerAuth()` for auth in server components (reads role cookie, zero DB round-trip)
+- Pre-join data on the server before passing as props — avoid N+1 queries in the client
+
+---
+
 ## Deployment
 
 ### Vercel
