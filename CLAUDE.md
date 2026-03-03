@@ -12,6 +12,8 @@ npm run db:gen-types     # Regenerate database.types.ts from live Supabase schem
 npm run db:push          # Push migrations to remote Supabase
 npm run db:status        # Check database health
 npm run db:new-migration -- "name"  # Create new migration file
+npm run db:seed          # Seed database with test data
+npm run db:setup-storage # Create storage buckets and policies
 ```
 
 ## MCP TOOLS (USE FOR DEBUGGING AND DEVELOPMENT)
@@ -47,36 +49,130 @@ LoopsFlow is an AI-native developer platform ("permanent home for developer proj
 
 1. **Supabase clients** (`lib/supabase/`): Three client variants — `client.ts` (browser singleton), `server.ts` (SSR with cookies), `admin.ts` (service-role, bypasses RLS). Pick the right one based on context.
 
-2. **Data-access layer** (`lib/db/`): CRUD modules (teams, profiles, boosters, submissions, knowledge-base, booster-tracks, storage, rate-limiter). All use the admin client.
+2. **Data-access layer** (`lib/db/`): 10 CRUD modules — `teams`, `profiles`, `boosters`, `submissions`, `knowledge-base`, `booster-tracks`, `storage`, `rate-limiter`, `host-applications`, `judge-invites`. All use the admin client.
 
 3. **`lib/storage.ts`**: Async facade over `lib/db/*` modules that maps legacy `StoredProject`/`StoredBooster`/`StoredTeam` interfaces to DB rows. Client components import from here.
 
+### Server-Side Data Layer
+
+- **`lib/actions.ts`**: Server Actions for mutations — creates projects, teams, boosters, submissions. Uses Zod validation from `lib/validations/schemas.ts`.
+- **`lib/server-auth.ts`**: `getServerAuth()` — server component auth helper, returns `{ user, role }` or redirects.
+- **`lib/server-data.ts`**: Server-side data fetching — mirrors `storage.ts` functions for use in server components and page loaders.
+- **`lib/data-mappers.ts`**: Maps DB rows (`Tables<"loops_profiles">`) to frontend `StoredProject`/`StoredBooster`/`StoredTeam` interfaces.
+
+### Form & Cache Layer
+
+- **`lib/validations/schemas.ts`**: Zod schemas for all forms and API validation (project, booster, team, admin, host-application, judge-invite).
+- **`lib/types/json-schemas.ts`**: Typed schemas for JSON columns (`ColorsJson`, `LinkItem`, `SocialLinks`, etc.).
+- **`lib/queries.ts`**: TanStack Query hooks (`useProjects`, `useBoosters`, `useTeams`, etc.) with stale-while-revalidate caching.
+- **`lib/cache-config.ts`**: TanStack Query cache timing constants and default options.
+
 ### Auth Flow
 
-- `proxy.ts` (edge): Protects `/builder` and `/host` routes, refreshes Supabase session, redirects to `/login?redirect=`.
-- `lib/supabase/middleware.ts`: Exports `requireAuth(allowedRoles?)` for API routes — validates session + role, returns `{user, supabase}` or null.
-- `app/providers.tsx`: `AuthContext` with `useAuth()` hook providing `{user, session, role, loading}`.
+- **`middleware.ts` (root, edge)**: Protects `/builder`, `/host`, and `/admin` routes. Refreshes Supabase session, checks role, redirects to `/login?redirect=`. Role mappings: `/builder` → builder, admin; `/host` → host, admin, judge; `/admin` → admin.
+- **`lib/supabase/middleware.ts`**: Exports `requireAuth(allowedRoles?)` for API routes — validates session + role, returns `{user, supabase}` or null.
+- **`app/providers.tsx`**: `AuthContext` with `useAuth()` hook providing `{user, session, role, loading}`.
 - Auth methods: Google OAuth, GitHub OAuth, email/password.
+
+### App Pages
+
+```
+app/
+  admin/        Admin dashboard (users, applications)
+  builder/      Builder role pages (projects, boosters, submissions)
+  host/         Host role pages (booster management, judging)
+  viewer/       Viewer role pages (project browsing)
+  boosters/     Public booster listings
+  residency/    Residency program pages
+  login/        Auth page (OAuth + email/password)
+  auth/callback OAuth callback handler
+```
 
 ### AI Agent Routes (`app/api/`)
 
-All 16 API routes follow the same pattern:
+19 API routes total: 12 AI agent routes, 4 sub-agent utility routes, and 3 CRUD REST endpoints.
 
-1. `requireAuth(["builder", "host", "admin"])` — role-gated
+All AI routes follow a common pattern:
+
+1. `requireAuth(allowedRoles?)` — role-gated authentication
 2. Validate request body
-3. Create SSE stream for progress updates
-4. Run sub-agents in parallel (code-reader, demo-reader, theme-reader, youtube)
-5. Return `sseResponse(stream)`
+3. Call Gemini (`generateJSON`, `generateContent`, or `streamContent`)
+4. Return JSON or SSE stream
 
-Route config on every agent endpoint:
+Route config on agent endpoints:
 
 ```typescript
 export const runtime = "nodejs";
-export const maxDuration = 90;
 export const dynamic = "force-dynamic";
 ```
 
-Agent categories: `builder-agents/`, `host-agents/`, `viewer-agents/`, `devrel-agents/`, `sub-agents/`.
+Agent categories: `builder-agents/`, `host-agents/`, `viewer-agents/`, `devrel-agents/`, `sub-agents/`, `agents/`.
+
+#### Gemini Client (`app/api/lib/gemini-client.ts`)
+
+| Export | Description |
+|--------|-------------|
+| `ai` | `GoogleGenAI` instance |
+| `MODELS` | `{ pro: "gemini-2.5-pro", flash: "gemini-2.0-flash", embedding: "gemini-embedding-001" }` |
+| `generateContent(model, contents, config?)` | Single-turn generation |
+| `generateJSON<T>(model, prompt, systemInstruction?)` | Structured JSON output (temperature 0.2) |
+| `streamContent(model, contents, config?)` | Streaming generation |
+
+Model tier is always passed explicitly: `"pro"`, `"flash"`, or `"embedding"`. Can be overridden via env vars.
+
+#### Shared Infrastructure (`app/api/lib/`)
+
+| File | Purpose |
+|------|---------|
+| `sse.ts` | `createSSEStream()` + `sseResponse()` for event-stream responses |
+| `rate-limiter.ts` | `checkRateLimit(key, max, windowMs)` — delegates to DB |
+| `embeddings.ts` | `embedText()`, `embedBatch()`, `cosineSimilarity()` — 768-dim |
+| `knowledge-base.ts` | `buildKnowledgeBase()`, `chunkText()` — chunks text, embeds, stores in pgvector |
+| `vector-store.ts` | `upsertChunks()`, `getChunks()`, `queryTopK()`, `hasProject()` |
+
+#### Builder Agents (`app/api/builder-agents/`)
+
+- **profile-creator** — Create a full project profile with AI enrichment. Orchestrates `code-reader`, `demo-reader`, `theme-reader` in parallel. Model: `"pro"`. SSE stream.
+- **project-ideator** — Conversational brainstorming mentor for project ideas. Model: `"flash"` streaming. SSE stream.
+- **social-amplifier** — Generate LinkedIn/Twitter posts. Model: `"flash"`. JSON. maxDuration: 10s.
+
+#### Host Agents (`app/api/host-agents/`)
+
+- **booster-generator** — Generate a full booster program draft. Model: `"flash"`. JSON. Rate limit: 5/day.
+- **metric-analyst** — Analytics reports for booster submissions. Model: `"flash"`. JSON.
+- **project-evaluator** — AI judging against rubric criteria. Model: `"pro"`. JSON. Persists `ai_score` to submissions.
+- **resource-provisioner** — Technical resource plan for builders. Model: `"flash"`. JSON. Rate limit: 5/day.
+- **save-evaluation** — Persist evaluation scores (no AI, pure CRUD). JSON.
+
+#### DevRel Agents (`app/api/devrel-agents/`)
+
+- **tech-buddy** — RAG-powered resource assistant from sponsor docs. Model: `"pro"` streaming. SSE stream. In-memory embedding cache.
+
+#### Viewer Agents (`app/api/viewer-agents/`)
+
+- **code-query** — Answer questions about a project's codebase. Model: `"pro"`. JSON. maxDuration: 30s. Rate limit: 20/hr.
+- **project-chat** — Conversational Q&A using project knowledge base. Model: `"pro"` streaming. SSE stream.
+
+#### Standalone Agents (`app/api/agents/`)
+
+- **youtube** — YouTube video analysis (direct Gemini video input or transcript fallback). Uses `gemini-3-flash-preview` with `gemini-2.0-flash` fallback. JSON. maxDuration: 120s.
+
+#### Sub-Agents (`app/api/sub-agents/`)
+
+Reusable building blocks exposing both exported functions (in-process) and HTTP POST endpoints:
+
+- **code-reader** — Flatten GitHub repo + extract tech stack. Models: `"flash"` (tech), `"pro"` (Q&A).
+- **demo-reader** — Analyze YouTube demo video. Model: `"pro"` (direct video).
+- **theme-reader** — Extract visual theme from screenshots/logo. Model: `"flash"` (multimodal).
+- **youtube** — YouTube transcript + analysis wrapper.
+
+Sub-agent orchestration: profile-creator runs code-reader, demo-reader, theme-reader in parallel via exported functions (not HTTP), merges results, builds knowledge base, generates tagline/category, persists to DB.
+
+#### CRUD REST Endpoints
+
+- **admin** (`app/api/admin/`) — GET (metrics/users), PATCH (update role). Admin only.
+- **host-applications** (`app/api/host-applications/`) — POST/GET (any auth), PATCH (admin). Approval promotes to host.
+- **judge-invites** (`app/api/judge-invites/`) — POST (host/admin), GET/PATCH (any auth). Acceptance promotes to judge.
 
 ### Vector Search (pgvector)
 
@@ -87,15 +183,16 @@ Agent categories: `builder-agents/`, `host-agents/`, `viewer-agents/`, `devrel-a
 
 ### Database
 
-Supabase Postgres with 4 migration files in `supabase/migrations/`. Key tables: users, teams, team_members, loops_profiles, boosters, knowledge_bases, knowledge_base_chunks, booster_track_chunks, submissions, rate_limits, host_applications. RLS enabled on all tables.
+Supabase Postgres with a single consolidated migration `supabase/migrations/000_full_schema.sql`. 13 tables, 5 RPC functions, 3 storage buckets, 5 enums. Key tables: users, teams, team_members, loops_profiles, boosters, booster_tracks, knowledge_bases, knowledge_base_chunks, booster_track_chunks, submissions, host_applications, judge_invites, rate_limits. RLS enabled on all tables.
 
 Types: `lib/supabase/database.types.ts` (auto-generated, do not edit) re-exported through `lib/supabase/types.ts` with enum aliases.
 
 ### Gemini Models
 
-- `gemini-2.5-pro` — complex reasoning tasks
-- `gemini-2.0-flash` — fast responses
+- `gemini-2.5-pro` — complex reasoning tasks (project evaluation, code Q&A, RAG)
+- `gemini-2.0-flash` — fast responses (generation, streaming chat, tech stack detection)
 - `gemini-embedding-001` — 768-dim embeddings
+- `gemini-3-flash-preview` — YouTube direct video analysis (lib/agents/youtube.ts only)
 
 Client at `app/api/lib/gemini-client.ts` with `generateContent`, `generateJSON<T>`, and `streamContent`.
 
@@ -108,5 +205,7 @@ See `.env.example`: `GEMINI_API_KEY`, `GITHUB_TOKEN`, `NEXT_PUBLIC_SUPABASE_URL`
 - **TypeScript strict mode** with path aliases (`@/*`, `@/components/*`, `@/types/*`, `@/lib/*`)
 - **Tailwind CSS v4** (PostCSS-based, no tailwind.config)
 - **ESLint v9 flat config** (Next.js core web vitals + TypeScript)
+- **react-hook-form** + **@hookform/resolvers** + **Zod** for form validation
+- **TanStack Query** (`@tanstack/react-query`) for client-side data fetching and caching
 - API routes use SSE streaming for long-running AI operations
 - Rate limiting is DB-backed via `check_rate_limit` RPC (not in-memory)

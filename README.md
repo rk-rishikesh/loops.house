@@ -54,12 +54,9 @@ npm run db:push
 
 **Option B: Dashboard SQL Editor**
 
-Go to your [Supabase Dashboard](https://supabase.com/dashboard) > SQL Editor and run each file in order:
+Go to your [Supabase Dashboard](https://supabase.com/dashboard) > SQL Editor and run:
 
-1. `supabase/migrations/001_initial_schema.sql` — Tables, indexes, extensions (pgvector)
-2. `supabase/migrations/002_rls_policies.sql` — Row Level Security policies
-3. `supabase/migrations/003_functions.sql` — RPC functions and triggers
-4. `supabase/migrations/004_storage_buckets.sql` — Storage buckets and policies
+1. `supabase/migrations/000_full_schema.sql` — Complete schema (tables, indexes, RLS, functions, storage buckets)
 
 ### 4. Verify the database
 
@@ -67,7 +64,7 @@ Go to your [Supabase Dashboard](https://supabase.com/dashboard) > SQL Editor and
 npm run db:status
 ```
 
-This checks all 13 tables, 3 RPC functions, and 3 storage buckets.
+This checks all 13 tables, 5 RPC functions, and 3 storage buckets.
 
 ### 5. Run the dev server
 
@@ -90,6 +87,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run db:reset` | Drop all tables and re-run migrations (**dev only!**) |
 | `npm run db:gen-types` | Auto-generate TypeScript types from live schema |
 | `npm run db:new-migration -- "name"` | Create a new timestamped migration file |
+| `npm run db:seed` | Seed database with test data |
+| `npm run db:setup-storage` | Create storage buckets and policies |
 
 ### Auto-Generating TypeScript Types
 
@@ -154,33 +153,48 @@ npm run db:gen-types   # Regenerate types
 
 ```
 app/
-  api/                      16 AI agent API routes
+  api/                      19 API routes (12 AI agents + 4 sub-agents + 3 REST)
     builder-agents/         Profile creator, project ideator, social amplifier
-    host-agents/            Booster generator, metric analyst, evaluator
+    host-agents/            Booster generator, metric analyst, evaluator, resource provisioner, save-evaluation
     viewer-agents/          Code query, project chat
     devrel-agents/          Tech buddy (RAG-powered)
+    agents/                 YouTube direct-source agent
     sub-agents/             Code/demo/theme readers, YouTube
-    lib/                    Shared: gemini client, vector store, rate limiter
+    lib/                    Shared: gemini client, vector store, SSE, rate limiter, embeddings
+  admin/                    Admin dashboard (users, applications)
   auth/callback/            OAuth callback handler
   builder/                  Builder role pages
   host/                     Host role pages
   viewer/                   Viewer role pages
   boosters/                 Public booster pages
+  residency/                Residency program pages
   login/                    Auth page (OAuth + email/password)
   layout.tsx                Root layout with SupabaseProvider
   providers.tsx             Supabase session context
 lib/
+  actions.ts                Server Actions (mutations with Zod validation)
   auth.ts                   Auth helpers (Supabase session + role lookup)
-  storage.ts                Async data layer (delegates to lib/db/)
-  db/                       Data-access layer
-    teams.ts                Team CRUD
-    profiles.ts             Project/profile CRUD
+  cache-config.ts           TanStack Query cache settings
+  data-mappers.ts           DB row <-> StoredXxx mappers
+  github-utils.ts           GitHub URL parsing and file fetching
+  queries.ts                TanStack Query hooks (useProjects, useBoosters, etc.)
+  server-auth.ts            Server component auth (getServerAuth)
+  server-data.ts            Server-side data fetching (mirrors storage.ts)
+  storage.ts                Async data layer for client components (delegates to lib/db/)
+  theme.ts                  Theme utilities
+  agents/
+    youtube.ts              YouTube analysis with transcript fallback
+  db/                       Data-access layer (10 modules)
     boosters.ts             Booster CRUD
-    submissions.ts          Submission CRUD
+    booster-tracks.ts       Booster track operations
+    host-applications.ts    Host application CRUD
+    judge-invites.ts        Judge invite CRUD
     knowledge-base.ts       pgvector KB chunk operations
-    booster-tracks.ts       pgvector track chunk operations
-    storage.ts              File upload helpers
+    profiles.ts             Project/profile CRUD
     rate-limiter.ts         DB-backed rate limiting
+    storage.ts              File upload helpers
+    submissions.ts          Submission CRUD
+    teams.ts                Team CRUD
   supabase/
     client.ts               Browser Supabase client
     server.ts               Server-side client (cookie-based SSR)
@@ -188,17 +202,24 @@ lib/
     middleware.ts            requireAuth() + unauthorized() helpers
     database.types.ts       Auto-generated types (npm run db:gen-types)
     types.ts                Barrel re-exports + convenience enum aliases
-middleware.ts               Next.js edge middleware (auth redirects)
+  types/
+    json-schemas.ts         Typed schemas for JSON columns
+  validations/
+    schemas.ts              Zod schemas (forms, API validation, admin)
+middleware.ts               Next.js edge middleware (role-based route protection)
 supabase/
   config.toml               Supabase CLI config
-  migrations/               SQL migration files (run in order)
+  migrations/               SQL migration file (000_full_schema.sql)
 scripts/
   db-status.mjs             Check database health
   db-push.sh                Push migrations
   db-reset.sh               Reset database (dev only)
   gen-types.sh              Auto-generate TypeScript types
   new-migration.sh          Create new migration file
+  seed-db.mjs               Seed database with test data
+  setup-storage.mjs         Set up storage buckets
 PLATFORM.md                 Platform requirements & entity docs
+AGENTS.md                   AI agent architecture documentation
 ```
 
 ## Authentication
@@ -214,16 +235,23 @@ Edge middleware (`middleware.ts`) protects all routes except `/login` and `/auth
 
 ## API Route Protection
 
-All 16 API routes use `requireAuth()` from `lib/supabase/middleware.ts`:
+All 19 API routes use `requireAuth()` from `lib/supabase/middleware.ts`:
 
 | Route Group | Required Roles |
 |-------------|---------------|
 | `builder-agents/*` | builder, host, admin |
-| `host-agents/*` | host, admin |
+| `host-agents/booster-generator` | host, admin |
+| `host-agents/metric-analyst` | host, admin |
 | `host-agents/project-evaluator` | host, judge, admin |
+| `host-agents/resource-provisioner` | host, admin |
+| `host-agents/save-evaluation` | host, judge, admin |
 | `devrel-agents/tech-buddy` | any authenticated |
 | `viewer-agents/*` | any authenticated |
 | `sub-agents/*` | any authenticated |
+| `agents/youtube` | any authenticated |
+| `admin` | admin |
+| `host-applications` | any authenticated (POST/GET), admin (PATCH) |
+| `judge-invites` | host/admin (POST), any authenticated (GET/PATCH) |
 
 ## Deployment
 
