@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import type { Json, Database } from "@/lib/supabase/types";
+
+type SubmissionUpdate = Database["public"]["Tables"]["submissions"]["Update"];
+type SubmissionInsert = Database["public"]["Tables"]["submissions"]["Insert"];
 
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(["host", "judge", "admin"]);
@@ -17,9 +21,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const updates: Record<string, unknown> = {};
-    if (ai_score !== undefined) updates.ai_score = ai_score;
-    if (human_score !== undefined) updates.human_score = human_score;
+    const updates: SubmissionUpdate = {};
+    if (ai_score !== undefined) updates.ai_score = ai_score as Json;
+    if (human_score !== undefined) updates.human_score = human_score as Json;
     if (status !== undefined) updates.status = status;
 
     if (Object.keys(updates).length === 0) {
@@ -29,10 +33,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabaseAdmin
       .from("submissions")
-      .update(updates as any)
+      .update(updates)
       .eq("project_id", project_id)
       .eq("booster_id", booster_id)
       .select()
@@ -58,18 +61,15 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const upsertPayload: SubmissionInsert = {
+        booster_id,
+        project_id,
+        team_id: profile.team_id,
+        ...updates,
+      };
       const { data: upserted, error: upsertError } = await supabaseAdmin
         .from("submissions")
-        .upsert(
-          {
-            booster_id,
-            project_id,
-            team_id: profile.team_id,
-            ...updates,
-          } as any,
-          { onConflict: "booster_id,project_id" },
-        )
+        .upsert(upsertPayload, { onConflict: "booster_id,project_id" })
         .select()
         .single();
 

@@ -10,7 +10,7 @@
  */
 
 import { createClient } from "@/lib/supabase/client";
-import type { Json } from "@/lib/supabase/types";
+import type { Database, Json } from "@/lib/supabase/types";
 import {
   profileToStored,
   storedToProfileInsert,
@@ -27,10 +27,15 @@ export type {
   StoredTeam,
   StoredSubmission,
   BoosterType,
+  BoosterStatus,
   ProfileRow,
   BoosterRow,
   TeamRow,
   SubmissionRow,
+  HostAppWithUser,
+  UserListItem,
+  JudgeInviteWithUser,
+  EvaluationScore,
 } from "@/lib/data-mappers";
 
 // --- Supabase client ---
@@ -39,7 +44,6 @@ function sb() {
   return createClient();
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function
 async function ensureAuthReady() {
   // Intentional no-op. Session management is handled by AuthProvider's
   // onAuthStateChange(INITIAL_SESSION). Calling getSession() here caused
@@ -118,7 +122,7 @@ export async function getBooster(id: string) {
   return data ? boosterToStored(data) : null;
 }
 
-export async function saveBooster(booster: import("@/lib/data-mappers").StoredBooster & { host_id?: string }) {
+export async function saveBooster(booster: import("@/lib/data-mappers").StoredBooster) {
   await ensureAuthReady();
   const { error } = await sb()
     .from("boosters")
@@ -130,7 +134,7 @@ export async function saveBooster(booster: import("@/lib/data-mappers").StoredBo
       theme: booster.theme ?? null,
       booster_type: booster.booster_type ?? "idea",
       website_url: booster.website_url ?? null,
-      technical_resources: (booster.technical_resources ?? []) as Json,
+      technical_resources: (booster.technical_resources ?? []) as unknown as Json,
       technical_docs: booster.technical_docs ?? null,
       bounty_pool_summary: booster.bounty_pool_summary ?? null,
       program_goal: booster.program_goal ?? null,
@@ -174,9 +178,11 @@ export async function getTeam(id: string) {
 
 export async function saveTeam(team: { id?: string; name: string; owner_id: string; created_at?: string }) {
   await ensureAuthReady();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const payload: any = { name: team.name, owner_id: team.owner_id };
-  if (team.id) payload.id = team.id;
+  const payload: Database["public"]["Tables"]["teams"]["Insert"] = {
+    name: team.name,
+    owner_id: team.owner_id,
+    ...(team.id ? { id: team.id } : {}),
+  };
 
   const { data, error } = await sb()
     .from("teams")

@@ -244,11 +244,10 @@ export function BuilderBoosterDetail({
     navLabel: "Open Calls",
   };
 
-  /* Derive submitted project from server-fetched projects */
+  /* Derive submitted project from submissions */
+  const boosterSubmission = submissions.find((s) => s.booster_id === boosterId);
   const submittedProject =
-    projects.find(
-      (p) => (p as Record<string, unknown>).booster_id === boosterId,
-    ) ?? null;
+    (boosterSubmission && projects.find((p) => p.project_id === boosterSubmission.project_id)) ?? null;
 
   /* ── 404 ── */
   if (booster === null) {

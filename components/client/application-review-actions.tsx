@@ -3,22 +3,9 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { reviewHostApplicationAction } from "@/lib/actions";
+import type { HostAppWithUser } from "@/lib/data-mappers";
 
-type HostApp = {
-  id: string;
-  user_id: string;
-  booster_type: string;
-  event_name: string;
-  expected_participants: number | null;
-  contact: string | null;
-  description: string | null;
-  status: "pending" | "approved" | "rejected";
-  reviewed_by: string | null;
-  created_at: string;
-  users?: { email: string; display_name: string | null };
-};
-
-export function ApplicationReviewActions({ apps }: { apps: HostApp[] }) {
+export function ApplicationReviewActions({ apps }: { apps: HostAppWithUser[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 

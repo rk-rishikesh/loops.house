@@ -14,14 +14,5 @@ export default async function AdminUsersPage() {
     .select("id, email, display_name, role, oauth_provider, created_at")
     .order("created_at", { ascending: false });
 
-  const users = (data ?? []).map((u) => ({
-    id: u.id,
-    email: u.email,
-    display_name: u.display_name,
-    role: u.role,
-    oauth_provider: u.oauth_provider,
-    created_at: u.created_at,
-  }));
-
-  return <UserRoleEditor users={users} />;
+  return <UserRoleEditor users={data ?? []} />;
 }

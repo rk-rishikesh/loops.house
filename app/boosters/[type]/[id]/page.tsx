@@ -20,10 +20,9 @@ export default async function BoosterDetailPage({
   ]);
 
   // Find the project that was already submitted to this booster (if any)
+  const boosterSubmission = submissions.find((s) => s.booster_id === id);
   const submittedProject =
-    projects.find(
-      (p) => (p as Record<string, unknown>).booster_id === id,
-    ) ?? null;
+    (boosterSubmission && projects.find((p) => p.project_id === boosterSubmission.project_id)) ?? null;
 
   return (
     <BoosterDetailView

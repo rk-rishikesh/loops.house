@@ -507,9 +507,9 @@ export function BuilderBoosterTypeDetail({
         {boosters.map((booster) => {
           const isExpanded = expandedBooster === booster.id;
           const boosterSubmissions = submissions.filter((s) => s.booster_id === booster.id);
-          const submittedProject = projects.find(
-            (p) => (p as Record<string, unknown>).booster_id === booster.id,
-          ) ?? null;
+          const boosterSub = boosterSubmissions.find((s) => s.booster_id === booster.id);
+          const submittedProject =
+            (boosterSub && projects.find((p) => p.project_id === boosterSub.project_id)) ?? null;
 
           return (
             <div key={booster.id} className="mb-6">

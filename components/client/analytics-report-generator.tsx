@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, BarChart3, Loader2, Sparkles, TrendingUp, Layers } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { getBooster, getProjects } from "@/lib/storage";
-import type { StoredProject, StoredBooster } from "@/lib/data-mappers";
+import { getBooster, getProjects, getBoosterSubmissions } from "@/lib/storage";
+import type { StoredBooster } from "@/lib/data-mappers";
 import { type AnalyticsFilterSchema } from "@/lib/validations/schemas";
 
 /* ─── Types ──────────────────────────────────────────────────────── */
@@ -19,8 +19,9 @@ type ReportType = AnalyticsFilterSchema["report_type"];
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
 async function buildMetricsForBooster(boosterId: string) {
-  const allProjects = await getProjects();
-  const projects = allProjects.filter((p) => p.booster_id === boosterId) as StoredProject[];
+  const [allProjects, boosterSubs] = await Promise.all([getProjects(), getBoosterSubmissions(boosterId)]);
+  const submittedProjectIds = new Set(boosterSubs.map((s) => s.project_id));
+  const projects = allProjects.filter((p) => submittedProjectIds.has(p.project_id));
   const submissions = projects.map((p) => ({
     name: p.name, category: p.category,
     tech_stack_tags: p.tech_stack_tags ?? [], created_at: p.created_at,

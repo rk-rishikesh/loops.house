@@ -3,19 +3,11 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateUserRoleAction } from "@/lib/actions";
-
-type UserRow = {
-  id: string;
-  email: string;
-  display_name: string | null;
-  role: string;
-  oauth_provider: string | null;
-  created_at: string;
-};
+import type { UserListItem } from "@/lib/data-mappers";
 
 const ROLES = ["builder", "host", "viewer", "admin", "judge"] as const;
 
-export function UserRoleEditor({ users }: { users: UserRow[] }) {
+export function UserRoleEditor({ users }: { users: UserListItem[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 

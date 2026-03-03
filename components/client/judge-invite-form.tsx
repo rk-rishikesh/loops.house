@@ -2,17 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ArrowUpRight, Users, Send, Check, Clock, Loader2, X } from "lucide-react";
-import type { StoredBooster } from "@/lib/data-mappers";
-
-/* ─── Types ──────────────────────────────────────────────────────── */
-type JudgeInvite = {
-  id: string;
-  booster_id: string;
-  judge_user_id: string;
-  accepted: boolean;
-  created_at: string;
-  users?: { email: string; display_name: string | null };
-};
+import type { StoredBooster, JudgeInviteWithUser } from "@/lib/data-mappers";
 
 /* ─── Skeleton row ───────────────────────────────────────────────── */
 function SkeletonRow() {
@@ -33,7 +23,7 @@ function SkeletonRow() {
 /* ─── Component ──────────────────────────────────────────────────── */
 export function JudgeInviteForm({ boosters }: { boosters: StoredBooster[] }) {
   const [selectedBooster, setSelectedBooster] = useState<string>("");
-  const [invites,         setInvites]         = useState<JudgeInvite[]>([]);
+  const [invites,         setInvites]         = useState<JudgeInviteWithUser[]>([]);
   const [loadingInvites,  setLoadingInvites]  = useState(false);
   const [email,           setEmail]           = useState("");
   const [inviting,        setInviting]        = useState(false);

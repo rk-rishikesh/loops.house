@@ -12,7 +12,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { storedToProfileInsert } from "@/lib/data-mappers";
 import type { StoredProject } from "@/lib/data-mappers";
-import type { AppRole, SubmissionStatus, HostApplicationStatus } from "@/lib/supabase/types";
+import type { AppRole, Database, Json, SubmissionStatus, HostApplicationStatus } from "@/lib/supabase/types";
 import {
   createTeamSchema,
   hostApplicationCreateSchema,
@@ -315,19 +315,18 @@ export async function saveEvaluationAction(
     return { success: false, error: "project_id and booster_id are required" };
   }
 
-  const updates: Record<string, unknown> = {};
-  if (data.ai_score !== undefined) updates.ai_score = data.ai_score;
-  if (data.human_score !== undefined) updates.human_score = data.human_score;
-  if (data.status !== undefined) updates.status = data.status;
+  const updates: Database["public"]["Tables"]["submissions"]["Update"] = {};
+  if (data.ai_score !== undefined) updates.ai_score = data.ai_score as Json;
+  if (data.human_score !== undefined) updates.human_score = data.human_score as Json;
+  if (data.status !== undefined) updates.status = data.status as SubmissionStatus;
 
   if (Object.keys(updates).length === 0) {
     return { success: false, error: "No fields to update" };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await supabaseAdmin
     .from("submissions")
-    .update(updates as any)
+    .update(updates)
     .eq("project_id", data.project_id)
     .eq("booster_id", data.booster_id)
     .select()

@@ -3,6 +3,7 @@ import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { generateJSON } from "../../lib/gemini-client";
 import { getChunks } from "../../lib/vector-store";
+import type { Json } from "@/lib/supabase/types";
 
 interface JudgingCriterion {
   name: string;
@@ -217,11 +218,9 @@ Return JSON: { "summary": "the paragraph" }`;
 
     // Persist AI evaluation to DB (server-side, bypasses RLS)
     let saved = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: updated, error: saveError } = await supabaseAdmin
       .from("submissions")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ ai_score: evalResult as any })
+      .update({ ai_score: evalResult as unknown as Json })
       .eq("project_id", input.project_id)
       .eq("booster_id", boosterId)
       .select("id")
@@ -245,8 +244,7 @@ Return JSON: { "summary": "the paragraph" }`;
               booster_id: boosterId,
               project_id: input.project_id,
               team_id: profile.team_id,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ai_score: evalResult as any,
+              ai_score: evalResult as unknown as Json,
               status: "under_review" as const,
             },
             { onConflict: "booster_id,project_id" },
