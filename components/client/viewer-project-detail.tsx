@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -716,8 +716,6 @@ function AIChatPanel({
 
 /* ─── AI Bubble ───────────────────────────────────────────────────── */
 function AIBubble({ onClick, hasMessages }: { onClick: () => void; hasMessages: boolean }) {
-  const [labelVisible, setLabelVisible] = useState(true);
-  useEffect(() => { const t = setTimeout(() => setLabelVisible(false), 4200); return () => clearTimeout(t); }, []);
   return (
     <>
       <button
@@ -736,8 +734,7 @@ function AIBubble({ onClick, hasMessages }: { onClick: () => void; hasMessages: 
 
 /* ─── Component ──────────────────────────────────────────────────── */
 export function ViewerProjectDetail({
-  project,
-  projectId: _projectId,
+  project
 }: {
   project: StoredProject | null;
   projectId: string;

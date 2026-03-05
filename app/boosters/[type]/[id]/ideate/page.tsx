@@ -136,7 +136,6 @@ function IdeatePageContent() {
   }
 
   const isEmpty = messages.length === 0;
-  const isDeep  = messages.length >= 6;
 
   return (
     <div className="h-screen flex flex-col" style={{ backgroundColor: "#f0ebe0" }}>

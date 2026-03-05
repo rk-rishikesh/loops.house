@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, Trophy, Zap, FileText, Clock } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Trophy, Zap, Clock } from "lucide-react";
 import { getBoostersServer } from "@/lib/server-data";
 import type { BoosterType } from "@/lib/data-mappers";
 
@@ -299,12 +299,10 @@ export default async function BoosterTypePage({
   const type = rawType?.toLowerCase() || "idea";
   const validType = TYPES.includes(type as BoosterType) ? (type as BoosterType) : "idea";
   const list = await getBoostersServer(validType);
-  const meta = TYPE_META[validType];
 
   /* Bucket by status */
   const withStatus = list.map((b, idx) => ({ ...b, _status: deriveStatus(b.timeline, idx) }));
   const featured = withStatus.filter((b) => b._status === "featured");
-  const ongoing = withStatus.filter((b) => b._status === "ongoing");
   const upcoming = withStatus.filter((b) => b._status === "upcoming");
   const past = withStatus.filter((b) => b._status === "past");
 

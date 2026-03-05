@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowLeft,
-  ArrowUpRight,
   ExternalLink,
   FileText,
   Code2,
@@ -32,24 +31,24 @@ const KB_TABS: Record<string, { label: string; icon: React.ElementType }> = {
 };
 
 /* ─── Arrow circle ───────────────────────────────────────────────── */
-function ArrowCircle({
-  size = 40,
-  inverted = false,
-}: {
-  size?: number;
-  inverted?: boolean;
-}) {
-  return (
-    <span
-      style={{ width: size, height: size }}
-      className={`inline-flex items-center justify-center rounded-full shrink-0 transition-all duration-200 ${
-        inverted ? "bg-[#d6cfc0] text-[#2d4a3e]" : "bg-[#2d4a3e] text-[#f0ebe0]"
-      }`}
-    >
-      <ArrowUpRight size={Math.round(size * 0.4)} />
-    </span>
-  );
-}
+// function ArrowCircle({
+//   size = 40,
+//   inverted = false,
+// }: {
+//   size?: number;
+//   inverted?: boolean;
+// }) {
+//   return (
+//     <span
+//       style={{ width: size, height: size }}
+//       className={`inline-flex items-center justify-center rounded-full shrink-0 transition-all duration-200 ${
+//         inverted ? "bg-[#d6cfc0] text-[#2d4a3e]" : "bg-[#2d4a3e] text-[#f0ebe0]"
+//       }`}
+//     >
+//       <ArrowUpRight size={Math.round(size * 0.4)} />
+//     </span>
+//   );
+// }
 
 /* ─── Section heading ────────────────────────────────────────────── */
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -64,28 +63,28 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 /* ─── Table row ─────────────────────────────────────────────────── */
-function InfoRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="grid py-4 border-b border-[#2d4a3e]/08"
-      style={{ gridTemplateColumns: "140px 1fr" }}
-    >
-      <p
-        className="text-[11px] tracking-[0.1em] uppercase font-semibold text-[#2d4a3e]/40 pt-0.5"
-        style={{ fontFamily: "'Inter', sans-serif" }}
-      >
-        {label}
-      </p>
-      <div>{children}</div>
-    </div>
-  );
-}
+// function InfoRow({
+//   label,
+//   children,
+// }: {
+//   label: string;
+//   children: React.ReactNode;
+// }) {
+//   return (
+//     <div
+//       className="grid py-4 border-b border-[#2d4a3e]/08"
+//       style={{ gridTemplateColumns: "140px 1fr" }}
+//     >
+//       <p
+//         className="text-[11px] tracking-[0.1em] uppercase font-semibold text-[#2d4a3e]/40 pt-0.5"
+//         style={{ fontFamily: "'Inter', sans-serif" }}
+//       >
+//         {label}
+//       </p>
+//       <div>{children}</div>
+//     </div>
+//   );
+// }
 
 /* ─── Edit modal ─────────────────────────────────────────────────── */
 function EditModal({
@@ -621,10 +620,10 @@ export function ProjectEditor({
     label: string;
     url: string;
   }[];
-  const additionalLinks = (p.additional_links ?? []) as {
-    label: string;
-    url: string;
-  }[];
+  // const additionalLinks = (p.additional_links ?? []) as {
+  //   label: string;
+  //   url: string;
+  // }[];
   const screenshots = (p.screenshot_urls ?? []) as string[];
   const tags = (p.tech_stack_tags ?? []) as string[];
   const features = (p.key_features ?? []) as string[];

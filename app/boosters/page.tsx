@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Lightbulb, Zap, DollarSign, ArrowLeft, ArrowUpRight } from "lucide-react";
-import { useRole } from "@/lib/queries";
-
+import { useIsMounted } from "@/hooks/use-is-mounted";
 const BOOSTERS: {
   type: "idea" | "momentum" | "capital";
   label: string;
@@ -58,11 +56,7 @@ function ArrowCircle({ size = 52 }: { size?: number }) {
 }
 
 export default function BoostersLandingPage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsMounted();
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>

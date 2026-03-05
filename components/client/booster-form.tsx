@@ -53,7 +53,7 @@ const BOOSTER_TYPES: { value: BoosterType; label: string; desc: string }[] = [
   { value: "capital", label: "Capital", desc: "Late-stage funding & growth acceleration" },
 ];
 
-function StepLabel({ n, label }: { n: string; label: string }) {
+function StepLabel({ n }: { n: string; label: string }) {
   return (
     <div className="flex items-baseline gap-3 mb-6">
       <span className="font-black text-[#2d4a3e]/18" style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, letterSpacing: "-0.025em" }}>{n}</span>

@@ -25,10 +25,6 @@ export default async function BoosterDetailPage({
     getSubmissionsServer(id),
   ]);
 
-  const boosterSubmission = submissions.find((s) => s.booster_id === id);
-  const submittedProject =
-    (boosterSubmission && projects.find((p) => p.project_id === boosterSubmission.project_id)) ?? null;
-
   return (
     <BuilderBoosterDetail
       type={type}

@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowUpRight, Zap, ArrowLeft } from "lucide-react";
-import type { StoredBooster, BoosterType } from "@/lib/data-mappers";
+import { ArrowUpRight, ArrowLeft } from "lucide-react";
+import type { StoredBooster } from "@/lib/data-mappers";
 import { LogoutButton } from "@/components/logout-button";
-import { useIsMounted } from "@/hooks/use-is-mounted";
 
 /* ─── Primary feature card ───────────────────────────────────────── */
 function FeatureCard({
@@ -64,18 +62,18 @@ function FeatureCard({
   );
 }
 /* ─── Page ────────────────────────────────────────────────────────── */
-export function BuilderDashboard({ allBoosters }: { allBoosters: StoredBooster[] }) {
+export function BuilderDashboard({  }: { allBoosters: StoredBooster[] }) {
   const router  = useRouter();
-  const mounted = useIsMounted();
+  // const mounted = useIsMounted();
 
-  const [activeType, setActiveType] = useState<BoosterType>("idea");
-  const boosters = allBoosters.filter((b) => (b.booster_type ?? "idea") === activeType);
+  // const [activeType, setActiveType] = useState<BoosterType>("idea");
+  // const boosters = allBoosters.filter((b) => (b.booster_type ?? "idea") === activeType);
 
-  const TYPE_LABELS: Record<BoosterType, string> = {
-    idea:     "Early Stage",
-    momentum: "Build Phase",
-    capital:  "Scale Up",
-  };
+  // const TYPE_LABELS: Record<BoosterType, string> = {
+  //   idea:     "Early Stage",
+  //   momentum: "Build Phase",
+  //   capital:  "Scale Up",
+  // };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
