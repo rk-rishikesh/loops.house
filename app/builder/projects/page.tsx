@@ -1,6 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft, ArrowUpRight, Code2, PlusCircle, FolderOpen } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, PlusCircle, FolderOpen } from "lucide-react";
 import { getProjectsServer } from "@/lib/server-data";
 import type { StoredProject } from "@/lib/data-mappers";
 
@@ -39,70 +38,21 @@ function ProjectRow({ project: p, index }: { project: StoredProject; index: numb
             style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(13px, 1.3vw, 15px)" }}
           >
             {p.name}
-            {p.tagline && (
-              <>
-                <br />
-                <span
-                  className="font-normal text-[#2d4a3e]/50"
-                  style={{ fontFamily: "Georgia, serif", fontSize: "0.95em" }}
-                >
-                  {p.tagline}
-                </span>
-              </>
-            )}
           </p>
-          {(p.category || (p.tech_stack_tags ?? []).length > 0) && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {p.category && (
-                <span
-                  className="text-[8px] tracking-[0.12em] uppercase font-bold px-2.5 py-1 rounded-sm"
-                  style={{ backgroundColor: "rgba(45,74,62,0.1)", color: "#2d4a3e", fontFamily: "'Inter', sans-serif" }}
-                >
-                  {p.category}
-                </span>
-              )}
-              {(p.tech_stack_tags ?? []).slice(0, 3).map((t) => (
-                <span
-                  key={t}
-                  className="text-[10px] px-2 py-0.5 rounded-sm"
-                  style={{ backgroundColor: "rgba(45,74,62,0.06)", color: "rgba(45,74,62,0.55)", fontFamily: "Georgia, serif" }}
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Description — logo + hint */}
         <div className="flex items-start gap-4">
-          {p.logo_url ? (
-            <Image
-              src={p.logo_url}
-              alt={p.name}
-              width={36}
-              height={36}
-              className="rounded shrink-0 mt-0.5"
-              style={{ objectFit: "cover" }}
-            />
-          ) : (
-            <span
-              className="inline-flex items-center justify-center w-9 h-9 rounded shrink-0 mt-0.5"
-              style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e" }}
-            >
-              <Code2 size={16} />
-            </span>
-          )}
           <p
             className="text-[#2d4a3e]/50 leading-relaxed text-sm"
             style={{ fontFamily: "Georgia, serif" }}
           >
-            View profile, share with others, or apply to available boosters.
+            {p.tagline}
           </p>
         </div>
 
         {/* Arrow */}
-        <div className="flex justify-end pt-0.5">
+        <div className="flex justify-center">
           <ArrowCircle size={44} />
         </div>
       </div>
@@ -113,31 +63,40 @@ function ProjectRow({ project: p, index }: { project: StoredProject; index: numb
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default async function BuilderProjectsPage() {
   const projects = await getProjectsServer();
-
+  console.log(projects)
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
 
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
-      <div className="px-10 pt-8 flex items-center justify-between">
-        <Link
-          href="/builder"
-          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          <ArrowLeft size={12} /> Builder
-        </Link>
-        <span
-          className="text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/30"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          {projects.length} project{projects.length !== 1 ? "s" : ""}
-        </span>
+      <div className="sticky top-0 z-40" style={{ backgroundColor: "#f0ebe0" }}>
+        <div>
+          <div
+            className="flex w-full items-stretch border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            <Link
+              href="/builder"
+              className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf]"
+            >
+              <span className="flex items-center gap-2">
+                <ArrowLeft size={11} />
+                <span>Builder</span>
+              </span>
+            </Link>
+            <div className="flex-1 min-w-0 py-4 flex items-center justify-end px-6">
+              <span>
+                {projects.length} project{projects.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="px-10 pt-10 pb-24">
 
         {/* ── Hero heading ─────────────────────────────────────────────────── */}
-        <div className="mb-16">
+        <div className="mb-16 flex flex-row justify-between">
+          
           <h1
             className="font-black text-[#2d4a3e] leading-[0.88] uppercase"
             style={{
@@ -158,7 +117,7 @@ export default async function BuilderProjectsPage() {
                 className="text-[#2d4a3e]/55 max-w-[380px] text-right leading-relaxed"
                 style={{ fontFamily: "Georgia, serif", fontSize: "clamp(15px, 1.6vw, 19px)" }}
               >
-                All profiles you&apos;ve created. Open a project to view, share, or apply to boosters.
+                Create a project and let AI agents refine your story, generate social posts, and apply to boosters with confidence.
               </p>
 
               {/* Create new — pill CTA */}
@@ -235,25 +194,6 @@ export default async function BuilderProjectsPage() {
           projects.map((p, idx) => (
             <ProjectRow key={p.project_id} project={p} index={idx} />
           ))
-        )}
-
-        {/* Footer strip */}
-        {projects.length > 0 && (
-          <div className="flex items-center justify-between mt-8 pt-5 border-t border-[#2d4a3e]/08">
-            <p
-              className="text-[11px] text-[#2d4a3e]/40"
-              style={{ fontFamily: "Georgia, serif" }}
-            >
-              {projects.length} project{projects.length !== 1 ? "s" : ""} total
-            </p>
-            <Link
-              href="/builder/new"
-              className="inline-flex items-center gap-1.5 text-[9px] tracking-widest uppercase font-bold text-[#2d4a3e]/40 hover:text-[#2d4a3e] transition-colors no-underline"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              <PlusCircle size={10} /> New Profile
-            </Link>
-          </div>
         )}
       </div>
 

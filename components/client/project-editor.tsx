@@ -288,6 +288,18 @@ function SocialPanel({
   };
   onClose: () => void;
 }) {
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const copyToClipboard = async (text: string, key: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(null), 1500);
+    } catch {
+      // ignore clipboard errors
+    }
+  };
+
   return (
     <div
       className="rounded-3xl p-7 mt-5"
@@ -317,12 +329,26 @@ function SocialPanel({
       <div className="border-t border-[#2d4a3e]/12">
         {result.linkedin_post && (
           <div className="py-5 border-b border-[#2d4a3e]/08">
-            <p
-              className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40 mb-3"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              LinkedIn
-            </p>
+            <div className="flex items-center justify-between mb-3">
+              <p
+                className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                LinkedIn
+              </p>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(result.linkedin_post!, "linkedin")}
+                className="text-[9px] tracking-[0.16em] uppercase font-bold px-3 py-1.5 rounded-full border-none cursor-pointer"
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  backgroundColor: "rgba(45,74,62,0.06)",
+                  color: "#2d4a3e",
+                }}
+              >
+                {copiedKey === "linkedin" ? "Copied" : "Copy"}
+              </button>
+            </div>
             <p
               className="text-[#2d4a3e]/75 leading-relaxed text-sm whitespace-pre-wrap"
               style={{ fontFamily: "Georgia, serif" }}
@@ -333,12 +359,26 @@ function SocialPanel({
         )}
         {result.twitter_post && !result.twitter_post.startsWith("Error") && (
           <div className="py-5 border-b border-[#2d4a3e]/08">
-            <p
-              className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40 mb-3"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              X / Twitter
-            </p>
+            <div className="flex items-center justify-between mb-3">
+              <p
+                className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                X / Twitter
+              </p>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(result.twitter_post!, "twitter")}
+                className="text-[9px] tracking-[0.16em] uppercase font-bold px-3 py-1.5 rounded-full border-none cursor-pointer"
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  backgroundColor: "rgba(45,74,62,0.06)",
+                  color: "#2d4a3e",
+                }}
+              >
+                {copiedKey === "twitter" ? "Copied" : "Copy"}
+              </button>
+            </div>
             <p
               className="text-[#2d4a3e]/75 leading-relaxed text-sm"
               style={{ fontFamily: "Georgia, serif" }}
@@ -349,12 +389,31 @@ function SocialPanel({
         )}
         {result.suggested_hashtags && result.suggested_hashtags.length > 0 && (
           <div className="pt-5">
-            <p
-              className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40 mb-3"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              Hashtags
-            </p>
+            <div className="flex items-center justify-between mb-3">
+              <p
+                className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                Hashtags
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  copyToClipboard(
+                    result.suggested_hashtags!.map((h) => `#${h.replace(/^#/, "")}`).join(" "),
+                    "hashtags",
+                  )
+                }
+                className="text-[9px] tracking-[0.16em] uppercase font-bold px-3 py-1.5 rounded-full border-none cursor-pointer"
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  backgroundColor: "rgba(45,74,62,0.06)",
+                  color: "#2d4a3e",
+                }}
+              >
+                {copiedKey === "hashtags" ? "Copied" : "Copy all"}
+              </button>
+            </div>
             <div className="flex flex-wrap gap-2">
               {result.suggested_hashtags.map((h) => (
                 <span
@@ -366,7 +425,7 @@ function SocialPanel({
                     fontFamily: "Georgia, serif",
                   }}
                 >
-                  {h}
+                  #{h.replace(/^#/, "")}
                 </span>
               ))}
             </div>
@@ -384,12 +443,16 @@ export function ProjectEditor({
   initialBoosterNames,
   initialBoosterTypes,
   projectId,
+  backHref,
+  backLabel,
 }: {
   initialProject: StoredProject | null;
   initialSubmissions: StoredSubmission[];
   initialBoosterNames: Record<string, string>;
   initialBoosterTypes: Record<string, string>;
   projectId: string;
+  backHref?: string;
+  backLabel?: string;
 }) {
   const saveProjectMutation = useSaveProject();
 
@@ -408,6 +471,11 @@ export function ProjectEditor({
     twitter_post?: string;
     suggested_hashtags?: string[];
   } | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [activeLabTab, setActiveLabTab] = useState<
+    "project-mentor" | "social-copy" | "pitch-coach" | "code-reviewer"
+  >("social-copy");
+  const [labPrompt, setLabPrompt] = useState("");
   const [editForm, setEditForm] = useState<Record<string, string>>({
     name: "",
     tagline: "",
@@ -470,7 +538,14 @@ export function ProjectEditor({
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = () => {
+    if (!project) return;
+    setActiveLabTab("social-copy");
+    setLabPrompt("");
+    setShareOpen(true);
+  };
+
+  const runSocialCopy = async () => {
     if (!project) return;
     setSocialLoading(true);
     setSocialResult(null);
@@ -516,6 +591,9 @@ export function ProjectEditor({
       </div>
     );
 
+  const effectiveBackHref = backHref ?? "/builder/projects";
+  const effectiveBackLabel = backLabel ?? "Projects";
+
   if (project === null)
     return (
       <div
@@ -523,11 +601,11 @@ export function ProjectEditor({
         style={{ backgroundColor: "#f0ebe0" }}
       >
         <Link
-          href="/builder/projects"
+          href={effectiveBackHref}
           className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 no-underline"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
-          <ArrowLeft size={12} /> Projects
+          <ArrowLeft size={12} /> {effectiveBackLabel}
         </Link>
         <p
           className="mt-10 text-[#2d4a3e]/50"
@@ -563,67 +641,57 @@ export function ProjectEditor({
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
-      {/* ── Nav ─────────────────────────────────────────────────────── */}
-      <div
-        className="sticky top-0 z-50 px-10 py-5 flex items-center justify-between"
-        style={{
-          backgroundColor: "#f0ebe0",
-          borderBottom: "1px solid rgba(45,74,62,0.1)",
-        }}
-      >
-        <Link
-          href="/builder/projects"
-          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          <ArrowLeft size={12} /> Projects
-        </Link>
+      {/* ── Nav ─ strip style ───────────────────────────────────────── */}
+      <div className="sticky top-0 z-50" style={{ backgroundColor: "#f0ebe0" }}>
+        <div>
+          <div
+            className="flex w-full items-stretch border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            {/* Left: back */}
+            <Link
+              href={effectiveBackHref}
+              className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf]"
+            >
+              <span className="flex items-center gap-2">
+                <ArrowLeft size={11} />
+                <span>{effectiveBackLabel}</span>
+              </span>
+            </Link>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={startEditing}
-            className="inline-flex items-center gap-1.5 rounded-full text-[9px] tracking-widest uppercase font-bold px-4 py-2.5 border-none cursor-pointer transition-all hover:opacity-75"
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              backgroundColor: "rgba(45,74,62,0.08)",
-              color: "#2d4a3e",
-            }}
-          >
-            <Pencil size={11} /> Edit
-          </button>
-          <Link
-            href={loopsProfileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full text-[9px] tracking-widest uppercase font-bold px-4 py-2.5 no-underline transition-all hover:opacity-75"
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              backgroundColor: "rgba(45,74,62,0.08)",
-              color: "#2d4a3e",
-            }}
-          >
-            <ExternalLink size={11} /> Public page
-          </Link>
-          <button
-            type="button"
-            onClick={handleShare}
-            disabled={socialLoading}
-            className="inline-flex items-center gap-1.5 rounded-full text-[9px] tracking-widest uppercase font-bold px-5 py-2.5 border-none cursor-pointer transition-all hover:opacity-90 disabled:opacity-40"
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              backgroundColor: "#2d4a3e",
-              color: "#f0ebe0",
-            }}
-          >
-            {socialLoading ? (
-              <Loader2 size={11} className="animate-spin" />
-            ) : (
-              <Share2 size={11} />
-            )}
-            Share
-          </button>
+            {/* Center: project name */}
+            <div className="flex-1 min-w-0 py-8 flex items-center justify-center px-6 border-r border-[#1a1a1a]">
+              <span>{p.name}</span>
+            </div>
+
+            {/* Right: actions as bordered tabs (Edit / Public URL) */}
+            <div className="w-[320px] max-w-md flex items-stretch border-l border-[#1a1a1a]">
+              <button
+                type="button"
+                onClick={startEditing}
+                className="flex-1 min-w-0 py-8 px-6 flex items-center justify-center border-r border-[#1a1a1a] bg-transparent hover:bg-[#e1dbcf] cursor-pointer text-[9px] tracking-[0.16em] uppercase font-bold"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                <span className="flex items-center gap-2">
+                  <Pencil size={11} />
+                  <span>Edit</span>
+                </span>
+              </button>
+
+              <Link
+                href={loopsProfileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 min-w-0 py-8 px-6 flex items-center justify-center border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf] text-[9px] tracking-[0.16em] uppercase font-bold text-[#1a1a1a]"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                <span className="flex items-center gap-2">
+                  <ExternalLink size={11} />
+                  <span>Public URL</span>
+                </span>
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -816,131 +884,6 @@ export function ProjectEditor({
               </p>
             </div>
 
-            {/* Info table */}
-            <div
-              className="rounded-3xl p-7"
-              style={{ backgroundColor: "#f5f2ea" }}
-            >
-              <SectionLabel>Project Details</SectionLabel>
-
-              {/* Table header */}
-              <div
-                className="grid py-3 border-b border-t border-[#2d4a3e]/20 mb-0"
-                style={{ gridTemplateColumns: "140px 1fr" }}
-              >
-                {["Field", "Value"].map((col) => (
-                  <p
-                    key={col}
-                    className="text-[11px] tracking-[0.12em] uppercase font-semibold text-[#2d4a3e]/40"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
-                    {col}
-                  </p>
-                ))}
-              </div>
-
-              {/* Rows */}
-              <InfoRow label="Team">
-                <p
-                  className="text-sm text-[#2d4a3e]/70"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
-                  {p.team_id ? `${p.team_id}` : "No team linked"}
-                </p>
-              </InfoRow>
-
-              {p.github_url && (
-                <InfoRow label="GitHub">
-                  <Link
-                    href={p.github_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 no-underline text-[#2d4a3e] hover:opacity-70 transition-opacity text-sm"
-                    style={{ fontFamily: "Georgia, serif" }}
-                  >
-                    {p.github_url}{" "}
-                    <ExternalLink size={11} className="shrink-0 opacity-50" />
-                  </Link>
-                </InfoRow>
-              )}
-
-              {p.website_url && (
-                <InfoRow label="Website">
-                  <Link
-                    href={p.website_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 no-underline text-[#2d4a3e] hover:opacity-70 transition-opacity text-sm"
-                    style={{ fontFamily: "Georgia, serif" }}
-                  >
-                    {p.website_url}{" "}
-                    <ExternalLink size={11} className="shrink-0 opacity-50" />
-                  </Link>
-                </InfoRow>
-              )}
-
-              {p.youtube_url && (
-                <InfoRow label="Demo">
-                  <Link
-                    href={p.youtube_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 no-underline text-[#2d4a3e] hover:opacity-70 transition-opacity text-sm"
-                    style={{ fontFamily: "Georgia, serif" }}
-                  >
-                    {p.youtube_url}{" "}
-                    <ExternalLink size={11} className="shrink-0 opacity-50" />
-                  </Link>
-                </InfoRow>
-              )}
-
-              {additionalLinks.length > 0 && (
-                <InfoRow label="More links">
-                  <div className="flex flex-col gap-1.5">
-                    {additionalLinks.slice(0, 5).map((a, i) => (
-                      <Link
-                        key={i}
-                        href={a.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 no-underline text-[#2d4a3e]/70 hover:text-[#2d4a3e] text-sm"
-                        style={{ fontFamily: "Georgia, serif" }}
-                      >
-                        {a.label || a.url}{" "}
-                        <ExternalLink
-                          size={10}
-                          className="shrink-0 opacity-40"
-                        />
-                      </Link>
-                    ))}
-                  </div>
-                </InfoRow>
-              )}
-
-              {/* Footer strip */}
-              <div className="flex items-center justify-between mt-5 pt-5 border-t border-[#2d4a3e]/08">
-                <p
-                  className="text-[11px] text-[#2d4a3e]/40"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
-                  Created{" "}
-                  {new Date(p.created_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </p>
-                <Link
-                  href={loopsProfileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="no-underline"
-                >
-                  <ArrowCircle size={40} />
-                </Link>
-              </div>
-            </div>
-
             {/* Gallery */}
             {screenshots.length > 0 && (
               <div
@@ -968,13 +911,6 @@ export function ProjectEditor({
               </div>
             )}
 
-            {/* Social result */}
-            {socialResult && (
-              <SocialPanel
-                result={socialResult}
-                onClose={() => setSocialResult(null)}
-              />
-            )}
           </main>
 
           {/* ═══ RIGHT — KB + features ═══════════════════════════════════ */}
@@ -1243,6 +1179,249 @@ export function ProjectEditor({
           </aside>
         </div>
       </div>
+
+      {/* ── Floating share button ────────────────────────────────────── */}
+      {project && (
+        <button
+          type="button"
+          onClick={handleShare}
+          disabled={socialLoading}
+          className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full border-none cursor-pointer text-[10px] tracking-[0.18em] uppercase font-bold px-5 py-2.5 shadow-md hover:shadow-lg disabled:opacity-40"
+          style={{
+            fontFamily: "'Inter', sans-serif",
+            backgroundColor: "#2d4a3e",
+            color: "#f0ebe0",
+          }}
+        >
+          {socialLoading ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <Share2 size={12} />
+          )}
+          <span>Share</span>
+        </button>
+      )}
+
+      {/* ── AI agent lab modal ───────────────────────────────────────── */}
+      {shareOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-end px-4"
+          style={{
+            backgroundColor: "rgba(45,74,62,0.4)",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div
+            className="w-full max-w-xl h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+            style={{ backgroundColor: "#f0ebe0" }}
+          >
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-6 py-4 border-b border-[#2d4a3e]/15"
+            >
+              <div>
+                <p
+                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/45 mb-1"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  AI Agents
+                </p>
+                <h2
+                  className="font-black text-[#2d4a3e] uppercase leading-tight"
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: 20,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  Your Project Lab
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShareOpen(false);
+                  setSocialResult(null);
+                  setSocialLoading(false);
+                  setActiveLabTab("social-copy");
+                  setLabPrompt("");
+                }}
+                className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer"
+                style={{
+                  backgroundColor: "rgba(45,74,62,0.08)",
+                  color: "#2d4a3e",
+                }}
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="px-6 pt-4 pb-3 border-b border-[#2d4a3e]/12">
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: "project-mentor", label: "Project Mentor" },
+                  { key: "social-copy", label: "Social Copy" },
+                  { key: "pitch-coach", label: "Pitch Coach" },
+                  { key: "code-reviewer", label: "Code Reviewer" },
+                ].map((tab) => {
+                  const isActive = activeLabTab === tab.key;
+                  const isEnabled = tab.key === "social-copy";
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() =>
+                        isEnabled && setActiveLabTab(tab.key as typeof activeLabTab)
+                      }
+                      disabled={!isEnabled}
+                      className="inline-flex items-center rounded-full px-3.5 py-1.5 text-[9px] tracking-[0.16em] uppercase font-bold border-none cursor-pointer disabled:cursor-not-allowed"
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        backgroundColor: isActive
+                          ? "#2d4a3e"
+                          : "rgba(45,74,62,0.06)",
+                        color: isActive ? "#f0ebe0" : "#2d4a3e",
+                        opacity: isEnabled ? 1 : 0.4,
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 flex flex-col">
+              {/* Description + suggestions */}
+              <div className="px-6 pt-4 pb-3">
+                <p
+                  className="text-sm text-[#2d4a3e]/75 mb-3"
+                  style={{ fontFamily: "Georgia, serif" }}
+                >
+                  {activeLabTab === "social-copy"
+                    ? "Sharpen your announcement and generate polished LinkedIn and X posts for this project."
+                    : "Coming soon: additional agents to help you refine and ship your project faster."}
+                </p>
+                {activeLabTab === "social-copy" && (
+                  <div>
+                    <p
+                      className="text-[10px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/45 mb-2"
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
+                      Suggested
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {[
+                        "Announce this project launch.",
+                        "Write a recap after winning a hackathon.",
+                        "Share a milestone update for this project.",
+                      ].map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setLabPrompt(s)}
+                          className="w-full text-left rounded-2xl px-4 py-2.5 border-none cursor-pointer"
+                          style={{
+                            backgroundColor: "rgba(214,207,192,0.8)",
+                            color: "#2d4a3e",
+                            fontFamily: "Georgia, serif",
+                            fontSize: 13,
+                          }}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Results area */}
+              <div className="flex-1 overflow-y-auto px-6 pb-4">
+                {activeLabTab === "social-copy" && (
+                  <>
+                    {socialLoading && !socialResult && (
+                      <div className="h-full flex flex-col items-center justify-center gap-4">
+                        <Loader2
+                          size={22}
+                          className="animate-spin"
+                          style={{ color: "#2d4a3e" }}
+                        />
+                        <p
+                          className="text-sm text-[#2d4a3e]/70"
+                          style={{ fontFamily: "Georgia, serif" }}
+                        >
+                          Generating social posts for your project…
+                        </p>
+                      </div>
+                    )}
+                    {!socialLoading && !socialResult && (
+                      <p
+                        className="text-xs text-[#2d4a3e]/55"
+                        style={{ fontFamily: "Georgia, serif" }}
+                      >
+                        Start by picking a suggested question or typing your own prompt
+                        below, then send it to generate posts.
+                      </p>
+                    )}
+                    {socialResult && (
+                      <div className="mt-3">
+                        <SocialPanel
+                          result={socialResult}
+                          onClose={() => setSocialResult(null)}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Input row */}
+              <div className="px-6 py-4 border-t border-[#2d4a3e]/12">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={labPrompt}
+                    onChange={(e) => setLabPrompt(e.target.value)}
+                    placeholder={
+                      activeLabTab === "social-copy"
+                        ? "Ask for social copy…"
+                        : "This agent is coming soon."
+                    }
+                    disabled={activeLabTab !== "social-copy"}
+                    className="flex-1 rounded-full px-4 py-2.5 text-sm border-none outline-none"
+                    style={{
+                      backgroundColor: "#e8e2d4",
+                      color: "#2d4a3e",
+                      fontFamily: "Georgia, serif",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={runSocialCopy}
+                    disabled={
+                      activeLabTab !== "social-copy" || socialLoading || !project
+                    }
+                    className="w-10 h-10 rounded-full flex items-center justify-center border-none cursor-pointer disabled:opacity-40"
+                    style={{
+                      backgroundColor: "#2d4a3e",
+                      color: "#f0ebe0",
+                    }}
+                  >
+                    {socialLoading ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Share2 size={14} />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Ticker ───────────────────────────────────────────────────── */}
       <div

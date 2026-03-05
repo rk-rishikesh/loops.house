@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { ArrowUpRight, Users, Send, Check, Clock, Loader2, X } from "lucide-react";
 import type { StoredBooster, JudgeInviteWithUser } from "@/lib/data-mappers";
 
@@ -21,8 +22,10 @@ function SkeletonRow() {
 }
 
 /* ─── Component ──────────────────────────────────────────────────── */
-export function JudgeInviteForm({ boosters }: { boosters: StoredBooster[] }) {
-  const [selectedBooster, setSelectedBooster] = useState<string>("");
+export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker = false }: { boosters: StoredBooster[]; initialBoosterId?: string; hideBoosterPicker?: boolean; }) {
+  const [selectedBooster, setSelectedBooster] = useState<string>(
+    initialBoosterId ?? ""
+  );
   const [invites,         setInvites]         = useState<JudgeInviteWithUser[]>([]);
   const [loadingInvites,  setLoadingInvites]  = useState(false);
   const [email,           setEmail]           = useState("");
@@ -72,27 +75,37 @@ export function JudgeInviteForm({ boosters }: { boosters: StoredBooster[] }) {
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
 
-      {/* ── Nav ─────────────────────────────────────────────────────── */}
-      <div
-        className="px-10 py-5 flex items-center justify-between"
-        style={{ borderBottom: "1px solid rgba(45,74,62,0.1)" }}
-      >
-        <p
-          className="text-[10px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
+      {/* ── Nav ─ strip style ─────────────────────────────────────── */}
+      <div className="sticky top-0 z-50" style={{ backgroundColor: "#f0ebe0" }}>
+        <div
+          className="flex w-full items-stretch border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
-          Host / Judge Management
-        </p>
-        {activeBooster && (
-          <span
-            className="text-[9px] tracking-[0.15em] uppercase font-bold px-3 py-1.5 rounded-full"
-            style={{ backgroundColor: "#2d4a3e", color: "#f0ebe0", fontFamily: "'Inter', sans-serif" }}
+          {/* Left: back to host */}
+          <Link
+            href="/host"
+            className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf]"
           >
-            {activeBooster.name}
-          </span>
-        )}
-      </div>
+            <span className="flex items-center gap-2">
+              <span>&larr;</span>
+              <span>Host</span>
+            </span>
+          </Link>
 
+          {/* Right: Judge Management + active booster */}
+          <div className="flex-1 min-w-0 py-8 flex items-center justify-between px-10">
+            <span>Judge Management</span>
+            {activeBooster && (
+              <span
+                className="text-[9px] tracking-[0.15em] uppercase font-bold px-3 py-1.5 rounded-full"
+                style={{ backgroundColor: "#2d4a3e", color: "#f0ebe0" }}
+              >
+                {activeBooster.name}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
       <div className="px-10 pt-10 pb-24">
 
         {/* ── Hero heading ─────────────────────────────────────────────── */}
@@ -126,92 +139,119 @@ export function JudgeInviteForm({ boosters }: { boosters: StoredBooster[] }) {
           <div className="flex flex-col gap-10">
 
             {/* Step 01 — Pick a booster */}
-            <div>
-              <div className="flex items-baseline gap-3 mb-5">
-                <span
-                  className="font-black text-[#2d4a3e]/18"
-                  style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, letterSpacing: "-0.025em" }}
-                >
-                  01
-                </span>
-                <p
-                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  Select Booster
-                </p>
-              </div>
-
-              {boosters.length === 0 ? (
-                <div className="rounded-2xl p-8 text-center" style={{ backgroundColor: "#f5f2ea" }}>
-                  <div
-                    className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4"
-                    style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e" }}
+            {!hideBoosterPicker && (
+              <div>
+                <div className="flex items-baseline gap-3 mb-5">
+                  <span
+                    className="font-black text-[#2d4a3e]/18"
+                    style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, letterSpacing: "-0.025em" }}
                   >
-                    <Users size={20} />
-                  </div>
+                    01
+                  </span>
                   <p
-                    className="font-black text-[#2d4a3e] uppercase mb-2"
-                    style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, letterSpacing: "-0.02em" }}
+                    className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
                   >
-                    No boosters yet.
-                  </p>
-                  <p className="text-[#2d4a3e]/50 text-sm" style={{ fontFamily: "Georgia, serif" }}>
-                    Create a booster first to manage judges.
+                    Select Booster
                   </p>
                 </div>
-              ) : (
-                /* Booster tile grid */
-                <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
-                  {boosters.map((b) => {
-                    const isActive = selectedBooster === b.id;
-                    return (
-                      <button
-                        key={b.id}
-                        type="button"
-                        onClick={() => { setSelectedBooster(b.id); setError(null); setSuccess(null); }}
-                        className="text-left rounded-2xl p-5 border-none cursor-pointer transition-all duration-200 hover:scale-[1.02]"
-                        style={{ backgroundColor: isActive ? "#2d4a3e" : "#d6cfc0" }}
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div
-                            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: isActive ? "rgba(214,207,192,0.15)" : "rgba(45,74,62,0.1)" }}
-                          >
-                            <Users size={14} style={{ color: isActive ? "#d6cfc0" : "#2d4a3e" }} />
-                          </div>
-                          {isActive && (
-                            <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#d6cfc0" }}>
-                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#2d4a3e" }} />
-                            </span>
-                          )}
-                        </div>
-                        <p
-                          className="font-black uppercase leading-tight mb-1"
-                          style={{
-                            fontFamily: "'Inter', sans-serif",
-                            fontSize: 13,
-                            letterSpacing: "-0.01em",
-                            color: isActive ? "#f0ebe0" : "#2d4a3e",
-                          }}
-                        >
-                          {b.name}
-                        </p>
-                        {b.booster_type && (
-                          <p
-                            className="text-[10px] uppercase font-bold"
-                            style={{ color: isActive ? "rgba(240,235,224,0.4)" : "rgba(45,74,62,0.45)", fontFamily: "'Inter', sans-serif", letterSpacing: "0.1em" }}
-                          >
-                            {b.booster_type}
-                          </p>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
 
+                {boosters.length === 0 ? (
+                  <div className="rounded-2xl p-8 text-center" style={{ backgroundColor: "#f5f2ea" }}>
+                    <div
+                      className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4"
+                      style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e" }}
+                    >
+                      <Users size={20} />
+                    </div>
+                    <p
+                      className="font-black text-[#2d4a3e] uppercase mb-2"
+                      style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, letterSpacing: "-0.02em" }}
+                    >
+                      No boosters yet.
+                    </p>
+                    <p className="text-[#2d4a3e]/50 text-sm" style={{ fontFamily: "Georgia, serif" }}>
+                      Create a booster first to manage judges.
+                    </p>
+                  </div>
+                ) : (
+                  /* Booster tile grid */
+                  <div
+                    className="grid gap-3"
+                    style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}
+                  >
+                    {boosters.map((b) => {
+                      const isActive = selectedBooster === b.id;
+                      return (
+                        <button
+                          key={b.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedBooster(b.id);
+                            setError(null);
+                            setSuccess(null);
+                          }}
+                          className="text-left rounded-2xl p-5 border-none cursor-pointer transition-all duration-200 hover:scale-[1.02]"
+                          style={{ backgroundColor: isActive ? "#2d4a3e" : "#d6cfc0" }}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div
+                              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                              style={{
+                                backgroundColor: isActive
+                                  ? "rgba(214,207,192,0.15)"
+                                  : "rgba(45,74,62,0.1)",
+                              }}
+                            >
+                              <Users
+                                size={14}
+                                style={{ color: isActive ? "#d6cfc0" : "#2d4a3e" }}
+                              />
+                            </div>
+                            {isActive && (
+                              <span
+                                className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
+                                style={{ backgroundColor: "#d6cfc0" }}
+                              >
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full"
+                                  style={{ backgroundColor: "#2d4a3e" }}
+                                />
+                              </span>
+                            )}
+                          </div>
+                          <p
+                            className="font-black uppercase leading-tight mb-1"
+                            style={{
+                              fontFamily: "'Inter', sans-serif",
+                              fontSize: 13,
+                              letterSpacing: "-0.01em",
+                              color: isActive ? "#f0ebe0" : "#2d4a3e",
+                            }}
+                          >
+                            {b.name}
+                          </p>
+                          {b.booster_type && (
+                            <p
+                              className="text-[10px] uppercase font-bold"
+                              style={{
+                                color: isActive
+                                  ? "rgba(240,235,224,0.4)"
+                                  : "rgba(45,74,62,0.45)",
+                                fontFamily: "'Inter', sans-serif",
+                                letterSpacing: "0.1em",
+                              }}
+                            >
+                              {b.booster_type}
+                            </p>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
             {/* Step 02 — Invite by email */}
             {selectedBooster && (
               <div>
@@ -220,7 +260,7 @@ export function JudgeInviteForm({ boosters }: { boosters: StoredBooster[] }) {
                     className="font-black text-[#2d4a3e]/18"
                     style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, letterSpacing: "-0.025em" }}
                   >
-                    02
+                    01
                   </span>
                   <p
                     className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
@@ -311,7 +351,7 @@ export function JudgeInviteForm({ boosters }: { boosters: StoredBooster[] }) {
                       className="font-black text-[#2d4a3e]/18"
                       style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, letterSpacing: "-0.025em" }}
                     >
-                      03
+                      02
                     </span>
                     <p
                       className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
@@ -517,11 +557,17 @@ export function JudgeInviteForm({ boosters }: { boosters: StoredBooster[] }) {
                 How it works
               </p>
               <div className="flex flex-col gap-3">
-                {[
-                  { n: "01", t: "Select a booster — each one has its own pool of judges." },
-                  { n: "02", t: "Enter a judge's email address. They must already have a platform account." },
-                  { n: "03", t: "Judges receive an invite and can accept it to gain judging access for that booster." },
-                ].map(({ n, t }) => (
+                {(hideBoosterPicker
+                  ? [
+                      { n: "01", t: "Enter a judge's email address. They must already have a platform account." },
+                      { n: "02", t: "Judges receive an invite and can accept it to gain judging access for this booster." },
+                    ]
+                  : [
+                      { n: "01", t: "Select a booster — each one has its own pool of judges." },
+                      { n: "02", t: "Enter a judge's email address. They must already have a platform account." },
+                      { n: "03", t: "Judges receive an invite and can accept it to gain judging access for that booster." },
+                    ]
+                ).map(({ n, t }) => (
                   <div key={n} className="flex items-start gap-3">
                     <span
                       className="font-black text-[#2d4a3e]/20 leading-none shrink-0 mt-0.5"

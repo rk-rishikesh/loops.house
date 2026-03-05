@@ -1,17 +1,23 @@
+import { redirect } from "next/navigation";
 import { getServerAuth } from "@/lib/server-auth";
 import {
   getBoosterWithTracksServer,
   getProjectsServer,
   getSubmissionsServer,
 } from "@/lib/server-data";
-import { BoosterDetailView } from "@/components/client/booster-detail-view";
+import { BuilderBoosterDetail } from "@/components/client/builder-booster-detail";
 
 export default async function BoosterDetailPage({
   params,
 }: {
   params: Promise<{ type: string; id: string }>;
 }) {
-  const [auth, { type, id }] = await Promise.all([getServerAuth(), params]);
+  const auth = await getServerAuth();
+  if (!auth) {
+    redirect("/login");
+  }
+
+  const { type, id } = await params;
 
   const [booster, projects, submissions] = await Promise.all([
     getBoosterWithTracksServer(id),
@@ -19,20 +25,19 @@ export default async function BoosterDetailPage({
     getSubmissionsServer(id),
   ]);
 
-  // Find the project that was already submitted to this booster (if any)
   const boosterSubmission = submissions.find((s) => s.booster_id === id);
   const submittedProject =
     (boosterSubmission && projects.find((p) => p.project_id === boosterSubmission.project_id)) ?? null;
 
   return (
-    <BoosterDetailView
+    <BuilderBoosterDetail
       type={type}
       boosterId={id}
       booster={booster}
-      submittedProject={submittedProject}
+      projects={projects}
       submissions={submissions}
-      isAuthenticated={!!auth}
-      role={auth?.role ?? null}
+      isAuthenticated={true}
+      role={auth.role}
     />
   );
 }

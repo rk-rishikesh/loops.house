@@ -362,7 +362,7 @@ function BoosterDetail({
 
           {/* Ideate */}
           <ActionCard
-            href={`/builder/ideate?booster_id=${booster.id}`}
+            href={`/boosters/${type}/${booster.id}/ideate`}
             label="Ideate project"
             sublabel="Refine your idea with the AI mentor"
             badge="AI"

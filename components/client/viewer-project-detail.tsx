@@ -32,6 +32,213 @@ function kbSnap(p: StoredProject) {
   };
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   MARKDOWN RENDERER — dark variant.
+   Used in exactly two places:
+     1. Assistant chat bubbles (Chat tab)
+     2. Code answer block (Code tab)
+   Nothing else in this file is changed.
+══════════════════════════════════════════════════════════════════════ */
+function CopyCodeBtn({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={async () => {
+        try { await navigator.clipboard.writeText(text); } catch {}
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1400);
+      }}
+      style={{
+        fontFamily: "'Inter', sans-serif", fontSize: 8, letterSpacing: "0.12em",
+        textTransform: "uppercase" as const, fontWeight: 700,
+        color: "rgba(240,235,224,0.35)", background: "transparent",
+        border: "none", cursor: "pointer", padding: "2px 0",
+      }}
+    >
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
+
+function MarkdownDark({ md }: { md: string }) {
+  const fg      = "rgba(240,235,224,0.82)";
+  const fgBold  = "#f0ebe0";
+  const fgFaint = "rgba(240,235,224,0.35)";
+  const accent  = "#4caf7d";
+  const codeBg  = "rgba(0,0,0,0.28)";
+  const blockBg = "rgba(240,235,224,0.05)";
+  const border  = "rgba(240,235,224,0.1)";
+
+  function inline(text: string, key: string | number): React.ReactNode {
+    const parts: React.ReactNode[] = [];
+    let cursor = 0;
+    const re = /(\*\*(.+?)\*\*)|(\*(.+?)\*)|(``?([^`]+?)``?)|(\[([^\]]+)\]\(([^)]+)\))/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > cursor)
+        parts.push(<span key={`t${cursor}`} style={{ color: fg, fontFamily: "Georgia, serif", fontSize: 13 }}>{text.slice(cursor, m.index)}</span>);
+      if (m[1])
+        parts.push(<strong key={`b${m.index}`} style={{ color: fgBold, fontFamily: "'Inter', sans-serif", fontWeight: 800, fontSize: 13 }}>{m[2]}</strong>);
+      else if (m[3])
+        parts.push(<em key={`i${m.index}`} style={{ color: fg, fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 13 }}>{m[4]}</em>);
+      else if (m[5])
+        parts.push(
+          <code key={`c${m.index}`} style={{
+            fontFamily: "'SF Mono','Fira Code',monospace", fontSize: 11,
+            color: accent, backgroundColor: codeBg,
+            padding: "2px 6px", borderRadius: 5, letterSpacing: "-0.01em",
+          }}>{m[6]}</code>
+        );
+      else if (m[7])
+        parts.push(
+          <a key={`l${m.index}`} href={m[9]} target="_blank" rel="noopener noreferrer"
+            style={{ color: accent, fontFamily: "Georgia, serif", fontSize: 13, textDecoration: "underline", textUnderlineOffset: 3 }}>
+            {m[8]}
+          </a>
+        );
+      cursor = m.index + m[0].length;
+    }
+    if (cursor < text.length)
+      parts.push(<span key={`t${cursor}`} style={{ color: fg, fontFamily: "Georgia, serif", fontSize: 13 }}>{text.slice(cursor)}</span>);
+    return parts.length === 0
+      ? <span key={key} style={{ color: fg, fontFamily: "Georgia, serif", fontSize: 13 }}>{text}</span>
+      : <span key={key}>{parts}</span>;
+  }
+
+  const lines = md.split("\n");
+  const nodes: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const raw     = lines[i];
+    const trimmed = raw.trim();
+    if (!trimmed) { i++; continue; }
+
+    /* fenced code block */
+    if (trimmed.startsWith("```")) {
+      const lang = trimmed.slice(3).trim();
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith("```")) { codeLines.push(lines[i]); i++; }
+      i++;
+      nodes.push(
+        <div key={`code${i}`} style={{ marginBottom: 10 }}>
+          {lang && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(0,0,0,0.4)", borderRadius: "8px 8px 0 0", padding: "4px 12px" }}>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase" as const, fontWeight: 700, color: fgFaint }}>{lang}</span>
+              <CopyCodeBtn text={codeLines.join("\n")} />
+            </div>
+          )}
+          <pre style={{
+            fontFamily: "'SF Mono','Fira Code','Consolas',monospace", fontSize: 11.5,
+            lineHeight: 1.7, color: "rgba(240,235,224,0.75)",
+            backgroundColor: codeBg, padding: "12px 14px",
+            borderRadius: lang ? "0 0 8px 8px" : 8,
+            overflowX: "auto", margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" as const,
+            border: `1px solid ${border}`, borderTop: lang ? "none" : undefined,
+          }}>
+            {codeLines.join("\n")}
+          </pre>
+        </div>
+      );
+      continue;
+    }
+
+    /* blockquote */
+    if (trimmed.startsWith("> ")) {
+      const ql: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith("> ")) { ql.push(lines[i].trim().slice(2)); i++; }
+      nodes.push(
+        <div key={`bq${i}`} style={{ borderLeft: `3px solid ${accent}`, paddingLeft: 12, marginBottom: 8, opacity: 0.8 }}>
+          {ql.map((l, qi) => <p key={qi} style={{ fontFamily: "Georgia, serif", fontSize: 13, color: fg, lineHeight: 1.7, margin: 0 }}>{inline(l, qi)}</p>)}
+        </div>
+      );
+      continue;
+    }
+
+    /* hr */
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      nodes.push(<hr key={`hr${i}`} style={{ border: "none", borderTop: `1px solid ${border}`, margin: "8px 0" }} />);
+      i++; continue;
+    }
+
+    /* headings */
+    const hm = trimmed.match(/^(#{1,3})\s+(.+)/);
+    if (hm) {
+      const level = hm[1].length;
+      const sizes = [17, 14, 13];
+      nodes.push(
+        <p key={`h${i}`} style={{
+          fontFamily: "'Inter', sans-serif", fontWeight: 900,
+          fontSize: sizes[level - 1] ?? 13, color: fgBold,
+          letterSpacing: level === 1 ? "-0.02em" : "-0.01em",
+          textTransform: level === 1 ? "uppercase" as const : "none" as const,
+          marginBottom: 6, marginTop: i > 0 ? (level === 1 ? 12 : 8) : 0, lineHeight: 1.2,
+        }}>{hm[2]}</p>
+      );
+      i++; continue;
+    }
+
+    /* unordered list */
+    if (/^[-*+]\s/.test(trimmed)) {
+      const items: string[] = [];
+      while (i < lines.length && /^[-*+]\s/.test(lines[i].trim())) { items.push(lines[i].trim().slice(2)); i++; }
+      nodes.push(
+        <ul key={`ul${i}`} style={{ margin: "0 0 8px 0", padding: 0, listStyle: "none" }}>
+          {items.map((item, ii) => (
+            <li key={ii} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
+              <span style={{ color: accent, fontWeight: 900, fontSize: 11, marginTop: 3, flexShrink: 0, opacity: 0.7 }}>→</span>
+              <span style={{ fontFamily: "Georgia, serif", fontSize: 13, color: fg, lineHeight: 1.65 }}>{inline(item, ii)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    }
+
+    /* ordered list */
+    if (/^\d+\.\s/.test(trimmed)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) { items.push(lines[i].trim().replace(/^\d+\.\s/, "")); i++; }
+      nodes.push(
+        <ol key={`ol${i}`} style={{ margin: "0 0 8px 0", padding: 0, listStyle: "none" }}>
+          {items.map((item, ii) => (
+            <li key={ii} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 5 }}>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 10, color: fgBold, opacity: 0.28, width: 18, flexShrink: 0, marginTop: 2, letterSpacing: "-0.01em" }}>
+                {String(ii + 1).padStart(2, "0")}
+              </span>
+              <span style={{ fontFamily: "Georgia, serif", fontSize: 13, color: fg, lineHeight: 1.65 }}>{inline(item, ii)}</span>
+            </li>
+          ))}
+        </ol>
+      );
+      continue;
+    }
+
+    /* emoji callout */
+    const em = trimmed.match(/^([\u{1F300}-\u{1FFFF}]|[⚠✅❌💡🔥🚀⭐🎯✦◆])\s(.+)/u);
+    if (em) {
+      nodes.push(
+        <div key={`em${i}`} style={{ display: "flex", alignItems: "flex-start", gap: 10, backgroundColor: blockBg, borderRadius: 8, padding: "9px 12px", marginBottom: 7, border: `1px solid ${border}` }}>
+          <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{em[1]}</span>
+          <span style={{ fontFamily: "Georgia, serif", fontSize: 13, color: fg, lineHeight: 1.65 }}>{inline(em[2], i)}</span>
+        </div>
+      );
+      i++; continue;
+    }
+
+    /* paragraph */
+    nodes.push(
+      <p key={`p${i}`} style={{ fontFamily: "Georgia, serif", fontSize: 13, color: fg, lineHeight: 1.75, marginBottom: 7 }}>
+        {inline(trimmed, i)}
+      </p>
+    );
+    i++;
+  }
+
+  return <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>{nodes}</div>;
+}
+
 /* ─── Arrow circle ───────────────────────────────────────────────── */
 function ArrowCircle({ size = 44, inverted = false }: { size?: number; inverted?: boolean }) {
   return (
@@ -237,7 +444,7 @@ function AIChatPanel({
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-[300] flex flex-col overflow-hidden shadow-2xl"
+      className="fixed bottom-6 right-6 z-300 flex flex-col overflow-hidden shadow-2xl"
       style={{
         width: isExp ? "min(640px, 92vw)" : "min(400px, 92vw)",
         height: isExp ? "min(680px, 86vh)" : "min(520px, 76vh)",
@@ -248,46 +455,77 @@ function AIChatPanel({
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ borderBottom: "1px solid rgba(240,235,224,0.1)" }}>
-        <div className="flex gap-1.5">
+      <div
+        className="shrink-0 flex w-full items-stretch text-[9px] tracking-[0.16em] uppercase font-bold text-[#f0ebe0]"
+        style={{
+          fontFamily: "'Inter', sans-serif",
+          borderBottom: "1px solid rgba(240,235,224,0.1)",
+        }}
+      >
+        {/* Left: Chat / Code tabs */}
+        <div
+          className="w-[150px] max-w-[45%] flex items-stretch"
+          style={{ borderRight: "1px solid rgba(240,235,224,0.12)" }}
+        >
           {(["chat", "code"] as ChatTab[]).map((t) => (
             <button
-              key={t} type="button" onClick={() => setTab(t)}
-              className="text-[9px] tracking-[0.15em] uppercase font-bold px-3.5 py-2 rounded-full border-none cursor-pointer transition-all"
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className="flex-1 min-w-0 px-6 py-4 border-none cursor-pointer transition-all"
               style={{
-                fontFamily: "'Inter', sans-serif",
-                backgroundColor: tab === t ? "#d6cfc0" : "rgba(240,235,224,0.08)",
-                color: tab === t ? "#2d4a3e" : "rgba(240,235,224,0.4)",
+                backgroundColor:
+                  tab === t ? "#d6cfc0" : "rgba(240,235,224,0.06)",
+                color: tab === t ? "#2d4a3e" : "rgba(240,235,224,0.55)",
               }}
             >
               {t === "chat" ? "Chat" : "Code"}
             </button>
           ))}
         </div>
-        <div className="flex gap-1">
-          {[
-            { Icon: isExp ? Minimize2 : Maximize2, fn: onToggleExpand },
-            { Icon: X, fn: onClose },
-          ].map(({ Icon, fn }, i) => (
-            <button
-              key={i} type="button" onClick={fn}
-              className="w-7 h-7 rounded-full flex items-center justify-center border-none cursor-pointer transition-colors"
-              style={{ backgroundColor: "rgba(240,235,224,0.08)", color: "rgba(240,235,224,0.38)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#f0ebe0")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(240,235,224,0.38)")}
-            >
-              <Icon size={12} />
-            </button>
-          ))}
-        </div>
-      </div>
 
-      {/* Context strip */}
-      <div className="flex items-center gap-2.5 px-5 py-2.5 shrink-0" style={{ borderBottom: "1px solid rgba(240,235,224,0.06)" }}>
-        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "#d6cfc0", boxShadow: "0 0 6px #d6cfc0" }} />
-        <span className="text-[11px] text-[#f0ebe0]/40" style={{ fontFamily: "Georgia, serif" }}>
-          Context: <span className="text-[#f0ebe0]/70">{project.name}</span>
-        </span>
+        {/* Middle: project name */}
+        <div
+          className="flex-1 min-w-0 px-4 flex items-center justify-center"
+          style={{ borderRight: "1px solid rgba(240,235,224,0.12)" }}
+        >
+          <span className="truncate">{project.name}</span>
+        </div>
+
+        {/* Right: window controls */}
+        <div className="flex items-center justify-end gap-1.5 px-3">
+          {/* Minimize / maximize */}
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            className="w-7 h-7 rounded-full flex items-center justify-center border-none cursor-pointer transition-colors"
+            style={{ color: "rgba(240,235,224,0.5)" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#f0ebe0";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "rgba(240,235,224,0.5)";
+            }}
+          >
+            {(isExp ? <Minimize2 size={12} /> : <Maximize2 size={12} />)}
+          </button>
+
+          {/* Close */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-7 h-7 rounded-full flex items-center justify-center border-none cursor-pointer transition-colors"
+            style={{ color: "rgba(240,235,224,0.5)" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#f0ebe0";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "rgba(240,235,224,0.5)";
+            }}
+          >
+            <X size={12} />
+          </button>
+        </div>
       </div>
 
       {/* Chat */}
@@ -314,17 +552,34 @@ function AIChatPanel({
             )}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className="max-w-[85%] px-4 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap break-words"
-                  style={{
-                    fontFamily: "Georgia, serif",
-                    borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                    backgroundColor: msg.role === "user" ? "#d6cfc0" : "rgba(240,235,224,0.08)",
-                    color: msg.role === "user" ? "#2d4a3e" : "rgba(240,235,224,0.8)",
-                  }}
-                >
-                  {msg.content || <span style={{ opacity: 0.4 }}>▮</span>}
-                </div>
+                {msg.role === "user" ? (
+                  /* user bubble — unchanged */
+                  <div
+                    className="max-w-[85%] px-4 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap break-words"
+                    style={{
+                      fontFamily: "Georgia, serif",
+                      borderRadius: "18px 18px 4px 18px",
+                      backgroundColor: "#d6cfc0",
+                      color: "#2d4a3e",
+                    }}
+                  >
+                    {msg.content || <span style={{ opacity: 0.4 }}>▮</span>}
+                  </div>
+                ) : (
+                  /* ★ CHANGE 1 OF 2 — assistant bubble now renders markdown */
+                  <div
+                    className="max-w-[88%] px-4 py-3"
+                    style={{
+                      borderRadius: "18px 18px 18px 4px",
+                      backgroundColor: "rgba(240,235,224,0.08)",
+                    }}
+                  >
+                    {msg.content
+                      ? <MarkdownDark md={msg.content} />
+                      : <span style={{ opacity: 0.4, color: "#f0ebe0" }}>▮</span>
+                    }
+                  </div>
+                )}
               </div>
             ))}
             {loading && messages[messages.length - 1]?.role !== "assistant" && (
@@ -361,45 +616,98 @@ function AIChatPanel({
       {/* Code */}
       {tab === "code" && (
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Top: helper text */}
           <div className="px-5 py-4 shrink-0">
-            <p className="text-[12px] text-[#f0ebe0]/38 leading-relaxed mb-3" style={{ fontFamily: "Georgia, serif" }}>Ask a technical question about the codebase.</p>
-            <form onSubmit={codeForm.handleSubmit((d) => codeMutation.mutate(d))} className="flex gap-2">
-              <input
-                type="text" {...codeForm.register("question")}
-                placeholder="How is auth implemented?" disabled={codeMutation.isPending}
-                className="flex-1 rounded-xl px-4 py-2.5 text-[13px] outline-none"
-                style={{ fontFamily: "Georgia, serif", backgroundColor: "rgba(240,235,224,0.07)", border: "1px solid rgba(240,235,224,0.13)", color: "#f0ebe0" }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(240,235,224,0.35)")}
-                onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(240,235,224,0.13)")}
-              />
-              <button
-                type="submit" disabled={codeMutation.isPending}
-                className="px-4 rounded-xl border-none cursor-pointer text-[9px] tracking-widest uppercase font-bold flex items-center gap-1.5 shrink-0"
-                style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#d6cfc0", color: "#2d4a3e" }}
-              >
-                {codeMutation.isPending && <Loader2 size={11} className="animate-spin" />}
-                Ask
-              </button>
-            </form>
+            <p
+              className="text-[12px] text-[#f0ebe0]/38 leading-relaxed"
+              style={{ fontFamily: "Georgia, serif" }}
+            >
+              Ask a technical question about the codebase.
+            </p>
           </div>
-          <div className="flex-1 overflow-y-auto px-5 pb-4">
+
+          {/* Middle: scrollable answer area */}
+          <div className="flex-1 overflow-y-auto px-5 pb-3">
             {codeMutation.isPending && (
               <div className="flex items-center gap-2 py-2">
-                <Loader2 size={12} className="animate-spin" style={{ color: "#d6cfc0" }} />
-                <span className="text-[12px] text-[#f0ebe0]/38" style={{ fontFamily: "Georgia, serif" }}>Analysing codebase…</span>
+                <Loader2
+                  size={12}
+                  className="animate-spin"
+                  style={{ color: "#d6cfc0" }}
+                />
+                <span
+                  className="text-[12px] text-[#f0ebe0]/38"
+                  style={{ fontFamily: "Georgia, serif" }}
+                >
+                  Analysing codebase…
+                </span>
               </div>
             )}
+            {/* ★ CHANGE 2 OF 2 — code answer now renders markdown */}
             {codeMutation.data && (
-              <div className="rounded-xl px-5 py-4 text-[13px] leading-relaxed whitespace-pre-wrap break-words" style={{ fontFamily: "Georgia, serif", backgroundColor: "rgba(240,235,224,0.07)", border: "1px solid rgba(240,235,224,0.1)", color: "rgba(240,235,224,0.8)" }}>
-                {codeMutation.data.answer}
+              <div
+                className="rounded-xl px-4 py-4"
+                style={{
+                  backgroundColor: "rgba(240,235,224,0.07)",
+                  border: "1px solid rgba(240,235,224,0.1)",
+                }}
+              >
+                <MarkdownDark md={codeMutation.data.answer} />
               </div>
             )}
             {codeMutation.isError && (
-              <p className="text-[12px] pt-2" style={{ fontFamily: "Georgia, serif", color: "#ff8080" }}>
+              <p
+                className="text-[12px] pt-2"
+                style={{ fontFamily: "Georgia, serif", color: "#ff8080" }}
+              >
                 {codeMutation.error.message}
               </p>
             )}
           </div>
+
+          {/* Bottom: input form */}
+          <form
+            onSubmit={codeForm.handleSubmit((d) => codeMutation.mutate(d))}
+            className="flex gap-2 px-5 py-3 shrink-0"
+            style={{ borderTop: "1px solid rgba(240,235,224,0.08)" }}
+          >
+            <input
+              type="text"
+              {...codeForm.register("question")}
+              placeholder="How is auth implemented?"
+              disabled={codeMutation.isPending}
+              className="flex-1 rounded-xl px-4 py-2.5 text-[13px] outline-none"
+              style={{
+                fontFamily: "Georgia, serif",
+                backgroundColor: "rgba(240,235,224,0.07)",
+                border: "1px solid rgba(240,235,224,0.13)",
+                color: "#f0ebe0",
+              }}
+              onFocus={(e) =>
+                (e.currentTarget.style.borderColor =
+                  "rgba(240,235,224,0.35)")
+              }
+              onBlur={(e) =>
+                (e.currentTarget.style.borderColor =
+                  "rgba(240,235,224,0.13)")
+              }
+            />
+            <button
+              type="submit"
+              disabled={codeMutation.isPending}
+              className="px-4 rounded-xl border-none cursor-pointer text-[9px] tracking-widest uppercase font-bold flex items-center gap-1.5 shrink-0"
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                backgroundColor: "#d6cfc0",
+                color: "#2d4a3e",
+              }}
+            >
+              {codeMutation.isPending && (
+                <Loader2 size={11} className="animate-spin" />
+              )}
+              Ask
+            </button>
+          </form>
         </div>
       )}
     </div>
@@ -412,20 +720,12 @@ function AIBubble({ onClick, hasMessages }: { onClick: () => void; hasMessages: 
   useEffect(() => { const t = setTimeout(() => setLabelVisible(false), 4200); return () => clearTimeout(t); }, []);
   return (
     <>
-      {labelVisible && (
-        <div
-          className="fixed bottom-8 right-24 z-[299] pointer-events-none whitespace-nowrap rounded-full px-4 py-2 text-[9px] tracking-[0.15em] uppercase font-bold"
-          style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#2d4a3e", color: "#d6cfc0", boxShadow: "0 4px 16px rgba(45,74,62,0.3)", animation: "slideInLabel 0.4s 0.7s both" }}
-        >
-          Ask about project ✦
-        </div>
-      )}
       <button
         type="button" onClick={onClick}
-        className="fixed bottom-6 right-6 z-[300] w-14 h-14 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-200 hover:scale-110"
+        className="fixed bottom-6 right-6 z-300 w-14 h-14 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-200 hover:scale-110"
         style={{ backgroundColor: "#2d4a3e", boxShadow: "0 8px 32px rgba(45,74,62,0.38)", border: "2px solid rgba(214,207,192,0.18)" }}
       >
-        <ArrowUpRight size={22} style={{ color: "#d6cfc0" }} />
+        <Image src="/whiteLogo.png" alt="Loops" width={22} height={22} />
         {hasMessages && (
           <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#d6cfc0", border: "2px solid #2d4a3e" }} />
         )}
@@ -458,6 +758,7 @@ export function ViewerProjectDetail({
   const shots   = (p.screenshot_urls ?? []) as string[];
   const socials = (p.social_links    ?? []) as { label: string; url: string }[];
   const features = (p.key_features   ?? []) as string[];
+  console.log(features)
   const tags    = (p.tech_stack_tags ?? []) as string[];
   const desc    = String(p.refined_description ?? (p as { description?: string }).description ?? "");
 
@@ -469,7 +770,13 @@ export function ViewerProjectDetail({
 
   /* ─── Why Choose items: features → social → description chunks ─── */
   const whyItems: { title: string; body: string }[] = features.length > 0
-    ? features.map((f) => ({ title: f.length > 58 ? f.slice(0, 58) + "…" : f, body: f }))
+    ? features.map((f) => {
+        const idx = f.indexOf(":");
+        const rawTitle = (idx >= 0 ? f.slice(0, idx) : f).trim();
+        const title = rawTitle.length > 58 ? rawTitle.slice(0, 58) + "…" : rawTitle;
+        const body = (idx >= 0 ? f.slice(idx + 1) : f).trim();
+        return { title, body };
+      })
     : desc
         .split(". ")
         .filter((s) => s.trim().length > 20)
@@ -483,17 +790,27 @@ export function ViewerProjectDetail({
     <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
 
       {/* ── Nav ───────────────────────────────────────────────────── */}
-      <div
-        className="sticky top-0 z-50 px-10 py-5 flex items-center justify-between"
-        style={{ backgroundColor: "#f0ebe0", borderBottom: "1px solid rgba(45,74,62,0.1)" }}
-      >
-        <Link
-          href="/viewer"
-          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
+      <div className="sticky top-0 z-50" style={{ backgroundColor: "#f0ebe0" }}>
+        <div
+          className="flex w-full items-stretch border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
-          <ArrowLeft size={12} /> Explore
-        </Link>
+          {/* Left: back to explore */}
+          <Link
+            href="/viewer"
+            className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf]"
+          >
+            <span className="flex items-center gap-2">
+              <ArrowLeft size={11} />
+              <span>Explore</span>
+            </span>
+          </Link>
+
+          {/* Right: project name */}
+          <div className="flex-1 min-w-0 py-8 flex items-center justify-end px-10">
+            <span>{p.name}</span>
+          </div>
+        </div>
       </div>
 
       {/* ── Three-column body ─────────────────────────────────────── */}
@@ -596,7 +913,60 @@ export function ViewerProjectDetail({
         </aside>
 
         {/* ══ CENTRE — gallery ════════════════════════════════════ */}
-        <GalleryColumn shots={shots} name={p.name} />
+        <div>
+        <main className="flex flex-col gap-5 mb-4">
+            {/* Description card */}
+            <div
+              className="rounded-3xl p-7"
+              style={{ backgroundColor: "#f5f2ea" }}
+            >
+              {/* <SectionLabel>Description</SectionLabel> */}
+              <p
+                className="text-[#2d4a3e]/75 leading-relaxed whitespace-pre-wrap"
+                style={{
+                  fontFamily: "Georgia, serif",
+                  fontSize: "clamp(14px, 1.4vw, 16px)",
+                }}
+              >
+                {desc ? (
+                  desc
+                ) : (
+                  <span className="font-semibold italic">
+                    No description available yet.
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {/* Gallery */}
+            {/* {screenshots.length > 0 && (
+              <div className="mt-4 w-full">
+                <div className="grid grid-cols-2 gap-3 w-full">
+                  {screenshots.slice(0, 4).map((src, i) => (
+                    <a
+                      key={i}
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="relative block overflow-hidden rounded-2xl"
+                      style={{ aspectRatio: "4 / 3" }}
+                    >
+                      <Image
+                        src={src}
+                        alt=""
+                        fill
+                        className="object-cover"
+                      />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )} */}
+
+          </main>
+          <GalleryColumn shots={shots} name={p.name} />
+        </div>
+
 
         {/* ══ RIGHT — Why Choose + tech stack ═════════════════════ */}
         <aside className="sticky top-[81px] flex flex-col gap-4">
@@ -622,14 +992,6 @@ export function ViewerProjectDetail({
               >
                 Why Choose<br />{p.name}
               </h2>
-              {desc && (
-                <p
-                  className="text-[#2d4a3e]/50 leading-relaxed"
-                  style={{ fontFamily: "Georgia, serif", fontSize: 13 }}
-                >
-                  {desc.slice(0, 170)}{desc.length > 170 ? "…" : ""}
-                </p>
-              )}
             </div>
 
             {/* Accordion */}
@@ -646,65 +1008,7 @@ export function ViewerProjectDetail({
                 </div>
               )}
             </div>
-
-            {/* CTA strip */}
-            <div className="mt-6 pt-5 flex items-center justify-between" style={{ borderTop: "1px solid rgba(45,74,62,0.08)" }}>
-              <div>
-                <p
-                  className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/35 mb-0.5"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  AI assistant
-                </p>
-                <p className="text-xs text-[#2d4a3e]/50" style={{ fontFamily: "Georgia, serif" }}>
-                  Ask the AI for more
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setChatState("open")}
-                className="border-none cursor-pointer bg-transparent"
-              >
-                <ArrowCircle size={44} />
-              </button>
-            </div>
           </div>
-
-          {/* Tech stack card */}
-          {tags.length > 0 && (
-            <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#2d4a3e" }}>
-              <div className="flex items-center justify-between mb-4">
-                <p
-                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/40"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  Tech Stack
-                </p>
-                <span
-                  className="text-[9px] tracking-[0.1em] uppercase font-bold text-[#f0ebe0]/20"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  {tags.length} tools
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-lg px-3 py-1.5"
-                    style={{
-                      fontFamily: "Georgia, serif",
-                      fontSize: 11,
-                      backgroundColor: "rgba(214,207,192,0.1)",
-                      color: "rgba(240,235,224,0.65)",
-                    }}
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* External links card — if more than 3 socials */}
           {socials.length > 3 && (

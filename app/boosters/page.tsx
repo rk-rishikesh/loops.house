@@ -1,12 +1,9 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  Lightbulb,
-  Zap,
-  DollarSign,
-  ArrowLeft,
-  ArrowUpRight,
-} from "lucide-react";
-import Image from "next/image";
+import { Lightbulb, Zap, DollarSign, ArrowLeft, ArrowUpRight } from "lucide-react";
+import { useRole } from "@/lib/queries";
 
 const BOOSTERS: {
   type: "idea" | "momentum" | "capital";
@@ -61,109 +58,134 @@ function ArrowCircle({ size = 52 }: { size?: number }) {
 }
 
 export default function BoostersLandingPage() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
-      {/* Back nav */}
-      <div className="px-10 pt-10 pb-0 flex items-center justify-between">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
+      {/* Top strip */}
+      <div>
+        <div
+          className="flex w-full items-stretch border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
-          <ArrowLeft size={12} /> Loops House
-        </Link>
-        <Image
-          src="/logo.svg"
-          alt="mascot"
-          width={48}
-          height={48}
-          unoptimized
-          className=""
-        />
+          <Link
+            href="/"
+            className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf]"
+          >
+            <span className="flex items-center gap-2">
+              <ArrowLeft size={11} />
+              <span>Portal</span>
+            </span>
+          </Link>
+          <div className="flex-1 min-w-0 py-8 flex items-center justify-end px-10">
+            <span>Explore boosters</span>
+          </div>
+        </div>
       </div>
 
-      {/* Scrollable sections — CSS fade-in replaces JS mounted state */}
+      {/* Scrollable sections */}
       <div
+        className="transition-all duration-500 ease-out"
         style={{
-          animation: "fadeSlideIn 0.5s ease-out both",
-          animationDelay: "100ms",
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? "translateY(0)" : "translateY(20px)",
         }}
       >
         {BOOSTERS.map((b, i) => {
           const isRight = i % 2 === 1;
           return (
-            <section
-              key={b.type}
-              className={`relative flex flex-col ${isRight ? "items-end" : ""}`}
+          <section key={b.type} className={`relative flex flex-col ${isRight ? "items-end" : ""}`}>
+            {/* Giant hero word — bleeds left or right, partially behind card */}
+            <div
+              className={`pt-6 select-none pointer-events-none overflow-hidden ${isRight ? "pr-8 text-right" : "pl-8"}`}
+              style={{ lineHeight: 0.85 }}
             >
-              {/* Giant hero word */}
-              <div
-                className={`pt-6 select-none pointer-events-none overflow-hidden ${isRight ? "pr-8 text-right" : "pl-8"}`}
-                style={{ lineHeight: 0.85 }}
+              <span
+                className="font-black text-[#2d4a3e] block"
+                style={{
+                  fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+                  fontSize: "clamp(48px, 12vw, 160px)",
+                  letterSpacing: "-0.03em",
+                }}
               >
-                <span
-                  className="font-black text-[#2d4a3e] block"
-                  style={{
-                    fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
-                    fontSize: "clamp(48px, 12vw, 160px)",
-                    letterSpacing: "-0.03em",
-                  }}
-                >
-                  {b.heroWord}
-                </span>
-              </div>
+                {b.heroWord}
+              </span>
+            </div>
 
-              {/* Card overlapping the hero word */}
-              <div
-                className={`relative -mt-2.5 px-8 z-10 w-full ${isRight ? "flex flex-col items-end" : ""}`}
-              >
-                <Link
-                  href={`/boosters/${b.type}`}
-                  className="no-underline block group"
+            {/* Card overlapping the hero word */}
+            <div className={`relative -mt-2.5 px-8 z-10 w-full ${isRight ? "flex flex-col items-end" : ""}`}>
+              <Link href={`/boosters/${b.type}`} className="no-underline block group">
+                <div
+                  className="rounded-3xl max-w-[800px] px-10 pt-9 pb-11 transition-transform duration-200 group-hover:scale-[1.005]"
+                  style={{ backgroundColor: "#d6cfc0" }}
                 >
-                  <div
-                    className="rounded-3xl max-w-[800px] px-10 pt-9 pb-11 transition-transform duration-200 group-hover:scale-[1.005]"
-                    style={{ backgroundColor: "#d6cfc0" }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-6">
-                        <span
-                          className="font-black text-[#2d4a3e] leading-none"
+                  {/* Top row: big index + label + arrow circle */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-6">
+                      <span
+                        className="font-black text-[#2d4a3e] leading-none"
+                        style={{
+                          fontFamily: "'Inter', sans-serif",
+                          fontSize: "clamp(56px, 8vw, 96px)",
+                          letterSpacing: "-0.03em",
+                        }}
+                      >
+                        {b.index}
+                      </span>
+                      <div>
+                        <p
+                          className="font-black text-[#2d4a3e] leading-[1.1]"
                           style={{
                             fontFamily: "'Inter', sans-serif",
-                            fontSize: "clamp(56px, 8vw, 96px)",
-                            letterSpacing: "-0.03em",
+                            fontSize: "clamp(16px, 2.2vw, 26px)",
+                            letterSpacing: "-0.01em",
                           }}
                         >
-                          {b.index}
-                        </span>
-                        <div>
-                          <p className="font-black text-[#2d4a3e] leading-[1.1]" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(16px, 2.2vw, 26px)", letterSpacing: "-0.01em" }}>{b.label}</p>
-                          <p className="font-black text-[#2d4a3e] leading-[1.1]" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(16px, 2.2vw, 26px)", letterSpacing: "-0.01em" }}>{b.sublabel}</p>
-                        </div>
+                          {b.label}
+                        </p>
+                        <p
+                          className="font-black text-[#2d4a3e] leading-[1.1]"
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: "clamp(16px, 2.2vw, 26px)",
+                            letterSpacing: "-0.01em",
+                          }}
+                        >
+                          {b.sublabel}
+                        </p>
                       </div>
-                      <ArrowCircle size={54} />
                     </div>
-                    <div className="mt-10 pl-1">
-                      <p className="text-[#2d4a3e] leading-[1.7]" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(15px, 1.6vw, 19px)", maxWidth: "680px", letterSpacing: "0.005em" }}>
-                        {b.description}
-                      </p>
-                    </div>
+                    <ArrowCircle size={54} />
                   </div>
-                </Link>
-              </div>
-            </section>
+
+                  {/* Description body */}
+                  <div className="mt-10 pl-1">
+                    <p
+                      className="text-[#2d4a3e] leading-[1.7]"
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: "clamp(15px, 1.6vw, 19px)",
+                        maxWidth: "680px",
+                        letterSpacing: "0.005em",
+                      }}
+                    >
+                      {b.description}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </section>
           );
         })}
+
+        {/* Bottom padding */}
         <div className="h-20" />
       </div>
-
-      <style>{`
-        @keyframes fadeSlideIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </main>
   );
 }

@@ -38,7 +38,7 @@ export function HostNav({ role }: { role: AppRole | null }) {
             </Link>
           )}
           <span className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-1" aria-hidden />
-          <LogoutButton />
+          <LogoutButton segment={false} />
         </nav>
       </div>
     </header>
