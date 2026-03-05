@@ -36,9 +36,9 @@ interface BuilderBoosterDetailProps {
 
 /* ─── Type meta (builder-friendly) ──────────────────────────────── */
 const TYPE_META: Record<string, { label: string; navLabel: string }> = {
-  idea: { label: "Early Stage", navLabel: "Open Calls" },
-  momentum: { label: "Build Phase", navLabel: "Open Calls" },
-  capital: { label: "Scale Up", navLabel: "Open Calls" },
+  idea: { label: "Idea Booster", navLabel: "Boosters" },
+  momentum: { label: "Momentum Booster", navLabel: "Boosters" },
+  capital: { label: "Capital Booster", navLabel: "Boosters" },
 };
 
 /* ─── Atoms ──────────────────────────────────────────────────────── */
@@ -241,7 +241,7 @@ export function BuilderBoosterDetail({
 
   const meta = TYPE_META[type] ?? {
     label: "Opportunity",
-    navLabel: "Open Calls",
+    navLabel: "Boosters",
   };
 
   /* Derive submitted project from submissions */
@@ -257,7 +257,7 @@ export function BuilderBoosterDetail({
         style={{ backgroundColor: "#f0ebe0" }}
       >
         <Link
-          href="/builder/boosters"
+          href={`/boosters/${type}`}
           className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
@@ -278,45 +278,40 @@ export function BuilderBoosterDetail({
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
-      {/* ── Sticky nav ──────────────────────────────────────────────── */}
-      <div
-        className="sticky top-0 z-50 px-10 py-5 flex items-center justify-between gap-4"
-        style={{
-          backgroundColor: "#f0ebe0",
-          borderBottom: "1px solid rgba(45,74,62,0.1)",
-        }}
-      >
-        <Link
-          href="/builder/boosters"
-          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline shrink-0"
+      {/* ── Sticky strip nav ─────────────────────────────────────────── */}
+      <div className="sticky top-0 z-50" style={{ backgroundColor: "#f0ebe0" }}>
+        <div
+          className="flex w-full items-stretch border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
-          <ArrowLeft size={12} /> {meta.navLabel}
-        </Link>
-        <div className="flex items-center gap-2 shrink-0">
-          <span
-            className="text-[9px] tracking-[0.15em] uppercase font-bold px-3 py-1.5 rounded-full"
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              backgroundColor: "rgba(45,74,62,0.08)",
-              color: "#2d4a3e",
-            }}
+          {/* Left: back to boosters */}
+          <Link
+            href={`/boosters/${type}`}
+            className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf]"
           >
-            {meta.label}
-          </span>
-          {submissions.length > 0 && (
-            <span
-              className="text-[9px] tracking-[0.15em] uppercase font-bold px-3 py-1.5 rounded-full"
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                backgroundColor: "#2d4a3e",
-                color: "#f0ebe0",
-              }}
-            >
-              {submissions.length} submission
-              {submissions.length !== 1 ? "s" : ""}
+            <span className="flex items-center gap-2">
+              <ArrowLeft size={11} />
+              <span>{meta.navLabel}</span>
             </span>
-          )}
+          </Link>
+
+          {/* Right: booster meta + submissions */}
+          <div className="flex-1 min-w-0 py-8 flex items-center justify-between px-10">
+            <span>{meta.label}</span>
+            {submissions.length > 0 && (
+              <span
+                className="text-[9px] tracking-[0.15em] uppercase font-bold px-3 py-1.5 rounded-full"
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  backgroundColor: "#2d4a3e",
+                  color: "#f0ebe0",
+                }}
+              >
+                {submissions.length} submission
+                {submissions.length !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -640,7 +635,7 @@ export function BuilderBoosterDetail({
                   {submittedProject.name}
                 </p>
                 <Link
-                  href={`/builder/projects/${submittedProject.project_id}`}
+                  href={`/boosters/projects/${submittedProject.project_id}?from_type=${type}&from_booster=${boosterId}`}
                   className="inline-flex items-center gap-2 no-underline rounded-full px-4 py-2.5 transition-all hover:opacity-85"
                   style={{ backgroundColor: "#d6cfc0" }}
                 >
@@ -658,7 +653,7 @@ export function BuilderBoosterDetail({
             {/* Apply -- builder */}
             {mounted && role === "builder" && !submittedProject && (
               <ActionCard
-                href={`/builder/boosters/${type}/${boosterId}/submit`}
+                href={`/boosters/${type}/${boosterId}/submit`}
                 label="Apply with project"
                 sublabel="Select or create a project to submit"
                 primary
@@ -667,7 +662,7 @@ export function BuilderBoosterDetail({
 
             {/* Ideate */}
             <ActionCard
-              href={`/builder/ideate?booster_id=${boosterId}`}
+              href={`/boosters/${type}/${boosterId}/ideate`}
               label="Ideate project"
               sublabel="Refine your idea with the AI mentor"
               badge="AI"

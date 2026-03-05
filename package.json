@@ -14,11 +14,13 @@
     "db:new-migration": "./scripts/new-migration.sh",
     "db:gen-types": "./scripts/gen-types.sh",
     "db:setup-storage": "node scripts/setup-storage.mjs",
-    "db:seed": "node scripts/seed-db.mjs"
+    "db:seed": "node scripts/seed-db.mjs",
+    "deploy": "netlify deploy --build --prod"
   },
   "dependencies": {
     "@google/genai": "^1.42.0",
     "@hookform/resolvers": "^5.2.2",
+    "@netlify/plugin-nextjs": "^5.15.8",
     "@octokit/rest": "^22.0.1",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.97.0",

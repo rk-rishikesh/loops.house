@@ -24,7 +24,7 @@ export default function AdminLayout({
               <FileCheck className="w-4 h-4" /> Applications
             </Link>
             <span className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-1" aria-hidden />
-            <LogoutButton />
+            <LogoutButton segment={false} />
           </nav>
         </div>
       </header>

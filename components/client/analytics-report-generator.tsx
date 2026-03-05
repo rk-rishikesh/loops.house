@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, BarChart3, Loader2, Sparkles, TrendingUp, Layers } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { getBooster, getProjects, getBoosterSubmissions } from "@/lib/storage";
+import { getProjects, getBoosterSubmissions } from "@/lib/storage";
 import type { StoredBooster } from "@/lib/data-mappers";
 import { type AnalyticsFilterSchema } from "@/lib/validations/schemas";
 
@@ -64,20 +64,23 @@ function HighlightBar({ text, index }: { text: string; index: number }) {
 }
 
 /* ─── Component ──────────────────────────────────────────────────── */
-export function AnalyticsReportGenerator({ boosters }: { boosters: StoredBooster[] }) {
+export function AnalyticsReportGenerator({
+  booster,
+  backHref,
+}: {
+  booster: StoredBooster;
+  backHref: string;
+}) {
   const [reportType,      setReportType]      = useState<ReportType>("full");
-  const [activeBoosterId, setActiveBoosterId] = useState<string | null>(null);
-  const [selectedBooster, setSelectedBooster] = useState<string | null>(null);
 
   const mutation = useMutation({
     mutationFn: async (data: AnalyticsFilterSchema): Promise<AnalyticsResult> => {
-      const booster = await getBooster(data.booster_id);
       const metrics = await buildMetricsForBooster(data.booster_id);
       const res = await fetch("/api/host-agents/metric-analyst", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           booster_id: data.booster_id, report_type: data.report_type,
-          booster: booster ? { id: booster.id, name: booster.name, theme: booster.theme, problem_statements: booster.problem_statements } : undefined,
+          booster: { id: booster.id, name: booster.name, theme: booster.theme, problem_statements: booster.problem_statements },
           metrics,
         }),
       });
@@ -88,14 +91,11 @@ export function AnalyticsReportGenerator({ boosters }: { boosters: StoredBooster
   });
 
   const result        = mutation.data;
-  const activeBooster = boosters.find((b) => b.id === selectedBooster);
+  const isRunning = mutation.isPending;
 
-  const handleGenerate = (boosterId: string) => {
-    setActiveBoosterId(boosterId);
-    setSelectedBooster(boosterId);
+  const handleGenerate = () => {
     mutation.mutate(
-      { booster_id: boosterId, report_type: reportType } satisfies AnalyticsFilterSchema,
-      { onSettled: () => setActiveBoosterId(null) },
+      { booster_id: booster.id, report_type: reportType } satisfies AnalyticsFilterSchema,
     );
   };
 
@@ -103,23 +103,26 @@ export function AnalyticsReportGenerator({ boosters }: { boosters: StoredBooster
     <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
 
       {/* ── Nav ─────────────────────────────────────────────────────── */}
-      <div
-        className="sticky top-0 z-50 px-10 py-5 flex items-center justify-between"
-        style={{ backgroundColor: "#f0ebe0", borderBottom: "1px solid rgba(45,74,62,0.1)" }}
-      >
-        <Link
-          href="/host"
-          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          <ArrowLeft size={12} /> Host
-        </Link>
-        <span
-          className="text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/30"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          {boosters.length} booster{boosters.length !== 1 ? "s" : ""}
-        </span>
+      <div className="sticky top-0 z-50" style={{ backgroundColor: "#f0ebe0" }}>
+        <div className="pt-0">
+          <div
+            className="flex w-full items-stretch border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
+            style={{ fontFamily: "'Inter', sans-serif" }}
+          >
+            <Link
+              href={backHref}
+              className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf]"
+            >
+              <span className="flex items-center gap-2">
+                <ArrowLeft size={11} />
+                <span>Host</span>
+              </span>
+            </Link>
+            <div className="flex-1 min-w-0 py-8 flex items-center justify-end px-10">
+              <span>{booster.name} ANALYTICS</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="px-10 pt-10 pb-24">
@@ -213,7 +216,7 @@ export function AnalyticsReportGenerator({ boosters }: { boosters: StoredBooster
               </div>
             </div>
 
-            {/* Step 2 — Booster table */}
+            {/* Step 2 — Generate for selected booster */}
             <div>
               <div className="flex items-baseline gap-3 mb-5">
                 <span
@@ -226,123 +229,43 @@ export function AnalyticsReportGenerator({ boosters }: { boosters: StoredBooster
                   className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
-                  Select Booster & Generate
+                  Generate
                 </p>
               </div>
 
-              {/* Table header */}
-              <div
-                className="grid border-b border-t border-[#2d4a3e]/20 py-3"
-                style={{ gridTemplateColumns: "64px 1fr auto", gap: "0 20px" }}
-              >
-                {["No.", "Booster", ""].map((col, i) => (
-                  <p
-                    key={i}
-                    className="text-[11px] tracking-[0.12em] uppercase font-semibold text-[#2d4a3e]/40"
+              <div className="rounded-3xl p-7 flex items-center justify-between gap-6" style={{ backgroundColor: "#f5f2ea" }}>
+                <div className="min-w-0">
+                  <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40 mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    Selected booster
+                  </p>
+                  <p className="font-semibold text-[#2d4a3e] leading-snug" style={{ fontFamily: "'Inter', sans-serif", fontSize: 15 }}>
+                    {booster.name}
+                  </p>
+                  {booster.theme && (
+                    <p className="text-[#2d4a3e]/55 text-sm mt-1" style={{ fontFamily: "Georgia, serif" }}>
+                      {booster.theme}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={mutation.isPending}
+                  className="inline-flex items-center gap-0 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-md disabled:opacity-40 shrink-0"
+                  style={{ backgroundColor: "#2d4a3e" }}
+                >
+                  <span
+                    className="pl-4 pr-3 py-2.5 text-[9px] tracking-[0.15em] uppercase font-bold text-[#f0ebe0] flex items-center gap-2"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
-                    {col}
-                  </p>
-                ))}
+                    {isRunning ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                    {isRunning ? "Running…" : "Generate"}
+                  </span>
+                  <span className="w-8 h-8 flex items-center justify-center rounded-full m-1" style={{ backgroundColor: "#d6cfc0" }}>
+                    <ArrowUpRight size={13} className="text-[#2d4a3e]" />
+                  </span>
+                </button>
               </div>
-
-              {boosters.length === 0 ? (
-                <div className="py-20 text-center border-b border-[#2d4a3e]/12">
-                  <div
-                    className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-5"
-                    style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e" }}
-                  >
-                    <BarChart3 size={20} />
-                  </div>
-                  <p
-                    className="font-black text-[#2d4a3e] uppercase mb-2"
-                    style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, letterSpacing: "-0.02em" }}
-                  >
-                    No boosters yet.
-                  </p>
-                  <p className="text-[#2d4a3e]/50 text-sm mb-8" style={{ fontFamily: "Georgia, serif" }}>
-                    Create a booster first to generate analytics.
-                  </p>
-                  <Link
-                    href="/host/boosters"
-                    className="inline-flex items-center gap-2 rounded-full no-underline text-[#f0ebe0] text-[9px] tracking-widest uppercase font-bold px-6 py-3"
-                    style={{ backgroundColor: "#2d4a3e", fontFamily: "'Inter', sans-serif" }}
-                  >
-                    Create Booster
-                  </Link>
-                </div>
-              ) : (
-                boosters.map((b, idx) => {
-                  const isRunning  = mutation.isPending && activeBoosterId === b.id;
-                  const isSelected = selectedBooster === b.id && result && !mutation.isPending;
-                  return (
-                    <div
-                      key={b.id}
-                      className="grid items-center py-6 border-b border-[#2d4a3e]/10 transition-all duration-150"
-                      style={{
-                        gridTemplateColumns: "64px 1fr auto",
-                        gap: "0 20px",
-                        backgroundColor: isSelected ? "rgba(45,74,62,0.03)" : "transparent",
-                        borderRadius: isSelected ? 8 : 0,
-                      }}
-                    >
-                      <p
-                        className="font-bold text-[#2d4a3e]"
-                        style={{ fontFamily: "'Inter', sans-serif", fontSize: 14 }}
-                      >
-                        {String(idx + 1).padStart(2, "0")}.
-                      </p>
-                      <div>
-                        <p
-                          className="font-semibold text-[#2d4a3e] leading-snug"
-                          style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(13px, 1.3vw, 15px)" }}
-                        >
-                          {b.name}
-                          {isSelected && (
-                            <span
-                              className="ml-2 text-[8px] tracking-[0.14em] uppercase font-bold px-2 py-1 rounded-sm"
-                              style={{ backgroundColor: "rgba(45,74,62,0.1)", color: "#2d4a3e", fontFamily: "'Inter', sans-serif" }}
-                            >
-                              Last run
-                            </span>
-                          )}
-                        </p>
-                        {b.theme && (
-                          <p className="text-[#2d4a3e]/50 text-sm mt-0.5" style={{ fontFamily: "Georgia, serif" }}>
-                            {b.theme}
-                          </p>
-                        )}
-                        {b.booster_type && (
-                          <span
-                            className="inline-block mt-2 text-[8px] tracking-[0.12em] uppercase font-bold px-2.5 py-1 rounded-sm"
-                            style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e", fontFamily: "'Inter', sans-serif" }}
-                          >
-                            {b.booster_type}
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleGenerate(b.id)}
-                        disabled={mutation.isPending}
-                        className="inline-flex items-center gap-0 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-md disabled:opacity-40"
-                        style={{ backgroundColor: "#2d4a3e" }}
-                      >
-                        <span
-                          className="pl-4 pr-3 py-2.5 text-[9px] tracking-[0.15em] uppercase font-bold text-[#f0ebe0] flex items-center gap-2"
-                          style={{ fontFamily: "'Inter', sans-serif" }}
-                        >
-                          {isRunning ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
-                          {isRunning ? "Running…" : "Generate"}
-                        </span>
-                        <span className="w-8 h-8 flex items-center justify-center rounded-full m-1" style={{ backgroundColor: "#d6cfc0" }}>
-                          <ArrowUpRight size={13} className="text-[#2d4a3e]" />
-                        </span>
-                      </button>
-                    </div>
-                  );
-                })
-              )}
             </div>
 
             {/* Error */}
@@ -368,7 +291,7 @@ export function AnalyticsReportGenerator({ boosters }: { boosters: StoredBooster
                     className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
-                    Report — {activeBooster?.name}
+                    Report — {booster.name}
                   </p>
                 </div>
 
@@ -382,11 +305,9 @@ export function AnalyticsReportGenerator({ boosters }: { boosters: StoredBooster
                         >
                           {REPORT_TYPES.find((r) => r.value === reportType)?.label} — AI Narrative
                         </p>
-                        {activeBooster && (
-                          <p className="text-[#f0ebe0]/55 text-sm" style={{ fontFamily: "Georgia, serif" }}>
-                            {activeBooster.name}
-                          </p>
-                        )}
+                        <p className="text-[#f0ebe0]/55 text-sm" style={{ fontFamily: "Georgia, serif" }}>
+                          {booster.name}
+                        </p>
                       </div>
                       <div
                         className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
@@ -509,7 +430,7 @@ export function AnalyticsReportGenerator({ boosters }: { boosters: StoredBooster
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Boosters",    value: String(boosters.length) },
+                  { label: "Booster", value: booster.booster_type ?? "—" },
                   { label: "Report Type", value: REPORT_TYPES.find((r) => r.value === reportType)?.label ?? "—" },
                 ].map(({ label, value }) => (
                   <div key={label} className="rounded-xl p-4" style={{ backgroundColor: "rgba(45,74,62,0.08)" }}>

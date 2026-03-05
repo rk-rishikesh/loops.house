@@ -140,7 +140,6 @@ export async function saveBoosterAction(
 
   revalidatePath("/host");
   revalidatePath("/boosters");
-  revalidatePath("/builder/boosters");
   return { success: true, data: undefined };
 }
 
@@ -202,7 +201,7 @@ export async function submitProjectAction(
   if (error) return { success: false, error: error.message };
 
   revalidatePath("/host");
-  revalidatePath("/builder/boosters");
+  revalidatePath("/boosters");
   return { success: true, data: undefined };
 }
 

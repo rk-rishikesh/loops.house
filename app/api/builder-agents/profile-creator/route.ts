@@ -132,27 +132,51 @@ export async function POST(request: NextRequest) {
 
       send("progress", { step: "knowledge-base", status: "started" });
 
-      // Create the loops_profiles row with all user-provided fields upfront.
+      // Create or update the loops_profiles row with all user-provided fields upfront.
       // AI-enriched fields (tagline, colors, tech_stack, etc.) are added via update later.
-      const { data: profileRow } = await supabaseAdmin
-        .from("loops_profiles")
-        .insert({
-          team_id: input.team_id,
-          name: input.name,
-          description: input.description,
-          github_url: input.github_url ?? null,
-          youtube_url: input.youtube_url ?? null,
-          logo_url: input.logo_url ?? null,
-          website_url: input.website_url ?? null,
-          screenshot_urls: input.screenshot_urls ?? [],
-          additional_links: (input.additional_links ?? []) as unknown as import("@/lib/supabase/types").Json,
-          social_links: (input.social_links ?? []) as unknown as import("@/lib/supabase/types").Json,
-        })
-        .select("id")
-        .single();
+      let projectId = input.project_id;
+      if (projectId) {
+        const { error: baseUpdateError } = await supabaseAdmin
+          .from("loops_profiles")
+          .update({
+            team_id: input.team_id,
+            name: input.name,
+            description: input.description,
+            github_url: input.github_url ?? null,
+            youtube_url: input.youtube_url ?? null,
+            logo_url: input.logo_url ?? null,
+            website_url: input.website_url ?? null,
+            screenshot_urls: input.screenshot_urls ?? [],
+            additional_links: (input.additional_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+            social_links: (input.social_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+          })
+          .eq("id", projectId);
+        if (baseUpdateError) {
+          throw new Error("Failed to update project profile");
+        }
+      } else {
+        const { data: profileRow, error: insertError } = await supabaseAdmin
+          .from("loops_profiles")
+          .insert({
+            team_id: input.team_id,
+            name: input.name,
+            description: input.description,
+            github_url: input.github_url ?? null,
+            youtube_url: input.youtube_url ?? null,
+            logo_url: input.logo_url ?? null,
+            website_url: input.website_url ?? null,
+            screenshot_urls: input.screenshot_urls ?? [],
+            additional_links: (input.additional_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+            social_links: (input.social_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+          })
+          .select("id")
+          .single();
 
-      if (!profileRow) throw new Error("Failed to create project profile");
-      const projectId = profileRow.id;
+        if (insertError || !profileRow) throw new Error("Failed to create project profile");
+        projectId = profileRow.id;
+      }
+
+      if (!projectId) throw new Error("Missing project id after profile creation");
 
       const kbSections: { source: "code" | "demo" | "theme" | "profile"; content: string }[] = [
         { source: "profile", content: `${input.name}\n\n${input.description}` },
@@ -197,37 +221,66 @@ export async function POST(request: NextRequest) {
         demoResult?.tech_mentioned
       );
 
-      let tagline: string;
-      let category = "Other";
+      send("progress", { step: "enrichment", status: "started", message: "Synthesizing enriched profile" });
+
+      const allContext = [
+        `Project name: ${input.name}`,
+        `User-provided description:\n${input.description.slice(0, 3000)}`,
+        techStackTags.length ? `Detected tech stack: ${techStackTags.join(", ")}` : "",
+        demoResult?.summary ? `Demo video summary: ${demoResult.summary}` : "",
+        demoResult?.problem_addressed ? `Problem addressed (from demo): ${demoResult.problem_addressed}` : "",
+        demoResult?.key_features?.length ? `Demo key points: ${demoResult.key_features.join("; ")}` : "",
+        codeResult?.flattened_codebase ? `Codebase context (first 4000 chars):\n${codeResult.flattened_codebase.slice(0, 4000)}` : "",
+        themeResult ? `Visual theme: ${themeResult.theme_label}, primary ${themeResult.primary_color}` : "",
+      ].filter(Boolean).join("\n\n");
+
+      interface EnrichmentResult {
+        refined_description: string;
+        tagline: string;
+        category: string;
+        problem_statement: string;
+        key_features: { heading: string; detail: string }[];
+      }
+
+      let enrichment: EnrichmentResult | null = null;
       try {
-        const consolidation = await generateJSON<{ tagline: string; category: string }>(
+        enrichment = await generateJSON<EnrichmentResult>(
           "pro",
-          `You are generating metadata for a developer project profile.
+          `You are an expert technical writer creating a comprehensive developer project profile. You have access to multiple data sources — user description, codebase analysis, demo video transcript, and visual theme data. Synthesize ALL of these into a polished profile.
 
-Project name: ${input.name}
-Description: ${input.description.slice(0, 800)}
-${techStackTags.length ? `Tech stack: ${techStackTags.slice(0, 15).join(", ")}` : ""}
-${demoResult?.key_features?.length ? `Key points: ${demoResult.key_features.slice(0, 5).join("; ")}` : ""}
+${allContext}
 
-Generate:
-1. A single, punchy tagline (max 120 characters). Compelling and descriptive.
-2. A project category. Choose the BEST fit from: AI/ML, Web3/Blockchain, Developer Tools, SaaS, Mobile, Data/Analytics, IoT/Hardware, Social/Community, Education, Health, Finance, Gaming, Infrastructure, Security, Other.
+Generate the following fields as JSON:
 
-Return JSON only: { "tagline": "...", "category": "..." }`
+1. "refined_description": A detailed, well-structured description (200-500 words). Go BEYOND the user's raw description — incorporate insights from the codebase, demo video, and technical analysis. Explain what the project does, its architecture, how it works under the hood, and why it matters. Use paragraph breaks (\\n\\n). Write in third person.
+
+2. "tagline": A single punchy tagline (max 120 characters). Compelling and descriptive.
+
+3. "category": Best-fit category from EXACTLY one of: AI/ML, Web3/Blockchain, Developer Tools, SaaS, Mobile, Data/Analytics, IoT/Hardware, Social/Community, Education, Health, Finance, Gaming, Infrastructure, Security, Other.
+
+4. "problem_statement": A clear, concise statement (1-3 sentences) of the core problem this project solves. Extract or infer this from all available context.
+
+5. "key_features": An array of 4-8 key features. Each MUST have:
+   - "heading": A short label (1-4 words, e.g. "Real-time Sync", "AI Orchestration")
+   - "detail": A 1-2 sentence explanation of the feature
+
+Return JSON only. No markdown.`
         );
-        tagline = typeof consolidation?.tagline === "string" && consolidation.tagline.trim().length > 0
-          ? consolidation.tagline.trim().slice(0, 120)
-          : "";
-        category = typeof consolidation?.category === "string" && consolidation.category.trim().length > 0
-          ? consolidation.category.trim()
-          : "Other";
-      } catch {
-        tagline = "";
+      } catch (e) {
+        console.error("[profile-creator] Enrichment failed:", e);
       }
-      if (!tagline) {
-        const firstSentence = input.description.replace(/\n.*/s, "").trim().slice(0, 140);
-        tagline = firstSentence ? (firstSentence.length < 140 ? firstSentence : firstSentence.slice(0, 137) + "...") : input.name;
-      }
+
+      const refinedDescription = enrichment?.refined_description || input.description;
+      const tagline = enrichment?.tagline?.trim().slice(0, 120)
+        || input.description.replace(/\n.*/s, "").trim().slice(0, 137) || input.name;
+      const category = enrichment?.category?.trim() || "Other";
+      const problemStatement = enrichment?.problem_statement || "";
+      const keyFeatures: { heading: string; detail: string }[] =
+        enrichment?.key_features?.length
+          ? enrichment.key_features
+          : (demoResult?.key_features ?? []).map((f) => ({ heading: f.split(/[:.–—]/)[0].trim().slice(0, 40), detail: f }));
+
+      send("progress", { step: "enrichment", status: "done" });
 
       const MAX_FLATTENED_DISPLAY = 80_000;
       const flattened_codebase = codeResult?.flattened_codebase
@@ -240,13 +293,14 @@ Return JSON only: { "tagline": "...", "category": "..." }`
         project_id: projectId,
         tagline,
         category,
-        refined_description: input.description,
+        refined_description: refinedDescription,
+        problem_statement: problemStatement,
         tech_stack_tags: techStackTags,
         primary_color: themeResult?.primary_color ?? "#1A1A2E",
         accent_color: themeResult?.accent_color ?? "#6C3BF5",
         secondary_color: themeResult?.secondary_color ?? "#FFFFFF",
         theme_label: themeResult?.theme_label ?? "dark-minimal",
-        key_features: demoResult?.key_features ?? [],
+        key_features: keyFeatures.map((f) => `${f.heading}: ${f.detail}`),
         tech_from_code: codeResult?.tech_stack ?? [],
         knowledge_base_id: projectId,
         knowledge_base_chunks: chunkCount,
@@ -269,7 +323,7 @@ Return JSON only: { "tagline": "...", "category": "..." }`
         .update({
           tagline,
           category,
-          refined_description: input.description,
+          refined_description: refinedDescription,
           tech_stack: techStackTags,
           colors: {
             primary_color: profileResponse.primary_color,
@@ -277,7 +331,7 @@ Return JSON only: { "tagline": "...", "category": "..." }`
             accent_color: profileResponse.accent_color,
             theme_label: profileResponse.theme_label,
           },
-          key_features: profileResponse.key_features,
+          key_features: keyFeatures.map((f) => `${f.heading}: ${f.detail}`),
           logo_url: input.logo_url ?? null,
           website_url: input.website_url ?? null,
           github_url: input.github_url ?? null,

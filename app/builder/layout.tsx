@@ -17,7 +17,7 @@ export default function BuilderLayout({
             <Link href="/builder" className="px-3 py-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20">
               Dashboard
             </Link>
-            <Link href="/builder/boosters" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20">
+            <Link href="/boosters" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20">
               <Lightbulb className="w-4 h-4" /> Boosters
             </Link>
             <Link href="/builder/projects" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20">

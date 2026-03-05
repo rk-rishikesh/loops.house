@@ -24,6 +24,7 @@ const ROLE_COOKIE_TTL = 30; // 30s — keep short so role changes (e.g. admin pr
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isStaticAssetRequest = /\.[^/]+$/.test(pathname);
 
   let response = NextResponse.next({ request });
 
@@ -85,8 +86,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // Unauthenticated user on a protected route → send to login
-  // (Skip if already on /login to avoid redirect loop)
-  if (!session && pathname !== "/login") {
+  // (Skip if already on /login and allow static asset requests, e.g. public files/CSS)
+  if (!session && pathname !== "/login" && !isStaticAssetRequest) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     const redirect = NextResponse.redirect(loginUrl);

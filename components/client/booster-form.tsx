@@ -22,10 +22,10 @@ interface ProgramDraft {
   judging_criteria: { name: string; description: string }[];
   organizer_notes: string[];
 }
-interface ProgramDraftResponse  { booster_id: string; draft: ProgramDraft; generated_at: string }
-interface ResourceTrackPlan     { name: string; description: string; docs_to_prepare: string[] }
-interface ResourcePlan          { technical_cheatsheet: string; tracks: ResourceTrackPlan[]; challenge_resource_map: { challenge_title: string; key_docs: string[] }[] }
-interface ResourcePlanResponse  { booster_id: string; resources: ResourcePlan; generated_at: string }
+interface ProgramDraftResponse { booster_id: string; draft: ProgramDraft; generated_at: string }
+interface ResourceTrackPlan { name: string; description: string; docs_to_prepare: string[] }
+interface ResourcePlan { technical_cheatsheet: string; tracks: ResourceTrackPlan[]; challenge_resource_map: { challenge_title: string; key_docs: string[] }[] }
+interface ResourcePlanResponse { booster_id: string; resources: ResourcePlan; generated_at: string }
 
 type FormData = {
   id: string;
@@ -48,30 +48,15 @@ const EMPTY_FORM: FormData = {
 };
 
 const BOOSTER_TYPES: { value: BoosterType; label: string; desc: string }[] = [
-  { value: "idea",     label: "Idea",     desc: "Early-stage exploration & concept validation" },
-  { value: "momentum", label: "Momentum", desc: "Mid-stage build & iteration support"          },
-  { value: "capital",  label: "Capital",  desc: "Late-stage funding & growth acceleration"     },
+  { value: "idea", label: "Idea", desc: "Early-stage exploration & concept validation" },
+  { value: "momentum", label: "Momentum", desc: "Mid-stage build & iteration support" },
+  { value: "capital", label: "Capital", desc: "Late-stage funding & growth acceleration" },
 ];
-
-/* ─── Shared atoms ───────────────────────────────────────────────── */
-// function ArrowCircle({ size = 44, inverted = false, className = "" }: { size?: number; inverted?: boolean; className?: string }) {
-//   return (
-//     <span
-//       style={{ width: size, height: size }}
-//       className={`inline-flex items-center justify-center rounded-full shrink-0 ${
-//         inverted ? "bg-[#d6cfc0] text-[#2d4a3e]" : "bg-[#2d4a3e] text-[#f0ebe0]"
-//       } ${className}`}
-//     >
-//       <ArrowUpRight size={Math.round(size * 0.4)} />
-//     </span>
-//   );
-// }
 
 function StepLabel({ n, label }: { n: string; label: string }) {
   return (
     <div className="flex items-baseline gap-3 mb-6">
       <span className="font-black text-[#2d4a3e]/18" style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, letterSpacing: "-0.025em" }}>{n}</span>
-      <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40" style={{ fontFamily: "'Inter', sans-serif" }}>{label}</p>
     </div>
   );
 }
@@ -110,7 +95,7 @@ function Input({ value, onChange, placeholder, type = "text" }: { value: string;
       style={inputBase}
       className="placeholder-[#2d4a3e]/30 transition-colors"
       onFocus={(e) => (e.currentTarget.style.backgroundColor = "#cdc7b7")}
-      onBlur={(e)  => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
+      onBlur={(e) => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
     />
   );
 }
@@ -125,7 +110,7 @@ function Textarea({ value, onChange, placeholder, rows = 4 }: { value: string; o
       style={textareaBase}
       className="placeholder-[#2d4a3e]/30 transition-colors"
       onFocus={(e) => (e.currentTarget.style.backgroundColor = "#cdc7b7")}
-      onBlur={(e)  => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
+      onBlur={(e) => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
     />
   );
 }
@@ -165,7 +150,7 @@ function ProgressDots({ current }: { current: FormStep }) {
           key={s}
           className="rounded-full transition-all duration-300"
           style={{
-            width:  i === idx ? 20 : 6,
+            width: i === idx ? 20 : 6,
             height: 6,
             backgroundColor: i <= idx ? "#2d4a3e" : "rgba(45,74,62,0.18)",
           }}
@@ -179,16 +164,16 @@ function ProgressDots({ current }: { current: FormStep }) {
 type View = "list" | "form" | "generating" | "review";
 
 export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; userId?: string }) {
-  const saveBoosterMutation     = useSaveBooster();
+  const saveBoosterMutation = useSaveBooster();
 
-  const [view,         setView]         = useState<View>("list");
-  const [formStep,     setFormStep]     = useState<FormStep>("type");
-  const [editingId,    setEditingId]    = useState<string | null>(null);
-  const [form,         setForm]         = useState<FormData>({ ...EMPTY_FORM });
+  const [view, setView] = useState<View>("list");
+  const [formStep, setFormStep] = useState<FormStep>("type");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<FormData>({ ...EMPTY_FORM });
   const [programDraft, setProgramDraft] = useState<ProgramDraftResponse | null>(null);
   const [resourcePlan, setResourcePlan] = useState<ResourcePlanResponse | null>(null);
-  const [aiError,      setAiError]      = useState<string | null>(null);
-  const [saving,       setSaving]       = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const set = <K extends keyof FormData>(key: K, val: FormData[K]) =>
     setForm((f) => ({ ...f, [key]: val }));
@@ -239,7 +224,7 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
     try {
       const payload = buildPayload();
       const [pr, rr] = await Promise.all([
-        fetch("/api/host-agents/booster-generator",    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ booster: payload }) }),
+        fetch("/api/host-agents/booster-generator", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ booster: payload }) }),
         fetch("/api/host-agents/resource-provisioner", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ booster: payload }) }),
       ]);
       const pj = await pr.json();
@@ -423,9 +408,15 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
               className="font-black text-[#2d4a3e] leading-[0.88] uppercase"
               style={{ fontFamily: "'Inter', 'Helvetica Neue', sans-serif", fontSize: "clamp(40px, 7vw, 96px)", letterSpacing: "-0.025em" }}
             >
-              {editingId ? "EDIT" : "NEW"}
-              <br />
-              BOOSTER.
+              {formStep === "type" && "Booster Type"}
+              {formStep === "theme" && "Theme"}
+              {formStep === "goal" && "Program Goal"}
+              {formStep === "statements" && "Problem Statements"}
+              {formStep === "bounty" && "Bounty & Rewards"}
+              {formStep === "timeline" && "Timeline"}
+              {formStep === "website" && "Website"}
+              {formStep === "resources" && "Technical Resources"}
+              {formStep === "notes" && "Organizer Notes"}
             </h2>
           </div>
 
@@ -440,50 +431,51 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
           <div className="flex flex-col gap-16">
 
             {/* ─── STEP: Booster type ─── */}
-            <div id="step-type">
-              <StepLabel n="01" label="Booster Type" />
-              <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
-                Where does this booster live? Each type has its own list for builders.
-              </p>
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                {BOOSTER_TYPES.map(({ value, label, desc }) => {
-                  const active = form.booster_type === value;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => { set("booster_type", value); setFormStep("theme"); }}
-                      className="text-left rounded-2xl p-5 border-none cursor-pointer transition-all duration-200 hover:scale-[1.02]"
-                      style={{ backgroundColor: active ? "#2d4a3e" : "#d6cfc0" }}
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <span
-                          className="text-[8px] tracking-[0.14em] uppercase font-bold px-2.5 py-1 rounded-sm"
-                          style={{ fontFamily: "'Inter', sans-serif", backgroundColor: active ? "rgba(214,207,192,0.15)" : "rgba(45,74,62,0.12)", color: active ? "#d6cfc0" : "#2d4a3e" }}
-                        >
-                          {value}
-                        </span>
-                        {active && (
-                          <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#d6cfc0" }}>
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#2d4a3e" }} />
+            {formStep === "type" && (
+              <div id="step-type">
+                <StepLabel n="01" label="Booster Type" />
+                <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
+                  Where does this booster live? Each type has its own list for builders.
+                </p>
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  {BOOSTER_TYPES.map(({ value, label, desc }) => {
+                    const active = form.booster_type === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => { set("booster_type", value); setFormStep("theme"); }}
+                        className="text-left rounded-2xl p-5 border-none cursor-pointer transition-all duration-200 hover:scale-[1.02]"
+                        style={{ backgroundColor: active ? "#2d4a3e" : "#d6cfc0" }}
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <span
+                            className="text-[8px] tracking-[0.14em] uppercase font-bold px-2.5 py-1 rounded-sm"
+                            style={{ fontFamily: "'Inter', sans-serif", backgroundColor: active ? "rgba(214,207,192,0.15)" : "rgba(45,74,62,0.12)", color: active ? "#d6cfc0" : "#2d4a3e" }}
+                          >
+                            {value}
                           </span>
-                        )}
-                      </div>
-                      <p className="font-black uppercase leading-tight mb-1.5" style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, letterSpacing: "-0.01em", color: active ? "#f0ebe0" : "#2d4a3e" }}>
-                        {label}
-                      </p>
-                      <p className="text-xs leading-relaxed" style={{ fontFamily: "Georgia, serif", color: active ? "rgba(240,235,224,0.5)" : "rgba(45,74,62,0.55)" }}>
-                        {desc}
-                      </p>
-                    </button>
-                  );
-                })}
+                          {active && (
+                            <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#d6cfc0" }}>
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#2d4a3e" }} />
+                            </span>
+                          )}
+                        </div>
+                        <p className="font-black uppercase leading-tight mb-1.5" style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, letterSpacing: "-0.01em", color: active ? "#f0ebe0" : "#2d4a3e" }}>
+                          {label}
+                        </p>
+                        <p className="text-xs leading-relaxed" style={{ fontFamily: "Georgia, serif", color: active ? "rgba(240,235,224,0.5)" : "rgba(45,74,62,0.55)" }}>
+                          {desc}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              {formStep === "type" && <NextButton onClick={() => setFormStep("theme")} label="Continue" />}
-            </div>
+            )}
 
             {/* ─── STEP: Theme ─── */}
-            {(formStep !== "type" || form.booster_type) && (
+            {formStep === "theme" && (
               <div id="step-theme">
                 <StepLabel n="02" label="Theme" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
@@ -491,16 +483,14 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
                 </p>
                 <FieldLabel>Theme (optional)</FieldLabel>
                 <Input value={form.theme} onChange={(v) => set("theme", v)} placeholder="e.g. AI for good, Web3 infra, Sustainable tech…" />
-                {formStep === "theme" && (
-                  <div className="mt-5">
-                    <NextButton onClick={() => setFormStep("goal")} />
-                  </div>
-                )}
+                <div className="mt-5">
+                  <NextButton onClick={() => setFormStep("goal")} />
+                </div>
               </div>
             )}
 
             {/* ─── STEP: Goal ─── */}
-            {(["goal","statements","bounty","timeline","website","resources","notes"] as FormStep[]).includes(formStep) && (
+            {formStep === "goal" && (
               <div id="step-goal">
                 <StepLabel n="03" label="Program Goal" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
@@ -508,16 +498,14 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
                 </p>
                 <FieldLabel>Program Goal</FieldLabel>
                 <Textarea value={form.program_goal} onChange={(v) => set("program_goal", v)} placeholder="Help builders ship AI copilots that integrate with enterprise workflows…" rows={3} />
-                {formStep === "goal" && (
-                  <div className="mt-5">
-                    <NextButton onClick={() => setFormStep("statements")} />
-                  </div>
-                )}
+                <div className="mt-5">
+                  <NextButton onClick={() => setFormStep("statements")} />
+                </div>
               </div>
             )}
 
             {/* ─── STEP: Problem statements ─── */}
-            {(["statements","bounty","timeline","website","resources","notes"] as FormStep[]).includes(formStep) && (
+            {formStep === "statements" && (
               <div id="step-statements">
                 <StepLabel n="04" label="Problem Statements" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
@@ -526,16 +514,14 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
                 <FieldLabel>Problem Statements (one per line)</FieldLabel>
                 <Textarea value={form.problem_statements} onChange={(v) => set("problem_statements", v)} placeholder={"Build a tool that…\nSolve the problem of…\nCreate a system that…"} rows={5} />
                 <FieldHint>Leave blank to let the AI generate these from your theme and goal.</FieldHint>
-                {formStep === "statements" && (
-                  <div className="mt-5">
-                    <NextButton onClick={() => setFormStep("bounty")} />
-                  </div>
-                )}
+                <div className="mt-5">
+                  <NextButton onClick={() => setFormStep("bounty")} />
+                </div>
               </div>
             )}
 
             {/* ─── STEP: Bounty ─── */}
-            {(["bounty","timeline","website","resources","notes"] as FormStep[]).includes(formStep) && (
+            {formStep === "bounty" && (
               <div id="step-bounty">
                 <StepLabel n="05" label="Bounty & Rewards" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
@@ -543,16 +529,14 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
                 </p>
                 <FieldLabel>Bounty Pool Summary (optional)</FieldLabel>
                 <Textarea value={form.bounty_pool_summary} onChange={(v) => set("bounty_pool_summary", v)} placeholder="$10k total pool, $5k grand prize, swag for top 20…" rows={2} />
-                {formStep === "bounty" && (
-                  <div className="mt-5">
-                    <NextButton onClick={() => setFormStep("timeline")} />
-                  </div>
-                )}
+                <div className="mt-5">
+                  <NextButton onClick={() => setFormStep("timeline")} />
+                </div>
               </div>
             )}
 
             {/* ─── STEP: Timeline ─── */}
-            {(["timeline","website","resources","notes"] as FormStep[]).includes(formStep) && (
+            {formStep === "timeline" && (
               <div id="step-timeline">
                 <StepLabel n="06" label="Timeline" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
@@ -560,16 +544,14 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
                 </p>
                 <FieldLabel>Timeline & Key Dates (optional)</FieldLabel>
                 <Textarea value={form.timeline} onChange={(v) => set("timeline", v)} placeholder="Launch: May 1 · Submissions: June 15 · Judging: June 20…" rows={2} />
-                {formStep === "timeline" && (
-                  <div className="mt-5">
-                    <NextButton onClick={() => setFormStep("website")} />
-                  </div>
-                )}
+                <div className="mt-5">
+                  <NextButton onClick={() => setFormStep("website")} />
+                </div>
               </div>
             )}
 
             {/* ─── STEP: Website ─── */}
-            {(["website","resources","notes"] as FormStep[]).includes(formStep) && (
+            {formStep === "website" && (
               <div id="step-website">
                 <StepLabel n="07" label="Website" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
@@ -577,16 +559,14 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
                 </p>
                 <FieldLabel>Website URL (optional)</FieldLabel>
                 <Input value={form.website_url} onChange={(v) => set("website_url", v)} placeholder="https://your-site.com" type="url" />
-                {formStep === "website" && (
-                  <div className="mt-5">
-                    <NextButton onClick={() => setFormStep("resources")} />
-                  </div>
-                )}
+                <div className="mt-5">
+                  <NextButton onClick={() => setFormStep("resources")} />
+                </div>
               </div>
             )}
 
             {/* ─── STEP: Technical resources ─── */}
-            {(["resources","notes"] as FormStep[]).includes(formStep) && (
+            {formStep === "resources" && (
               <div id="step-resources">
                 <StepLabel n="08" label="Technical Resources" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
@@ -625,11 +605,9 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
                     <Plus size={10} /> Add resource
                   </button>
                 </div>
-                {formStep === "resources" && (
-                  <div className="mt-5">
-                    <NextButton onClick={() => setFormStep("notes")} />
-                  </div>
-                )}
+                <div className="mt-5">
+                  <NextButton onClick={() => setFormStep("notes")} />
+                </div>
               </div>
             )}
 
@@ -886,10 +864,10 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
                 <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40 mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>Summary</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Type",       value: form.booster_type },
+                    { label: "Type", value: form.booster_type },
                     { label: "Challenges", value: String(programDraft?.draft.challenge_statements?.length ?? "—") },
-                    { label: "Goals",      value: String(programDraft?.draft.goals?.length ?? "—") },
-                    { label: "Tracks",     value: String(resourcePlan?.resources.tracks?.length ?? "—") },
+                    { label: "Goals", value: String(programDraft?.draft.goals?.length ?? "—") },
+                    { label: "Tracks", value: String(resourcePlan?.resources.tracks?.length ?? "—") },
                   ].map(({ label, value }) => (
                     <div key={label} className="rounded-xl p-3" style={{ backgroundColor: "rgba(45,74,62,0.08)" }}>
                       <p className="font-black text-[#2d4a3e] leading-none capitalize" style={{ fontFamily: "'Inter', sans-serif", fontSize: value.length > 6 ? 13 : 20, letterSpacing: "-0.02em" }}>{value}</p>
