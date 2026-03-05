@@ -1,9 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Send, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Send, Check, AlertCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { submitProjectSchema, type SubmitProjectSchema } from "@/lib/validations/schemas";
@@ -24,6 +24,8 @@ export function SubmitToBoosterForm({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -36,13 +38,19 @@ export function SubmitToBoosterForm({
   const submittedProjectIds = new Set(submissions.map((s) => s.project_id));
 
   function onSubmit(data: SubmitProjectSchema) {
+    setError(null);
     const project = projects.find((p) => p.project_id === data.project_id);
-    if (!project?.team_id) return;
+    if (!project?.team_id) {
+      setError("This project has no team. Please create a team for it first.");
+      return;
+    }
     startTransition(async () => {
       const result = await submitProjectAction(booster.id, project.team_id!, data.project_id);
       if (result.success) {
+        setSubmitted(true);
         router.push(`/builder/projects/${data.project_id}`);
-        router.refresh();
+      } else {
+        setError(result.error ?? "Submission failed. Please try again.");
       }
     });
   }
@@ -75,8 +83,8 @@ export function SubmitToBoosterForm({
           <span className="font-semibold text-[#2d4a3e]">{booster.name}</span>.
         </p>
 
-        {isPending ? (
-        <div className="mt-8 p-6 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200 flex items-center gap-3">
+        {submitted ? (
+        <div className="mt-8 p-6 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 flex items-center gap-3">
           <Check className="w-6 h-6 shrink-0" />
           <div>
             <p className="font-medium">Project submitted</p>
@@ -94,6 +102,12 @@ export function SubmitToBoosterForm({
             <p className="text-sm text-[#2d4a3e]/70" style={{ fontFamily: "Georgia, serif" }}>
               Choose a project to submit:
             </p>
+            {error && (
+              <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 flex items-center gap-3 text-sm">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                {error}
+              </div>
+            )}
             {errors.project_id && (
               <p className="text-xs text-red-600">{errors.project_id.message}</p>
             )}
@@ -137,7 +151,7 @@ export function SubmitToBoosterForm({
                 opacity: isPending ? 0.7 : 1,
               }}
             >
-              <Send className="w-4 h-4" /> Submit to {booster.name}
+              <Send className="w-4 h-4" /> {isPending ? "Submitting…" : `Submit to ${booster.name}`}
             </button>
           </form>
         )}

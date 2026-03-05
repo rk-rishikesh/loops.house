@@ -353,7 +353,7 @@ function BoosterDetail({
           {/* Apply -- builder */}
           {role === "builder" && !submittedProject && (
             <ActionCard
-              href={`/builder/boosters/${type}/${booster.id}/submit`}
+              href={`/boosters/${type}/${booster.id}/submit`}
               label="Apply with project"
               sublabel="Select or create a project to submit"
               primary
@@ -371,7 +371,7 @@ function BoosterDetail({
           {/* Tech Buddy */}
           {role === "builder" && hasTracks && (
             <ActionCard
-              href={`/builder/boosters/${booster.id}/tech-buddy`}
+              href={`/boosters/${booster.id}/tech-buddy`}
               label="Tech Buddy"
               sublabel="Ask about sponsor APIs and docs"
               badge="AI"
@@ -448,7 +448,7 @@ export function BuilderBoosterTypeDetail({
   if (boosters.length === 0) {
     return (
       <div className="min-h-screen px-10 py-12" style={{ backgroundColor: "#f0ebe0" }}>
-        <Link href="/builder/boosters"
+        <Link href="/boosters"
           className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
           style={{ fontFamily: "'Inter', sans-serif" }}>
           <ArrowLeft size={12} /> All Boosters
@@ -466,7 +466,7 @@ export function BuilderBoosterTypeDetail({
       {/* ── Sticky nav ──────────────────────────────────────────────── */}
       <div className="sticky top-0 z-50 px-10 py-5 flex items-center justify-between gap-4"
         style={{ backgroundColor: "#f0ebe0", borderBottom: "1px solid rgba(45,74,62,0.1)" }}>
-        <Link href="/builder/boosters"
+        <Link href="/boosters"
           className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline shrink-0"
           style={{ fontFamily: "'Inter', sans-serif" }}>
           <ArrowLeft size={12} /> {meta.navLabel}

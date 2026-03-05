@@ -1,5 +1,5 @@
 import { getServerAuth } from "@/lib/server-auth";
-import { getBoosterServer, getProjectsServer, getSubmissionsServer } from "@/lib/server-data";
+import { getBoosterServer, getProjectsServer, getSubmissionsServer, getTeamsServer } from "@/lib/server-data";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -23,17 +23,22 @@ export default async function SubmitProjectToBoosterPage({
     ? (rawType as BoosterType)
     : "idea";
 
-  const [booster, projects, submissions] = await Promise.all([
+  const [booster, allProjects, submissions, userTeams] = await Promise.all([
     getBoosterServer(boosterId),
     getProjectsServer(),
     getSubmissionsServer(boosterId),
+    getTeamsServer(auth.userId),
   ]);
+
+  // Only show projects the user owns (their team's projects)
+  const userTeamIds = new Set(userTeams.map((t) => t.id));
+  const projects = allProjects.filter((p) => p.team_id && userTeamIds.has(p.team_id));
 
   if (!booster) {
     return (
       <div>
         <Link
-          href={`/builder/boosters/${type}`}
+          href={`/boosters/${type}`}
           className="inline-flex items-center gap-1 text-sm text-zinc-600 dark:text-zinc-400 hover:text-violet-600 mb-6"
         >
           <ArrowLeft className="w-4 h-4" /> Back to boosters

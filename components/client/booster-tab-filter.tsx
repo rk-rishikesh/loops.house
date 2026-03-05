@@ -75,7 +75,7 @@ export function BoosterTabFilter({ boosters }: { boosters: StoredBooster[] }) {
                   )}
                 </div>
                 <Link
-                  href={`/builder/boosters/${activeTab}/${b.id}`}
+                  href={`/boosters/${activeTab}/${b.id}`}
                   className="inline-flex items-center gap-2 rounded-lg bg-violet-600 text-white px-4 py-2 text-sm font-medium hover:bg-violet-700 shrink-0"
                 >
                   <Send className="w-4 h-4" /> View Details

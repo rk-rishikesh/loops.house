@@ -853,7 +853,7 @@ export function ProjectEditor({
                   {submissions.map((s) => (
                     <Link
                       key={s.id}
-                      href={`/builder/boosters/${boosterTypes[s.booster_id] ?? "idea"}/${s.booster_id}`}
+                      href={`/boosters/${boosterTypes[s.booster_id] ?? "idea"}/${s.booster_id}`}
                       className="text-[12px] text-[#f0ebe0]/70 no-underline hover:text-[#f0ebe0] transition-colors"
                       style={{ fontFamily: "Georgia, serif" }}
                     >

@@ -1028,9 +1028,9 @@ async function main() {
   console.log(
     "  8. Visit /builder/ideate → test AI ideation chat (select a booster)",
   );
-  console.log("  9. Visit /builder/boosters → browse available boosters");
+  console.log("  9. Visit /boosters → browse available boosters");
   console.log(
-    "  10. Visit /builder/boosters/<id>/submit → submit project to booster",
+    "  10. Visit /boosters/<type>/<id>/submit → submit project to booster",
   );
 
   console.log("\n  HOST (host@loopsflow.test / Host123!):");

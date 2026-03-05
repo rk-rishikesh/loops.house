@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, PlusCircle, FolderOpen } from "lucide-react";
-import { getProjectsServer } from "@/lib/server-data";
+import { getProjectsServer, getTeamsServer } from "@/lib/server-data";
+import { getServerAuth } from "@/lib/server-auth";
 import type { StoredProject } from "@/lib/data-mappers";
 
 // ─── Arrow circle ─────────────────────────────────────────────────────────────
@@ -62,8 +63,13 @@ function ProjectRow({ project: p, index }: { project: StoredProject; index: numb
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default async function BuilderProjectsPage() {
-  const projects = await getProjectsServer();
-  console.log(projects)
+  const auth = await getServerAuth();
+  const [allProjects, userTeams] = await Promise.all([
+    getProjectsServer(),
+    auth ? getTeamsServer(auth.userId) : Promise.resolve([]),
+  ]);
+  const userTeamIds = new Set(userTeams.map((t) => t.id));
+  const projects = allProjects.filter((p) => p.team_id && userTeamIds.has(p.team_id));
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
 
