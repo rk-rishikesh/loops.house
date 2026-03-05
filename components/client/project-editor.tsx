@@ -17,10 +17,15 @@ import {
   Save,
   Share2,
   Loader2,
+  UserPlus,
+  Trash2,
+  Users,
 } from "lucide-react";
-import { useSaveProject } from "@/lib/queries";
-import { useState } from "react";
+import { saveProjectAction, addTeamMemberAction, removeTeamMemberAction } from "@/lib/actions";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { StoredProject, StoredSubmission } from "@/lib/data-mappers";
+import type { TeamMemberInfo } from "@/lib/server-data";
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 const KB_TABS: Record<string, { label: string; icon: React.ElementType }> = {
@@ -444,6 +449,9 @@ export function ProjectEditor({
   projectId,
   backHref,
   backLabel,
+  initialTeamMembers = [],
+  teamOwnerId,
+  currentUserId,
 }: {
   initialProject: StoredProject | null;
   initialSubmissions: StoredSubmission[];
@@ -452,8 +460,12 @@ export function ProjectEditor({
   projectId: string;
   backHref?: string;
   backLabel?: string;
+  initialTeamMembers?: TeamMemberInfo[];
+  teamOwnerId?: string | null;
+  currentUserId?: string;
 }) {
-  const saveProjectMutation = useSaveProject();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const [project, setProject] = useState<StoredProject | null | undefined>(
     initialProject,
@@ -461,9 +473,12 @@ export function ProjectEditor({
   const [submissions] = useState<StoredSubmission[]>(initialSubmissions);
   const [boosterNames] = useState<Record<string, string>>(initialBoosterNames);
   const [boosterTypes] = useState<Record<string, string>>(initialBoosterTypes);
+  const [teamMembers, setTeamMembers] = useState<TeamMemberInfo[]>(initialTeamMembers);
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberError, setMemberError] = useState<string | null>(null);
+  const isOwner = currentUserId === teamOwnerId;
   const [kbActiveTab, setKbActiveTab] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
   const [socialResult, setSocialResult] = useState<{
     linkedin_post?: string;
@@ -507,34 +522,58 @@ export function ProjectEditor({
     setEditing(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!project) return;
-    setSaving(true);
-    try {
-      const updated: StoredProject = {
-        ...project,
-        name: editForm.name,
-        tagline: editForm.tagline || undefined,
-        description: editForm.description || undefined,
-        refined_description: editForm.description || undefined,
-        category: editForm.category || undefined,
-        website_url: editForm.website_url || undefined,
-        github_url: editForm.github_url || undefined,
-        youtube_url: editForm.youtube_url || undefined,
-        logo_url: editForm.logo_url || undefined,
-        tech_stack_tags: editForm.tech_stack_tags
-          ? editForm.tech_stack_tags
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean)
-          : [],
-      };
-      await saveProjectMutation.mutateAsync(updated);
-      setProject(updated);
-      setEditing(false);
-    } finally {
-      setSaving(false);
-    }
+    const updated: StoredProject = {
+      ...project,
+      name: editForm.name,
+      tagline: editForm.tagline || undefined,
+      description: editForm.description || undefined,
+      refined_description: editForm.description || undefined,
+      category: editForm.category || undefined,
+      website_url: editForm.website_url || undefined,
+      github_url: editForm.github_url || undefined,
+      youtube_url: editForm.youtube_url || undefined,
+      logo_url: editForm.logo_url || undefined,
+      tech_stack_tags: editForm.tech_stack_tags
+        ? editForm.tech_stack_tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [],
+    };
+    startTransition(async () => {
+      const result = await saveProjectAction(updated);
+      if (result.success) {
+        setProject(updated);
+        setEditing(false);
+        router.refresh();
+      }
+    });
+  };
+
+  const handleAddMember = () => {
+    if (!project?.team_id || !memberEmail.trim()) return;
+    setMemberError(null);
+    startTransition(async () => {
+      const result = await addTeamMemberAction(project.team_id!, memberEmail.trim());
+      if (result.success) {
+        setTeamMembers((prev) => [
+          ...prev,
+          {
+            user_id: result.data.user_id,
+            role: "member",
+            email: result.data.email,
+            display_name: result.data.display_name,
+            avatar_url: null,
+          },
+        ]);
+        setMemberEmail("");
+        router.refresh();
+      } else {
+        setMemberError(result.error);
+      }
+    });
   };
 
   const handleShare = () => {
@@ -1175,6 +1214,148 @@ export function ProjectEditor({
                 </div>
               </div>
             )}
+
+            {/* Manage Team */}
+            {p.team_id && (
+              <div
+                className="rounded-3xl p-7"
+                style={{ backgroundColor: "#f5f2ea" }}
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Users size={13} style={{ color: "#2d4a3e", opacity: 0.5 }} />
+                  <SectionLabel>Team</SectionLabel>
+                </div>
+
+                {/* Member list */}
+                <div className="border-t border-[#2d4a3e]/12">
+                  {teamMembers.map((m) => (
+                    <div
+                      key={m.user_id}
+                      className="flex items-center justify-between py-3 border-b border-[#2d4a3e]/08"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold uppercase"
+                          style={{
+                            backgroundColor: m.role === "owner" ? "#2d4a3e" : "rgba(45,74,62,0.12)",
+                            color: m.role === "owner" ? "#f0ebe0" : "#2d4a3e",
+                            fontFamily: "'Inter', sans-serif",
+                          }}
+                        >
+                          {(m.display_name || m.email)?.[0] ?? "?"}
+                        </div>
+                        <div className="min-w-0">
+                          <p
+                            className="text-[12px] font-semibold text-[#2d4a3e] truncate"
+                            style={{ fontFamily: "'Inter', sans-serif" }}
+                          >
+                            {m.display_name || m.email}
+                          </p>
+                          {m.display_name && (
+                            <p
+                              className="text-[10px] text-[#2d4a3e]/45 truncate"
+                              style={{ fontFamily: "Georgia, serif" }}
+                            >
+                              {m.email}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {m.role === "owner" && (
+                          <span
+                            className="text-[8px] tracking-[0.14em] uppercase font-bold px-2 py-1 rounded-sm"
+                            style={{
+                              backgroundColor: "#2d4a3e",
+                              color: "#f0ebe0",
+                              fontFamily: "'Inter', sans-serif",
+                            }}
+                          >
+                            Owner
+                          </span>
+                        )}
+                        {isOwner && m.role !== "owner" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              startTransition(async () => {
+                                const result = await removeTeamMemberAction(p.team_id!, m.user_id);
+                                if (result.success) {
+                                  setTeamMembers((prev) => prev.filter((x) => x.user_id !== m.user_id));
+                                  router.refresh();
+                                }
+                              });
+                            }}
+                            disabled={isPending}
+                            className="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all hover:bg-red-100 disabled:opacity-40"
+                            style={{ backgroundColor: "rgba(45,74,62,0.06)", color: "#2d4a3e" }}
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add member form (owner only) */}
+                {isOwner && (
+                  <div className="mt-4">
+                    <p
+                      className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/45 mb-2"
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
+                      Add Member
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="email"
+                        value={memberEmail}
+                        onChange={(e) => {
+                          setMemberEmail(e.target.value);
+                          setMemberError(null);
+                        }}
+                        placeholder="user@email.com"
+                        className="flex-1 rounded-xl px-3 py-2 text-[13px] border-none outline-none placeholder-[#2d4a3e]/30"
+                        style={{
+                          backgroundColor: "#d6cfc0",
+                          color: "#2d4a3e",
+                          fontFamily: "Georgia, serif",
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (!memberEmail.trim()) return;
+                            handleAddMember();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddMember}
+                        disabled={isPending || !memberEmail.trim()}
+                        className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer transition-all hover:opacity-80 disabled:opacity-40"
+                        style={{ backgroundColor: "#2d4a3e", color: "#f0ebe0" }}
+                      >
+                        {isPending ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <UserPlus size={12} />
+                        )}
+                      </button>
+                    </div>
+                    {memberError && (
+                      <p
+                        className="text-[11px] mt-2 text-red-700/80"
+                        style={{ fontFamily: "Georgia, serif" }}
+                      >
+                        {memberError}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </aside>
         </div>
       </div>
@@ -1464,7 +1645,7 @@ export function ProjectEditor({
           }
           onSave={handleSave}
           onClose={() => setEditing(false)}
-          saving={saving}
+          saving={isPending}
         />
       )}
 

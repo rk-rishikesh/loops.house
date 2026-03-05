@@ -1,5 +1,5 @@
 import { getServerAuth } from "@/lib/server-auth";
-import { getProjectServer, getProjectSubmissionsServer, getBoostersByIdsServer } from "@/lib/server-data";
+import { getProjectServer, getProjectSubmissionsServer, getBoostersByIdsServer, getTeamMembersServer, getTeamOwnerServer } from "@/lib/server-data";
 import { redirect } from "next/navigation";
 import { ProjectEditor } from "@/components/client/project-editor";
 
@@ -30,6 +30,12 @@ export default async function BuilderProjectDetailPage({
     boosterTypes[id] = b.booster_type ?? "idea";
   }
 
+  // Fetch team members if project exists
+  const teamId = project?.team_id;
+  const [teamMembers, teamOwnerId] = teamId
+    ? await Promise.all([getTeamMembersServer(teamId), getTeamOwnerServer(teamId)])
+    : [[], null];
+
   return (
     <ProjectEditor
       initialProject={project}
@@ -37,6 +43,9 @@ export default async function BuilderProjectDetailPage({
       initialBoosterNames={boosterNames}
       initialBoosterTypes={boosterTypes}
       projectId={projectId}
+      initialTeamMembers={teamMembers}
+      teamOwnerId={teamOwnerId}
+      currentUserId={auth.userId}
     />
   );
 }

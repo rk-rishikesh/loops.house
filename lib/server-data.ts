@@ -129,6 +129,45 @@ export async function getTeamServer(id: string): Promise<StoredTeam | null> {
   return data ? teamToStored(data) : null;
 }
 
+// --- Team members ---
+
+export type TeamMemberInfo = {
+  user_id: string;
+  role: string;
+  email: string;
+  display_name: string | null;
+  avatar_url: string | null;
+};
+
+export async function getTeamMembersServer(teamId: string): Promise<TeamMemberInfo[]> {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("team_members")
+    .select("user_id, role, users(id, email, display_name, avatar_url)")
+    .eq("team_id", teamId);
+  if (error) console.error("[server-data] getTeamMembersServer:", error.message);
+  return (data ?? []).map((m) => {
+    const u = (m as Record<string, unknown>).users as { id: string; email: string; display_name: string | null; avatar_url: string | null } | null;
+    return {
+      user_id: m.user_id,
+      role: m.role,
+      email: u?.email ?? "",
+      display_name: u?.display_name ?? null,
+      avatar_url: u?.avatar_url ?? null,
+    };
+  });
+}
+
+export async function getTeamOwnerServer(teamId: string): Promise<string | null> {
+  const supabase = await createServerSupabase();
+  const { data } = await supabase
+    .from("teams")
+    .select("owner_id")
+    .eq("id", teamId)
+    .single();
+  return data?.owner_id ?? null;
+}
+
 // --- Submissions ---
 
 export async function getSubmissionsServer(boosterId: string): Promise<StoredSubmission[]> {
