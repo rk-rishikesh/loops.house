@@ -1,19 +1,21 @@
 import { getServerAuth } from "@/lib/server-auth";
-import { getProjectServer, getProjectSubmissionsServer, getBoostersByIdsServer, getTeamMembersServer, getTeamOwnerServer } from "@/lib/server-data";
+import { getProjectServer, getProjectSubmissionsServer, getBoostersByIdsServer } from "@/lib/server-data";
 import { redirect } from "next/navigation";
 import { ProjectEditor } from "@/components/client/project-editor";
 
 export default async function BuilderProjectDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from_type?: string; from_booster?: string }>;
 }) {
   const auth = await getServerAuth();
   if (!auth) {
     redirect("/login");
   }
 
-  const { id: projectId } = await params;
+  const [{ id: projectId }, search] = await Promise.all([params, searchParams]);
 
   const [project, submissions] = await Promise.all([
     getProjectServer(projectId),
@@ -30,11 +32,19 @@ export default async function BuilderProjectDetailPage({
     boosterTypes[id] = b.booster_type ?? "idea";
   }
 
-  // Fetch team members if project exists
-  const teamId = project?.team_id;
-  const [teamMembers, teamOwnerId] = teamId
-    ? await Promise.all([getTeamMembersServer(teamId), getTeamOwnerServer(teamId)])
-    : [[], null];
+  const fromType = search.from_type;
+  const fromBooster = search.from_booster;
+
+  const backHrefFromSearch =
+    fromType && fromBooster ? `/boosters/${fromType}/${fromBooster}` : null;
+
+  const firstSubmission = submissions[0];
+  const backBoosterId = firstSubmission?.booster_id;
+  const backType = backBoosterId ? boosterTypes[backBoosterId] ?? "idea" : null;
+
+  const backHref =
+    backHrefFromSearch ??
+    (backBoosterId && backType ? `/boosters/${backType}/${backBoosterId}` : "/builder/projects");
 
   return (
     <ProjectEditor
@@ -43,9 +53,8 @@ export default async function BuilderProjectDetailPage({
       initialBoosterNames={boosterNames}
       initialBoosterTypes={boosterTypes}
       projectId={projectId}
-      initialTeamMembers={teamMembers}
-      teamOwnerId={teamOwnerId}
-      currentUserId={auth.userId}
+      backHref={backHref}
+      backLabel={backBoosterId && backType ? "Back to booster" : "Projects"}
     />
   );
 }

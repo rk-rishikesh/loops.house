@@ -1,9 +1,7 @@
 "use client";
-
-import { LogOut } from "lucide-react";
 import { signOut } from "@/lib/auth";
 
-function clearAuthCookies() {
+export function clearAuthCookies() {
   document.cookie.split(";").forEach((c) => {
     const name = c.trim().split("=")[0];
     if (name.startsWith("sb-") || name === "x-user-role-hint") {
@@ -12,24 +10,41 @@ function clearAuthCookies() {
   });
 }
 
-export function LogoutButton() {
+async function handleLogout() {
+  try {
+    await signOut();
+  } catch {
+    // Navigator lock timeout — non-fatal
+  }
+  clearAuthCookies();
+  window.location.href = "/login";
+}
+
+const segmentBase =
+  "w-[240px] max-w-xs py-8 px-10 flex items-center justify-end bg-transparent hover:bg-[#e1dbcf] cursor-pointer text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a] border-none";
+
+const inlineBase =
+  "inline-flex items-center gap-2 rounded-full border-none cursor-pointer py-2 px-4 text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a] transition-colors hover:bg-[#e1dbcf]";
+
+export function LogoutButton({
+  segment = true,
+  className,
+}: {
+  segment?: boolean;
+  className?: string;
+} = {}) {
+  const isSegment = segment;
   return (
     <button
       type="button"
-      onClick={async () => {
-        try {
-          await signOut();
-        } catch {
-          // Navigator lock timeout — non-fatal
-        }
-        // Always force-clear cookies so middleware sees no session
-        clearAuthCookies();
-        window.location.href = "/login";
-      }}
-      className="p-2 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+      onClick={handleLogout}
+      className={`${isSegment ? segmentBase : inlineBase}${className ? ` ${className}` : ""}`}
+      style={{ fontFamily: "'Inter', sans-serif" }}
       title="Sign out"
     >
-      <LogOut className="w-4 h-4" />
+      <span className="flex items-center gap-2">
+        <span>Sign out</span>
+      </span>
     </button>
   );
 }

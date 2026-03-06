@@ -5,8 +5,9 @@ import { HostApplicationForm } from "@/components/client/host-application-form";
 export default async function HostApplicationPage() {
   const auth = await getServerAuth();
   if (!auth) {
-    redirect("/login?redirect=/host/apply");
+    redirect("/login?redirect=/host/application");
   }
 
-  return <HostApplicationForm />;
+  return <HostApplicationForm userId={auth.userId} />;
 }
+

@@ -140,7 +140,6 @@ export async function saveBoosterAction(
 
   revalidatePath("/host");
   revalidatePath("/boosters");
-  revalidatePath("/builder/boosters");
   return { success: true, data: undefined };
 }
 
@@ -175,6 +174,98 @@ export async function saveTeamAction(
   return { success: true, data: { id: team.id, name: team.name } };
 }
 
+// --- Team member actions ---
+
+export async function addTeamMemberAction(
+  teamId: string,
+  email: string,
+): Promise<ActionResult<{ user_id: string; email: string; display_name: string | null }>> {
+  const user = await getAuthUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+
+  // Verify caller is team owner
+  const supabase = await createServerSupabase();
+  const { data: team } = await supabase
+    .from("teams")
+    .select("owner_id")
+    .eq("id", teamId)
+    .single();
+  if (!team || team.owner_id !== user.id) {
+    return { success: false, error: "Only the team owner can add members" };
+  }
+
+  // Look up user by email
+  const { data: targetUser } = await supabaseAdmin
+    .from("users")
+    .select("id, email, display_name")
+    .eq("email", email.trim().toLowerCase())
+    .single();
+  if (!targetUser) {
+    return { success: false, error: "No user found with that email" };
+  }
+
+  // Check if already a member
+  const { data: existing } = await supabase
+    .from("team_members")
+    .select("user_id")
+    .eq("team_id", teamId)
+    .eq("user_id", targetUser.id)
+    .maybeSingle();
+  if (existing) {
+    return { success: false, error: "User is already a team member" };
+  }
+
+  // Add as member
+  const { error } = await supabase
+    .from("team_members")
+    .insert({ team_id: teamId, user_id: targetUser.id, role: "member" });
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/builder/projects");
+  return {
+    success: true,
+    data: {
+      user_id: targetUser.id,
+      email: targetUser.email,
+      display_name: targetUser.display_name,
+    },
+  };
+}
+
+export async function removeTeamMemberAction(
+  teamId: string,
+  userId: string,
+): Promise<ActionResult> {
+  const user = await getAuthUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+
+  // Verify caller is team owner
+  const supabase = await createServerSupabase();
+  const { data: team } = await supabase
+    .from("teams")
+    .select("owner_id")
+    .eq("id", teamId)
+    .single();
+  if (!team || team.owner_id !== user.id) {
+    return { success: false, error: "Only the team owner can remove members" };
+  }
+
+  // Cannot remove owner
+  if (userId === team.owner_id) {
+    return { success: false, error: "Cannot remove the team owner" };
+  }
+
+  const { error } = await supabase
+    .from("team_members")
+    .delete()
+    .eq("team_id", teamId)
+    .eq("user_id", userId);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/builder/projects");
+  return { success: true, data: undefined };
+}
+
 // --- Submission actions ---
 
 export async function submitProjectAction(
@@ -202,7 +293,7 @@ export async function submitProjectAction(
   if (error) return { success: false, error: error.message };
 
   revalidatePath("/host");
-  revalidatePath("/builder/boosters");
+  revalidatePath("/boosters");
   return { success: true, data: undefined };
 }
 
