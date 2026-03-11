@@ -20,7 +20,7 @@ interface ProfileInput {
   screenshot_urls?: string[];
   additional_links?: { label: string; url: string }[];
   social_links?: { label: string; url: string }[];
-  booster_id?: string;
+  hackathon_id?: string;
 }
 
 function mergeTechStack(
@@ -314,7 +314,7 @@ Return JSON only. No markdown.`
         screenshot_urls: input.screenshot_urls,
         additional_links: input.additional_links,
         social_links: input.social_links,
-        booster_id: input.booster_id,
+        hackathon_id: input.hackathon_id,
       };
 
       // Persist all enriched data server-side (bypasses RLS via admin client)

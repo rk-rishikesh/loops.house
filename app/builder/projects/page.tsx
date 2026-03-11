@@ -106,7 +106,7 @@ export default async function BuilderProjectsPage() {
                 className="max-w-[380px] text-right leading-relaxed"
                 style={{ fontFamily: FN, fontSize: "clamp(15px, 1.6vw, 19px)", color: "rgba(15,44,35,0.55)" }}
               >
-                Create a project and let AI agents refine your story, generate social posts, and apply to boosters with confidence.
+                Create a project and let AI agents refine your story, generate social posts, and apply to hackathons with confidence.
               </p>
 
               {/* Create new — pill CTA */}

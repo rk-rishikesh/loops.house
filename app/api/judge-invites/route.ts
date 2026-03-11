@@ -6,7 +6,7 @@ import { judgeInviteCreateSchema, judgeInviteAcceptSchema } from "@/lib/validati
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** POST: Invite a judge to a booster (host or admin only) */
+/** POST: Invite a judge to a hackathon (host or admin only) */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(["host", "admin"]);
   if (!auth) return unauthorized();
@@ -19,17 +19,17 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  const { booster_id, judge_email, assigned_tracks } = parsed.data;
+  const { hackathon_id, judge_email, assigned_tracks } = parsed.data;
 
-  // Verify the host owns this booster
-  const { data: booster } = await supabaseAdmin
-    .from("boosters")
+  // Verify the host owns this hackathon
+  const { data: hackathon } = await supabaseAdmin
+    .from("hackathons")
     .select("host_id")
-    .eq("id", booster_id)
+    .eq("id", hackathon_id)
     .single();
 
-  if (!booster || (booster.host_id !== auth.user.id && auth.user.role !== "admin")) {
-    return NextResponse.json({ error: "Not authorized for this booster" }, { status: 403 });
+  if (!hackathon || (hackathon.host_id !== auth.user.id && auth.user.role !== "admin")) {
+    return NextResponse.json({ error: "Not authorized for this hackathon" }, { status: 403 });
   }
 
   // Look up judge by email
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   const { data, error } = await supabaseAdmin
     .from("judge_invites")
     .insert({
-      booster_id,
+      hackathon_id,
       judge_user_id: judgeUser.id,
       invited_by: auth.user.id,
       assigned_tracks: assigned_tracks ?? [],
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
   if (error) {
     if (error.code === "23505") {
       return NextResponse.json(
-        { error: "This judge is already invited to this booster" },
+        { error: "This judge is already invited to this hackathon" },
         { status: 409 },
       );
     }
@@ -78,30 +78,30 @@ export async function POST(request: NextRequest) {
   return NextResponse.json(data, { status: 201 });
 }
 
-/** GET: List judge invites for a booster (host) or for the current user (judge) */
+/** GET: List judge invites for a hackathon (host) or for the current user (judge) */
 export async function GET(request: NextRequest) {
   const auth = await requireAuth();
   if (!auth) return unauthorized();
 
   const { searchParams } = new URL(request.url);
-  const boosterId = searchParams.get("booster_id");
+  const hackathonId = searchParams.get("hackathon_id");
 
-  if (boosterId) {
-    // Verify the requester owns this booster (or is admin)
-    const { data: booster } = await supabaseAdmin
-      .from("boosters")
+  if (hackathonId) {
+    // Verify the requester owns this hackathon (or is admin)
+    const { data: hackathon } = await supabaseAdmin
+      .from("hackathons")
       .select("host_id")
-      .eq("id", boosterId)
+      .eq("id", hackathonId)
       .single();
 
-    if (!booster || (booster.host_id !== auth.user.id && auth.user.role !== "admin")) {
-      return NextResponse.json({ error: "Not authorized for this booster" }, { status: 403 });
+    if (!hackathon || (hackathon.host_id !== auth.user.id && auth.user.role !== "admin")) {
+      return NextResponse.json({ error: "Not authorized for this hackathon" }, { status: 403 });
     }
 
     const { data } = await supabaseAdmin
       .from("judge_invites")
       .select("*, users!judge_invites_judge_user_id_fkey(email, display_name)")
-      .eq("booster_id", boosterId)
+      .eq("hackathon_id", hackathonId)
       .order("created_at", { ascending: false });
     return NextResponse.json(data ?? []);
   }
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
   // Judge viewing their own invites
   const { data } = await supabaseAdmin
     .from("judge_invites")
-    .select("*, boosters(name, booster_type)")
+    .select("*, hackathons(name)")
     .eq("judge_user_id", auth.user.id)
     .order("created_at", { ascending: false });
   return NextResponse.json(data ?? []);

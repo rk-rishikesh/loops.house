@@ -8,21 +8,20 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import {
   profileToStored,
-  boosterToStored,
+  hackathonToStored,
   teamToStored,
   submissionToStored,
 } from "@/lib/data-mappers";
 import type {
   StoredProject,
-  StoredBooster,
+  StoredHackathon,
   StoredTeam,
   StoredSubmission,
-  BoosterType,
   TeamRow,
 } from "@/lib/data-mappers";
 
 // Re-export types for convenience
-export type { StoredProject, StoredBooster, StoredTeam, StoredSubmission, BoosterType };
+export type { StoredProject, StoredHackathon, StoredTeam, StoredSubmission };
 
 // --- Projects ---
 
@@ -47,50 +46,46 @@ export async function getProjectServer(projectId: string): Promise<StoredProject
   return data ? profileToStored(data) : null;
 }
 
-// --- Boosters ---
+// --- Hackathons ---
 
-export async function getBoostersServer(type?: BoosterType): Promise<StoredBooster[]> {
-  const supabase = await createServerSupabase();
-  let query = supabase
-    .from("boosters")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (type) {
-    query = query.eq("booster_type", type);
-  }
-  const { data, error } = await query;
-  if (error) console.error("[server-data] getBoostersServer:", error.message);
-  return (data ?? []).map(boosterToStored);
-}
-
-export async function getBoosterServer(id: string): Promise<StoredBooster | null> {
+export async function getHackathonsServer(): Promise<StoredHackathon[]> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
-    .from("boosters")
+    .from("hackathons")
     .select("*")
-    .eq("id", id)
-    .single();
-  if (error) console.error("[server-data] getBoosterServer:", error.message);
-  return data ? boosterToStored(data) : null;
+    .order("created_at", { ascending: false });
+  if (error) console.error("[server-data] getHackathonsServer:", error.message);
+  return (data ?? []).map(hackathonToStored);
 }
 
-export async function getBoosterWithTracksServer(id: string): Promise<StoredBooster | null> {
+export async function getHackathonServer(id: string): Promise<StoredHackathon | null> {
   const supabase = await createServerSupabase();
-  const { data: booster, error } = await supabase
-    .from("boosters")
+  const { data, error } = await supabase
+    .from("hackathons")
     .select("*")
     .eq("id", id)
     .single();
-  if (error) console.error("[server-data] getBoosterWithTracksServer:", error.message);
-  if (!booster) return null;
+  if (error) console.error("[server-data] getHackathonServer:", error.message);
+  return data ? hackathonToStored(data) : null;
+}
+
+export async function getHackathonWithTracksServer(id: string): Promise<StoredHackathon | null> {
+  const supabase = await createServerSupabase();
+  const { data: hackathon, error } = await supabase
+    .from("hackathons")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) console.error("[server-data] getHackathonWithTracksServer:", error.message);
+  if (!hackathon) return null;
 
   const { data: tracks, error: tracksError } = await supabase
-    .from("booster_tracks")
+    .from("hackathon_tracks")
     .select("sponsor_name, track_description")
-    .eq("booster_id", id);
-  if (tracksError) console.error("[server-data] getBoosterWithTracksServer tracks:", tracksError.message);
+    .eq("hackathon_id", id);
+  if (tracksError) console.error("[server-data] getHackathonWithTracksServer tracks:", tracksError.message);
 
-  const stored = boosterToStored(booster);
+  const stored = hackathonToStored(hackathon);
   stored.sponsor_tracks = (tracks ?? []).map((t) => ({
     sponsor: t.sponsor_name,
     track_description: t.track_description ?? "",
@@ -170,38 +165,38 @@ export async function getTeamOwnerServer(teamId: string): Promise<string | null>
 
 // --- Submissions ---
 
-export async function getSubmissionsServer(boosterId: string): Promise<StoredSubmission[]> {
+export async function getSubmissionsServer(hackathonId: string): Promise<StoredSubmission[]> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("submissions")
     .select("*")
-    .eq("booster_id", boosterId)
+    .eq("hackathon_id", hackathonId)
     .order("created_at", { ascending: false });
   if (error) console.error("[server-data] getSubmissionsServer:", error.message);
   return (data ?? []).map(submissionToStored);
 }
 
-export async function getSubmissionServer(boosterId: string, projectId: string): Promise<StoredSubmission | null> {
+export async function getSubmissionServer(hackathonId: string, projectId: string): Promise<StoredSubmission | null> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("submissions")
     .select("*")
-    .eq("booster_id", boosterId)
+    .eq("hackathon_id", hackathonId)
     .eq("project_id", projectId)
     .maybeSingle();
   if (error) console.error("[server-data] getSubmissionServer:", error.message);
   return data ? submissionToStored(data) : null;
 }
 
-export async function getSubmissionsForBoostersServer(boosterIds: string[]): Promise<StoredSubmission[]> {
-  if (boosterIds.length === 0) return [];
+export async function getSubmissionsForHackathonsServer(hackathonIds: string[]): Promise<StoredSubmission[]> {
+  if (hackathonIds.length === 0) return [];
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("submissions")
     .select("*")
-    .in("booster_id", boosterIds)
+    .in("hackathon_id", hackathonIds)
     .order("created_at", { ascending: false });
-  if (error) console.error("[server-data] getSubmissionsForBoostersServer:", error.message);
+  if (error) console.error("[server-data] getSubmissionsForHackathonsServer:", error.message);
   return (data ?? []).map(submissionToStored);
 }
 
@@ -216,15 +211,15 @@ export async function getProjectSubmissionsServer(projectId: string): Promise<St
   return (data ?? []).map(submissionToStored);
 }
 
-export async function getBoostersByIdsServer(ids: string[]): Promise<Record<string, StoredBooster>> {
+export async function getHackathonsByIdsServer(ids: string[]): Promise<Record<string, StoredHackathon>> {
   if (ids.length === 0) return {};
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
-    .from("boosters")
+    .from("hackathons")
     .select("*")
     .in("id", ids);
-  if (error) console.error("[server-data] getBoostersByIdsServer:", error.message);
-  const map: Record<string, StoredBooster> = {};
-  (data ?? []).forEach((b) => { map[b.id] = boosterToStored(b); });
+  if (error) console.error("[server-data] getHackathonsByIdsServer:", error.message);
+  const map: Record<string, StoredHackathon> = {};
+  (data ?? []).forEach((b) => { map[b.id] = hackathonToStored(b); });
   return map;
 }

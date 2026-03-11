@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerAuth } from "@/lib/server-auth";
 import {
   getProjectsServer,
-  getBoostersServer,
+  getHackathonsServer,
   getSubmissionServer,
 } from "@/lib/server-data";
 import { JudgingForm } from "@/components/client/judging-form";
@@ -22,16 +22,16 @@ export default async function HostBoosterJudgingPage({
     redirect("/host");
   }
 
-  const [projects, boosters, initialSubmission] = await Promise.all([
+  const [projects, hackathons, initialSubmission] = await Promise.all([
     getProjectsServer(),
-    getBoostersServer(),
+    getHackathonsServer(),
     getSubmissionServer(booster_id, project_id),
   ]);
 
   return (
     <JudgingForm
       projects={projects}
-      boosters={boosters}
+      hackathons={hackathons}
       initialSubmission={initialSubmission}
     />
   );

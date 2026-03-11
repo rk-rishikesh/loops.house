@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { Send, Loader2, Sparkles, Zap, ChevronRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useBooster } from "@/lib/queries";
+import { useHackathon } from "@/lib/queries";
 import { ideateInputSchema, type IdeateInputSchema } from "@/lib/validations/schemas";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
@@ -14,7 +14,7 @@ const FN = "var(--font-funnel-sans), sans-serif";
 type Message = { role: "user" | "assistant"; content: string };
 
 const STARTERS = [
-  "Help me fit my idea to this booster's theme",
+  "Help me fit my idea to this hackathon's theme",
   "What kind of projects win programs like this?",
   "I have a rough idea — let's sharpen it",
   "Which problem statement should I tackle?",
@@ -23,8 +23,8 @@ const STARTERS = [
 /* ─────────────────────────────────────────────────────────────────── */
 
 function IdeatePageContent() {
-  const params      = useParams<{ type: string; id: string }>();
-  const boosterId   = (params?.id   as string) ?? null;
+  const params      = useParams<{ id: string }>();
+  const hackathonId = (params?.id as string) ?? null;
 
   const [messages,  setMessages]  = useState<Message[]>([]);
   const [loading,   setLoading]   = useState(false);
@@ -33,7 +33,7 @@ function IdeatePageContent() {
   const bottomRef   = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const { data: booster } = useBooster(boosterId ?? "");
+  const { data: hackathon } = useHackathon(hackathonId ?? "");
 
   const { register, handleSubmit, reset, setValue, watch } = useForm<IdeateInputSchema>({
     resolver: zodResolver(ideateInputSchema),
@@ -52,7 +52,7 @@ function IdeatePageContent() {
 
   /* ── Send ─────────────────────────────────────────────────────── */
   const onSubmit = handleSubmit(async (data) => {
-    if (!booster || loading) return;
+    if (!hackathon || loading) return;
     const userMessage = data.message.trim();
     if (!userMessage) return;
     reset();
@@ -68,9 +68,9 @@ function IdeatePageContent() {
           message: userMessage,
           conversation_history: messages,
           booster_context: {
-            problem_statements: booster.problem_statements,
-            sponsor_tracks:     booster.sponsor_tracks,
-            theme:              booster.theme,
+            problem_statements: hackathon.problem_statements,
+            sponsor_tracks:     hackathon.sponsor_tracks,
+            theme:              hackathon.theme,
           },
         }),
       });
@@ -123,7 +123,7 @@ function IdeatePageContent() {
   }
 
   /* ── Loading ──────────────────────────────────────────────────── */
-  if (!booster) {
+  if (!hackathon) {
     return (
       <div className="min-h-screen flex" style={{ backgroundColor: "#F8FFE8" }}>
         <div className="w-[300px] shrink-0 animate-pulse" style={{ backgroundColor: "#0F2C23" }} />
@@ -141,7 +141,7 @@ function IdeatePageContent() {
   return (
     <div className="h-screen flex flex-col" style={{ backgroundColor: "#F8FFE8" }}>
 
-      {/* ══ SPLIT LAYOUT — fills remaining height exactly ════════════ */}
+      {/* SPLIT LAYOUT — fills remaining height exactly */}
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── LEFT: dark editorial context canvas ──────────────────── */}
@@ -149,7 +149,7 @@ function IdeatePageContent() {
           className="shrink-0 flex flex-col overflow-y-auto"
           style={{ width: 300, backgroundColor: "#0F2C23", borderRight: "1px solid rgba(226,254,165,0.06)" }}
         >
-          {/* Booster identity */}
+          {/* Hackathon identity */}
           <div className="px-7 pt-8 pb-6" style={{ borderBottom: "1px solid rgba(226,254,165,0.07)" }}>
             <p className="text-[9px] tracking-[0.22em] uppercase font-bold text-[#F8FFE8]/30 mb-2"
               style={{ fontFamily: PX }}>
@@ -157,28 +157,28 @@ function IdeatePageContent() {
             </p>
             <h2 className="font-black text-[#F8FFE8] uppercase leading-[0.88] mb-2"
               style={{ fontFamily: PX, fontSize: "clamp(17px, 2vw, 24px)", letterSpacing: "-0.025em" }}>
-              {booster.name}
+              {hackathon.name}
             </h2>
-            {booster.theme && (
+            {hackathon.theme && (
               <p className="text-[#F8FFE8]/40 text-[11px] leading-snug mt-2" style={{ fontFamily: FN }}>
-                {booster.theme}
+                {hackathon.theme}
               </p>
             )}
           </div>
 
           {/* Challenges — each one is clickable to inject a prompt */}
-          {booster.problem_statements.length > 0 && (
+          {hackathon.problem_statements.length > 0 && (
             <div className="px-5 py-5" style={{ borderBottom: "1px solid rgba(226,254,165,0.07)" }}>
               <p className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#F8FFE8]/25 mb-3 px-2"
                 style={{ fontFamily: PX }}>
-                {booster.problem_statements.length} Challenge{booster.problem_statements.length !== 1 ? "s" : ""}
+                {hackathon.problem_statements.length} Challenge{hackathon.problem_statements.length !== 1 ? "s" : ""}
               </p>
               <div className="flex flex-col gap-1">
-                {booster.problem_statements.map((s, i) => (
+                {hackathon.problem_statements.map((s, i) => (
                   <button
                     key={i}
                     type="button"
-                    onClick={() => injectStarter(`Let's work on challenge ${i + 1}: "${s.slice(0, 55)}…"`)}
+                    onClick={() => injectStarter(`Let's work on challenge ${i + 1}: "${s.slice(0, 55)}..."`)}
                     className="group flex items-start gap-2.5 text-left w-full bg-transparent border-none cursor-pointer rounded-xl px-3 py-2.5 transition-colors"
                     style={{ outline: "none" }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(226,254,165,0.05)")}
@@ -190,7 +190,7 @@ function IdeatePageContent() {
                     </span>
                     <p className="text-[11px] text-[#F8FFE8]/45 leading-snug flex-1"
                       style={{ fontFamily: FN }}>
-                      {s.slice(0, 70)}{s.length > 70 ? "…" : ""}
+                      {s.slice(0, 70)}{s.length > 70 ? "..." : ""}
                     </p>
                     <ChevronRight size={9} style={{ color: "rgba(226,254,165,0.15)", flexShrink: 0, marginTop: 2 }} />
                   </button>
@@ -200,13 +200,13 @@ function IdeatePageContent() {
           )}
 
           {/* Sponsor tracks */}
-          {(booster.sponsor_tracks?.length ?? 0) > 0 && (
+          {(hackathon.sponsor_tracks?.length ?? 0) > 0 && (
             <div className="px-7 py-5" style={{ borderBottom: "1px solid rgba(226,254,165,0.07)" }}>
               <p className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#F8FFE8]/25 mb-3"
                 style={{ fontFamily: PX }}>
                 Sponsor Tracks
               </p>
-              {booster.sponsor_tracks!.map((t, i) => (
+              {hackathon.sponsor_tracks!.map((t, i) => (
                 <div key={i} className="flex items-center gap-2 mb-2 last:mb-0">
                   <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "#4caf7d" }} />
                   <p className="text-[11px] font-semibold text-[#F8FFE8]/50"
@@ -329,7 +329,7 @@ function IdeatePageContent() {
                             animation: `blink 1.2s ease-in-out ${n * 0.22}s infinite` }} />
                       ))}
                     </span>
-                    <p className="text-[11px] text-[#0F2C23]/40" style={{ fontFamily: FN }}>Thinking…</p>
+                    <p className="text-[11px] text-[#0F2C23]/40" style={{ fontFamily: FN }}>Thinking...</p>
                   </div>
                 </div>
               )}
@@ -340,7 +340,7 @@ function IdeatePageContent() {
           {/* Error */}
           {error && (
             <p className="px-10 text-xs text-red-600/55 mb-1" style={{ fontFamily: FN }}>
-              ⚠ {error}
+              {error}
             </p>
           )}
 
@@ -361,7 +361,7 @@ function IdeatePageContent() {
                   register("message").ref(el);
                   (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
                 }}
-                placeholder="Describe your idea or ask the mentor…"
+                placeholder="Describe your idea or ask the mentor..."
                 rows={1}
                 disabled={loading}
                 onKeyDown={(e) => {
@@ -407,7 +407,7 @@ function IdeatePageContent() {
   );
 }
 
-export default function BoosterIdeatePage() {
+export default function HackathonIdeatePage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F8FFE8" }}>

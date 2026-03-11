@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export default function BoostersError({
+export default function HackathonsError({
   error,
   reset,
 }: {
@@ -10,7 +10,7 @@ export default function BoostersError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Boosters error:", error);
+    console.error("Hackathons error:", error);
   }, [error]);
 
   return (

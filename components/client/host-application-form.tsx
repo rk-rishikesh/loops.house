@@ -2,18 +2,16 @@
 
 import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Loader2, Sparkles, Check } from "lucide-react";
-import { useSaveBooster } from "@/lib/queries";
-import type { StoredBooster } from "@/lib/data-mappers";
+import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { useSaveHackathon } from "@/lib/queries";
+import type { StoredHackathon } from "@/lib/data-mappers";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
-type BoosterType = "idea" | "momentum" | "capital";
-
 interface ProgramDraft {
-  booster_name: string;
-  booster_id_suggestion: string;
+  hackathon_name: string;
+  hackathon_id_suggestion: string;
   overview: string;
   target_audience: string;
   goals: string[];
@@ -30,8 +28,8 @@ interface ProgramDraft {
   organizer_notes: string[];
 }
 
-interface BoosterProgramResponse {
-  booster_id: string;
+interface HackathonProgramResponse {
+  hackathon_id: string;
   draft: ProgramDraft;
   generated_at: string;
 }
@@ -42,23 +40,9 @@ interface HostApplicationFormProps {
 
 const STEPS = [
   {
-    id: "booster_type",
-    number: "01",
-    question: "What kind of booster are you running?",
-    hint: "Each type shapes how the program is structured.",
-    type: "choice" as const,
-    choices: [
-      { value: "idea", label: "Idea", desc: "Spark early-stage concepts" },
-      { value: "momentum", label: "Momentum", desc: "Accelerate existing projects" },
-      { value: "capital", label: "Capital", desc: "Fund the best submissions" },
-    ],
-    field: "booster_type" as const,
-    required: false,
-  },
-  {
     id: "name",
-    number: "02",
-    question: "Give your booster a working title.",
+    number: "01",
+    question: "Give your hackathon a working title.",
     hint: "You can always change this later.",
     type: "text" as const,
     placeholder: "e.g. AI Builders Sprint 2026",
@@ -67,7 +51,7 @@ const STEPS = [
   },
   {
     id: "theme",
-    number: "03",
+    number: "02",
     question: "What's the theme or focus area?",
     hint: "Optional — helps the AI narrow challenge statements.",
     type: "text" as const,
@@ -77,17 +61,17 @@ const STEPS = [
   },
   {
     id: "program_goal",
-    number: "04",
-    question: "What should this booster achieve?",
+    number: "03",
+    question: "What should this hackathon achieve?",
     hint: "Describe the outcome for builders, sponsors, and your community.",
     type: "textarea" as const,
-    placeholder: "What do you want this booster to achieve for builders and sponsors?",
+    placeholder: "What do you want this hackathon to achieve for builders and sponsors?",
     field: "program_goal" as const,
     required: false,
   },
   {
     id: "problem_statements",
-    number: "05",
+    number: "04",
     question: "What problems should builders solve?",
     hint: "One problem per line. The AI will expand each into a full challenge.",
     type: "textarea" as const,
@@ -97,7 +81,7 @@ const STEPS = [
   },
   {
     id: "bounty_pool_summary",
-    number: "06",
+    number: "05",
     question: "Any prizes or rewards?",
     hint: "Optional — helps attract builders.",
     type: "text" as const,
@@ -106,18 +90,8 @@ const STEPS = [
     required: false,
   },
   {
-    id: "timeline",
-    number: "07",
-    question: "What's the rough timeline?",
-    hint: "Launch date, key milestones, submission deadline.",
-    type: "text" as const,
-    placeholder: "Launch April 1 → submissions May 15 → demo day June 1",
-    field: "timeline" as const,
-    required: false,
-  },
-  {
     id: "organizer_notes",
-    number: "08",
+    number: "06",
     question: "Anything else the AI should know?",
     hint: "Partners, constraints, tone, or what success looks like to you.",
     type: "textarea" as const,
@@ -128,7 +102,6 @@ const STEPS = [
 ];
 
 type FormField = keyof {
-  booster_type: BoosterType;
   name: string;
   theme: string;
   program_goal: string;
@@ -136,19 +109,11 @@ type FormField = keyof {
   website_url: string;
   technical_docs: string;
   bounty_pool_summary: string;
-  timeline: string;
   organizer_notes: string;
 };
 
 /* ── Right-panel filler content per step ──────────────────────────── */
 const STEP_FILLER = [
-  {
-    label: "Program type",
-    headline: "The shape of your booster",
-    body: "Idea boosters spark new concepts from scratch. Momentum boosters accelerate builders already mid-build. Capital boosters fund the most promising submissions with real prizes.",
-    stat: "3 types",
-    statLabel: "of builder programs",
-  },
   {
     label: "Identity",
     headline: "A name sets the tone",
@@ -166,7 +131,7 @@ const STEP_FILLER = [
   {
     label: "Purpose",
     headline: "Goals drive everything",
-    body: "The clearest boosters have a single sentence that explains why they exist. The AI uses your goal to calibrate judging criteria, challenge difficulty, and the overall arc.",
+    body: "The clearest hackathons have a single sentence that explains why they exist. The AI uses your goal to calibrate judging criteria, challenge difficulty, and the overall arc.",
     stat: "1 sentence",
     statLabel: "is all you need to start",
   },
@@ -185,13 +150,6 @@ const STEP_FILLER = [
     statLabel: "of builders check prizes first",
   },
   {
-    label: "Cadence",
-    headline: "Timelines create urgency",
-    body: "The best boosters have visible checkpoints — not just a start and end date. Intermediate milestones keep builders engaged and give you feedback loops.",
-    stat: "4–6 weeks",
-    statLabel: "is the optimal booster length",
-  },
-  {
     label: "Context",
     headline: "The AI reads everything",
     body: "These notes are fed directly to the AI agent. The more context you provide about your sponsors, community expectations, or technical constraints, the better the output.",
@@ -202,13 +160,12 @@ const STEP_FILLER = [
 
 export function HostApplicationForm({ userId }: HostApplicationFormProps) {
   const router = useRouter();
-  const saveBoosterMutation = useSaveBooster();
+  const saveHackathonMutation = useSaveHackathon();
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(true);
   const [form, setForm] = useState({
-    booster_type: "idea" as BoosterType,
     name: "",
     theme: "",
     program_goal: "",
@@ -216,11 +173,10 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
     website_url: "",
     technical_docs: "",
     bounty_pool_summary: "",
-    timeline: "",
     organizer_notes: "",
   });
 
-  const [draft, setDraft] = useState<BoosterProgramResponse | null>(null);
+  const [draft, setDraft] = useState<HackathonProgramResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isGenerating, startGenerating] = useTransition();
@@ -232,9 +188,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
 
   // Auto-focus text inputs when step changes
   useEffect(() => {
-    if (currentStep.type !== "choice") {
-      setTimeout(() => inputRef.current?.focus(), 320);
-    }
+    setTimeout(() => inputRef.current?.focus(), 320);
   }, [step]);
 
   function animateStep(toStep: number) {
@@ -263,18 +217,13 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
     if (step > 0) animateStep(step - 1);
   }
 
-  function handleChoice(value: string) {
-    setForm((prev) => ({ ...prev, booster_type: value as BoosterType }));
-    setTimeout(() => animateStep(step + 1), 180);
-  }
-
   const handleGenerate = () => {
     setError(null);
     setSuccessMessage(null);
     setDraft(null);
 
     if (!form.name.trim()) {
-      setError("Please provide a working title for your booster.");
+      setError("Please provide a working title for your hackathon.");
       return;
     }
 
@@ -284,17 +233,15 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
       .filter(Boolean);
 
     const id = crypto.randomUUID();
-    const boosterPayload = {
+    const hackathonPayload = {
       id,
-      name: form.name || "Untitled booster",
+      name: form.name || "Untitled hackathon",
       theme: form.theme || undefined,
-      booster_type: form.booster_type,
       problem_statements: problemStatements,
       website_url: form.website_url || undefined,
       technical_docs: form.technical_docs || undefined,
       bounty_pool_summary: form.bounty_pool_summary || undefined,
       program_goal: form.program_goal || undefined,
-      timeline: form.timeline || undefined,
       organizer_notes: form.organizer_notes ? [form.organizer_notes] : undefined,
     };
 
@@ -303,14 +250,14 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
         const res = await fetch("/api/host-agents/booster-generator", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ booster: boosterPayload }),
+          body: JSON.stringify({ hackathon: hackathonPayload }),
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Failed to generate program draft.");
-        setDraft(json as BoosterProgramResponse);
-        setSuccessMessage("AI draft generated. Review below, then save your booster.");
+        setDraft(json as HackathonProgramResponse);
+        setSuccessMessage("AI draft generated. Review below, then save your hackathon.");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to run booster agent.");
+        setError(err instanceof Error ? err.message : "Failed to run hackathon agent.");
       }
     });
   };
@@ -326,29 +273,27 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
         .map((s) => s.trim())
         .filter(Boolean);
 
-      const boosterId = draft.booster_id || crypto.randomUUID();
-      const booster: StoredBooster = {
-        id: boosterId,
-        name: draft.draft.booster_name || form.name || "Untitled booster",
+      const hackathonId = draft.hackathon_id || crypto.randomUUID();
+      const hackathon: StoredHackathon = {
+        id: hackathonId,
+        name: draft.draft.hackathon_name || form.name || "Untitled hackathon",
         host_id: userId,
         problem_statements: problemStatements,
         theme: form.theme || undefined,
-        booster_type: form.booster_type,
         website_url: form.website_url || undefined,
         technical_docs: form.technical_docs || undefined,
         bounty_pool_summary: form.bounty_pool_summary || undefined,
         program_goal: form.program_goal || undefined,
-        timeline: form.timeline || undefined,
         organizer_notes: form.organizer_notes || undefined,
         sponsor_tracks: [],
         judging_criteria: draft.draft.judging_criteria ?? [],
         created_at: new Date().toISOString(),
       };
 
-      await saveBoosterMutation.mutateAsync(booster);
+      await saveHackathonMutation.mutateAsync(hackathon);
       router.push("/host");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save booster.");
+      setError(err instanceof Error ? err.message : "Failed to save hackathon.");
     } finally {
       setIsSaving(false);
     }
@@ -440,68 +385,6 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               </p>
 
               {/* ── Input ── */}
-              {currentStep.type === "choice" && (
-                <div className="flex flex-col gap-3" style={{ maxWidth: 460 }}>
-                  {currentStep.choices?.map((ch) => {
-                    const active = form.booster_type === ch.value;
-                    return (
-                      <button
-                        key={ch.value}
-                        type="button"
-                        onClick={() => handleChoice(ch.value)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "18px 22px",
-                          borderRadius: 16,
-                          border: `2px solid ${active ? "#0F2C23" : "rgba(15,44,35,0.12)"}`,
-                          backgroundColor: active ? "#0F2C23" : "rgba(15,44,35,0.04)",
-                          cursor: "pointer",
-                          transition: "all 0.15s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!active) {
-                            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(15,44,35,0.35)";
-                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(15,44,35,0.07)";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!active) {
-                            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(15,44,35,0.12)";
-                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(15,44,35,0.04)";
-                          }
-                        }}
-                      >
-                        <div>
-                          <div
-                            style={{
-                              fontFamily: PX,
-                              fontWeight: 800,
-                              fontSize: 14,
-                              letterSpacing: "-0.01em",
-                              color: active ? "#F8FFE8" : "#0F2C23",
-                              marginBottom: 2,
-                            }}
-                          >
-                            {ch.label}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: active ? "rgba(226,254,165,0.6)" : "rgba(15,44,35,0.45)",
-                            }}
-                          >
-                            {ch.desc}
-                          </div>
-                        </div>
-                        {active && <Check size={16} style={{ color: "#E2FEA5", flexShrink: 0 }} />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
               {currentStep.type === "text" && (
                 <input
                   ref={inputRef as React.RefObject<HTMLInputElement>}
@@ -571,8 +454,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               )}
 
               {/* ── Nav buttons ── */}
-              {currentStep.type !== "choice" && (
-                <div className="flex items-center gap-3 mt-8">
+              <div className="flex items-center gap-3 mt-8">
                   {step > 0 && (
                     <button
                       type="button"
@@ -646,7 +528,6 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                     </button>
                   )}
                 </div>
-              )}
             </div>
           ) : (
             /* ── Done state ── */
@@ -772,7 +653,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                     }}
                   >
                     {isSaving ? <Loader2 size={12} className="animate-spin" /> : <ArrowRight size={12} />}
-                    {isSaving ? "Saving…" : "Save booster"}
+                    {isSaving ? "Saving…" : "Save hackathon"}
                   </button>
                 )}
 
@@ -1002,12 +883,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 /* AI draft content */
                 (() => {
                   const d: any = draft.draft;
-                  const boosterName = d.booster_name ?? form.name;
+                  const hackathonName = d.hackathon_name ?? form.name;
                   const overview = d.overview ?? "No overview generated.";
                   const goals: string[] = d.goals ?? [];
                   const challenges: any[] = d.challenge_statements ?? [];
                   const schedule: any[] = d.schedule ?? [];
-                  const slug = d.booster_id_suggestion;
+                  const slug = d.hackathon_id_suggestion;
 
                   return (
                     <div className="space-y-8">
@@ -1023,7 +904,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                             marginBottom: 8,
                           }}
                         >
-                          {boosterName}
+                          {hackathonName}
                         </h2>
                         {slug && (
                           <p

@@ -24,7 +24,7 @@ interface TabItem  { key: string;  icon: LucideIcon; label: string }
 
 const GLOBAL_NAV: NavItem[] = [
   { href: "/builder",          icon: LayoutGrid, label: "Dashboard" },
-  { href: "/boosters",         icon: Zap,        label: "Boosters" },
+  { href: "/hackathons",        icon: Zap,        label: "Hackathons" },
   { href: "/builder/projects", icon: FolderOpen, label: "Projects" },
   { href: "/events",           icon: CalendarDays, label: "My Events" },
   { href: "/host",             icon: Users,      label: "Host" },
@@ -32,7 +32,7 @@ const GLOBAL_NAV: NavItem[] = [
   { href: "/residency",        icon: Settings,   label: "Residency" },
 ];
 
-const BOOSTER_TABS: TabItem[] = [
+const HACKATHON_TABS: TabItem[] = [
   { key: "ideator",  icon: Sparkles,      label: "Ideator" },
   { key: "mentor",   icon: GraduationCap, label: "Mentor" },
   { key: "info",     icon: Info,          label: "Info" },
@@ -54,20 +54,20 @@ const PROJECT_TABS: TabItem[] = [
 
 type NavContext =
   | { kind: "global" }
-  | { kind: "booster"; backHref: string; tabs: TabItem[]; defaultTab: string }
+  | { kind: "hackathon"; backHref: string; tabs: TabItem[]; defaultTab: string }
   | { kind: "project"; backHref: string; tabs: TabItem[]; defaultTab: string }
   | { kind: "hostBooster"; backHref: string; tabs: TabItem[]; defaultTab: string };
 
 function resolveNavContext(pathname: string): NavContext {
-  // Booster-scoped project editor: /boosters/[type]/[id]/project/[projectId]
-  const boosterProjectMatch = pathname.match(
-    /^\/boosters\/([^/]+)\/([^/]+)\/project\/[^/]+$/,
+  // Hackathon-scoped project editor: /hackathons/[id]/project/[projectId]
+  const hackathonProjectMatch = pathname.match(
+    /^\/hackathons\/([^/]+)\/project\/[^/]+$/,
   );
-  if (boosterProjectMatch) {
-    const [, typeSlug, boosterId] = boosterProjectMatch;
+  if (hackathonProjectMatch) {
+    const [, hackathonId] = hackathonProjectMatch;
     return {
       kind: "project",
-      backHref: `/boosters/${typeSlug}/${boosterId}`,
+      backHref: `/hackathons/${hackathonId}`,
       tabs: PROJECT_TABS,
       defaultTab: "edit",
     };
@@ -86,14 +86,13 @@ function resolveNavContext(pathname: string): NavContext {
     };
   }
 
-  // Booster detail: /boosters/[type]/[id]
-  const boosterMatch = pathname.match(/^\/boosters\/([^/]+)\/([^/]+)$/);
-  if (boosterMatch) {
-    const typeSlug = boosterMatch[1];
+  // Hackathon detail: /hackathons/[id]
+  const hackathonMatch = pathname.match(/^\/hackathons\/([^/]+)$/);
+  if (hackathonMatch) {
     return {
-      kind: "booster",
-      backHref: `/boosters/${typeSlug}`,
-      tabs: BOOSTER_TABS,
+      kind: "hackathon",
+      backHref: "/hackathons",
+      tabs: HACKATHON_TABS,
       defaultTab: "info",
     };
   }
@@ -252,7 +251,7 @@ export function SideNav() {
           <BackButton
             href={ctx.backHref}
             label={
-              ctx.kind === "booster"
+              ctx.kind === "hackathon"
                 ? "Back to list"
                 : ctx.kind === "project"
                 ? "Back to projects"

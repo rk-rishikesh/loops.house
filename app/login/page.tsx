@@ -16,7 +16,7 @@ import { useAuth } from "@/app/providers";
 const ROLE_DASHBOARDS: Record<AppRole, string> = {
   builder: "/builder",
   host: "/host",
-  viewer: "/boosters",
+  viewer: "/hackathons",
   judge: "/host/judging",
   admin: "/admin",
 };

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/lib/server-auth";
-import { getBoosterServer } from "@/lib/server-data";
+import { getHackathonServer } from "@/lib/server-data";
 import { JudgeInviteForm } from "@/components/client/judge-invite-form";
 
 export default async function HostBoosterJudgesPage({
@@ -18,16 +18,16 @@ export default async function HostBoosterJudgesPage({
     redirect("/host");
   }
 
-  const booster = await getBoosterServer(booster_id);
-  if (!booster) {
+  const hackathon = await getHackathonServer(booster_id);
+  if (!hackathon) {
     redirect("/host");
   }
 
   return (
     <JudgeInviteForm
-      boosters={[booster]}
-      initialBoosterId={booster.id}
-      hideBoosterPicker
+      hackathons={[hackathon]}
+      initialHackathonId={hackathon.id}
+      hideHackathonPicker
     />
   );
 }

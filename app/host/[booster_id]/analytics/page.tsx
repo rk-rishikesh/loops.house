@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/lib/server-auth";
-import { getBoosterServer } from "@/lib/server-data";
+import { getHackathonServer } from "@/lib/server-data";
 import { AnalyticsReportGenerator } from "@/components/client/analytics-report-generator";
 
 export default async function HostBoosterAnalyticsPage({
@@ -17,11 +17,11 @@ export default async function HostBoosterAnalyticsPage({
   if (!booster_id.includes("-")) {
     redirect("/host");
   }
-  const booster = await getBoosterServer(booster_id);
-  if (!booster) {
+  const hackathon = await getHackathonServer(booster_id);
+  if (!hackathon) {
     redirect("/host");
   }
 
-  return <AnalyticsReportGenerator booster={booster} backHref={`/host/${booster.id}`} />;
+  return <AnalyticsReportGenerator hackathon={hackathon} backHref={`/host/${hackathon.id}`} />;
 }
 

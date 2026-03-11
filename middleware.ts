@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED = ["/builder", "/host", "/admin"];
+const PUBLIC = ["/hackathons", "/residency", "/events"];
 
 // Which roles can access which route prefixes
 const ROLE_ROUTES: Record<string, string[]> = {
@@ -13,7 +14,7 @@ const ROLE_ROUTES: Record<string, string[]> = {
 const ROLE_DASHBOARDS: Record<string, string> = {
   builder: "/builder",
   host: "/host",
-  viewer: "/boosters",
+  viewer: "/hackathons",
   judge: "/host/judging",
   admin: "/admin",
 };
@@ -86,8 +87,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // Unauthenticated user on a protected route → send to login
-  // (Skip if already on /login and allow static asset requests, e.g. public files/CSS)
-  if (!session && pathname !== "/login" && !isStaticAssetRequest) {
+  // (Skip public routes — they're in the matcher only for session refresh)
+  const isPublicRoute = PUBLIC.some((p) => pathname.startsWith(p));
+  if (!session && pathname !== "/login" && !isStaticAssetRequest && !isPublicRoute) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     const redirect = NextResponse.redirect(loginUrl);
@@ -157,5 +159,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/(builder|host|admin|login)(.*)"],
+  matcher: ["/(builder|host|admin|login|hackathons|residency|events)(.*)"],
 };

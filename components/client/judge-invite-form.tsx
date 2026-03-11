@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Users, Send, Check, Clock, Loader2, X } from "lucide-react";
-import type { StoredBooster, JudgeInviteWithUser } from "@/lib/data-mappers";
+import type { StoredHackathon, JudgeInviteWithUser } from "@/lib/data-mappers";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -25,9 +25,9 @@ function SkeletonRow() {
 }
 
 /* ─── Component ──────────────────────────────────────────────────── */
-export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker = false }: { boosters: StoredBooster[]; initialBoosterId?: string; hideBoosterPicker?: boolean; }) {
-  const [selectedBooster, setSelectedBooster] = useState<string>(
-    initialBoosterId ?? ""
+export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonPicker = false }: { hackathons: StoredHackathon[]; initialHackathonId?: string; hideHackathonPicker?: boolean; }) {
+  const [selectedHackathon, setSelectedHackathon] = useState<string>(
+    initialHackathonId ?? ""
   );
   const [invites,         setInvites]         = useState<JudgeInviteWithUser[]>([]);
   const [loadingInvites,  setLoadingInvites]  = useState(false);
@@ -37,18 +37,18 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
   const [success,         setSuccess]         = useState<string | null>(null);
 
   useEffect(() => {
-    if (!selectedBooster) return;
+    if (!selectedHackathon) return;
     setLoadingInvites(true);
-    fetch(`/api/judge-invites?booster_id=${selectedBooster}`)
+    fetch(`/api/judge-invites?hackathon_id=${selectedHackathon}`)
       .then((r) => r.json())
       .then(setInvites)
       .catch(() => setInvites([]))
       .finally(() => setLoadingInvites(false));
-  }, [selectedBooster]);
+  }, [selectedHackathon]);
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedBooster || !email) return;
+    if (!selectedHackathon || !email) return;
     setInviting(true);
     setError(null);
     setSuccess(null);
@@ -56,13 +56,13 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
       const res = await fetch("/api/judge-invites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ booster_id: selectedBooster, judge_email: email }),
+        body: JSON.stringify({ hackathon_id: selectedHackathon, judge_email: email }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setSuccess(`Invited ${email}`);
       setEmail("");
-      const updated = await fetch(`/api/judge-invites?booster_id=${selectedBooster}`).then((r) => r.json());
+      const updated = await fetch(`/api/judge-invites?hackathon_id=${selectedHackathon}`).then((r) => r.json());
       setInvites(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to invite judge");
@@ -71,7 +71,7 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
     }
   }
 
-  const activeBooster   = boosters.find((b) => b.id === selectedBooster);
+  const activeHackathon   = hackathons.find((b) => b.id === selectedHackathon);
   const acceptedCount   = invites.filter((i) => i.accepted).length;
   const pendingCount    = invites.filter((i) => !i.accepted).length;
 
@@ -95,15 +95,15 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
             </span>
           </Link>
 
-          {/* Right: Judge Management + active booster */}
+          {/* Right: Judge Management + active hackathon */}
           <div className="flex-1 min-w-0 py-8 flex items-center justify-between px-10">
             <span>Judge Management</span>
-            {activeBooster && (
+            {activeHackathon && (
               <span
                 className="text-[9px] tracking-[0.15em] uppercase font-bold px-3 py-1.5 rounded-full"
                 style={{ backgroundColor: "#0F2C23", color: "#F8FFE8" }}
               >
-                {activeBooster.name}
+                {activeHackathon.name}
               </span>
             )}
           </div>
@@ -130,7 +130,7 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
               className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
               style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
             >
-              Invite judges to your boosters by email. They must have an account on the platform.
+              Invite judges to your hackathons by email. They must have an account on the platform.
             </p>
           </div>
         </div>
@@ -141,8 +141,8 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
           {/* ═══ LEFT ════════════════════════════════════════════════════ */}
           <div className="flex flex-col gap-10">
 
-            {/* Step 01 — Pick a booster */}
-            {!hideBoosterPicker && (
+            {/* Step 01 — Pick a hackathon */}
+            {!hideHackathonPicker && (
               <div>
                 <div className="flex items-baseline gap-3 mb-5">
                   <span
@@ -155,11 +155,11 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
                     className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
                     style={{ fontFamily: PX }}
                   >
-                    Select Booster
+                    Select Hackathon
                   </p>
                 </div>
 
-                {boosters.length === 0 ? (
+                {hackathons.length === 0 ? (
                   <div className="rounded-2xl p-8 text-center" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
                     <div
                       className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-4"
@@ -171,26 +171,26 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
                       className="font-black text-[#0F2C23] uppercase mb-2"
                       style={{ fontFamily: PX, fontSize: 16, letterSpacing: "-0.02em" }}
                     >
-                      No boosters yet.
+                      No hackathons yet.
                     </p>
                     <p className="text-[#0F2C23]/50 text-sm" style={{ fontFamily: FN }}>
-                      Create a booster first to manage judges.
+                      Create a hackathon first to manage judges.
                     </p>
                   </div>
                 ) : (
-                  /* Booster tile grid */
+                  /* Hackathon tile grid */
                   <div
                     className="grid gap-3"
                     style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}
                   >
-                    {boosters.map((b) => {
-                      const isActive = selectedBooster === b.id;
+                    {hackathons.map((b) => {
+                      const isActive = selectedHackathon === b.id;
                       return (
                         <button
                           key={b.id}
                           type="button"
                           onClick={() => {
-                            setSelectedBooster(b.id);
+                            setSelectedHackathon(b.id);
                             setError(null);
                             setSuccess(null);
                           }}
@@ -234,20 +234,6 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
                           >
                             {b.name}
                           </p>
-                          {b.booster_type && (
-                            <p
-                              className="text-[10px] uppercase font-bold"
-                              style={{
-                                color: isActive
-                                  ? "rgba(226,254,165,0.4)"
-                                  : "rgba(15,44,35,0.45)",
-                                fontFamily: PX,
-                                letterSpacing: "0.1em",
-                              }}
-                            >
-                              {b.booster_type}
-                            </p>
-                          )}
                         </button>
                       );
                     })}
@@ -256,7 +242,7 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
               </div>
             )}
             {/* Step 02 — Invite by email */}
-            {selectedBooster && (
+            {selectedHackathon && (
               <div>
                 <div className="flex items-baseline gap-3 mb-5">
                   <span
@@ -346,7 +332,7 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
             )}
 
             {/* Step 03 — Invited judges table */}
-            {selectedBooster && (
+            {selectedHackathon && (
               <div>
                 <div className="flex items-baseline justify-between mb-5">
                   <div className="flex items-baseline gap-3">
@@ -490,7 +476,7 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
               </p>
               <div className="flex flex-col gap-2">
                 {[
-                  { label: "Booster",          value: activeBooster?.name ?? "Not selected",              done: !!activeBooster  },
+                  { label: "Hackathon",          value: activeHackathon?.name ?? "Not selected",              done: !!activeHackathon  },
                   { label: "Judges invited",   value: invites.length > 0 ? `${invites.length} total` : "None yet", done: invites.length > 0 },
                   { label: "Judges accepted",  value: acceptedCount > 0 ? `${acceptedCount} accepted`    : "Awaiting",           done: acceptedCount > 0 },
                 ].map(({ label, value, done }) => (
@@ -518,7 +504,7 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
             </div>
 
             {/* Stats */}
-            {selectedBooster && invites.length > 0 && (
+            {selectedHackathon && invites.length > 0 && (
               <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#0F2C23" }}>
                 <p
                   className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#F8FFE8]/38 mb-4"
@@ -560,15 +546,15 @@ export function JudgeInviteForm({ boosters, initialBoosterId, hideBoosterPicker 
                 How it works
               </p>
               <div className="flex flex-col gap-3">
-                {(hideBoosterPicker
+                {(hideHackathonPicker
                   ? [
                       { n: "01", t: "Enter a judge's email address. They must already have a platform account." },
-                      { n: "02", t: "Judges receive an invite and can accept it to gain judging access for this booster." },
+                      { n: "02", t: "Judges receive an invite and can accept it to gain judging access for this hackathon." },
                     ]
                   : [
-                      { n: "01", t: "Select a booster — each one has its own pool of judges." },
+                      { n: "01", t: "Select a hackathon — each one has its own pool of judges." },
                       { n: "02", t: "Enter a judge's email address. They must already have a platform account." },
-                      { n: "03", t: "Judges receive an invite and can accept it to gain judging access for that booster." },
+                      { n: "03", t: "Judges receive an invite and can accept it to gain judging access for that hackathon." },
                     ]
                 ).map(({ n, t }) => (
                   <div key={n} className="flex items-start gap-3">

@@ -3,8 +3,8 @@
 /**
  * LoopsFlow Database Seeder
  *
- * Clears all data and inserts test users (one per role), sample boosters,
- * teams, projects, submissions, and booster tracks.
+ * Clears all data and inserts test users (one per role), sample hackathons,
+ * teams, projects, submissions, and hackathon tracks.
  *
  * Uses the Supabase Admin API (service role key) to create auth users
  * and bypass RLS for all inserts.
@@ -89,12 +89,12 @@ const IDS = {
   project_nft: "c0000000-0000-0000-0000-000000000002",
   project_social: "c0000000-0000-0000-0000-000000000003",
 
-  // Boosters
-  booster_idea: "d0000000-0000-0000-0000-000000000001",
-  booster_momentum: "d0000000-0000-0000-0000-000000000002",
-  booster_capital: "d0000000-0000-0000-0000-000000000003",
+  // Hackathons
+  hackathon_idea: "d0000000-0000-0000-0000-000000000001",
+  hackathon_momentum: "d0000000-0000-0000-0000-000000000002",
+  hackathon_capital: "d0000000-0000-0000-0000-000000000003",
 
-  // Booster tracks
+  // Hackathon tracks
   track_eth: "e0000000-0000-0000-0000-000000000001",
   track_pol: "e0000000-0000-0000-0000-000000000002",
   track_arb: "e0000000-0000-0000-0000-000000000003",
@@ -184,17 +184,17 @@ async function clearAll() {
   // Delete in dependency order (children first)
   const tables = [
     "rate_limits",
-    "booster_track_chunks",
+    "hackathon_track_chunks",
     "knowledge_base_chunks",
     "knowledge_bases",
     "submissions",
     "judge_invites",
     "host_applications",
-    "booster_tracks",
+    "hackathon_tracks",
     "loops_profiles",
     "team_members",
     "teams",
-    "boosters",
+    "hackathons",
     "users",
   ];
 
@@ -337,19 +337,18 @@ async function seedTeams() {
 }
 
 // ---------------------------------------------------------------------------
-// Step 4: Create boosters (one per type)
+// Step 4: Create hackathons
 // ---------------------------------------------------------------------------
-async function seedBoosters() {
-  console.log("\n--- Seeding boosters ---");
+async function seedHackathons() {
+  console.log("\n--- Seeding hackathons ---");
 
   const host = TEST_USERS.find((u) => u.email === "host@loopsflow.test");
 
-  const boosters = [
+  const hackathons = [
     {
-      id: IDS.booster_idea,
+      id: IDS.hackathon_idea,
       host_id: host._authId,
-      booster_type: "idea",
-      name: "ETH Denver 2026 Idea Booster",
+      name: "ETH Denver 2026 Hackathon",
       description:
         "48-hour hackathon to build the next generation of decentralized applications.",
       theme: "Build the future of Web3",
@@ -364,16 +363,16 @@ async function seedBoosters() {
       bounty_pool_summary: "$50K in prizes across 3 sponsor tracks",
       program_goal:
         "Identify and support innovative DeFi, identity, and governance ideas.",
-      timeline: "Feb 28 - Mar 2, 2026",
       organizer_notes: "Focus on usability and real-world adoption potential.",
       status: "active",
       start_date: "2026-02-28T00:00:00Z",
-      end_date: "2026-03-02T00:00:00Z",
+      submission_deadline: "2026-03-01T18:00:00Z",
+      judging_deadline: "2026-03-02T12:00:00Z",
+      results_date: "2026-03-02T18:00:00Z",
     },
     {
-      id: IDS.booster_momentum,
+      id: IDS.hackathon_momentum,
       host_id: host._authId,
-      booster_type: "momentum",
       name: "Loops Momentum Sprint",
       description:
         "4-week acceleration program for projects with initial traction.",
@@ -384,14 +383,16 @@ async function seedBoosters() {
         "How to iterate on feedback without losing vision?",
       ],
       program_goal: "Help 10 projects ship their v1 and acquire initial users.",
-      timeline: "March 2026 (rolling admission)",
       status: "active",
+      start_date: "2026-03-01T00:00:00Z",
+      submission_deadline: "2026-03-21T23:59:00Z",
+      judging_deadline: "2026-03-28T23:59:00Z",
+      results_date: "2026-03-31T12:00:00Z",
     },
     {
-      id: IDS.booster_capital,
+      id: IDS.hackathon_capital,
       host_id: host._authId,
-      booster_type: "capital",
-      name: "Capital Raise Booster Q1",
+      name: "Capital Raise Hackathon Q1",
       description:
         "Pitch day and fundraising bootcamp for seed-stage projects.",
       theme: "Fundraising fundamentals",
@@ -403,24 +404,27 @@ async function seedBoosters() {
       bounty_pool_summary:
         "$100K lead investment + $500K follow-on opportunity",
       program_goal: "Connect 5 projects with investors for seed funding.",
-      timeline: "April 2026",
       status: "draft",
+      start_date: "2026-04-01T00:00:00Z",
+      submission_deadline: "2026-04-14T23:59:00Z",
+      judging_deadline: "2026-04-21T23:59:00Z",
+      results_date: "2026-04-28T12:00:00Z",
     },
   ];
 
-  check("Boosters", await supabase.from("boosters").insert(boosters));
+  check("Hackathons", await supabase.from("hackathons").insert(hackathons));
 }
 
 // ---------------------------------------------------------------------------
-// Step 5: Create booster tracks (sponsors)
+// Step 5: Create hackathon tracks (sponsors)
 // ---------------------------------------------------------------------------
-async function seedBoosterTracks() {
-  console.log("\n--- Seeding booster tracks ---");
+async function seedHackathonTracks() {
+  console.log("\n--- Seeding hackathon tracks ---");
 
   const tracks = [
     {
       id: IDS.track_eth,
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       sponsor_name: "Ethereum Foundation",
       track_name: "Core Infrastructure",
       track_description:
@@ -434,7 +438,7 @@ async function seedBoosterTracks() {
     },
     {
       id: IDS.track_pol,
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       sponsor_name: "Polygon Labs",
       track_name: "Scaling Solutions",
       track_description:
@@ -444,7 +448,7 @@ async function seedBoosterTracks() {
     },
     {
       id: IDS.track_arb,
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       sponsor_name: "Arbitrum DAO",
       track_name: "DeFi Innovation",
       track_description:
@@ -456,7 +460,7 @@ async function seedBoosterTracks() {
     },
   ];
 
-  check("Booster tracks", await supabase.from("booster_tracks").insert(tracks));
+  check("Hackathon tracks", await supabase.from("hackathon_tracks").insert(tracks));
 }
 
 // ---------------------------------------------------------------------------
@@ -628,7 +632,7 @@ async function seedSubmissions() {
   const submissions = [
     {
       id: IDS.sub_defi_idea,
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       team_id: IDS.team_alpha,
       project_id: IDS.project_defi,
       status: "scored",
@@ -654,7 +658,7 @@ async function seedSubmissions() {
     },
     {
       id: IDS.sub_nft_idea,
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       team_id: IDS.team_alpha,
       project_id: IDS.project_nft,
       status: "submitted",
@@ -664,7 +668,7 @@ async function seedSubmissions() {
     },
     {
       id: IDS.sub_social_momentum,
-      booster_id: IDS.booster_momentum,
+      hackathon_id: IDS.hackathon_momentum,
       team_id: IDS.team_beta,
       project_id: IDS.project_social,
       status: "under_review",
@@ -702,7 +706,7 @@ async function seedJudgeInvites() {
   check(
     "Judge invite",
     await supabase.from("judge_invites").insert({
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       judge_user_id: judge._authId,
       assigned_tracks: [IDS.track_eth, IDS.track_pol],
       invited_by: host._authId,
@@ -724,7 +728,6 @@ async function seedHostApplications() {
     "Host application (pending)",
     await supabase.from("host_applications").insert({
       user_id: builder._authId,
-      booster_type: "idea",
       event_name: "Community Hack Night",
       expected_participants: 50,
       contact: "alice@example.com",
@@ -738,7 +741,6 @@ async function seedHostApplications() {
     "Host application (approved)",
     await supabase.from("host_applications").insert({
       user_id: admin._authId,
-      booster_type: "momentum",
       event_name: "Startup Accelerator Cohort 3",
       expected_participants: 200,
       contact: "eve@example.com",
@@ -946,10 +948,10 @@ async function seedCSVData() {
     }
     projectCount++;
 
-    // Submit each project to ETH Denver Idea Booster
+    // Submit each project to ETH Denver Hackathon
     const subResult = await supabase.from("submissions").insert({
       id: randomUUID(),
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       team_id: user.teamId,
       project_id: projectId,
       status: "submitted",
@@ -962,7 +964,7 @@ async function seedCSVData() {
 
   console.log(`  [OK]   ${projectCount} hackathon projects`);
   console.log(
-    `  [OK]   ${submissionCount} submissions → ETH Denver Idea Booster`,
+    `  [OK]   ${submissionCount} submissions → ETH Denver Hackathon`,
   );
   return { users: userMap.size, projects: projectCount };
 }
@@ -979,8 +981,8 @@ async function main() {
   await clearAll();
   await seedUsers();
   await seedTeams();
-  await seedBoosters();
-  await seedBoosterTracks();
+  await seedHackathons();
+  await seedHackathonTracks();
   await seedProjects();
   await seedKnowledgeBases();
   await seedSubmissions();
@@ -1026,27 +1028,27 @@ async function main() {
   );
   console.log("  7. Visit /builder/teams → see Team Alpha membership");
   console.log(
-    "  8. Visit /builder/ideate → test AI ideation chat (select a booster)",
+    "  8. Visit /builder/ideate → test AI ideation chat (select a hackathon)",
   );
-  console.log("  9. Visit /boosters → browse available boosters");
+  console.log("  9. Visit /hackathons → browse available hackathons");
   console.log(
-    "  10. Visit /boosters/<type>/<id>/submit → submit project to booster",
+    "  10. Visit /hackathons/<id>/submit → submit project to hackathon",
   );
 
   console.log("\n  HOST (host@loopsflow.test / Host123!):");
   console.log("  1. Login at /login with email/password");
   console.log("  2. Visit /host → see dashboard with submitted projects");
   console.log(
-    "  3. Click 'Grade project' → opens /host/judging with pre-selected project+booster",
+    "  3. Click 'Grade project' → opens /host/judging with pre-selected project+hackathon",
   );
   console.log(
-    "  4. Visit /host/boosters → create/edit boosters, run AI generator",
+    "  4. Visit /host/hackathons → create/edit hackathons, run AI generator",
   );
   console.log(
-    "  5. Visit /host/analytics → select booster, generate AI analytics report",
+    "  5. Visit /host/analytics → select hackathon, generate AI analytics report",
   );
   console.log(
-    "  6. Visit /host/judging → evaluate any project against any booster",
+    "  6. Visit /host/judging → evaluate any project against any hackathon",
   );
 
   console.log("\n  VIEWER (viewer@loopsflow.test / Viewer123!):");
@@ -1062,7 +1064,7 @@ async function main() {
     "  5. Test project chat: have multi-turn conversation about the project",
   );
   console.log(
-    "  6. Visit /boosters → browse boosters (public, no auth required)",
+    "  6. Visit /hackathons → browse hackathons (public, no auth required)",
   );
 
   console.log("\n  ADMIN (admin@loopsflow.test / Admin123!):");
@@ -1078,7 +1080,7 @@ async function main() {
   console.log("  1. Login at /login with email/password");
   console.log("  2. Judge can access /host/judging → evaluate projects");
   console.log(
-    "  3. Judge has an invite for ETH Denver Idea Booster (tracks: Ethereum, Polygon)",
+    "  3. Judge has an invite for ETH Denver Hackathon (tracks: Ethereum, Polygon)",
   );
   console.log(
     "  4. Judge uses project-evaluator API (only agent allowing 'judge' role)",
@@ -1095,15 +1097,15 @@ async function main() {
     `  Projects:       ${3 + csv.projects} (3 test + ${csv.projects} hackathon)`,
   );
   console.log(
-    "  Boosters:       3 (idea active, momentum active, capital draft)",
+    "  Hackathons:     3 (idea active, momentum active, capital draft)",
   );
   console.log(
-    "  Booster Tracks: 3 (Ethereum, Polygon, Arbitrum on Idea Booster)",
+    "  Hackathon Tracks: 3 (Ethereum, Polygon, Arbitrum on Idea Hackathon)",
   );
   console.log(
-    `  Submissions:    ${3 + csv.projects} (3 test + ${csv.projects} hackathon → Idea Booster)`,
+    `  Submissions:    ${3 + csv.projects} (3 test + ${csv.projects} hackathon → Idea Hackathon)`,
   );
-  console.log("  Judge Invites:  1 (Frank Judge → Idea Booster)");
+  console.log("  Judge Invites:  1 (Frank Judge → Idea Hackathon)");
   console.log("  Host Apps:      2 (1 pending, 1 approved)");
   console.log("  Knowledge Bases:2 (YieldFlow, ArtChain)");
   console.log("");

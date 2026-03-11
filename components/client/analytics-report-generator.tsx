@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, BarChart3, Loader2, Sparkles, TrendingUp, Layers } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { getProjects, getBoosterSubmissions } from "@/lib/storage";
-import type { StoredBooster } from "@/lib/data-mappers";
+import { getProjects, getHackathonSubmissions } from "@/lib/storage";
+import type { StoredHackathon } from "@/lib/data-mappers";
 import { type AnalyticsFilterSchema } from "@/lib/validations/schemas";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
@@ -21,9 +21,9 @@ type AnalyticsResult = {
 type ReportType = AnalyticsFilterSchema["report_type"];
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
-async function buildMetricsForBooster(boosterId: string) {
-  const [allProjects, boosterSubs] = await Promise.all([getProjects(), getBoosterSubmissions(boosterId)]);
-  const submittedProjectIds = new Set(boosterSubs.map((s) => s.project_id));
+async function buildMetricsForHackathon(hackathonId: string) {
+  const [allProjects, hackathonSubs] = await Promise.all([getProjects(), getHackathonSubmissions(hackathonId)]);
+  const submittedProjectIds = new Set(hackathonSubs.map((s) => s.project_id));
   const projects = allProjects.filter((p) => submittedProjectIds.has(p.project_id));
   const submissions = projects.map((p) => ({
     name: p.name, category: p.category,
@@ -68,22 +68,22 @@ function HighlightBar({ text, index }: { text: string; index: number }) {
 
 /* ─── Component ──────────────────────────────────────────────────── */
 export function AnalyticsReportGenerator({
-  booster,
+  hackathon,
   backHref,
 }: {
-  booster: StoredBooster;
+  hackathon: StoredHackathon;
   backHref: string;
 }) {
   const [reportType,      setReportType]      = useState<ReportType>("full");
 
   const mutation = useMutation({
     mutationFn: async (data: AnalyticsFilterSchema): Promise<AnalyticsResult> => {
-      const metrics = await buildMetricsForBooster(data.booster_id);
+      const metrics = await buildMetricsForHackathon(data.hackathon_id);
       const res = await fetch("/api/host-agents/metric-analyst", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          booster_id: data.booster_id, report_type: data.report_type,
-          booster: { id: booster.id, name: booster.name, theme: booster.theme, problem_statements: booster.problem_statements },
+          hackathon_id: data.hackathon_id, report_type: data.report_type,
+          hackathon: { id: hackathon.id, name: hackathon.name, theme: hackathon.theme, problem_statements: hackathon.problem_statements },
           metrics,
         }),
       });
@@ -98,7 +98,7 @@ export function AnalyticsReportGenerator({
 
   const handleGenerate = () => {
     mutation.mutate(
-      { booster_id: booster.id, report_type: reportType } satisfies AnalyticsFilterSchema,
+      { hackathon_id: hackathon.id, report_type: reportType } satisfies AnalyticsFilterSchema,
     );
   };
 
@@ -122,7 +122,7 @@ export function AnalyticsReportGenerator({
               </span>
             </Link>
             <div className="flex-1 min-w-0 py-8 flex items-center justify-end px-10">
-              <span>{booster.name} ANALYTICS</span>
+              <span>{hackathon.name} ANALYTICS</span>
             </div>
           </div>
         </div>
@@ -149,7 +149,7 @@ export function AnalyticsReportGenerator({
               className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
               style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
             >
-              Generate an AI narrative from your booster data. Choose a report type, pick a booster, and run.
+              Generate an AI narrative from your hackathon data. Choose a report type, pick a hackathon, and run.
             </p>
           </div>
         </div>
@@ -219,7 +219,7 @@ export function AnalyticsReportGenerator({
               </div>
             </div>
 
-            {/* Step 2 — Generate for selected booster */}
+            {/* Step 2 — Generate for selected hackathon */}
             <div>
               <div className="flex items-baseline gap-3 mb-5">
                 <span
@@ -239,14 +239,14 @@ export function AnalyticsReportGenerator({
               <div className="rounded-3xl p-7 flex items-center justify-between gap-6" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
                 <div className="min-w-0">
                   <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-2" style={{ fontFamily: PX }}>
-                    Selected booster
+                    Selected hackathon
                   </p>
                   <p className="font-semibold text-[#0F2C23] leading-snug" style={{ fontFamily: PX, fontSize: 15 }}>
-                    {booster.name}
+                    {hackathon.name}
                   </p>
-                  {booster.theme && (
+                  {hackathon.theme && (
                     <p className="text-[#0F2C23]/55 text-sm mt-1" style={{ fontFamily: FN }}>
-                      {booster.theme}
+                      {hackathon.theme}
                     </p>
                   )}
                 </div>
@@ -294,7 +294,7 @@ export function AnalyticsReportGenerator({
                     className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
                     style={{ fontFamily: PX }}
                   >
-                    Report — {booster.name}
+                    Report — {hackathon.name}
                   </p>
                 </div>
 
@@ -309,7 +309,7 @@ export function AnalyticsReportGenerator({
                           {REPORT_TYPES.find((r) => r.value === reportType)?.label} — AI Narrative
                         </p>
                         <p className="text-[#F8FFE8]/55 text-sm" style={{ fontFamily: FN }}>
-                          {booster.name}
+                          {hackathon.name}
                         </p>
                       </div>
                       <div
@@ -375,8 +375,8 @@ export function AnalyticsReportGenerator({
               <div className="border-t border-[#0F2C23]/12">
                 {[
                   { step: "01", title: "Choose a type",    body: "Overview, Submissions, or Full — each surfaces different layers of insight." },
-                  { step: "02", title: "Select a booster", body: "Each booster has its own pool of submitted projects and event metadata." },
-                  { step: "03", title: "Read the report",  body: "AI reads your booster details and submissions, then writes a structured narrative with highlights." },
+                  { step: "02", title: "Select a hackathon", body: "Each hackathon has its own pool of submitted projects and event metadata." },
+                  { step: "03", title: "Read the report",  body: "AI reads your hackathon details and submissions, then writes a structured narrative with highlights." },
                 ].map(({ step, title, body }) => (
                   <div key={step} className="flex items-start gap-4 py-5 border-b border-[#0F2C23]/08">
                     <span
@@ -433,7 +433,7 @@ export function AnalyticsReportGenerator({
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Booster", value: booster.booster_type ?? "—" },
+                  { label: "Hackathon", value: hackathon.name ?? "—" },
                   { label: "Report Type", value: REPORT_TYPES.find((r) => r.value === reportType)?.label ?? "—" },
                 ].map(({ label, value }) => (
                   <div key={label} className="rounded-xl p-4" style={{ backgroundColor: "rgba(15,44,35,0.08)" }}>

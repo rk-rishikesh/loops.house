@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, Trophy, Zap, Clock } from "lucide-react";
+import { ArrowUpRight, Trophy, Zap, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { BoosterType } from "@/lib/data-mappers";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
@@ -14,53 +13,27 @@ const MONO = "'SF Mono','Fira Code','Consolas',monospace";
 type EventStatus = "ongoing" | "upcoming" | "past";
 type TabId = "ongoing" | "upcoming" | "past";
 
-type Booster = {
+type Hackathon = {
   id: string;
   name: string;
   theme?: string;
   bounty_pool_summary?: string;
   problem_statements: string[];
-  timeline?: string;
+  start_date?: string;
+  submission_deadline?: string;
+  judging_deadline?: string;
+  results_date?: string;
 };
 
-const TYPE_META: Record<BoosterType, { nav: string; tagline: string; lines: string[]; index: string }> = {
-  idea: {
-    nav: "Ideation Agents",
-    tagline: "Work with AI agents that validate your idea before you write a single line",
-    lines: [
-      "> initializing ideation_agent...",
-      "> scanning market signals...",
-      "> validating problem-solution fit...",
-      "> generating pitch scaffold...",
-      "> ready. awaiting your concept.",
-    ],
-    index: "01",
-  },
-  momentum: {
-    nav: "Build Agents",
-    tagline: "Ship faster with AI co-pilots that write, review, and deploy",
-    lines: [
-      "> spawning build_agent cluster...",
-      "> indexing codebase context...",
-      "> optimizing architecture graph...",
-      "> deploying review pipeline...",
-      "> agents online. start building.",
-    ],
-    index: "02",
-  },
-  capital: {
-    nav: "Scale Agents",
-    tagline: "Growth intelligence — fundraising, metrics, and market strategy on autopilot",
-    lines: [
-      "> activating scale_agent...",
-      "> parsing traction metrics...",
-      "> modeling growth scenarios...",
-      "> drafting investor narrative...",
-      "> ready. let's scale.",
-    ],
-    index: "03",
-  },
-};
+const TERMINAL_LINES = [
+  "> initializing hackathon_agent...",
+  "> scanning submissions...",
+  "> indexing challenges...",
+  "> preparing judging pipeline...",
+  "> ready. explore hackathons.",
+];
+
+const TAGLINE = "Discover hackathons, build projects, and compete for prizes";
 
 function TerminalTypewriter({ lines }: { lines: string[] }) {
   const [displayedLines, setDisplayedLines] = useState<string[]>([]);
@@ -138,19 +111,30 @@ const TAB_CONFIG: { id: TabId; label: string }[] = [
   { id: "past",     label: "Past" },
 ];
 
-function deriveStatus(timeline: string | undefined, idx: number): EventStatus {
-  const tl = (timeline ?? "").toLowerCase();
-  if (tl.includes("past") || tl.includes("ended") || tl.includes("closed")) return "past";
-  if (tl.includes("upcoming") || tl.includes("soon") || tl.includes("launch")) return "upcoming";
-  if (tl.includes("ongoing") || tl.includes("open") || tl.includes("now"))  return "ongoing";
+function deriveStatus(hackathon: Hackathon, idx: number): EventStatus {
+  const now = new Date();
+  if (hackathon.results_date) {
+    const results = new Date(hackathon.results_date);
+    if (results < now) return "past";
+  }
+  if (hackathon.start_date) {
+    const start = new Date(hackathon.start_date);
+    if (start > now) return "upcoming";
+  }
+  if (hackathon.submission_deadline) {
+    const deadline = new Date(hackathon.submission_deadline);
+    if (deadline > now) return "ongoing";
+    return "past";
+  }
+  // Fallback: distribute based on index
   if (idx % 3 === 2) return "past";
   if (idx % 3 === 1) return "upcoming";
   return "ongoing";
 }
 
-function FeaturedHero({ b, type }: { b: Booster; type: BoosterType }) {
+function FeaturedHero({ b }: { b: Hackathon }) {
   return (
-    <Link href={`/boosters/${type}/${b.id}`} className="no-underline block group">
+    <Link href={`/hackathons/${b.id}`} className="no-underline block group">
       <div
         className="relative overflow-hidden rounded-3xl transition-all duration-200 group-hover:scale-[1.005]"
         style={{ backgroundColor: "#0F2C23" }}
@@ -166,7 +150,7 @@ function FeaturedHero({ b, type }: { b: Booster; type: BoosterType }) {
           }}
           aria-hidden
         >
-          FEATURED 
+          FEATURED
         </span>
 
         <div
@@ -226,14 +210,14 @@ function FeaturedHero({ b, type }: { b: Booster; type: BoosterType }) {
                 </span>
               </div>
             )}
-            {b.timeline && (
+            {b.submission_deadline && (
               <div
                 className="flex items-center gap-3 rounded-xl px-3.5 py-5"
                 style={{ backgroundColor: "#3C574B" }}
               >
                 <Clock size={11} style={{ color: "#E2FEA5", flexShrink: 0 }} />
                 <span className="text-[11px] truncate" style={{ fontFamily: PX, color: "rgba(226,254,165,0.7)" }}>
-                  {b.timeline.slice(0, 28)}
+                  Due {b.submission_deadline}
                 </span>
               </div>
             )}
@@ -244,7 +228,7 @@ function FeaturedHero({ b, type }: { b: Booster; type: BoosterType }) {
   );
 }
 
-function HackCard({ b, type, status }: { b: Booster; type: BoosterType; status: EventStatus }) {
+function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
   const isPast = status === "past";
   const isUpcoming = status === "upcoming";
 
@@ -255,7 +239,7 @@ function HackCard({ b, type, status }: { b: Booster; type: BoosterType; status: 
   const dotColor = isPast ? "rgba(15,44,35,0.2)" : isUpcoming ? "#f0c060" : "#4caf7d";
 
   return (
-    <Link href={`/boosters/${type}/${b.id}`} className="no-underline block h-full group">
+    <Link href={`/hackathons/${b.id}`} className="no-underline block h-full group">
       <div
         className={`h-full rounded-2xl p-6 flex flex-col transition-all duration-200 ${!isPast ? "group-hover:scale-[1.01]" : ""}`}
         style={{ backgroundColor: bg, minHeight: 200, opacity: isPast ? 0.6 : 1 }}
@@ -295,7 +279,7 @@ function HackCard({ b, type, status }: { b: Booster; type: BoosterType; status: 
             className="text-sm leading-relaxed mb-5"
             style={{ fontFamily: FN, color: fgSub }}
           >
-            {b.theme.length > 72 ? b.theme.slice(0, 72) + "…" : b.theme}
+            {b.theme.length > 72 ? b.theme.slice(0, 72) + "..." : b.theme}
           </p>
         )}
 
@@ -322,24 +306,22 @@ function HackCard({ b, type, status }: { b: Booster; type: BoosterType; status: 
   );
 }
 
-export function BoosterTypePage({
-  validType,
+export function HackathonListPage({
   list,
 }: {
-  validType: BoosterType;
-  list: Booster[];
+  list: Hackathon[];
 }) {
   const mounted = useIsMounted();
-  const withStatus = list.map((b, idx) => ({ ...b, _status: deriveStatus(b.timeline, idx) as EventStatus }));
+  const withStatus = list.map((h, idx) => ({ ...h, _status: deriveStatus(h, idx) as EventStatus }));
 
   const featured = withStatus[0] ?? null;
 
   const bucketed: Record<TabId, typeof withStatus> = {
-    ongoing:  withStatus.filter(b => b._status === "ongoing"),
-    upcoming: withStatus.filter(b => b._status === "upcoming"),
-    past:     withStatus.filter(b => b._status === "past"),
+    ongoing:  withStatus.filter(h => h._status === "ongoing"),
+    upcoming: withStatus.filter(h => h._status === "upcoming"),
+    past:     withStatus.filter(h => h._status === "past"),
   };
-  if (featured && !bucketed.ongoing.find(b => b.id === featured.id)) {
+  if (featured && !bucketed.ongoing.find(h => h.id === featured.id)) {
     bucketed.ongoing = [featured, ...bucketed.ongoing];
   }
 
@@ -385,11 +367,11 @@ export function BoosterTypePage({
               className="mt-4 leading-relaxed max-w-[560px]"
               style={{ fontFamily: FN, fontSize: "clamp(14px, 1.4vw, 17px)", color: "rgba(15,44,35,0.55)" }}
             >
-              {TYPE_META[validType].tagline}
+              {TAGLINE}
             </motion.p>
           </div>
           <div className="w-[320px] shrink-0">
-            <TerminalTypewriter key={validType} lines={TYPE_META[validType].lines} />
+            <TerminalTypewriter lines={TERMINAL_LINES} />
           </div>
         </div>
 
@@ -412,13 +394,6 @@ export function BoosterTypePage({
             >
               Hosts are adding programs — check back soon.
             </p>
-            <Link
-              href="/boosters"
-              className="inline-flex items-center gap-2 no-underline text-[9px] tracking-widest uppercase font-bold transition-colors"
-              style={{ fontFamily: PX, color: "rgba(15,44,35,0.6)" }}
-            >
-              <ArrowLeft size={10} /> All categories
-            </Link>
           </div>
         )}
 
@@ -427,7 +402,7 @@ export function BoosterTypePage({
             {/* ── Featured hero ── */}
             {featured && (
               <section className="mb-12">
-                <FeaturedHero b={featured} type={validType} />
+                <FeaturedHero b={featured} />
               </section>
             )}
 
@@ -466,8 +441,8 @@ export function BoosterTypePage({
             {/* ── Grid ── */}
             {tabItems.length > 0 ? (
               <div className="grid gap-4 mt-8" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-                {tabItems.map(b => (
-                  <HackCard key={b.id} b={b} type={validType} status={b._status} />
+                {tabItems.map(h => (
+                  <HackCard key={h.id} b={h} status={h._status} />
                 ))}
               </div>
             ) : (

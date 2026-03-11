@@ -44,7 +44,7 @@ const funnelSans = Funnel_Sans({
 
 export const metadata: Metadata = {
   title: "Loops - Build, Host, Discover",
-  description: "Build booster projects, host events, and discover projects.",
+  description: "Build hackathon projects, host events, and discover projects.",
 };
 
 export default function RootLayout({

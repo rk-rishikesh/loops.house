@@ -46,8 +46,7 @@ export function ApplicationReviewActions({ apps }: { apps: HostAppWithUser[] }) 
                     </h3>
                     <p className="text-xs text-zinc-500 mt-0.5">
                       {app.users?.email ?? app.user_id} &middot;{" "}
-                      <span className="capitalize">{app.booster_type}</span> Booster
-                      {app.expected_participants && ` · ${app.expected_participants} expected`}
+                      {app.expected_participants && `${app.expected_participants} expected`}
                     </p>
                     {app.description && (
                       <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">
@@ -109,7 +108,7 @@ export function ApplicationReviewActions({ apps }: { apps: HostAppWithUser[] }) 
                       {app.users?.email ?? app.user_id}
                     </td>
                     <td className="px-4 py-2 text-zinc-500 text-xs capitalize">
-                      {app.booster_type}
+                      Hackathon
                     </td>
                     <td className="px-4 py-2">
                       <span

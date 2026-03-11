@@ -19,13 +19,12 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  const { booster_type, event_name, expected_participants, contact, description } = parsed.data;
+  const { event_name, expected_participants, contact, description } = parsed.data;
 
   const { data, error } = await supabaseAdmin
     .from("host_applications")
     .insert({
       user_id: auth.user.id,
-      booster_type,
       event_name,
       expected_participants: expected_participants ?? null,
       contact: contact ?? null,

@@ -18,8 +18,8 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { getProject, getBooster } from "@/lib/storage";
-import type { StoredProject, StoredBooster, StoredSubmission } from "@/lib/data-mappers";
+import { getProject, getHackathon } from "@/lib/storage";
+import type { StoredProject, StoredHackathon, StoredSubmission } from "@/lib/data-mappers";
 import {
   judgingEvalSchema,
   type JudgingEvalSchema,
@@ -410,11 +410,11 @@ function parseHumanScore(raw: Record<string, unknown> | null | undefined): {
 /* ─── Page wrapper ───────────────────────────────────────────────── */
 export function JudgingForm({
   projects,
-  boosters,
+  hackathons,
   initialSubmission,
 }: {
   projects: StoredProject[];
-  boosters: StoredBooster[];
+  hackathons: StoredHackathon[];
   initialSubmission?: StoredSubmission | null;
 }) {
   return (
@@ -432,7 +432,7 @@ export function JudgingForm({
         </div>
       }
     >
-      <JudgingFormContent projects={projects} boosters={boosters} initialSubmission={initialSubmission} />
+      <JudgingFormContent projects={projects} hackathons={hackathons} initialSubmission={initialSubmission} />
     </Suspense>
   );
 }
@@ -440,11 +440,11 @@ export function JudgingForm({
 /* ─── Page content ───────────────────────────────────────────────── */
 function JudgingFormContent({
   projects,
-  boosters,
+  hackathons,
   initialSubmission,
 }: {
   projects: StoredProject[];
-  boosters: StoredBooster[];
+  hackathons: StoredHackathon[];
   initialSubmission?: StoredSubmission | null;
 }) {
   const searchParams = useSearchParams();
@@ -470,9 +470,9 @@ function JudgingFormContent({
   // Controlled state for selection — avoids react-hook-form watch() reactivity
   // issues that can cascade into infinite re-render loops.
   const initialProjectId = searchParams.get("project_id") ?? "";
-  const initialBoosterId = searchParams.get("booster_id") ?? "";
+  const initialHackathonId = searchParams.get("hackathon_id") ?? "";
   const [projectId, setProjectId] = useState(initialProjectId);
-  const [boosterId, setBoosterId] = useState(initialBoosterId);
+  const [hackathonId, setHackathonId] = useState(initialHackathonId);
 
   const {
     register,
@@ -483,14 +483,14 @@ function JudgingFormContent({
     resolver: zodResolver(judgingEvalSchema),
     defaultValues: {
       project_id: initialProjectId,
-      booster_id: initialBoosterId,
+      hackathon_id: initialHackathonId,
       mode: "official",
     },
   });
 
   // Fallback initialization — only runs when no URL params and data loads
   const firstProjectId = projects[0]?.project_id ?? "";
-  const firstBoosterId = boosters[0]?.id ?? "";
+  const firstHackathonId = hackathons[0]?.id ?? "";
 
   useEffect(() => {
     if (projectId || !firstProjectId) return;
@@ -499,24 +499,24 @@ function JudgingFormContent({
   }, [projectId, firstProjectId, setValue]);
 
   useEffect(() => {
-    if (boosterId || !firstBoosterId) return;
-    setBoosterId(firstBoosterId);
-    setValue("booster_id", firstBoosterId);
-  }, [boosterId, firstBoosterId, setValue]);
+    if (hackathonId || !firstHackathonId) return;
+    setHackathonId(firstHackathonId);
+    setValue("hackathon_id", firstHackathonId);
+  }, [hackathonId, firstHackathonId, setValue]);
 
   const selectedProject = projects.find((p) => p.project_id === projectId);
-  const selectedBooster = boosters.find((b) => b.id === boosterId);
+  const selectedHackathon = hackathons.find((b) => b.id === hackathonId);
 
   const evalMutation = useMutation({
     mutationFn: async (data: JudgingEvalSchema): Promise<EvalResult> => {
       const project = await getProject(data.project_id);
-      const booster = await getBooster(data.booster_id);
+      const hackathon = await getHackathon(data.hackathon_id);
       const res = await fetch("/api/host-agents/project-evaluator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           project_id: data.project_id,
-          booster_id: data.booster_id,
+          hackathon_id: data.hackathon_id,
           judge_mode: "official",
           project: project
             ? {
@@ -530,13 +530,13 @@ function JudgingFormContent({
                 flattened_codebase: project.flattened_codebase?.slice(0, 50000),
               }
             : undefined,
-          booster: booster
+          hackathon: hackathon
             ? {
-                id: booster.id,
-                name: booster.name,
-                theme: booster.theme,
-                problem_statements: booster.problem_statements,
-                sponsor_tracks: booster.sponsor_tracks,
+                id: hackathon.id,
+                name: hackathon.name,
+                theme: hackathon.theme,
+                problem_statements: hackathon.problem_statements,
+                sponsor_tracks: hackathon.sponsor_tracks,
               }
             : undefined,
         }),
@@ -573,7 +573,7 @@ function JudgingFormContent({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           project_id: projectId,
-          booster_id: boosterId,
+          hackathon_id: hackathonId,
           human_score: payload,
         }),
       });
@@ -616,7 +616,7 @@ function JudgingFormContent({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           project_id: projectId,
-          booster_id: boosterId,
+          hackathon_id: hackathonId,
           human_score: payload,
           status: "scored",
         }),
@@ -633,7 +633,7 @@ function JudgingFormContent({
 
   /* ── Load saved evaluations when selection changes ────────────── */
   useEffect(() => {
-    if (!projectId || !boosterId) return;
+    if (!projectId || !hackathonId) return;
 
     // Reset transient state (React 18+ batches these into one re-render)
     setHumanEvalOpen(false);
@@ -654,7 +654,7 @@ function JudgingFormContent({
         .from("submissions")
         .select("ai_score, human_score")
         .eq("project_id", projectId)
-        .eq("booster_id", boosterId)
+        .eq("hackathon_id", hackathonId)
         .maybeSingle();
 
       if (queryError) {
@@ -673,13 +673,13 @@ function JudgingFormContent({
       }
     })();
     return () => { cancelled = true; };
-  }, [projectId, boosterId]);
+  }, [projectId, hackathonId]);
 
-  /* ── Initialize human criteria from booster ─────────────────── */
+  /* ── Initialize human criteria from hackathon ─────────────────── */
   const initHumanCriteria = useCallback(() => {
     const source =
-      selectedBooster?.judging_criteria && selectedBooster.judging_criteria.length > 0
-        ? selectedBooster.judging_criteria
+      selectedHackathon?.judging_criteria && selectedHackathon.judging_criteria.length > 0
+        ? selectedHackathon.judging_criteria
         : DEFAULT_CRITERIA;
     setHumanCriteria(
       source.map((c) => ({ name: c.name, description: c.description, score: 0, remark: "" })),
@@ -687,7 +687,7 @@ function JudgingFormContent({
     setHumanOverallNotes("");
     setHumanEvalSaved(false);
     setHumanEvalOpen(true);
-  }, [selectedBooster]);
+  }, [selectedHackathon]);
 
   const humanEvalOverallScore =
     humanCriteria.length > 0
@@ -761,7 +761,7 @@ function JudgingFormContent({
                 fontSize: "clamp(14px, 1.5vw, 18px)",
               }}
             >
-              Evaluate a project against the booster rubric. Override individual
+              Evaluate a project against the hackathon rubric. Override individual
               criteria with your own scores.
             </p>
           </div>
@@ -774,7 +774,7 @@ function JudgingFormContent({
         >
           {/* ═══ LEFT — evaluation form + results ════════════════════════ */}
           <div className="flex flex-col gap-10">
-            {/* Context cards — project + booster */}
+            {/* Context cards — project + hackathon */}
             <div>
               <div className="flex items-baseline gap-3 mb-5">
                 <span
@@ -791,7 +791,7 @@ function JudgingFormContent({
                   className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
-                  Project & Booster
+                  Project & Hackathon
                 </p>
               </div>
 
@@ -853,7 +853,7 @@ function JudgingFormContent({
                   <input type="hidden" {...register("mode")} />
                 </div>
 
-                {/* Booster card */}
+                {/* Hackathon card */}
                 <div
                   className="rounded-2xl p-6"
                   style={{ backgroundColor: "#2d4a3e" }}
@@ -862,9 +862,9 @@ function JudgingFormContent({
                     className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#f0ebe0]/38 mb-3"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
-                    Booster
+                    Hackathon
                   </p>
-                  {selectedBooster ? (
+                  {selectedHackathon ? (
                     <>
                       <p
                         className="font-black text-[#f0ebe0] uppercase leading-tight mb-1"
@@ -874,27 +874,15 @@ function JudgingFormContent({
                           letterSpacing: "-0.02em",
                         }}
                       >
-                        {selectedBooster.name}
+                        {selectedHackathon.name}
                       </p>
-                      {selectedBooster.theme && (
+                      {selectedHackathon.theme && (
                         <p
                           className="text-[#f0ebe0]/50 text-sm leading-relaxed"
                           style={{ fontFamily: "Georgia, serif" }}
                         >
-                          {selectedBooster.theme}
+                          {selectedHackathon.theme}
                         </p>
-                      )}
-                      {selectedBooster.booster_type && (
-                        <span
-                          className="inline-block mt-3 text-[8px] tracking-[0.14em] uppercase font-bold px-2.5 py-1 rounded-sm"
-                          style={{
-                            backgroundColor: "rgba(214,207,192,0.12)",
-                            color: "#d6cfc0",
-                            fontFamily: "'Inter', sans-serif",
-                          }}
-                        >
-                          {selectedBooster.booster_type}
-                        </span>
                       )}
                     </>
                   ) : (
@@ -902,21 +890,21 @@ function JudgingFormContent({
                       className="text-[#f0ebe0]/38 text-sm"
                       style={{ fontFamily: "Georgia, serif" }}
                     >
-                      No booster selected
+                      No hackathon selected
                     </p>
                   )}
-                  {/* Hidden booster field */}
-                  <input type="hidden" {...register("booster_id")} />
+                  {/* Hidden hackathon field */}
+                  <input type="hidden" {...register("hackathon_id")} />
                 </div>
               </div>
 
               {/* Validation errors */}
-              {(errors.project_id || errors.booster_id) && (
+              {(errors.project_id || errors.hackathon_id) && (
                 <p
                   className="mt-2 text-sm text-red-600"
                   style={{ fontFamily: "Georgia, serif" }}
                 >
-                  {errors.project_id?.message ?? errors.booster_id?.message}
+                  {errors.project_id?.message ?? errors.hackathon_id?.message}
                 </p>
               )}
             </div>
@@ -950,7 +938,7 @@ function JudgingFormContent({
                   disabled={
                     evalMutation.isPending ||
                     !selectedProject ||
-                    !selectedBooster
+                    !selectedHackathon
                   }
                   className="inline-flex items-center gap-0 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-lg disabled:opacity-40"
                   style={{ backgroundColor: "#2d4a3e" }}
@@ -1089,7 +1077,7 @@ function JudgingFormContent({
                 <button
                   type="button"
                   onClick={initHumanCriteria}
-                  disabled={!selectedProject || !selectedBooster}
+                  disabled={!selectedProject || !selectedHackathon}
                   className="inline-flex items-center gap-0 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-lg disabled:opacity-40"
                   style={{ backgroundColor: "#d6cfc0" }}
                 >
@@ -1569,9 +1557,9 @@ function JudgingFormContent({
                     done: !!selectedProject,
                   },
                   {
-                    label: "Booster",
-                    value: selectedBooster?.name ?? "Not selected",
-                    done: !!selectedBooster,
+                    label: "Hackathon",
+                    value: selectedHackathon?.name ?? "Not selected",
+                    done: !!selectedHackathon,
                   },
                   {
                     label: "AI Evaluation",
@@ -1748,7 +1736,7 @@ function JudgingFormContent({
                 {[
                   {
                     n: "01",
-                    t: "AI evaluates the project against the booster rubric and criteria.",
+                    t: "AI evaluates the project against the hackathon rubric and criteria.",
                   },
                   {
                     n: "02",
@@ -1810,7 +1798,7 @@ function JudgingFormContent({
                     className="text-[11px] text-[#2d4a3e]/45 mt-0.5"
                     style={{ fontFamily: "Georgia, serif" }}
                   >
-                    AI is reading project and booster context
+                    AI is reading project and hackathon context
                   </p>
                 </div>
               </div>

@@ -8,19 +8,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { submitProjectSchema, type SubmitProjectSchema } from "@/lib/validations/schemas";
 import { submitProjectAction } from "@/lib/actions";
-import type { StoredBooster, StoredProject, StoredSubmission } from "@/lib/data-mappers";
-import type { BoosterType } from "@/lib/data-mappers";
+import type { StoredHackathon, StoredProject, StoredSubmission } from "@/lib/data-mappers";
 
-export function SubmitToBoosterForm({
-  booster,
+export function SubmitToHackathonForm({
+  hackathon,
   projects,
   submissions,
-  type,
 }: {
-  booster: StoredBooster;
+  hackathon: StoredHackathon;
   projects: StoredProject[];
   submissions: StoredSubmission[];
-  type: BoosterType;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -45,7 +42,7 @@ export function SubmitToBoosterForm({
       return;
     }
     startTransition(async () => {
-      const result = await submitProjectAction(booster.id, project.team_id!, data.project_id);
+      const result = await submitProjectAction(hackathon.id, project.team_id!, data.project_id);
       if (result.success) {
         setSubmitted(true);
         router.push(`/builder/projects/${data.project_id}`);
@@ -60,11 +57,11 @@ export function SubmitToBoosterForm({
       <div className="px-10 pt-10 pb-16 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Link
-            href={`/boosters/${type}`}
+            href="/hackathons"
             className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
-            <ArrowLeft className="w-4 h-4" /> Back to boosters
+            <ArrowLeft className="w-4 h-4" /> Back to hackathons
           </Link>
           <Link
             href="/builder/new"
@@ -80,7 +77,7 @@ export function SubmitToBoosterForm({
         </h1>
         <p className="mt-2 text-[#2d4a3e]/70" style={{ fontFamily: "Georgia, serif" }}>
           Submit one of your projects to{" "}
-          <span className="font-semibold text-[#2d4a3e]">{booster.name}</span>.
+          <span className="font-semibold text-[#2d4a3e]">{hackathon.name}</span>.
         </p>
 
         {submitted ? (
@@ -88,13 +85,13 @@ export function SubmitToBoosterForm({
           <Check className="w-6 h-6 shrink-0" />
           <div>
             <p className="font-medium">Project submitted</p>
-            <p className="text-sm opacity-90">Redirecting to project…</p>
+            <p className="text-sm opacity-90">Redirecting to project...</p>
           </div>
         </div>
         ) : projects.length === 0 ? (
           <div className="mt-8 p-6 rounded-2xl border border-[#2d4a3e]/15 bg-[#f5f2ea]">
             <p className="text-sm text-[#2d4a3e]/70" style={{ fontFamily: "Georgia, serif" }}>
-              You don&apos;t have any projects yet. Create one first, then submit it to this booster.
+              You don&apos;t have any projects yet. Create one first, then submit it to this hackathon.
             </p>
           </div>
         ) : (
@@ -132,7 +129,7 @@ export function SubmitToBoosterForm({
                       )}
                       {submittedProjectIds.has(p.project_id) && (
                         <span className="text-[11px] text-emerald-700">
-                          Already submitted to this booster
+                          Already submitted to this hackathon
                         </span>
                       )}
                     </div>
@@ -151,7 +148,7 @@ export function SubmitToBoosterForm({
                 opacity: isPending ? 0.7 : 1,
               }}
             >
-              <Send className="w-4 h-4" /> {isPending ? "Submitting…" : `Submit to ${booster.name}`}
+              <Send className="w-4 h-4" /> {isPending ? "Submitting..." : `Submit to ${hackathon.name}`}
             </button>
           </form>
         )}

@@ -20,11 +20,16 @@ import {
   Pencil,
   Check,
 } from "lucide-react";
-import { saveProjectAction, addTeamMemberAction, removeTeamMemberAction } from "@/lib/actions";
+import {
+  saveProjectAction,
+  addTeamMemberAction,
+  removeTeamMemberAction,
+} from "@/lib/actions";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { StoredProject, StoredSubmission } from "@/lib/data-mappers";
 import type { TeamMemberInfo } from "@/lib/server-data";
+import { ImageUpload } from "@/components/client/image-upload";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -102,14 +107,23 @@ function InlineSaveCancel({
         className="inline-flex items-center gap-1.5 text-[9px] tracking-[0.14em] uppercase font-bold px-3.5 py-2 rounded-full border-none cursor-pointer transition-all hover:opacity-90 disabled:opacity-40"
         style={{ fontFamily: PX, backgroundColor: "#0F2C23", color: "#F8FFE8" }}
       >
-        {saving ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+        {saving ? (
+          <Loader2 size={10} className="animate-spin" />
+        ) : (
+          <Check size={10} />
+        )}
         {saving ? "Saving…" : "Save"}
       </button>
       <button
         type="button"
         onClick={onCancel}
         className="text-[9px] tracking-[0.14em] uppercase font-bold px-3.5 py-2 rounded-full cursor-pointer transition-all hover:opacity-70"
-        style={{ fontFamily: PX, color: "#0F2C23", border: "1px solid rgba(15,44,35,0.2)", backgroundColor: "transparent" }}
+        style={{
+          fontFamily: PX,
+          color: "#0F2C23",
+          border: "1px solid rgba(15,44,35,0.2)",
+          backgroundColor: "transparent",
+        }}
       >
         Cancel
       </button>
@@ -141,13 +155,11 @@ function InlineSaveCancel({
 //   );
 // }
 
-
 /* ─── Page ────────────────────────────────────────────────────────── */
 export function ProjectEditor({
   initialProject,
   initialSubmissions,
-  initialBoosterNames,
-  initialBoosterTypes,
+  initialHackathonNames,
   projectId,
   backHref,
   backLabel,
@@ -157,8 +169,7 @@ export function ProjectEditor({
 }: {
   initialProject: StoredProject | null;
   initialSubmissions: StoredSubmission[];
-  initialBoosterNames: Record<string, string>;
-  initialBoosterTypes: Record<string, string>;
+  initialHackathonNames: Record<string, string>;
   projectId: string;
   backHref?: string;
   backLabel?: string;
@@ -173,9 +184,9 @@ export function ProjectEditor({
     initialProject,
   );
   const [submissions] = useState<StoredSubmission[]>(initialSubmissions);
-  const [boosterNames] = useState<Record<string, string>>(initialBoosterNames);
-  const [boosterTypes] = useState<Record<string, string>>(initialBoosterTypes);
-  const [teamMembers, setTeamMembers] = useState<TeamMemberInfo[]>(initialTeamMembers);
+  const [hackathonNames] = useState<Record<string, string>>(initialHackathonNames);
+  const [teamMembers, setTeamMembers] =
+    useState<TeamMemberInfo[]>(initialTeamMembers);
   const [memberEmail, setMemberEmail] = useState("");
   const [memberError, setMemberError] = useState<string | null>(null);
   const isOwner = currentUserId === teamOwnerId;
@@ -259,7 +270,10 @@ export function ProjectEditor({
     if (!project?.team_id || !memberEmail.trim()) return;
     setMemberError(null);
     startTransition(async () => {
-      const result = await addTeamMemberAction(project.team_id!, memberEmail.trim());
+      const result = await addTeamMemberAction(
+        project.team_id!,
+        memberEmail.trim(),
+      );
       if (result.success) {
         setTeamMembers((prev) => [
           ...prev,
@@ -310,6 +324,26 @@ export function ProjectEditor({
     }
   };
 
+  type SectionView = "project" | "share";
+  const [activeSection, setActiveSection] = useState<SectionView>("project");
+
+  useEffect(() => {
+    const read = () => {
+      const h = window.location.hash.replace("#", "");
+      if (!h) return;
+      if (h === "public") {
+        window.open(`/viewer/projects/${projectId}`, "_blank");
+        history.replaceState(null, "", window.location.pathname);
+        return;
+      }
+      if (h === "share") setActiveSection("share");
+      else if (h === "edit") setActiveSection("project");
+    };
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
+  }, [projectId]);
+
   /* ─── Loading / error ─── */
   if (project === undefined)
     return (
@@ -341,10 +375,7 @@ export function ProjectEditor({
         >
           <ArrowLeft size={12} /> {effectiveBackLabel}
         </Link>
-        <p
-          className="mt-10 text-[#0F2C23]/50"
-          style={{ fontFamily: FN }}
-        >
+        <p className="mt-10 text-[#0F2C23]/50" style={{ fontFamily: FN }}>
           Project not found.
         </p>
       </div>
@@ -365,25 +396,6 @@ export function ProjectEditor({
   const desc = String(
     p.refined_description ?? (p as { description?: string }).description ?? "",
   );
-  type SectionView = "project" | "share";
-  const [activeSection, setActiveSection] = useState<SectionView>("project");
-
-  useEffect(() => {
-    const read = () => {
-      const h = window.location.hash.replace("#", "");
-      if (!h) return;
-      if (h === "public") {
-        window.open(`/viewer/projects/${projectId}`, "_blank");
-        history.replaceState(null, "", window.location.pathname);
-        return;
-      }
-      if (h === "share") setActiveSection("share");
-      else if (h === "edit") setActiveSection("project");
-    };
-    read();
-    window.addEventListener("hashchange", read);
-    return () => window.removeEventListener("hashchange", read);
-  }, [projectId]);
 
   const links = [
     { key: "github", href: p.github_url, icon: Github, label: "GitHub" },
@@ -406,11 +418,23 @@ export function ProjectEditor({
   /* ─── Share full-screen view ─────────────────────────────────── */
   if (activeSection === "share") {
     return (
-      <div className="flex flex-col h-screen overflow-hidden p-4" style={{ backgroundColor: "#F8FFE8" }}>
-        <div className="flex-1 rounded-[15px] overflow-hidden flex flex-col min-h-0" style={{ backgroundColor: "#0F2C23" }}>
+      <div
+        className="flex flex-col h-screen overflow-hidden p-4"
+        style={{ backgroundColor: "#F8FFE8" }}
+      >
+        <div
+          className="flex-1 rounded-[15px] overflow-hidden flex flex-col min-h-0"
+          style={{ backgroundColor: "#0F2C23" }}
+        >
           {/* Header bar */}
-          <div className="shrink-0 flex items-center justify-between px-10 py-4" style={{ borderBottom: "1px solid rgba(226,254,165,0.06)" }}>
-            <p className="text-[9px] tracking-[0.25em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.3)" }}>
+          <div
+            className="shrink-0 flex items-center justify-between px-10 py-4"
+            style={{ borderBottom: "1px solid rgba(226,254,165,0.06)" }}
+          >
+            <p
+              className="text-[9px] tracking-[0.25em] uppercase font-bold"
+              style={{ fontFamily: PX, color: "rgba(226,254,165,0.3)" }}
+            >
               {p.name} — AI Lab
             </p>
             <div className="flex items-center gap-2">
@@ -426,12 +450,17 @@ export function ProjectEditor({
                   <button
                     key={tab.key}
                     type="button"
-                    onClick={() => isEnabled && setActiveLabTab(tab.key as typeof activeLabTab)}
+                    onClick={() =>
+                      isEnabled &&
+                      setActiveLabTab(tab.key as typeof activeLabTab)
+                    }
                     disabled={!isEnabled}
                     className="inline-flex items-center gap-1.5 rounded-full border-none cursor-pointer px-3.5 py-1.5 text-[8px] tracking-[0.16em] uppercase font-bold disabled:cursor-not-allowed"
                     style={{
                       fontFamily: PX,
-                      backgroundColor: isActive ? "#E2FEA5" : "rgba(226,254,165,0.06)",
+                      backgroundColor: isActive
+                        ? "#E2FEA5"
+                        : "rgba(226,254,165,0.06)",
                       color: isActive ? "#0F2C23" : "rgba(226,254,165,0.4)",
                       opacity: isEnabled ? 1 : 0.35,
                     }}
@@ -449,12 +478,23 @@ export function ProjectEditor({
               <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-10 py-10">
                 <p
                   className="font-black uppercase leading-none select-none text-center mb-5"
-                  style={{ fontFamily: PX, fontSize: "clamp(48px, 6vw, 80px)", letterSpacing: "-0.04em", opacity: 0.04, lineHeight: 0.85, color: "#E2FEA5" }}
+                  style={{
+                    fontFamily: PX,
+                    fontSize: "clamp(48px, 6vw, 80px)",
+                    letterSpacing: "-0.04em",
+                    opacity: 0.04,
+                    lineHeight: 0.85,
+                    color: "#E2FEA5",
+                  }}
                 >
                   AMPLIFY
                 </p>
-                <p className="text-sm leading-relaxed text-center max-w-[440px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}>
-                  Generate polished LinkedIn and X posts to announce your project. Pick a prompt or write your own.
+                <p
+                  className="text-sm leading-relaxed text-center max-w-[440px]"
+                  style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
+                >
+                  Generate polished LinkedIn and X posts to announce your
+                  project. Pick a prompt or write your own.
                 </p>
                 <div className="mt-8 grid grid-cols-2 gap-3 max-w-[560px] w-full">
                   {[
@@ -468,7 +508,12 @@ export function ProjectEditor({
                       type="button"
                       onClick={() => setLabPrompt(s)}
                       className="rounded-2xl px-4 py-3.5 text-left text-[12px] transition-all hover:scale-[1.01] flex items-start justify-between gap-3 border-none cursor-pointer"
-                      style={{ fontFamily: FN, backgroundColor: "rgba(226,254,165,0.04)", color: "rgba(226,254,165,0.6)", border: "1px solid rgba(226,254,165,0.07)" }}
+                      style={{
+                        fontFamily: FN,
+                        backgroundColor: "rgba(226,254,165,0.04)",
+                        color: "rgba(226,254,165,0.6)",
+                        border: "1px solid rgba(226,254,165,0.07)",
+                      }}
                     >
                       <span className="leading-snug">{s}</span>
                     </button>
@@ -480,54 +525,120 @@ export function ProjectEditor({
                 {/* Generated posts */}
                 <div className="max-w-[720px] mx-auto flex flex-col gap-6">
                   {socialResult.linkedin_post && (
-                    <div className="rounded-2xl p-6" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
+                    <div
+                      className="rounded-2xl p-6"
+                      style={{
+                        backgroundColor: "rgba(226,254,165,0.04)",
+                        border: "1px solid rgba(226,254,165,0.06)",
+                      }}
+                    >
                       <div className="flex items-center justify-between mb-4">
-                        <p className="text-[9px] tracking-[0.2em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.3)" }}>LinkedIn</p>
+                        <p
+                          className="text-[9px] tracking-[0.2em] uppercase font-bold"
+                          style={{
+                            fontFamily: PX,
+                            color: "rgba(226,254,165,0.3)",
+                          }}
+                        >
+                          LinkedIn
+                        </p>
                         <button
                           type="button"
-                          onClick={async () => { try { await navigator.clipboard.writeText(socialResult.linkedin_post!); } catch {} }}
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(
+                                socialResult.linkedin_post!,
+                              );
+                            } catch {}
+                          }}
                           className="text-[8px] tracking-[0.16em] uppercase font-bold px-3 py-1.5 rounded-full border-none cursor-pointer"
-                          style={{ fontFamily: PX, backgroundColor: "rgba(226,254,165,0.08)", color: "rgba(226,254,165,0.5)" }}
+                          style={{
+                            fontFamily: PX,
+                            backgroundColor: "rgba(226,254,165,0.08)",
+                            color: "rgba(226,254,165,0.5)",
+                          }}
                         >
                           Copy
                         </button>
                       </div>
-                      <p className="text-sm leading-[1.85] whitespace-pre-wrap" style={{ fontFamily: FN, color: "rgba(226,254,165,0.65)" }}>
+                      <p
+                        className="text-sm leading-[1.85] whitespace-pre-wrap"
+                        style={{
+                          fontFamily: FN,
+                          color: "rgba(226,254,165,0.65)",
+                        }}
+                      >
                         {socialResult.linkedin_post}
                       </p>
                     </div>
                   )}
-                  {socialResult.twitter_post && !socialResult.twitter_post.startsWith("Error") && (
-                    <div className="rounded-2xl p-6" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
-                      <div className="flex items-center justify-between mb-4">
-                        <p className="text-[9px] tracking-[0.2em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.3)" }}>X / Twitter</p>
-                        <button
-                          type="button"
-                          onClick={async () => { try { await navigator.clipboard.writeText(socialResult.twitter_post!); } catch {} }}
-                          className="text-[8px] tracking-[0.16em] uppercase font-bold px-3 py-1.5 rounded-full border-none cursor-pointer"
-                          style={{ fontFamily: PX, backgroundColor: "rgba(226,254,165,0.08)", color: "rgba(226,254,165,0.5)" }}
+                  {socialResult.twitter_post &&
+                    !socialResult.twitter_post.startsWith("Error") && (
+                      <div
+                        className="rounded-2xl p-6"
+                        style={{
+                          backgroundColor: "rgba(226,254,165,0.04)",
+                          border: "1px solid rgba(226,254,165,0.06)",
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <p
+                            className="text-[9px] tracking-[0.2em] uppercase font-bold"
+                            style={{
+                              fontFamily: PX,
+                              color: "rgba(226,254,165,0.3)",
+                            }}
+                          >
+                            X / Twitter
+                          </p>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(
+                                  socialResult.twitter_post!,
+                                );
+                              } catch {}
+                            }}
+                            className="text-[8px] tracking-[0.16em] uppercase font-bold px-3 py-1.5 rounded-full border-none cursor-pointer"
+                            style={{
+                              fontFamily: PX,
+                              backgroundColor: "rgba(226,254,165,0.08)",
+                              color: "rgba(226,254,165,0.5)",
+                            }}
+                          >
+                            Copy
+                          </button>
+                        </div>
+                        <p
+                          className="text-sm leading-[1.85] whitespace-pre-wrap"
+                          style={{
+                            fontFamily: FN,
+                            color: "rgba(226,254,165,0.65)",
+                          }}
                         >
-                          Copy
-                        </button>
+                          {socialResult.twitter_post}
+                        </p>
                       </div>
-                      <p className="text-sm leading-[1.85] whitespace-pre-wrap" style={{ fontFamily: FN, color: "rgba(226,254,165,0.65)" }}>
-                        {socialResult.twitter_post}
-                      </p>
-                    </div>
-                  )}
-                  {socialResult.suggested_hashtags && socialResult.suggested_hashtags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {socialResult.suggested_hashtags.map((h) => (
-                        <span
-                          key={h}
-                          className="text-[10px] px-3 py-1.5 rounded-full"
-                          style={{ backgroundColor: "rgba(226,254,165,0.08)", color: "rgba(226,254,165,0.5)", fontFamily: FN }}
-                        >
-                          #{h.replace(/^#/, "")}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                    )}
+                  {socialResult.suggested_hashtags &&
+                    socialResult.suggested_hashtags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {socialResult.suggested_hashtags.map((h) => (
+                          <span
+                            key={h}
+                            className="text-[10px] px-3 py-1.5 rounded-full"
+                            style={{
+                              backgroundColor: "rgba(226,254,165,0.08)",
+                              color: "rgba(226,254,165,0.5)",
+                              fontFamily: FN,
+                            }}
+                          >
+                            #{h.replace(/^#/, "")}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   <button
                     type="button"
                     onClick={() => setSocialResult(null)}
@@ -544,7 +655,10 @@ export function ProjectEditor({
             <form
               className="shrink-0 px-10 py-6"
               style={{ borderTop: "1px solid rgba(226,254,165,0.06)" }}
-              onSubmit={(e) => { e.preventDefault(); void runSocialCopy(); }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                void runSocialCopy();
+              }}
             >
               <div className="flex items-end gap-3">
                 <input
@@ -554,7 +668,13 @@ export function ProjectEditor({
                   placeholder="Describe the kind of post you want…"
                   disabled={socialLoading}
                   className="flex-1 outline-none rounded-2xl px-5 py-4 text-sm"
-                  style={{ fontFamily: FN, backgroundColor: "rgba(226,254,165,0.04)", color: "#E2FEA5", border: "1px solid rgba(226,254,165,0.08)", lineHeight: 1.7 }}
+                  style={{
+                    fontFamily: FN,
+                    backgroundColor: "rgba(226,254,165,0.04)",
+                    color: "#E2FEA5",
+                    border: "1px solid rgba(226,254,165,0.08)",
+                    lineHeight: 1.7,
+                  }}
                 />
                 <button
                   type="submit"
@@ -564,7 +684,11 @@ export function ProjectEditor({
                   title="Generate"
                 >
                   {socialLoading ? (
-                    <Loader2 size={16} className="animate-spin" style={{ color: "#0F2C23" }} />
+                    <Loader2
+                      size={16}
+                      className="animate-spin"
+                      style={{ color: "#0F2C23" }}
+                    />
                   ) : (
                     <Share2 size={16} style={{ color: "#0F2C23" }} />
                   )}
@@ -587,35 +711,67 @@ export function ProjectEditor({
               <input
                 type="text"
                 value={editForm.name}
-                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, name: e.target.value }))
+                }
                 placeholder="Project name"
                 className="outline-none placeholder-[#0F2C23]/30 font-black uppercase"
-                style={{ ...inlineInputStyle, fontFamily: PX, fontSize: "clamp(32px, 5vw, 64px)", letterSpacing: "-0.025em", padding: "12px 18px", lineHeight: 1 }}
+                style={{
+                  ...inlineInputStyle,
+                  fontFamily: PX,
+                  fontSize: "clamp(32px, 5vw, 64px)",
+                  letterSpacing: "-0.025em",
+                  padding: "12px 18px",
+                  lineHeight: 1,
+                }}
               />
               <input
                 type="text"
                 value={editForm.tagline}
-                onChange={(e) => setEditForm((f) => ({ ...f, tagline: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, tagline: e.target.value }))
+                }
                 placeholder="Tagline — one sentence that captures the essence…"
                 className="outline-none placeholder-[#0F2C23]/30 text-right self-end max-w-[420px] w-full"
-                style={{ ...inlineInputStyle, fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
+                style={{
+                  ...inlineInputStyle,
+                  fontFamily: FN,
+                  fontSize: "clamp(14px, 1.5vw, 18px)",
+                }}
               />
-              <InlineSaveCancel onSave={handleSave} onCancel={() => setEditingSection(null)} saving={isPending} disabled={!editForm.name} />
+              <InlineSaveCancel
+                onSave={handleSave}
+                onCancel={() => setEditingSection(null)}
+                saving={isPending}
+                disabled={!editForm.name}
+              />
             </div>
           ) : (
             <>
               <div className="flex items-start justify-between gap-4">
                 <h1
                   className="font-black text-[#0F2C23] leading-[0.88] uppercase"
-                  style={{ fontFamily: PX, fontSize: "clamp(48px, 8vw, 120px)", letterSpacing: "-0.025em" }}
+                  style={{
+                    fontFamily: PX,
+                    fontSize: "clamp(48px, 8vw, 120px)",
+                    letterSpacing: "-0.025em",
+                  }}
                 >
                   {p.name}
                 </h1>
-                <div className="mt-3"><PencilBtn onClick={() => openSection("hero")} /></div>
+                <div className="mt-3">
+                  <PencilBtn onClick={() => openSection("hero")} />
+                </div>
               </div>
               {p.tagline && (
                 <div className="flex justify-end mt-4">
-                  <p className="text-[#0F2C23]/55 max-w-[420px] text-right leading-relaxed" style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}>
+                  <p
+                    className="text-[#0F2C23]/55 max-w-[420px] text-right leading-relaxed"
+                    style={{
+                      fontFamily: FN,
+                      fontSize: "clamp(14px, 1.5vw, 18px)",
+                    }}
+                  >
                     {p.tagline}
                   </p>
                 </div>
@@ -635,26 +791,43 @@ export function ProjectEditor({
             <div className="group relative">
               <div
                 className="w-full rounded-3xl overflow-hidden flex items-center justify-center relative"
-                style={{ aspectRatio: "1/1", backgroundColor: "rgba(15,44,35,0.06)" }}
+                style={{
+                  aspectRatio: "1/1",
+                  backgroundColor: "rgba(15,44,35,0.06)",
+                }}
               >
                 {p.logo_url ? (
-                  <Image src={p.logo_url} alt={p.name} width={280} height={280} className="w-full h-full object-cover" />
+                  <Image
+                    src={p.logo_url}
+                    alt={p.name}
+                    width={280}
+                    height={280}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <Code2 size={48} style={{ color: "#0F2C23", opacity: 0.22 }} />
+                  <Code2
+                    size={48}
+                    style={{ color: "#0F2C23", opacity: 0.22 }}
+                  />
                 )}
-                <div className="absolute top-3 right-3"><PencilBtn onClick={() => openSection("logo")} /></div>
+                <div className="absolute top-3 right-3">
+                  <PencilBtn onClick={() => openSection("logo")} />
+                </div>
               </div>
               {editingSection === "logo" && (
                 <div className="mt-2">
-                  <input
-                    type="url"
+                  <ImageUpload
                     value={editForm.logo_url}
-                    onChange={(e) => setEditForm((f) => ({ ...f, logo_url: e.target.value }))}
-                    placeholder="Paste logo URL…"
-                    className="outline-none placeholder-[#0F2C23]/30"
-                    style={inlineInputStyle}
+                    onChange={(url) =>
+                      setEditForm((f) => ({ ...f, logo_url: url }))
+                    }
+                    placeholder="Upload logo"
                   />
-                  <InlineSaveCancel onSave={handleSave} onCancel={() => setEditingSection(null)} saving={isPending} />
+                  <InlineSaveCancel
+                    onSave={handleSave}
+                    onCancel={() => setEditingSection(null)}
+                    saving={isPending}
+                  />
                 </div>
               )}
             </div>
@@ -664,25 +837,75 @@ export function ProjectEditor({
               {editingSection === "meta" ? (
                 <div className="flex flex-col gap-3">
                   <div>
-                    <p className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/45 mb-1.5" style={{ fontFamily: PX }}>Category</p>
-                    <input type="text" value={editForm.category} onChange={(e) => setEditForm((f) => ({ ...f, category: e.target.value }))} placeholder="e.g. AI, FinTech, DevTool" className="outline-none placeholder-[#0F2C23]/30" style={inlineInputStyle} />
+                    <p
+                      className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/45 mb-1.5"
+                      style={{ fontFamily: PX }}
+                    >
+                      Category
+                    </p>
+                    <input
+                      type="text"
+                      value={editForm.category}
+                      onChange={(e) =>
+                        setEditForm((f) => ({ ...f, category: e.target.value }))
+                      }
+                      placeholder="e.g. AI, FinTech, DevTool"
+                      className="outline-none placeholder-[#0F2C23]/30"
+                      style={inlineInputStyle}
+                    />
                   </div>
                   <div>
-                    <p className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/45 mb-1.5" style={{ fontFamily: PX }}>Tech Stack</p>
-                    <input type="text" value={editForm.tech_stack_tags} onChange={(e) => setEditForm((f) => ({ ...f, tech_stack_tags: e.target.value }))} placeholder="React, TypeScript, Supabase" className="outline-none placeholder-[#0F2C23]/30" style={inlineInputStyle} />
+                    <p
+                      className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/45 mb-1.5"
+                      style={{ fontFamily: PX }}
+                    >
+                      Tech Stack
+                    </p>
+                    <input
+                      type="text"
+                      value={editForm.tech_stack_tags}
+                      onChange={(e) =>
+                        setEditForm((f) => ({
+                          ...f,
+                          tech_stack_tags: e.target.value,
+                        }))
+                      }
+                      placeholder="React, TypeScript, Supabase"
+                      className="outline-none placeholder-[#0F2C23]/30"
+                      style={inlineInputStyle}
+                    />
                   </div>
-                  <InlineSaveCancel onSave={handleSave} onCancel={() => setEditingSection(null)} saving={isPending} />
+                  <InlineSaveCancel
+                    onSave={handleSave}
+                    onCancel={() => setEditingSection(null)}
+                    saving={isPending}
+                  />
                 </div>
               ) : (
                 <div className="flex items-start gap-2">
                   <div className="flex flex-wrap gap-2 flex-1">
                     {p.category && (
-                      <span className="text-[8px] tracking-[0.15em] uppercase font-bold px-3 py-1.5 rounded-sm" style={{ backgroundColor: "#0F2C23", color: "#F8FFE8", fontFamily: PX }}>
+                      <span
+                        className="text-[8px] tracking-[0.15em] uppercase font-bold px-3 py-1.5 rounded-sm"
+                        style={{
+                          backgroundColor: "#0F2C23",
+                          color: "#F8FFE8",
+                          fontFamily: PX,
+                        }}
+                      >
                         {p.category}
                       </span>
                     )}
                     {tags.slice(0, 5).map((t) => (
-                      <span key={t} className="text-[9px] px-2.5 py-1 rounded-sm" style={{ backgroundColor: "rgba(15,44,35,0.08)", color: "#0F2C23", fontFamily: FN }}>
+                      <span
+                        key={t}
+                        className="text-[9px] px-2.5 py-1 rounded-sm"
+                        style={{
+                          backgroundColor: "rgba(15,44,35,0.08)",
+                          color: "#0F2C23",
+                          fontFamily: FN,
+                        }}
+                      >
                         {t}
                       </span>
                     ))}
@@ -697,28 +920,83 @@ export function ProjectEditor({
               {editingSection === "links" ? (
                 <div className="flex flex-col gap-3">
                   {[
-                    { key: "github_url", label: "GitHub URL", placeholder: "https://github.com/…" },
-                    { key: "website_url", label: "Website URL", placeholder: "https://…" },
-                    { key: "youtube_url", label: "Demo URL", placeholder: "https://youtube.com/…" },
+                    {
+                      key: "github_url",
+                      label: "GitHub URL",
+                      placeholder: "https://github.com/…",
+                    },
+                    {
+                      key: "website_url",
+                      label: "Website URL",
+                      placeholder: "https://…",
+                    },
+                    {
+                      key: "youtube_url",
+                      label: "Demo URL",
+                      placeholder: "https://youtube.com/…",
+                    },
                   ].map(({ key, label, placeholder }) => (
                     <div key={key}>
-                      <p className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/45 mb-1.5" style={{ fontFamily: PX }}>{label}</p>
-                      <input type="url" value={editForm[key]} onChange={(e) => setEditForm((f) => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} className="outline-none placeholder-[#0F2C23]/30" style={inlineInputStyle} />
+                      <p
+                        className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/45 mb-1.5"
+                        style={{ fontFamily: PX }}
+                      >
+                        {label}
+                      </p>
+                      <input
+                        type="url"
+                        value={editForm[key]}
+                        onChange={(e) =>
+                          setEditForm((f) => ({ ...f, [key]: e.target.value }))
+                        }
+                        placeholder={placeholder}
+                        className="outline-none placeholder-[#0F2C23]/30"
+                        style={inlineInputStyle}
+                      />
                     </div>
                   ))}
-                  <InlineSaveCancel onSave={handleSave} onCancel={() => setEditingSection(null)} saving={isPending} />
+                  <InlineSaveCancel
+                    onSave={handleSave}
+                    onCancel={() => setEditingSection(null)}
+                    saving={isPending}
+                  />
                 </div>
               ) : links.length > 0 ? (
                 <div className="flex items-start gap-2">
                   <div
                     className="grid gap-3 flex-1"
-                    style={{ gridTemplateColumns: `repeat(${Math.min(links.length, 3)}, 1fr)` }}
+                    style={{
+                      gridTemplateColumns: `repeat(${Math.min(links.length, 3)}, 1fr)`,
+                    }}
                   >
                     {links.map(({ key, href, icon: Icon, label }) => (
-                      <Link key={key} href={href!} target="_blank" rel="noopener noreferrer" className="no-underline">
-                        <div className="rounded-2xl flex flex-col items-center justify-center gap-2 transition-all duration-200 hover:scale-[1.03]" style={{ aspectRatio: "1/1", backgroundColor: "#0F2C23" }}>
-                          <Icon size={24} style={{ color: "rgba(226,254,165,0.6)" }} />
-                          <span className="text-[8px] tracking-[0.14em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.4)" }}>{label}</span>
+                      <Link
+                        key={key}
+                        href={href!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="no-underline"
+                      >
+                        <div
+                          className="rounded-2xl flex flex-col items-center justify-center gap-2 transition-all duration-200 hover:scale-[1.03]"
+                          style={{
+                            aspectRatio: "1/1",
+                            backgroundColor: "#0F2C23",
+                          }}
+                        >
+                          <Icon
+                            size={24}
+                            style={{ color: "rgba(226,254,165,0.6)" }}
+                          />
+                          <span
+                            className="text-[8px] tracking-[0.14em] uppercase font-bold"
+                            style={{
+                              fontFamily: PX,
+                              color: "rgba(226,254,165,0.4)",
+                            }}
+                          >
+                            {label}
+                          </span>
                         </div>
                       </Link>
                     ))}
@@ -730,7 +1008,14 @@ export function ProjectEditor({
                   type="button"
                   onClick={() => openSection("links")}
                   className="w-full rounded-2xl px-4 py-4 border-none cursor-pointer text-left flex items-center gap-2"
-                  style={{ backgroundColor: "rgba(15,44,35,0.04)", color: "rgba(15,44,35,0.35)", fontFamily: PX, fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase" as const }}
+                  style={{
+                    backgroundColor: "rgba(15,44,35,0.04)",
+                    color: "rgba(15,44,35,0.35)",
+                    fontFamily: PX,
+                    fontSize: 10,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase" as const,
+                  }}
                 >
                   <Pencil size={11} /> Add links
                 </button>
@@ -765,7 +1050,7 @@ export function ProjectEditor({
               </div>
             )}
 
-            {/* Booster submissions */}
+            {/* Hackathon submissions */}
             {submissions.length > 0 && (
               <div
                 className="rounded-2xl p-5"
@@ -780,11 +1065,11 @@ export function ProjectEditor({
                   {submissions.map((s) => (
                     <Link
                       key={s.id}
-                      href={`/boosters/${boosterTypes[s.booster_id] ?? "idea"}/${s.booster_id}`}
+                      href={`/hackathons/${s.hackathon_id}`}
                       className="text-[12px] text-[#F8FFE8]/70 no-underline hover:text-[#F8FFE8] transition-colors"
                       style={{ fontFamily: FN }}
                     >
-                      → {boosterNames[s.booster_id] ?? "Booster"}
+                      → {hackathonNames[s.hackathon_id] ?? "Hackathon"}
                     </Link>
                   ))}
                 </div>
@@ -805,12 +1090,21 @@ export function ProjectEditor({
                   <textarea
                     rows={8}
                     value={editForm.description}
-                    onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                    onChange={(e) =>
+                      setEditForm((f) => ({
+                        ...f,
+                        description: e.target.value,
+                      }))
+                    }
                     placeholder="Describe your project…"
                     className="resize-none outline-none placeholder-[#0F2C23]/30"
                     style={{ ...inlineInputStyle, lineHeight: 1.7 }}
                   />
-                  <InlineSaveCancel onSave={handleSave} onCancel={() => setEditingSection(null)} saving={isPending} />
+                  <InlineSaveCancel
+                    onSave={handleSave}
+                    onCancel={() => setEditingSection(null)}
+                    saving={isPending}
+                  />
                 </div>
               ) : (
                 <>
@@ -818,7 +1112,13 @@ export function ProjectEditor({
                     <SectionLabel>AI Generated Description</SectionLabel>
                     <PencilBtn onClick={() => openSection("description")} />
                   </div>
-                  <p className="text-[#0F2C23]/75 leading-relaxed" style={{ fontFamily: FN, fontSize: "clamp(14px, 1.4vw, 16px)" }}>
+                  <p
+                    className="text-[#0F2C23]/75 leading-relaxed"
+                    style={{
+                      fontFamily: FN,
+                      fontSize: "clamp(14px, 1.4vw, 16px)",
+                    }}
+                  >
                     {desc || "No description available yet."}
                   </p>
                 </>
@@ -851,7 +1151,6 @@ export function ProjectEditor({
                 </div>
               </div>
             )}
-
           </main>
 
           {/* ═══ RIGHT — KB + features ═══════════════════════════════════ */}
@@ -1140,7 +1439,10 @@ export function ProjectEditor({
                         <div
                           className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold uppercase"
                           style={{
-                            backgroundColor: m.role === "owner" ? "#0F2C23" : "rgba(15,44,35,0.12)",
+                            backgroundColor:
+                              m.role === "owner"
+                                ? "#0F2C23"
+                                : "rgba(15,44,35,0.12)",
                             color: m.role === "owner" ? "#F8FFE8" : "#0F2C23",
                             fontFamily: PX,
                           }}
@@ -1182,16 +1484,24 @@ export function ProjectEditor({
                             type="button"
                             onClick={() => {
                               startTransition(async () => {
-                                const result = await removeTeamMemberAction(p.team_id!, m.user_id);
+                                const result = await removeTeamMemberAction(
+                                  p.team_id!,
+                                  m.user_id,
+                                );
                                 if (result.success) {
-                                  setTeamMembers((prev) => prev.filter((x) => x.user_id !== m.user_id));
+                                  setTeamMembers((prev) =>
+                                    prev.filter((x) => x.user_id !== m.user_id),
+                                  );
                                   router.refresh();
                                 }
                               });
                             }}
                             disabled={isPending}
                             className="w-6 h-6 rounded-full flex items-center justify-center border-none cursor-pointer transition-all hover:bg-red-100 disabled:opacity-40"
-                            style={{ backgroundColor: "rgba(15,44,35,0.06)", color: "#0F2C23" }}
+                            style={{
+                              backgroundColor: "rgba(15,44,35,0.06)",
+                              color: "#0F2C23",
+                            }}
                           >
                             <Trash2 size={10} />
                           </button>
@@ -1262,7 +1572,6 @@ export function ProjectEditor({
           </aside>
         </div>
       </div>
-
     </div>
   );
 }

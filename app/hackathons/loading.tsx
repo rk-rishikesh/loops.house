@@ -1,4 +1,4 @@
-export default function BoostersLoading() {
+export default function HackathonsLoading() {
   return (
     <div className="min-h-screen p-8" style={{ backgroundColor: "#F8FFE8" }}>
       <div className="mx-auto max-w-6xl animate-pulse">

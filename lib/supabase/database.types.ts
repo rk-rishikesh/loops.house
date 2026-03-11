@@ -14,58 +14,58 @@ export type Database = {
   }
   public: {
     Tables: {
-      booster_track_chunks: {
+      hackathon_track_chunks: {
         Row: {
-          booster_id: string
           content: string
           created_at: string
           embedding: string
+          hackathon_id: string
           id: string
           source: string
           track_id: string | null
         }
         Insert: {
-          booster_id: string
           content: string
           created_at?: string
           embedding: string
+          hackathon_id: string
           id?: string
           source: string
           track_id?: string | null
         }
         Update: {
-          booster_id?: string
           content?: string
           created_at?: string
           embedding?: string
+          hackathon_id?: string
           id?: string
           source?: string
           track_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "booster_track_chunks_booster_id_fkey"
-            columns: ["booster_id"]
+            foreignKeyName: "hackathon_track_chunks_hackathon_id_fkey"
+            columns: ["hackathon_id"]
             isOneToOne: false
-            referencedRelation: "boosters"
+            referencedRelation: "hackathons"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "booster_track_chunks_track_id_fkey"
+            foreignKeyName: "hackathon_track_chunks_track_id_fkey"
             columns: ["track_id"]
             isOneToOne: false
-            referencedRelation: "booster_tracks"
+            referencedRelation: "hackathon_tracks"
             referencedColumns: ["id"]
           },
         ]
       }
-      booster_tracks: {
+      hackathon_tracks: {
         Row: {
           api_endpoints: string[] | null
-          booster_id: string
           cheatsheet_text: string | null
           created_at: string
           docs_text: string | null
+          hackathon_id: string
           id: string
           sdk_examples: string[] | null
           sponsor_name: string
@@ -74,10 +74,10 @@ export type Database = {
         }
         Insert: {
           api_endpoints?: string[] | null
-          booster_id: string
           cheatsheet_text?: string | null
           created_at?: string
           docs_text?: string | null
+          hackathon_id: string
           id?: string
           sdk_examples?: string[] | null
           sponsor_name: string
@@ -86,10 +86,10 @@ export type Database = {
         }
         Update: {
           api_endpoints?: string[] | null
-          booster_id?: string
           cheatsheet_text?: string | null
           created_at?: string
           docs_text?: string | null
+          hackathon_id?: string
           id?: string
           sdk_examples?: string[] | null
           sponsor_name?: string
@@ -98,87 +98,90 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "booster_tracks_booster_id_fkey"
-            columns: ["booster_id"]
+            foreignKeyName: "hackathon_tracks_hackathon_id_fkey"
+            columns: ["hackathon_id"]
             isOneToOne: false
-            referencedRelation: "boosters"
+            referencedRelation: "hackathons"
             referencedColumns: ["id"]
           },
         ]
       }
-      boosters: {
+      hackathons: {
         Row: {
-          booster_type: Database["public"]["Enums"]["booster_type"]
           bounty_pool_summary: string | null
           created_at: string
           description: string | null
-          end_date: string | null
           host_id: string
           id: string
+          is_exclusive: boolean
           judging_criteria: Json | null
+          judging_deadline: string | null
           leaderboard_enabled: boolean | null
           name: string
           organizer_notes: string | null
           problem_statements: string[] | null
           program_goal: string | null
+          results_date: string | null
           start_date: string | null
-          status: Database["public"]["Enums"]["booster_status"]
+          status: Database["public"]["Enums"]["hackathon_status"]
+          submission_deadline: string | null
           technical_docs: string | null
           technical_resources: Json | null
           theme: string | null
-          timeline: string | null
           updated_at: string
           website_url: string | null
         }
         Insert: {
-          booster_type?: Database["public"]["Enums"]["booster_type"]
           bounty_pool_summary?: string | null
           created_at?: string
           description?: string | null
-          end_date?: string | null
           host_id: string
           id?: string
+          is_exclusive?: boolean
           judging_criteria?: Json | null
+          judging_deadline?: string | null
           leaderboard_enabled?: boolean | null
           name: string
           organizer_notes?: string | null
           problem_statements?: string[] | null
           program_goal?: string | null
+          results_date?: string | null
           start_date?: string | null
-          status?: Database["public"]["Enums"]["booster_status"]
+          status?: Database["public"]["Enums"]["hackathon_status"]
+          submission_deadline?: string | null
           technical_docs?: string | null
           technical_resources?: Json | null
           theme?: string | null
-          timeline?: string | null
           updated_at?: string
           website_url?: string | null
         }
         Update: {
-          booster_type?: Database["public"]["Enums"]["booster_type"]
           bounty_pool_summary?: string | null
           created_at?: string
           description?: string | null
-          end_date?: string | null
           host_id?: string
           id?: string
+          is_exclusive?: boolean
           judging_criteria?: Json | null
+          judging_deadline?: string | null
           leaderboard_enabled?: boolean | null
           name?: string
           organizer_notes?: string | null
           problem_statements?: string[] | null
           program_goal?: string | null
+          results_date?: string | null
           start_date?: string | null
-          status?: Database["public"]["Enums"]["booster_status"]
+          status?: Database["public"]["Enums"]["hackathon_status"]
+          submission_deadline?: string | null
           technical_docs?: string | null
           technical_resources?: Json | null
           theme?: string | null
-          timeline?: string | null
           updated_at?: string
           website_url?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "boosters_host_id_fkey"
+            foreignKeyName: "hackathons_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -188,7 +191,6 @@ export type Database = {
       }
       host_applications: {
         Row: {
-          booster_type: Database["public"]["Enums"]["booster_type"]
           contact: string | null
           created_at: string
           description: string | null
@@ -201,7 +203,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          booster_type: Database["public"]["Enums"]["booster_type"]
           contact?: string | null
           created_at?: string
           description?: string | null
@@ -214,7 +215,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          booster_type?: Database["public"]["Enums"]["booster_type"]
           contact?: string | null
           created_at?: string
           description?: string | null
@@ -247,8 +247,8 @@ export type Database = {
         Row: {
           accepted: boolean | null
           assigned_tracks: string[] | null
-          booster_id: string
           created_at: string
+          hackathon_id: string
           id: string
           invited_by: string
           judge_user_id: string
@@ -256,8 +256,8 @@ export type Database = {
         Insert: {
           accepted?: boolean | null
           assigned_tracks?: string[] | null
-          booster_id: string
           created_at?: string
+          hackathon_id: string
           id?: string
           invited_by: string
           judge_user_id: string
@@ -265,18 +265,18 @@ export type Database = {
         Update: {
           accepted?: boolean | null
           assigned_tracks?: string[] | null
-          booster_id?: string
           created_at?: string
+          hackathon_id?: string
           id?: string
           invited_by?: string
           judge_user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "judge_invites_booster_id_fkey"
-            columns: ["booster_id"]
+            foreignKeyName: "judge_invites_hackathon_id_fkey"
+            columns: ["hackathon_id"]
             isOneToOne: false
-            referencedRelation: "boosters"
+            referencedRelation: "hackathons"
             referencedColumns: ["id"]
           },
           {
@@ -498,8 +498,8 @@ export type Database = {
       submissions: {
         Row: {
           ai_score: Json | null
-          booster_id: string
           created_at: string
+          hackathon_id: string
           human_score: Json | null
           id: string
           momentum_score: number | null
@@ -510,8 +510,8 @@ export type Database = {
         }
         Insert: {
           ai_score?: Json | null
-          booster_id: string
           created_at?: string
+          hackathon_id: string
           human_score?: Json | null
           id?: string
           momentum_score?: number | null
@@ -522,8 +522,8 @@ export type Database = {
         }
         Update: {
           ai_score?: Json | null
-          booster_id?: string
           created_at?: string
+          hackathon_id?: string
           human_score?: Json | null
           id?: string
           momentum_score?: number | null
@@ -534,10 +534,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "submissions_booster_id_fkey"
-            columns: ["booster_id"]
+            foreignKeyName: "submissions_hackathon_id_fkey"
+            columns: ["hackathon_id"]
             isOneToOne: false
-            referencedRelation: "boosters"
+            referencedRelation: "hackathons"
             referencedColumns: ["id"]
           },
           {
@@ -673,9 +673,9 @@ export type Database = {
           reset_at: string
         }[]
       }
-      match_booster_chunks: {
+      match_hackathon_track_chunks: {
         Args: {
-          match_booster_id: string
+          match_hackathon_id: string
           match_count?: number
           match_threshold?: number
           query_embedding: string
@@ -704,8 +704,7 @@ export type Database = {
     }
     Enums: {
       app_role: "builder" | "host" | "viewer" | "admin" | "judge"
-      booster_status: "draft" | "active" | "judging" | "completed" | "archived"
-      booster_type: "idea" | "momentum" | "capital"
+      hackathon_status: "draft" | "active" | "judging" | "completed" | "archived"
       host_application_status: "pending" | "approved" | "rejected"
       submission_status:
         | "draft"
@@ -841,8 +840,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["builder", "host", "viewer", "admin", "judge"],
-      booster_status: ["draft", "active", "judging", "completed", "archived"],
-      booster_type: ["idea", "momentum", "capital"],
+      hackathon_status: ["draft", "active", "judging", "completed", "archived"],
       host_application_status: ["pending", "approved", "rejected"],
       submission_status: [
         "draft",

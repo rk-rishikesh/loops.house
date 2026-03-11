@@ -94,21 +94,24 @@ export async function removeProjectAction(
   return { success: true, data: undefined };
 }
 
-// --- Booster actions ---
+// --- Hackathon actions ---
 
-export async function saveBoosterAction(
-  booster: {
+export async function saveHackathonAction(
+  hackathon: {
     id: string;
     name: string;
     problem_statements: string[];
     theme?: string;
-    booster_type?: string;
+    is_exclusive?: boolean;
     website_url?: string;
     technical_resources?: { url: string; description: string }[];
     technical_docs?: string;
     bounty_pool_summary?: string;
     program_goal?: string;
-    timeline?: string;
+    start_date?: string;
+    submission_deadline?: string;
+    judging_deadline?: string;
+    results_date?: string;
     organizer_notes?: string;
   },
 ): Promise<ActionResult> {
@@ -119,27 +122,30 @@ export async function saveBoosterAction(
 
   const supabase = await createServerSupabase();
   const { error } = await supabase
-    .from("boosters")
+    .from("hackathons")
     .upsert({
-      id: booster.id,
+      id: hackathon.id,
       host_id: user.id,
-      name: booster.name,
-      problem_statements: booster.problem_statements,
-      theme: booster.theme ?? null,
-      booster_type: (booster.booster_type ?? "idea") as "idea" | "momentum" | "capital",
-      website_url: booster.website_url ?? null,
-      technical_resources: booster.technical_resources ?? [],
-      technical_docs: booster.technical_docs ?? null,
-      bounty_pool_summary: booster.bounty_pool_summary ?? null,
-      program_goal: booster.program_goal ?? null,
-      timeline: booster.timeline ?? null,
-      organizer_notes: booster.organizer_notes ?? null,
+      name: hackathon.name,
+      problem_statements: hackathon.problem_statements,
+      theme: hackathon.theme ?? null,
+      is_exclusive: hackathon.is_exclusive ?? false,
+      website_url: hackathon.website_url ?? null,
+      technical_resources: hackathon.technical_resources ?? [],
+      technical_docs: hackathon.technical_docs ?? null,
+      bounty_pool_summary: hackathon.bounty_pool_summary ?? null,
+      program_goal: hackathon.program_goal ?? null,
+      start_date: hackathon.start_date ?? null,
+      submission_deadline: hackathon.submission_deadline ?? null,
+      judging_deadline: hackathon.judging_deadline ?? null,
+      results_date: hackathon.results_date ?? null,
+      organizer_notes: hackathon.organizer_notes ?? null,
     })
     .select();
   if (error) return { success: false, error: error.message };
 
   revalidatePath("/host");
-  revalidatePath("/boosters");
+  revalidatePath("/hackathons");
   return { success: true, data: undefined };
 }
 
@@ -269,7 +275,7 @@ export async function removeTeamMemberAction(
 // --- Submission actions ---
 
 export async function submitProjectAction(
-  boosterId: string,
+  hackathonId: string,
   teamId: string,
   projectId: string,
 ): Promise<ActionResult> {
@@ -281,19 +287,19 @@ export async function submitProjectAction(
     .from("submissions")
     .upsert(
       {
-        booster_id: boosterId,
+        hackathon_id: hackathonId,
         team_id: teamId,
         project_id: projectId,
         status: "submitted" as SubmissionStatus,
       },
-      { onConflict: "booster_id,project_id" },
+      { onConflict: "hackathon_id,project_id" },
     )
     .select()
     .single();
   if (error) return { success: false, error: error.message };
 
   revalidatePath("/host");
-  revalidatePath("/boosters");
+  revalidatePath("/hackathons");
   return { success: true, data: undefined };
 }
 
@@ -301,7 +307,6 @@ export async function submitProjectAction(
 
 export async function submitHostApplicationAction(
   data: {
-    booster_type: string;
     event_name: string;
     expected_participants?: number;
     contact?: string;
@@ -318,7 +323,6 @@ export async function submitHostApplicationAction(
     .from("host_applications")
     .insert({
       user_id: user.id,
-      booster_type: parsed.data.booster_type,
       event_name: parsed.data.event_name,
       expected_participants: parsed.data.expected_participants ?? null,
       contact: parsed.data.contact ?? null,
@@ -391,7 +395,7 @@ export async function reviewHostApplicationAction(
 export async function saveEvaluationAction(
   data: {
     project_id: string;
-    booster_id: string;
+    hackathon_id: string;
     ai_score?: Record<string, unknown>;
     human_score?: Record<string, unknown>;
     status?: string;
@@ -402,8 +406,8 @@ export async function saveEvaluationAction(
     return { success: false, error: "Unauthorized" };
   }
 
-  if (!data.project_id || !data.booster_id) {
-    return { success: false, error: "project_id and booster_id are required" };
+  if (!data.project_id || !data.hackathon_id) {
+    return { success: false, error: "project_id and hackathon_id are required" };
   }
 
   const updates: Database["public"]["Tables"]["submissions"]["Update"] = {};
@@ -419,7 +423,7 @@ export async function saveEvaluationAction(
     .from("submissions")
     .update(updates)
     .eq("project_id", data.project_id)
-    .eq("booster_id", data.booster_id)
+    .eq("hackathon_id", data.hackathon_id)
     .select()
     .maybeSingle();
   if (error) return { success: false, error: error.message };

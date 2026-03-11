@@ -15,7 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import type {
-  StoredBooster,
+  StoredHackathon,
   StoredProject,
   StoredSubmission,
 } from "@/lib/data-mappers";
@@ -29,25 +29,23 @@ const FN = "var(--font-funnel-sans), sans-serif";
 type SectionKey = "ideator" | "mentor" | "info" | "speakers" | "schedule" | "prizes" | "submit";
 type Message = { role: "user" | "assistant"; content: string };
 
-interface BuilderBoosterDetailProps {
-  type: string;
-  boosterId: string;
-  booster: StoredBooster | null;
+interface BuilderHackathonDetailProps {
+  hackathonId: string;
+  hackathon: StoredHackathon | null;
   projects: StoredProject[];
   submissions: StoredSubmission[];
   isAuthenticated: boolean;
   role?: AppRole | null;
 }
 
-export function BuilderBoosterDetail({
-  type,
-  boosterId,
-  booster,
+export function BuilderHackathonDetail({
+  hackathonId,
+  hackathon,
   projects,
   submissions,
   isAuthenticated: _isAuthenticated,
   role,
-}: BuilderBoosterDetailProps) {
+}: BuilderHackathonDetailProps) {
   const mounted = useIsMounted();
 
   const [section, setSection] = useState<SectionKey>("info");
@@ -61,9 +59,9 @@ export function BuilderBoosterDetail({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const boosterSubmission = submissions.find((s) => s.booster_id === boosterId);
+  const hackathonSubmission = submissions.find((s) => s.hackathon_id === hackathonId);
   const submittedProject =
-    (boosterSubmission && projects.find((p) => p.project_id === boosterSubmission.project_id)) ?? null;
+    (hackathonSubmission && projects.find((p) => p.project_id === hackathonSubmission.project_id)) ?? null;
 
   useEffect(() => {
     const read = () => {
@@ -83,7 +81,7 @@ export function BuilderBoosterDetail({
     el.style.height = Math.min(el.scrollHeight, 140) + "px";
   }, [draft]);
 
-  if (booster === null) {
+  if (hackathon === null) {
     return (
       <div className="flex flex-col h-screen overflow-hidden p-4" style={{ backgroundColor: "#F8FFE8" }}>
         <div className="flex-1 rounded-[15px] flex items-center justify-center" style={{ backgroundColor: "#0F2C23" }}>
@@ -93,10 +91,10 @@ export function BuilderBoosterDetail({
     );
   }
 
-  const b: StoredBooster = booster;
-  const hasResources = (b.technical_resources?.length ?? 0) > 0;
-  const hasTracks = (b.sponsor_tracks?.length ?? 0) > 0;
-  const hasChallenges = (b.problem_statements?.length ?? 0) > 0;
+  const h: StoredHackathon = hackathon;
+  const hasResources = (h.technical_resources?.length ?? 0) > 0;
+  const hasTracks = (h.sponsor_tracks?.length ?? 0) > 0;
+  const hasChallenges = (h.problem_statements?.length ?? 0) > 0;
 
   const messages = section === "ideator" ? ideatorMessages : mentorMessages;
   const setMessages = section === "ideator" ? setIdeatorMessages : setMentorMessages;
@@ -121,9 +119,9 @@ export function BuilderBoosterDetail({
           message: userMessage,
           conversation_history: messages,
           booster_context: {
-            problem_statements: b.problem_statements,
-            sponsor_tracks: b.sponsor_tracks,
-            theme: b.theme,
+            problem_statements: h.problem_statements,
+            sponsor_tracks: h.sponsor_tracks,
+            theme: h.theme,
           },
           agent: section === "mentor" ? "developer" : "ideator",
         }),
@@ -254,7 +252,7 @@ export function BuilderBoosterDetail({
           className="text-[9px] tracking-[0.25em] uppercase font-bold"
           style={{ fontFamily: PX, color: "rgba(226,254,165,0.3)" }}
         >
-          {m.label} — {b.name}
+          {m.label} — {h.name}
         </p>
         <p
           className="text-[9px] tracking-[0.18em] uppercase font-bold"
@@ -269,7 +267,7 @@ export function BuilderBoosterDetail({
   /* ─── Chat view (shared between Ideator & Mentor) ──────────── */
   function renderChat() {
     const isIdeator = section === "ideator";
-    const placeholder = isIdeator ? "Describe your idea or ask for help…" : "Ask your mentor anything…";
+    const placeholder = isIdeator ? "Describe your idea or ask for help..." : "Ask your mentor anything...";
 
     return (
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
@@ -403,16 +401,16 @@ export function BuilderBoosterDetail({
               className="font-black uppercase leading-[0.92]"
               style={{ fontFamily: PX, fontSize: "clamp(34px, 4.6vw, 64px)", letterSpacing: "-0.03em", color: "#E2FEA5" }}
             >
-              {b.name}
+              {h.name}
             </h1>
-            {b.theme && (
+            {h.theme && (
               <p className="mt-4 text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}>
-                {b.theme}
+                {h.theme}
               </p>
             )}
-            {b.program_goal && (
+            {h.program_goal && (
               <p className="mt-6 text-sm leading-[1.95]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>
-                {b.program_goal}
+                {h.program_goal}
               </p>
             )}
           </div>
@@ -461,18 +459,32 @@ export function BuilderBoosterDetail({
 
   /* ─── Schedule view ─────────────────────────────────────────── */
   function renderSchedule() {
+    const hasAnyDate = h.start_date || h.submission_deadline || h.judging_deadline || h.results_date;
     return (
       <div className="flex-1 overflow-y-auto px-14 py-14">
         <p className="font-black uppercase leading-none select-none mb-8" style={{ fontFamily: PX, fontSize: "clamp(48px, 6vw, 80px)", letterSpacing: "-0.04em", opacity: 0.04, lineHeight: 0.85, color: "#E2FEA5" }}>
           SCHEDULE
         </p>
-        {b.timeline ? (
+        {hasAnyDate ? (
           <div className="rounded-2xl p-8" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
             <div className="flex items-center gap-3 mb-5">
               <CalendarDays size={14} style={{ color: "#E2FEA5" }} />
-              <p className="text-[9px] tracking-[0.2em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Timeline</p>
+              <p className="text-[9px] tracking-[0.2em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Key Dates</p>
             </div>
-            <p className="text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>{b.timeline}</p>
+            <div className="flex flex-col gap-3">
+              {h.start_date && (
+                <p className="text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>Start: {h.start_date}</p>
+              )}
+              {h.submission_deadline && (
+                <p className="text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>Submission Deadline: {h.submission_deadline}</p>
+              )}
+              {h.judging_deadline && (
+                <p className="text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>Judging Deadline: {h.judging_deadline}</p>
+              )}
+              {h.results_date && (
+                <p className="text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>Results: {h.results_date}</p>
+              )}
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20">
@@ -494,14 +506,14 @@ export function BuilderBoosterDetail({
           PRIZES
         </p>
 
-        {b.bounty_pool_summary && (
+        {h.bounty_pool_summary && (
           <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
             <div className="flex items-center gap-3 mb-4">
               <Trophy size={14} style={{ color: "#E2FEA5" }} />
               <p className="text-[9px] tracking-[0.2em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Prize Pool</p>
             </div>
             <p className="font-black uppercase" style={{ fontFamily: PX, fontSize: "clamp(28px, 4vw, 48px)", letterSpacing: "-0.02em", color: "#E2FEA5" }}>
-              {b.bounty_pool_summary}
+              {h.bounty_pool_summary}
             </p>
           </div>
         )}
@@ -509,10 +521,10 @@ export function BuilderBoosterDetail({
         {hasChallenges && (
           <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: "rgba(60,87,75,0.55)", border: "1px solid rgba(226,254,165,0.06)" }}>
             <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>
-              {b.problem_statements.length} Challenge{b.problem_statements.length !== 1 ? "s" : ""}
+              {h.problem_statements.length} Challenge{h.problem_statements.length !== 1 ? "s" : ""}
             </p>
             <div className="flex flex-col gap-2">
-              {b.problem_statements.map((s, i) => (
+              {h.problem_statements.map((s, i) => (
                 <div key={i} className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(15,44,35,0.18)" }}>
                   <span className="font-black shrink-0 mt-0.5" style={{ fontFamily: PX, fontSize: 11, width: 20, color: "rgba(226,254,165,0.22)" }}>
                     {String(i + 1).padStart(2, "0")}
@@ -530,7 +542,7 @@ export function BuilderBoosterDetail({
           <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
             <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Resources</p>
             <div className="flex flex-col gap-2">
-              {b.technical_resources!.map((r, i) => (
+              {h.technical_resources!.map((r, i) => (
                 <a
                   key={i}
                   href={r.url}
@@ -554,7 +566,7 @@ export function BuilderBoosterDetail({
           <div className="rounded-2xl p-8" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
             <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Sponsor Tracks</p>
             <div className="flex flex-col gap-4">
-              {b.sponsor_tracks!.map((t, i) => (
+              {h.sponsor_tracks!.map((t, i) => (
                 <div key={i} className="flex items-start gap-4 rounded-xl px-4 py-3" style={{ backgroundColor: "rgba(226,254,165,0.03)" }}>
                   <span className="w-2.5 h-2.5 rounded-full shrink-0 mt-1" style={{ backgroundColor: "#E2FEA5" }} />
                   <div>
@@ -569,11 +581,11 @@ export function BuilderBoosterDetail({
           </div>
         )}
 
-        {b.judging_criteria && b.judging_criteria.length > 0 && (
+        {h.judging_criteria && h.judging_criteria.length > 0 && (
           <div className="rounded-2xl p-8 mt-6" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
             <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Judging Criteria</p>
             <div className="flex flex-col gap-3">
-              {b.judging_criteria.map((c, i) => (
+              {h.judging_criteria.map((c, i) => (
                 <div key={i} className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(226,254,165,0.03)" }}>
                   <span className="font-black shrink-0" style={{ fontFamily: PX, fontSize: 11, width: 20, color: "rgba(226,254,165,0.2)" }}>
                     {String(i + 1).padStart(2, "0")}
@@ -590,7 +602,7 @@ export function BuilderBoosterDetail({
           </div>
         )}
 
-        {!b.bounty_pool_summary && !hasTracks && (
+        {!h.bounty_pool_summary && !hasTracks && (
           <div className="flex flex-col items-center justify-center py-20">
             <Trophy size={24} style={{ color: "rgba(226,254,165,0.3)", marginBottom: 16 }} />
             <p className="text-sm text-center max-w-[360px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}>
@@ -605,8 +617,7 @@ export function BuilderBoosterDetail({
   /* ─── Submit view ──────────────────────────────────────────── */
   function renderSubmit() {
     if (submittedProject) {
-      const boosterNames: Record<string, string> = { [boosterId]: b.name };
-      const boosterTypes: Record<string, string> = { [boosterId]: type };
+      const hackathonNames: Record<string, string> = { [hackathonId]: h.name };
       const projectSubmissions = submissions.filter(
         (s) => s.project_id === submittedProject.project_id,
       );
@@ -616,10 +627,9 @@ export function BuilderBoosterDetail({
           <ProjectEditor
             initialProject={submittedProject}
             initialSubmissions={projectSubmissions}
-            initialBoosterNames={boosterNames}
-            initialBoosterTypes={boosterTypes}
+            initialHackathonNames={hackathonNames}
             projectId={submittedProject.project_id}
-            backHref={`/boosters/${type}/${boosterId}#submit`}
+            backHref={`/hackathons/${hackathonId}#submit`}
             backLabel="Back to Submit"
             initialTeamMembers={[]}
           />
@@ -671,7 +681,7 @@ export function BuilderBoosterDetail({
             </Link>
           ) : (
             <Link
-              href={`/boosters/${type}/${boosterId}/ideate`}
+              href={`/hackathons/${hackathonId}/ideate`}
               className="inline-flex items-center gap-2 rounded-full no-underline text-[10px] tracking-widest uppercase font-bold px-8 py-3.5 transition-transform hover:scale-[1.03]"
               style={{
                 backgroundColor: "#E2FEA5",

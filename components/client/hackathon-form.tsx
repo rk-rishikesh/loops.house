@@ -6,13 +6,13 @@ import {
   ArrowLeft, ArrowUpRight, ArrowRight, Plus, Sparkles,
   Loader2, Pencil, Trash2, X, Save,
 } from "lucide-react";
-import { useSaveBooster } from "@/lib/queries";
-import type { StoredBooster, BoosterType } from "@/lib/data-mappers";
+import { useSaveHackathon } from "@/lib/queries";
+import type { StoredHackathon } from "@/lib/data-mappers";
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 interface ProgramDraft {
-  booster_name: string;
-  booster_id_suggestion: string;
+  hackathon_name: string;
+  hackathon_id_suggestion: string;
   overview: string;
   target_audience: string;
   goals: string[];
@@ -22,36 +22,33 @@ interface ProgramDraft {
   judging_criteria: { name: string; description: string }[];
   organizer_notes: string[];
 }
-interface ProgramDraftResponse { booster_id: string; draft: ProgramDraft; generated_at: string }
+interface ProgramDraftResponse { hackathon_id: string; draft: ProgramDraft; generated_at: string }
 interface ResourceTrackPlan { name: string; description: string; docs_to_prepare: string[] }
 interface ResourcePlan { technical_cheatsheet: string; tracks: ResourceTrackPlan[]; challenge_resource_map: { challenge_title: string; key_docs: string[] }[] }
-interface ResourcePlanResponse { booster_id: string; resources: ResourcePlan; generated_at: string }
+interface ResourcePlanResponse { hackathon_id: string; resources: ResourcePlan; generated_at: string }
 
 type FormData = {
   id: string;
   name: string;
   theme: string;
-  booster_type: BoosterType;
   program_goal: string;
   problem_statements: string;
   bounty_pool_summary: string;
-  timeline: string;
+  start_date: string;
+  submission_deadline: string;
+  judging_deadline: string;
+  results_date: string;
   website_url: string;
   technical_resources: { url: string; description: string }[];
   organizer_notes: string;
 };
 
 const EMPTY_FORM: FormData = {
-  id: "", name: "", theme: "", booster_type: "idea",
+  id: "", name: "", theme: "",
   program_goal: "", problem_statements: "", bounty_pool_summary: "",
-  timeline: "", website_url: "", technical_resources: [], organizer_notes: "",
+  start_date: "", submission_deadline: "", judging_deadline: "", results_date: "",
+  website_url: "", technical_resources: [], organizer_notes: "",
 };
-
-const BOOSTER_TYPES: { value: BoosterType; label: string; desc: string }[] = [
-  { value: "idea", label: "Idea", desc: "Early-stage exploration & concept validation" },
-  { value: "momentum", label: "Momentum", desc: "Mid-stage build & iteration support" },
-  { value: "capital", label: "Capital", desc: "Late-stage funding & growth acceleration" },
-];
 
 function StepLabel({ n }: { n: string; label: string }) {
   return (
@@ -138,7 +135,7 @@ function NextButton({ onClick, label = "Next", disabled = false }: { onClick: ()
 }
 
 /* ─── Progress dots ──────────────────────────────────────────────── */
-const FORM_STEPS = ["type", "theme", "goal", "statements", "bounty", "timeline", "website", "resources", "notes"] as const;
+const FORM_STEPS = ["theme", "goal", "statements", "bounty", "dates", "website", "resources", "notes"] as const;
 type FormStep = typeof FORM_STEPS[number];
 
 function ProgressDots({ current }: { current: FormStep }) {
@@ -163,11 +160,11 @@ function ProgressDots({ current }: { current: FormStep }) {
 /* ─── Page ────────────────────────────────────────────────────────── */
 type View = "list" | "form" | "generating" | "review";
 
-export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; userId?: string }) {
-  const saveBoosterMutation = useSaveBooster();
+export function HackathonForm({ hackathons, userId }: { hackathons: StoredHackathon[]; userId?: string }) {
+  const saveHackathonMutation = useSaveHackathon();
 
   const [view, setView] = useState<View>("list");
-  const [formStep, setFormStep] = useState<FormStep>("type");
+  const [formStep, setFormStep] = useState<FormStep>("theme");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>({ ...EMPTY_FORM });
   const [programDraft, setProgramDraft] = useState<ProgramDraftResponse | null>(null);
@@ -185,24 +182,28 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
     setProgramDraft(null);
     setResourcePlan(null);
     setAiError(null);
-    setFormStep("type");
+    setFormStep("theme");
     setView("form");
   };
 
-  const startEdit = (b: StoredBooster) => {
+  const startEdit = (h: StoredHackathon) => {
     setForm({
-      id: b.id, name: b.name,
-      theme: b.theme ?? "", booster_type: b.booster_type ?? "idea",
-      program_goal: b.program_goal ?? "",
-      problem_statements: b.problem_statements.join("\n"),
-      bounty_pool_summary: b.bounty_pool_summary ?? "",
-      timeline: b.timeline ?? "", website_url: b.website_url ?? "",
-      technical_resources: b.technical_resources ?? [],
-      organizer_notes: b.organizer_notes ?? "",
+      id: h.id, name: h.name,
+      theme: h.theme ?? "",
+      program_goal: h.program_goal ?? "",
+      problem_statements: h.problem_statements.join("\n"),
+      bounty_pool_summary: h.bounty_pool_summary ?? "",
+      start_date: h.start_date ?? "",
+      submission_deadline: h.submission_deadline ?? "",
+      judging_deadline: h.judging_deadline ?? "",
+      results_date: h.results_date ?? "",
+      website_url: h.website_url ?? "",
+      technical_resources: h.technical_resources ?? [],
+      organizer_notes: h.organizer_notes ?? "",
     });
-    setEditingId(b.id);
+    setEditingId(h.id);
     setProgramDraft(null); setResourcePlan(null); setAiError(null);
-    setFormStep("type");
+    setFormStep("theme");
     setView("form");
   };
 
@@ -213,7 +214,7 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
     const technical_docs = technical_resources.length > 0
       ? technical_resources.map((r) => r.description ? `${r.url} — ${r.description}` : r.url).join("\n")
       : undefined;
-    return { id, name: form.name || "Unnamed booster", problem_statements, theme: form.theme || undefined, booster_type: form.booster_type, website_url: form.website_url || undefined, technical_resources, technical_docs, bounty_pool_summary: form.bounty_pool_summary || undefined, program_goal: form.program_goal || undefined, timeline: form.timeline || undefined, organizer_notes: form.organizer_notes || undefined };
+    return { id, name: form.name || "Unnamed hackathon", problem_statements, theme: form.theme || undefined, website_url: form.website_url || undefined, technical_resources, technical_docs, bounty_pool_summary: form.bounty_pool_summary || undefined, program_goal: form.program_goal || undefined, start_date: form.start_date || undefined, submission_deadline: form.submission_deadline || undefined, judging_deadline: form.judging_deadline || undefined, results_date: form.results_date || undefined, organizer_notes: form.organizer_notes || undefined };
   };
 
   const runAgents = async () => {
@@ -233,10 +234,10 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
       if (!rr.ok) throw new Error(rj.error || "Resource generation failed");
       setProgramDraft(pj as ProgramDraftResponse);
       setResourcePlan(rj as ResourcePlanResponse);
-      if (pj.draft?.booster_name) set("name", pj.draft.booster_name);
+      if (pj.draft?.hackathon_name) set("name", pj.draft.hackathon_name);
       setView("review");
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : "Failed to run booster agents");
+      setAiError(err instanceof Error ? err.message : "Failed to run hackathon agents");
       setView("form");
       setFormStep("notes");
     }
@@ -245,12 +246,12 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
   const handleSave = async () => {
     setSaving(true);
     const payload = buildPayload();
-    const booster: StoredBooster & { host_id?: string } = {
+    const hackathon: StoredHackathon & { host_id?: string } = {
       ...payload,
       host_id: userId,
-      created_at: boosters.find((b) => b.id === payload.id)?.created_at ?? new Date().toISOString(),
+      created_at: hackathons.find((h) => h.id === payload.id)?.created_at ?? new Date().toISOString(),
     };
-    await saveBoosterMutation.mutateAsync(booster);
+    await saveHackathonMutation.mutateAsync(hackathon);
     setSaving(false);
     setView("list");
   };
@@ -281,7 +282,7 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
                 className="text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors border-none bg-transparent cursor-pointer"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
-                Boosters
+                Hackathons
               </button>
             </>
           )}
@@ -296,7 +297,7 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
               className="inline-flex items-center gap-1.5 rounded-full border-none cursor-pointer text-[9px] tracking-widest uppercase font-bold px-5 py-2.5 transition-all hover:opacity-90"
               style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#2d4a3e", color: "#f0ebe0" }}
             >
-              <Plus size={11} /> New Booster
+              <Plus size={11} /> New Hackathon
             </button>
           )}
         </div>
@@ -313,37 +314,37 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
               className="font-black text-[#2d4a3e] leading-[0.88] uppercase"
               style={{ fontFamily: "'Inter', 'Helvetica Neue', sans-serif", fontSize: "clamp(52px, 9vw, 138px)", letterSpacing: "-0.025em" }}
             >
-              BOOSTERS.
+              HACKATHONS.
             </h1>
             <div className="flex justify-end mt-8">
               <p className="text-[#2d4a3e]/55 max-w-[380px] text-right leading-relaxed" style={{ fontFamily: "Georgia, serif", fontSize: "clamp(14px, 1.5vw, 18px)" }}>
-                Create idea, momentum, and capital boosters. Fill a brief and let the AI draft the full program.
+                Create hackathons. Fill a brief and let the AI draft the full program.
               </p>
             </div>
           </div>
 
           {/* Table header */}
-          <div className="grid border-b border-t border-[#2d4a3e]/20 py-3 mb-0" style={{ gridTemplateColumns: "64px 1fr 160px 140px auto", gap: "0 20px" }}>
-            {["No.", "Booster", "Type", "Statements", ""].map((col) => (
+          <div className="grid border-b border-t border-[#2d4a3e]/20 py-3 mb-0" style={{ gridTemplateColumns: "64px 1fr 140px auto", gap: "0 20px" }}>
+            {["No.", "Hackathon", "Statements", ""].map((col) => (
               <p key={col} className="text-[11px] tracking-[0.12em] uppercase font-semibold text-[#2d4a3e]/40" style={{ fontFamily: "'Inter', sans-serif" }}>{col}</p>
             ))}
           </div>
 
           {/* Empty state */}
-          {boosters.length === 0 && (
+          {hackathons.length === 0 && (
             <div className="py-24 text-center border-b border-[#2d4a3e]/12">
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-6" style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e" }}>
                 <Plus size={24} />
               </div>
               <p className="font-black text-[#2d4a3e] uppercase mb-3" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(18px, 2.5vw, 28px)", letterSpacing: "-0.02em" }}>
-                No boosters yet.
+                No hackathons yet.
               </p>
               <p className="text-[#2d4a3e]/50 mb-8 text-sm" style={{ fontFamily: "Georgia, serif" }}>
-                Create your first booster to start running hackathons and challenges.
+                Create your first hackathon to start running challenges.
               </p>
               <button type="button" onClick={startNew} className="inline-flex items-center gap-0 rounded-full overflow-hidden border-none cursor-pointer hover:shadow-md" style={{ backgroundColor: "#2d4a3e" }}>
                 <span className="pl-6 pr-3 py-3.5 text-[10px] tracking-widest uppercase font-bold text-[#f0ebe0] flex items-center gap-2" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  <Plus size={11} /> Create Booster
+                  <Plus size={11} /> Create Hackathon
                 </span>
                 <span className="w-9 h-9 flex items-center justify-center rounded-full m-1" style={{ backgroundColor: "#d6cfc0" }}>
                   <ArrowUpRight size={13} className="text-[#2d4a3e]" />
@@ -353,28 +354,25 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
           )}
 
           {/* Rows */}
-          {boosters.map((b, idx) => (
+          {hackathons.map((h, idx) => (
             <div
-              key={b.id}
+              key={h.id}
               className="grid items-center py-7 border-b border-[#2d4a3e]/10 hover:bg-[#2d4a3e]/[0.02] rounded-sm transition-all"
-              style={{ gridTemplateColumns: "64px 1fr 160px 140px auto", gap: "0 20px" }}
+              style={{ gridTemplateColumns: "64px 1fr 140px auto", gap: "0 20px" }}
             >
               <p className="font-bold text-[#2d4a3e]" style={{ fontFamily: "'Inter', sans-serif", fontSize: 14 }}>
                 {String(idx + 1).padStart(2, "0")}.
               </p>
               <div>
-                <p className="font-semibold text-[#2d4a3e]" style={{ fontFamily: "'Inter', sans-serif", fontSize: 15 }}>{b.name}</p>
-                {b.theme && <p className="text-[#2d4a3e]/50 text-sm mt-0.5" style={{ fontFamily: "Georgia, serif" }}>{b.theme}</p>}
+                <p className="font-semibold text-[#2d4a3e]" style={{ fontFamily: "'Inter', sans-serif", fontSize: 15 }}>{h.name}</p>
+                {h.theme && <p className="text-[#2d4a3e]/50 text-sm mt-0.5" style={{ fontFamily: "Georgia, serif" }}>{h.theme}</p>}
               </div>
-              <span className="text-[8px] tracking-[0.14em] uppercase font-bold px-3 py-1.5 rounded-sm w-fit" style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e", fontFamily: "'Inter', sans-serif" }}>
-                {b.booster_type ?? "idea"}
-              </span>
               <p className="text-[#2d4a3e]/50 text-sm" style={{ fontFamily: "Georgia, serif" }}>
-                {b.problem_statements.length} statement{b.problem_statements.length !== 1 ? "s" : ""}
+                {h.problem_statements.length} statement{h.problem_statements.length !== 1 ? "s" : ""}
               </p>
               <button
                 type="button"
-                onClick={() => startEdit(b)}
+                onClick={() => startEdit(h)}
                 className="inline-flex items-center gap-1.5 rounded-full border-none cursor-pointer text-[9px] tracking-widest uppercase font-bold px-4 py-2.5 transition-all hover:opacity-75"
                 style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e" }}
               >
@@ -384,13 +382,13 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
           ))}
 
           {/* Footer */}
-          {boosters.length > 0 && (
+          {hackathons.length > 0 && (
             <div className="flex items-center justify-between mt-8 pt-5 border-t border-[#2d4a3e]/08">
               <p className="text-[11px] text-[#2d4a3e]/40" style={{ fontFamily: "Georgia, serif" }}>
-                {boosters.length} booster{boosters.length !== 1 ? "s" : ""}
+                {hackathons.length} hackathon{hackathons.length !== 1 ? "s" : ""}
               </p>
               <button type="button" onClick={startNew} className="inline-flex items-center gap-1.5 text-[9px] tracking-widest uppercase font-bold text-[#2d4a3e]/40 hover:text-[#2d4a3e] transition-colors border-none bg-transparent cursor-pointer" style={{ fontFamily: "'Inter', sans-serif" }}>
-                <Plus size={10} /> New Booster
+                <Plus size={10} /> New Hackathon
               </button>
             </div>
           )}
@@ -408,12 +406,11 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
               className="font-black text-[#2d4a3e] leading-[0.88] uppercase"
               style={{ fontFamily: "'Inter', 'Helvetica Neue', sans-serif", fontSize: "clamp(40px, 7vw, 96px)", letterSpacing: "-0.025em" }}
             >
-              {formStep === "type" && "Booster Type"}
               {formStep === "theme" && "Theme"}
               {formStep === "goal" && "Program Goal"}
               {formStep === "statements" && "Problem Statements"}
               {formStep === "bounty" && "Bounty & Rewards"}
-              {formStep === "timeline" && "Timeline"}
+              {formStep === "dates" && "Key Dates"}
               {formStep === "website" && "Website"}
               {formStep === "resources" && "Technical Resources"}
               {formStep === "notes" && "Organizer Notes"}
@@ -430,59 +427,15 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
 
           <div className="flex flex-col gap-16">
 
-            {/* ─── STEP: Booster type ─── */}
-            {formStep === "type" && (
-              <div id="step-type">
-                <StepLabel n="01" label="Booster Type" />
-                <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
-                  Where does this booster live? Each type has its own list for builders.
-                </p>
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  {BOOSTER_TYPES.map(({ value, label, desc }) => {
-                    const active = form.booster_type === value;
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => { set("booster_type", value); setFormStep("theme"); }}
-                        className="text-left rounded-2xl p-5 border-none cursor-pointer transition-all duration-200 hover:scale-[1.02]"
-                        style={{ backgroundColor: active ? "#2d4a3e" : "#d6cfc0" }}
-                      >
-                        <div className="flex items-start justify-between mb-4">
-                          <span
-                            className="text-[8px] tracking-[0.14em] uppercase font-bold px-2.5 py-1 rounded-sm"
-                            style={{ fontFamily: "'Inter', sans-serif", backgroundColor: active ? "rgba(214,207,192,0.15)" : "rgba(45,74,62,0.12)", color: active ? "#d6cfc0" : "#2d4a3e" }}
-                          >
-                            {value}
-                          </span>
-                          {active && (
-                            <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#d6cfc0" }}>
-                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#2d4a3e" }} />
-                            </span>
-                          )}
-                        </div>
-                        <p className="font-black uppercase leading-tight mb-1.5" style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, letterSpacing: "-0.01em", color: active ? "#f0ebe0" : "#2d4a3e" }}>
-                          {label}
-                        </p>
-                        <p className="text-xs leading-relaxed" style={{ fontFamily: "Georgia, serif", color: active ? "rgba(240,235,224,0.5)" : "rgba(45,74,62,0.55)" }}>
-                          {desc}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* ─── STEP: Theme ─── */}
             {formStep === "theme" && (
               <div id="step-theme">
-                <StepLabel n="02" label="Theme" />
+                <StepLabel n="01" label="Theme" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
-                  Give your booster a one-line theme. This frames the challenge for builders.
+                  Give your hackathon a one-line theme. This frames the challenge for builders.
                 </p>
                 <FieldLabel>Theme (optional)</FieldLabel>
-                <Input value={form.theme} onChange={(v) => set("theme", v)} placeholder="e.g. AI for good, Web3 infra, Sustainable tech…" />
+                <Input value={form.theme} onChange={(v) => set("theme", v)} placeholder="e.g. AI for good, Web3 infra, Sustainable tech..." />
                 <div className="mt-5">
                   <NextButton onClick={() => setFormStep("goal")} />
                 </div>
@@ -492,12 +445,12 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
             {/* ─── STEP: Goal ─── */}
             {formStep === "goal" && (
               <div id="step-goal">
-                <StepLabel n="03" label="Program Goal" />
+                <StepLabel n="02" label="Program Goal" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
-                  In one or two sentences — what do you want this booster to achieve for builders and sponsors?
+                  In one or two sentences — what do you want this hackathon to achieve for builders and sponsors?
                 </p>
                 <FieldLabel>Program Goal</FieldLabel>
-                <Textarea value={form.program_goal} onChange={(v) => set("program_goal", v)} placeholder="Help builders ship AI copilots that integrate with enterprise workflows…" rows={3} />
+                <Textarea value={form.program_goal} onChange={(v) => set("program_goal", v)} placeholder="Help builders ship AI copilots that integrate with enterprise workflows..." rows={3} />
                 <div className="mt-5">
                   <NextButton onClick={() => setFormStep("statements")} />
                 </div>
@@ -507,12 +460,12 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
             {/* ─── STEP: Problem statements ─── */}
             {formStep === "statements" && (
               <div id="step-statements">
-                <StepLabel n="04" label="Problem Statements" />
+                <StepLabel n="03" label="Problem Statements" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
                   List the problems builders should solve. One per line. The AI will expand these into full challenge statements.
                 </p>
                 <FieldLabel>Problem Statements (one per line)</FieldLabel>
-                <Textarea value={form.problem_statements} onChange={(v) => set("problem_statements", v)} placeholder={"Build a tool that…\nSolve the problem of…\nCreate a system that…"} rows={5} />
+                <Textarea value={form.problem_statements} onChange={(v) => set("problem_statements", v)} placeholder={"Build a tool that...\nSolve the problem of...\nCreate a system that..."} rows={5} />
                 <FieldHint>Leave blank to let the AI generate these from your theme and goal.</FieldHint>
                 <div className="mt-5">
                   <NextButton onClick={() => setFormStep("bounty")} />
@@ -523,27 +476,43 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
             {/* ─── STEP: Bounty ─── */}
             {formStep === "bounty" && (
               <div id="step-bounty">
-                <StepLabel n="05" label="Bounty & Rewards" />
+                <StepLabel n="04" label="Bounty & Rewards" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
                   Summarize prizes, grants, or other incentives for builders.
                 </p>
                 <FieldLabel>Bounty Pool Summary (optional)</FieldLabel>
-                <Textarea value={form.bounty_pool_summary} onChange={(v) => set("bounty_pool_summary", v)} placeholder="$10k total pool, $5k grand prize, swag for top 20…" rows={2} />
+                <Textarea value={form.bounty_pool_summary} onChange={(v) => set("bounty_pool_summary", v)} placeholder="$10k total pool, $5k grand prize, swag for top 20..." rows={2} />
                 <div className="mt-5">
-                  <NextButton onClick={() => setFormStep("timeline")} />
+                  <NextButton onClick={() => setFormStep("dates")} />
                 </div>
               </div>
             )}
 
-            {/* ─── STEP: Timeline ─── */}
-            {formStep === "timeline" && (
-              <div id="step-timeline">
-                <StepLabel n="06" label="Timeline" />
+            {/* ─── STEP: Key Dates ─── */}
+            {formStep === "dates" && (
+              <div id="step-dates">
+                <StepLabel n="05" label="Key Dates" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
-                  Key dates: launch, checkpoints, submission deadline, judging, demo day.
+                  Set the key dates for your hackathon timeline.
                 </p>
-                <FieldLabel>Timeline & Key Dates (optional)</FieldLabel>
-                <Textarea value={form.timeline} onChange={(v) => set("timeline", v)} placeholder="Launch: May 1 · Submissions: June 15 · Judging: June 20…" rows={2} />
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <FieldLabel>Start Date</FieldLabel>
+                    <Input value={form.start_date} onChange={(v) => set("start_date", v)} placeholder="e.g. 2026-05-01" type="date" />
+                  </div>
+                  <div>
+                    <FieldLabel>Submission Deadline</FieldLabel>
+                    <Input value={form.submission_deadline} onChange={(v) => set("submission_deadline", v)} placeholder="e.g. 2026-06-15" type="date" />
+                  </div>
+                  <div>
+                    <FieldLabel>Judging Deadline</FieldLabel>
+                    <Input value={form.judging_deadline} onChange={(v) => set("judging_deadline", v)} placeholder="e.g. 2026-06-20" type="date" />
+                  </div>
+                  <div>
+                    <FieldLabel>Results Date</FieldLabel>
+                    <Input value={form.results_date} onChange={(v) => set("results_date", v)} placeholder="e.g. 2026-06-25" type="date" />
+                  </div>
+                </div>
                 <div className="mt-5">
                   <NextButton onClick={() => setFormStep("website")} />
                 </div>
@@ -553,9 +522,9 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
             {/* ─── STEP: Website ─── */}
             {formStep === "website" && (
               <div id="step-website">
-                <StepLabel n="07" label="Website" />
+                <StepLabel n="06" label="Website" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
-                  Your program or sponsor website. Builders will see this on your booster page.
+                  Your program or sponsor website. Builders will see this on your hackathon page.
                 </p>
                 <FieldLabel>Website URL (optional)</FieldLabel>
                 <Input value={form.website_url} onChange={(v) => set("website_url", v)} placeholder="https://your-site.com" type="url" />
@@ -568,7 +537,7 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
             {/* ─── STEP: Technical resources ─── */}
             {formStep === "resources" && (
               <div id="step-resources">
-                <StepLabel n="08" label="Technical Resources" />
+                <StepLabel n="07" label="Technical Resources" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
                   Notion docs, API references, SDK guides — anything technical builders will need.
                 </p>
@@ -614,12 +583,12 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
             {/* ─── STEP: Organizer notes ─── */}
             {formStep === "notes" && (
               <div id="step-notes">
-                <StepLabel n="09" label="Organizer Notes" />
+                <StepLabel n="08" label="Organizer Notes" />
                 <p className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
                   Freeform scratchpad for the AI: constraints, success criteria, partners, rough ideas. Anything you'd tell a human co-host.
                 </p>
                 <FieldLabel>Organizer Notes (optional)</FieldLabel>
-                <Textarea value={form.organizer_notes} onChange={(v) => set("organizer_notes", v)} placeholder="Anything you'd tell a human co-host about this program…" rows={5} />
+                <Textarea value={form.organizer_notes} onChange={(v) => set("organizer_notes", v)} placeholder="Anything you'd tell a human co-host about this program..." rows={5} />
 
                 <div className="mt-8 flex items-center justify-between p-6 rounded-3xl" style={{ backgroundColor: "#2d4a3e" }}>
                   <div>
@@ -679,7 +648,7 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
           >
             DRAFTING
             <br />
-            PROGRAM…
+            PROGRAM...
           </h2>
           <p className="text-[#2d4a3e]/50 text-center max-w-sm leading-relaxed" style={{ fontFamily: "Georgia, serif", fontSize: 15 }}>
             Generating program outline, challenge statements, and technical resources from your brief.
@@ -720,7 +689,7 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
             </h2>
             <div className="flex justify-end mt-5">
               <p className="text-[#2d4a3e]/55 max-w-[320px] text-right leading-relaxed" style={{ fontFamily: "Georgia, serif", fontSize: 15 }}>
-                The AI has drafted your booster. Review and save — you can edit everything after.
+                The AI has drafted your hackathon. Review and save — you can edit everything after.
               </p>
             </div>
           </div>
@@ -729,11 +698,11 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
             {/* Left — main content */}
             <div className="flex flex-col gap-5">
 
-              {/* Booster identity */}
+              {/* Hackathon identity */}
               <div className="rounded-3xl p-7" style={{ backgroundColor: "#2d4a3e" }}>
                 <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/38 mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>Generated Name & ID</p>
                 <p className="font-black text-[#f0ebe0] uppercase leading-tight" style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(20px, 3vw, 32px)", letterSpacing: "-0.02em" }}>
-                  {form.name || programDraft?.draft.booster_name || "Unnamed"}
+                  {form.name || programDraft?.draft.hackathon_name || "Unnamed"}
                 </p>
                 {form.id && (
                   <p className="text-[#f0ebe0]/40 text-xs mt-2 font-mono">{form.id}</p>
@@ -837,7 +806,7 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
                   Looks good?
                 </p>
                 <p className="text-[#f0ebe0]/50 text-sm mb-6 leading-relaxed" style={{ fontFamily: "Georgia, serif" }}>
-                  Save this booster. You can edit all details from the list at any time.
+                  Save this hackathon. You can edit all details from the list at any time.
                 </p>
                 <button
                   type="button"
@@ -847,7 +816,7 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
                   style={{ backgroundColor: "#d6cfc0", color: "#2d4a3e", padding: "14px 24px", fontFamily: "'Inter', sans-serif", fontSize: 10, letterSpacing: "0.18em", fontWeight: 700, textTransform: "uppercase" }}
                 >
                   {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                  {saving ? "Saving…" : "Save Booster"}
+                  {saving ? "Saving..." : "Save Hackathon"}
                 </button>
                 <button
                   type="button"
@@ -864,10 +833,9 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
                 <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40 mb-4" style={{ fontFamily: "'Inter', sans-serif" }}>Summary</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Type", value: form.booster_type },
-                    { label: "Challenges", value: String(programDraft?.draft.challenge_statements?.length ?? "—") },
-                    { label: "Goals", value: String(programDraft?.draft.goals?.length ?? "—") },
-                    { label: "Tracks", value: String(resourcePlan?.resources.tracks?.length ?? "—") },
+                    { label: "Challenges", value: String(programDraft?.draft.challenge_statements?.length ?? "-") },
+                    { label: "Goals", value: String(programDraft?.draft.goals?.length ?? "-") },
+                    { label: "Tracks", value: String(resourcePlan?.resources.tracks?.length ?? "-") },
                   ].map(({ label, value }) => (
                     <div key={label} className="rounded-xl p-3" style={{ backgroundColor: "rgba(45,74,62,0.08)" }}>
                       <p className="font-black text-[#2d4a3e] leading-none capitalize" style={{ fontFamily: "'Inter', sans-serif", fontSize: value.length > 6 ? 13 : 20, letterSpacing: "-0.02em" }}>{value}</p>
@@ -885,7 +853,7 @@ export function BoosterForm({ boosters, userId }: { boosters: StoredBooster[]; u
       <div className="overflow-hidden border-t border-[#2d4a3e]/10 py-3" style={{ backgroundColor: "#e8e2d4" }}>
         <div className="flex gap-10 whitespace-nowrap" style={{ animation: "ticker 28s linear infinite" }}>
           {[...Array(3)].map((_, ri) =>
-            ["BOOSTERS", "★", "HOST DASHBOARD", "★", "AI PROGRAM BUILDER", "★"].map((t, i) => (
+            ["HACKATHONS", "★", "HOST DASHBOARD", "★", "AI PROGRAM BUILDER", "★"].map((t, i) => (
               <span key={`${ri}-${i}`} className="text-[10px] tracking-[0.2em] uppercase font-bold shrink-0"
                 style={{ fontFamily: "'Inter', sans-serif", color: t === "★" ? "#2d4a3e" : "rgba(45,74,62,0.4)" }}>
                 {t}

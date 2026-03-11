@@ -7,62 +7,55 @@ import {
   Zap,
 } from "lucide-react";
 import {
-  getBoostersServer,
-  getSubmissionsForBoostersServer,
+  getHackathonsServer,
+  getSubmissionsForHackathonsServer,
 } from "@/lib/server-data";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
-/* ─── Type labels ─────────────────────────────────────────────────── */
-const TYPE_LABELS: Record<string, { label: string; dot: string }> = {
-  idea:     { label: "Early Stage",  dot: "#4caf7d"  },
-  momentum: { label: "Build Phase",  dot: "#d6a84a"  },
-  capital:  { label: "Scale Up",     dot: "#5b8fd4"  },
-};
+/* ─── Status helpers ──────────────────────────────────────────────── */
 
-function getBoosterStatus(timeline?: string | null): "Ongoing" | "Upcoming" | "Past" {
-  const tl = (timeline ?? "").toLowerCase();
-  if (tl.includes("past") || tl.includes("ended") || tl.includes("closed")) return "Past";
-  if (tl.includes("upcoming") || tl.includes("soon") || tl.includes("launch")) return "Upcoming";
-  if (tl.includes("ongoing") || tl.includes("open") || tl.includes("now")) return "Ongoing";
+function getHackathonStatus(status?: string | null): "Ongoing" | "Upcoming" | "Past" {
+  if (!status) return "Ongoing";
+  if (status === "completed" || status === "archived") return "Past";
+  if (status === "draft") return "Upcoming";
+  // "active" or "judging"
   return "Ongoing";
 }
 
 /* ─── Page ────────────────────────────────────────────────────────── */
 export default async function HostDashboardPage() {
-  const boosters = await getBoostersServer();
-  const boosterIds = boosters.map((b) => b.id);
-  const submissions = await getSubmissionsForBoostersServer(boosterIds);
+  const hackathons = await getHackathonsServer();
+  const hackathonIds = hackathons.map((b: { id: string }) => b.id);
+  const submissions = await getSubmissionsForHackathonsServer(hackathonIds);
 
-  const totalBoosters = boosters.length;
+  const totalHackathons = hackathons.length;
   const totalProjectsSubmitted = submissions.length;
-  const uniqueTeams = new Set(submissions.map((s) => s.team_id));
+  const uniqueTeams = new Set(submissions.map((s: { team_id: string }) => s.team_id));
   const totalDevelopersEngaged = uniqueTeams.size;
 
-  const boosterStats: Record<string, { projects: number; teams: number }> = {};
+  const hackathonStats: Record<string, { projects: number; teams: number }> = {};
   for (const sub of submissions) {
     const stats =
-      boosterStats[sub.booster_id] ??
-      (boosterStats[sub.booster_id] = { projects: 0, teams: 0 });
+      hackathonStats[sub.hackathon_id] ??
+      (hackathonStats[sub.hackathon_id] = { projects: 0, teams: 0 });
     stats.projects += 1;
-    // track unique teams per booster
-    // simple set per booster keyed by booster_id_team_id
   }
-  // compute unique team counts per booster
-  const boosterTeamSets: Record<string, Set<string>> = {};
+  // compute unique team counts per hackathon
+  const hackathonTeamSets: Record<string, Set<string>> = {};
   for (const sub of submissions) {
     const set =
-      boosterTeamSets[sub.booster_id] ??
-      (boosterTeamSets[sub.booster_id] = new Set<string>());
+      hackathonTeamSets[sub.hackathon_id] ??
+      (hackathonTeamSets[sub.hackathon_id] = new Set<string>());
     set.add(sub.team_id);
   }
-  for (const [boosterId, set] of Object.entries(boosterTeamSets)) {
-    boosterStats[boosterId] = boosterStats[boosterId] ?? {
+  for (const [hackathonId, set] of Object.entries(hackathonTeamSets)) {
+    hackathonStats[hackathonId] = hackathonStats[hackathonId] ?? {
       projects: 0,
       teams: 0,
     };
-    boosterStats[boosterId].teams = set.size;
+    hackathonStats[hackathonId].teams = set.size;
   }
 
   return (
@@ -90,7 +83,7 @@ export default async function HostDashboardPage() {
               </h1>
               <p className="text-[#0F2C23]/50 mt-5 max-w-[360px] leading-relaxed"
                 style={{ fontFamily: FN, fontSize: "clamp(14px, 1.3vw, 16px)" }}>
-                Manage programs, review builder submissions, and track engagement across your boosters.
+                Manage programs, review builder submissions, and track engagement across your hackathons.
               </p>
             </div>
 
@@ -98,8 +91,8 @@ export default async function HostDashboardPage() {
             <div className="flex flex-col gap-2 shrink-0 mt-1">
               {[
                 {
-                  label: "Boosters Hosted",
-                  value: totalBoosters,
+                  label: "Hackathons Hosted",
+                  value: totalHackathons,
                   sub: null,
                   bg: "#0F2C23",
                   fg: "#E2FEA5",
@@ -169,13 +162,13 @@ export default async function HostDashboardPage() {
                 </p>
                 <h2 className="font-black text-[#0F2C23] uppercase"
                   style={{ fontFamily: PX, fontSize: "clamp(20px, 2.5vw, 28px)", letterSpacing: "-0.02em" }}>
-                  Hosted Boosters.
+                  Hosted Hackathons.
                 </h2>
               </div>
             </div>
 
             {/* Empty state */}
-            {boosters.length === 0 && (
+            {hackathons.length === 0 && (
               <div className="py-20 text-center">
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-5"
                   style={{ backgroundColor: "rgba(15,44,35,0.08)", color: "#0F2C23" }}>
@@ -183,27 +176,27 @@ export default async function HostDashboardPage() {
                 </div>
                 <p className="font-black text-[#0F2C23] uppercase mb-2"
                   style={{ fontFamily: PX, fontSize: 16, letterSpacing: "-0.01em" }}>
-                  No boosters yet.
+                  No hackathons yet.
                 </p>
                 <p className="text-[#0F2C23]/50 text-sm mb-7" style={{ fontFamily: FN }}>
                   Create your first program to start engaging builders.
                 </p>
-                <Link href="/host/boosters"
+                <Link href="/host/hackathons"
                   className="inline-flex items-center gap-2 no-underline rounded-full text-[#E2FEA5] text-[9px] tracking-widest uppercase font-bold px-5 py-2.5"
                   style={{ backgroundColor: "#0F2C23", fontFamily: PX }}>
-                  <Plus size={10} /> Create Booster
+                  <Plus size={10} /> Create Hackathon
                 </Link>
               </div>
             )}
 
             {/* Table */}
-            {boosters.length > 0 && (
+            {hackathons.length > 0 && (
               <>
                 {/* Column headers */}
                 <div
                   className="grid py-3 mb-1"
                   style={{
-                    gridTemplateColumns: "24px 1fr 110px 150px 110px 36px",
+                    gridTemplateColumns: "24px 1fr 150px 110px 36px",
                     gap: "0 14px",
                     borderTop: "1px solid rgba(15,44,35,0.12)",
                     borderBottom: "1px solid rgba(15,44,35,0.12)",
@@ -212,7 +205,6 @@ export default async function HostDashboardPage() {
                   {[
                     "#",
                     "Program",
-                    "Category",
                     "Stats",
                     "Status",
                     "",
@@ -228,17 +220,12 @@ export default async function HostDashboardPage() {
                 </div>
 
                 {/* Rows */}
-                {boosters.map((b, idx) => {
-                  const typeMeta =
-                    TYPE_LABELS[b.booster_type ?? "idea"] ?? {
-                      label: b.booster_type,
-                      dot: "#0F2C23",
-                    };
-                  const stats = boosterStats[b.id] ?? {
+                {hackathons.map((b, idx) => {
+                  const stats = hackathonStats[b.id] ?? {
                     projects: 0,
                     teams: 0,
                   };
-                  const status = getBoosterStatus(b.timeline);
+                  const status = getHackathonStatus(b.status);
                   return (
                     <Link
                       key={b.id}
@@ -272,20 +259,6 @@ export default async function HostDashboardPage() {
                               {b.theme}
                             </p>
                           )}
-                        </div>
-
-                        {/* Type pill with dot */}
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className="w-1.5 h-1.5 rounded-full shrink-0"
-                            style={{ backgroundColor: typeMeta.dot }}
-                          />
-                          <span
-                            className="text-[8px] tracking-[0.08em] uppercase font-bold text-[#0F2C23]/60 truncate"
-                            style={{ fontFamily: PX }}
-                          >
-                            {typeMeta.label}
-                          </span>
                         </div>
 
                         {/* Stats: projects & developers */}

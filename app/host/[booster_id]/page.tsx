@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowUpRight, BarChart3, Gavel } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/lib/server-auth";
 import {
-  getBoosterServer,
+  getHackathonServer,
   getProjectsServer,
   getSubmissionsServer,
 } from "@/lib/server-data";
@@ -44,7 +44,7 @@ export default async function HostBoosterPage({
     redirect("/host");
   }
   const [booster, projects, submissions] = await Promise.all([
-    getBoosterServer(booster_id),
+    getHackathonServer(booster_id),
     getProjectsServer(),
     getSubmissionsServer(booster_id),
   ]);
@@ -54,7 +54,7 @@ export default async function HostBoosterPage({
   }
 
   const projectMap: Record<string, (typeof projects)[0]> = {};
-  projects.forEach((p) => {
+  projects.forEach((p: (typeof projects)[0]) => {
     projectMap[p.project_id] = p;
   });
 
@@ -102,7 +102,7 @@ export default async function HostBoosterPage({
                 fontSize: "clamp(14px, 1.5vw, 18px)",
               }}
             >
-              Booster-level view. See analytics and submissions for this specific booster.
+              Hackathon-level view. See analytics and submissions for this specific hackathon.
             </p>
           </div>
         </div>
@@ -153,7 +153,7 @@ export default async function HostBoosterPage({
                   className="text-[#f0ebe0]/50 text-sm leading-relaxed"
                   style={{ fontFamily: "Georgia, serif" }}
                 >
-                  Generate reports from submissions to this booster.
+                  Generate reports from submissions to this hackathon.
                 </p>
               </div>
             </div>
@@ -185,13 +185,13 @@ export default async function HostBoosterPage({
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  Edit Booster
+                  Edit Hackathon
                 </h3>
                 <p
                   className="text-[#f0ebe0]/50 text-sm leading-relaxed"
                   style={{ fontFamily: "Georgia, serif" }}
                 >
-                  Update the program details, theme and resources.
+                  Update the hackathon details, theme and resources.
                 </p>
               </div>
             </div>
@@ -229,7 +229,7 @@ export default async function HostBoosterPage({
                   className="text-[#f0ebe0]/50 text-sm leading-relaxed"
                   style={{ fontFamily: "Georgia, serif" }}
                 >
-                  Send judge invites and manage who scores this booster.
+                  Send judge invites and manage who scores this hackathon.
                 </p>
               </div>
             </div>
@@ -288,7 +288,7 @@ export default async function HostBoosterPage({
                 className="text-[#2d4a3e]/50 leading-relaxed"
                 style={{ fontFamily: "Georgia, serif", fontSize: 15 }}
               >
-                Once builders submit to this booster, they&apos;ll appear here for grading.
+                Once builders submit to this hackathon, they&apos;ll appear here for grading.
               </p>
             </div>
           ) : (

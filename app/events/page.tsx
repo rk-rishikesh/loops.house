@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { CalendarDays, LayoutGrid, Users, Gavel, ArrowUpRight } from "lucide-react";
+import { CalendarDays, ArrowUpRight } from "lucide-react";
 import { getServerAuth } from "@/lib/server-auth";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
@@ -133,7 +133,7 @@ export default async function EventsPage() {
             href="/host"
             label="Host Dashboard"
             roleLabel="Host"
-            description="View and manage the boosters you are hosting, including submissions and judges."
+            description="View and manage the hackathons you are hosting, including submissions and judges."
           />
           <EventCard
             href="/viewer"

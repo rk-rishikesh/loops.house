@@ -3,32 +3,28 @@ import { getProjectServer, getProjectSubmissionsServer, getHackathonsByIdsServer
 import { redirect } from "next/navigation";
 import { ProjectEditor } from "@/components/client/project-editor";
 
-export default async function BuilderProjectDetailPage({
+export default async function HackathonProjectPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; projectId: string }>;
 }) {
   const auth = await getServerAuth();
-  if (!auth) {
-    redirect("/login");
-  }
+  if (!auth) redirect("/login");
 
-  const { id: projectId } = await params;
+  const { id: hackathonId, projectId } = await params;
 
   const [project, submissions] = await Promise.all([
     getProjectServer(projectId),
     getProjectSubmissionsServer(projectId),
   ]);
 
-  // Build hackathon name map
-  const hackathonIds = [...new Set(submissions.map((s) => s.hackathon_id))];
+  const hackathonIds = [...new Set(submissions.map((s: { hackathon_id: string }) => s.hackathon_id))];
   const hackathonMap = hackathonIds.length > 0 ? await getHackathonsByIdsServer(hackathonIds) : {};
   const hackathonNames: Record<string, string> = {};
-  for (const [id, h] of Object.entries(hackathonMap)) {
-    hackathonNames[id] = h.name;
+  for (const [id, b] of Object.entries(hackathonMap)) {
+    hackathonNames[id] = b.name;
   }
 
-  // Fetch team members if project exists
   const teamId = project?.team_id;
   const [teamMembers, teamOwnerId] = teamId
     ? await Promise.all([getTeamMembersServer(teamId), getTeamOwnerServer(teamId)])
@@ -40,6 +36,8 @@ export default async function BuilderProjectDetailPage({
       initialSubmissions={submissions}
       initialHackathonNames={hackathonNames}
       projectId={projectId}
+      backHref={`/hackathons/${hackathonId}`}
+      backLabel="Back to Hackathon"
       initialTeamMembers={teamMembers}
       teamOwnerId={teamOwnerId}
       currentUserId={auth.userId}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import type { StoredBooster } from "@/lib/data-mappers";
+import type { StoredHackathon } from "@/lib/data-mappers";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -60,7 +60,7 @@ function FeatureCard({
   );
 }
 
-export function BuilderDashboard({  }: { allBoosters: StoredBooster[] }) {
+export function BuilderDashboard({  }: { allHackathons: StoredHackathon[] }) {
   return (
     <div className="flex flex-col h-screen overflow-hidden p-4" style={{ backgroundColor: "#F8FFE8" }}>
       <div className="flex-1 flex flex-col rounded-[15px] overflow-hidden min-h-0" style={{ backgroundColor: "#0F2C23" }}>
@@ -88,7 +88,7 @@ export function BuilderDashboard({  }: { allBoosters: StoredBooster[] }) {
                 color: "rgba(226,254,165,0.45)",
               }}
             >
-              Spin up projects, refine ideas, and ship faster with agent-assisted boosters.
+              Spin up projects, refine ideas, and ship faster with agent-assisted hackathons.
             </p>
           </div>
         </div>
@@ -102,7 +102,7 @@ export function BuilderDashboard({  }: { allBoosters: StoredBooster[] }) {
             dark
           />
           <FeatureCard
-            href="/boosters"
+            href="/hackathons"
             label="Explore Hackathons"
             sublabel="Boost Your Project"
             description="Browse hackathons, grants, and build programs to accelerate your project."
