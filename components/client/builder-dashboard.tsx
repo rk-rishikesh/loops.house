@@ -1,58 +1,56 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowUpRight, ArrowLeft } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import type { StoredBooster } from "@/lib/data-mappers";
-import { LogoutButton } from "@/components/logout-button";
 
-/* ─── Primary feature card ───────────────────────────────────────── */
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
+
 function FeatureCard({
-  href, label, sublabel, description, dark = false, wide = false,
+  href, label, sublabel, description, dark = false,
 }: {
   href: string; label: string; sublabel?: string;
-  description?: string; dark?: boolean; wide?: boolean;
+  description?: string; dark?: boolean;
 }) {
+  const bg   = dark ? "#163528" : "#F8FFE8";
+  const fg   = dark ? "#E2FEA5" : "#0F2C23";
+  const sub  = dark ? "rgba(226,254,165,0.4)" : "rgba(15,44,35,0.45)";
+  const descC = dark ? "rgba(226,254,165,0.5)" : "rgba(15,44,35,0.55)";
+  const wm   = dark ? "rgba(226,254,165,0.04)" : "rgba(15,44,35,0.04)";
+  const arrBg = dark ? "#E2FEA5" : "#0F2C23";
+  const arrFg = dark ? "#0F2C23" : "#F8FFE8";
+
   return (
     <Link href={href} className="no-underline group block">
       <div
-        className={`rounded-3xl p-8 flex flex-col justify-between transition-all duration-200 group-hover:scale-[1.015] ${wide ? "h-full" : ""}`}
-        style={{ backgroundColor: dark ? "#2d4a3e" : "#d6cfc0", minHeight: 220, position: "relative", overflow: "hidden" }}
+        className="rounded-2xl p-10 flex flex-col justify-between relative overflow-hidden transition-all duration-200 group-hover:scale-[1.015]"
+        style={{ backgroundColor: bg }}
       >
-        {/* Watermark */}
-        <span className="absolute right-4 bottom-0 select-none pointer-events-none font-black"
-          style={{ fontFamily: "'Inter', sans-serif", fontSize: "clamp(80px, 10vw, 140px)", letterSpacing: "-0.05em", lineHeight: 0.85, color: dark ? "rgba(240,235,224,0.04)" : "rgba(45,74,62,0.05)" }}>
-          {label.slice(0, 2).toUpperCase()}
+        <span
+          className="absolute right-4 bottom-0 select-none pointer-events-none font-black"
+          style={{ fontFamily: PX, fontSize: "clamp(80px, 10vw, 140px)", letterSpacing: "-0.05em", lineHeight: 0.85, color: wm }}
+        >
+          {`<`}<br />{`>`}
         </span>
 
-        {/* Arrow top-right */}
         <div className="flex justify-end">
-          <span className="w-11 h-11 flex items-center justify-center rounded-full"
-            style={{ backgroundColor: dark ? "#d6cfc0" : "#2d4a3e" }}>
-            <ArrowUpRight size={16} style={{ color: dark ? "#2d4a3e" : "#f0ebe0" }} />
+          <span className="w-11 h-11 flex items-center justify-center rounded-full" style={{ backgroundColor: arrBg }}>
+            <ArrowUpRight size={16} style={{ color: arrFg }} />
           </span>
         </div>
 
-        {/* Content */}
         <div>
           {sublabel && (
-            <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-2"
-              style={{ fontFamily: "'Inter', sans-serif", color: dark ? "rgba(240,235,224,0.38)" : "rgba(45,74,62,0.45)" }}>
+            <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-2" style={{ fontFamily: PX, color: sub }}>
               {sublabel}
             </p>
           )}
-          <h2 className="font-black uppercase leading-tight"
-            style={{
-              fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
-              fontSize: "clamp(22px, 3vw, 34px)",
-              letterSpacing: "-0.025em",
-              color: dark ? "#f0ebe0" : "#2d4a3e",
-            }}>
+          <h2 className="font-black uppercase leading-tight" style={{ fontFamily: PX, fontSize: "clamp(22px, 3vw, 34px)", letterSpacing: "-0.025em", color: fg }}>
             {label}
           </h2>
           {description && (
-            <p className="mt-2 text-sm leading-relaxed"
-              style={{ fontFamily: "Georgia, serif", color: dark ? "rgba(240,235,224,0.5)" : "rgba(45,74,62,0.6)" }}>
+            <p className="mt-2 text-sm leading-relaxed" style={{ fontFamily: FN, color: descC }}>
               {description}
             </p>
           )}
@@ -61,127 +59,62 @@ function FeatureCard({
     </Link>
   );
 }
-/* ─── Page ────────────────────────────────────────────────────────── */
+
 export function BuilderDashboard({  }: { allBoosters: StoredBooster[] }) {
-  const router  = useRouter();
-  // const mounted = useIsMounted();
-
-  // const [activeType, setActiveType] = useState<BoosterType>("idea");
-  // const boosters = allBoosters.filter((b) => (b.booster_type ?? "idea") === activeType);
-
-  // const TYPE_LABELS: Record<BoosterType, string> = {
-  //   idea:     "Early Stage",
-  //   momentum: "Build Phase",
-  //   capital:  "Scale Up",
-  // };
-
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
+    <div className="flex flex-col h-screen overflow-hidden p-4" style={{ backgroundColor: "#F8FFE8" }}>
+      <div className="flex-1 flex flex-col rounded-[15px] overflow-hidden min-h-0" style={{ backgroundColor: "#0F2C23" }}>
 
-      {/* ── Nav ─────────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-50" style={{ backgroundColor: "#f0ebe0" }}>
-        <div>
-          <div
-            className="flex w-full items-stretch border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            {/* Left: back */}
-            <button
-              type="button"
-              onClick={() => router.push("/")}
-              className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#1a1a1a] bg-transparent hover:bg-[#e1dbcf] cursor-pointer"
+        <div className="flex-1 flex items-end px-14 pb-10 min-h-0">
+          <div className="flex flex-row justify-between items-end w-full">
+            <h1
+              className="font-black leading-[0.85] uppercase"
+              style={{
+                fontFamily: PX,
+                fontSize: "clamp(64px, 10vw, 160px)",
+                letterSpacing: "-0.03em",
+                color: "#E2FEA5",
+              }}
             >
-              <span className="flex items-center gap-2">
-                <ArrowLeft size={11} />
-                <span>Portal</span>
-              </span>
-            </button>
-
-            {/* Center: title */}
-            <div className="flex-1 min-w-0 py-8 flex items-center justify-center px-6 border-r border-[#1a1a1a]">
-              <span>Builder Hub</span>
-            </div>
-
-            {/* Right: logout — entire segment clickable, same hover as Portal */}
-            <LogoutButton />
+              BUILDER
+              <br />
+              HUB.
+            </h1>
+            <p
+              className="max-w-[380px] text-right leading-relaxed"
+              style={{
+                fontFamily: FN,
+                fontSize: "clamp(15px, 1.5vw, 19px)",
+                color: "rgba(226,254,165,0.45)",
+              }}
+            >
+              Spin up projects, refine ideas, and ship faster with agent-assisted boosters.
+            </p>
           </div>
         </div>
-      </div>
 
-      <div className="px-10 pt-10 pb-24">
-
-        {/* ── Hero ────────────────────────────────────────────────────── */}
-        <div className="mb-24 flex flex-row justify-between">
-          <h1
-            className="font-black text-[#2d4a3e] leading-[0.88] uppercase"
-            style={{
-              fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
-              fontSize: "clamp(52px, 9vw, 138px)",
-              letterSpacing: "-0.025em",
-            }}
-          >
-            BUILDER
-            <br />
-            HUB.
-          </h1>
-        <div className="flex justify-end mt-6">
-          <p
-            className="text-[#2d4a3e]/55 max-w-[360px] text-right leading-relaxed"
-            style={{
-              fontFamily: "Georgia, serif",
-              fontSize: "clamp(14px, 1.4vw, 17px)",
-            }}
-          >
-            Spin up projects, refine ideas, and ship faster with agent-assisted boosters.
-          </p>
-        </div>
-        </div>
-
-        {/* ── Three primary CTAs ───────────────────────────────────────── */}
-        <div className="grid gap-4 mb-10" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
-
-          {/* Project Hub — hero dark card */}
+        <div className="shrink-0 px-14 pb-8 pt-8 grid gap-5" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
           <FeatureCard
             href="/builder/projects"
-            label="Project Hub"
+            label="My Project Repository"
             sublabel="My workspace"
             description="Create, manage, and submit your projects to open programs."
             dark
           />
-
-          {/* Explore Boosters */}
           <FeatureCard
             href="/boosters"
-            label="Explore Boosters"
+            label="Explore Hackathons"
             sublabel="Boost Your Project"
-            description="Browse hackathons, grants, and build programs."
+            description="Browse hackathons, grants, and build programs to accelerate your project."
           />
-
-          {/* Residency */}
           <FeatureCard
             href="/residency"
-            label="Residency"
+            label="Explore Residency"
             sublabel="Product cohorts"
             description="Join a cohort, find collaborators, and build together."
           />
         </div>
       </div>
-
-      {/* ── Ticker ───────────────────────────────────────────────────── */}
-      <div className="overflow-hidden border-t border-[#2d4a3e]/10 py-3" style={{ backgroundColor: "#e8e2d4" }}>
-        <div className="flex gap-10 whitespace-nowrap" style={{ animation: "ticker 28s linear infinite" }}>
-          {[...Array(3)].map((_, ri) =>
-            ["BUILDER HUB", "★", "PROJECT HUB", "★", "OPEN CALLS", "★", "RESIDENCY", "★"].map((t, i) => (
-              <span key={`${ri}-${i}`} className="text-[10px] tracking-[0.2em] uppercase font-bold shrink-0"
-                style={{ fontFamily: "'Inter', sans-serif", color: t === "★" ? "#2d4a3e" : "rgba(45,74,62,0.4)" }}>
-                {t}
-              </span>
-            ))
-          )}
-        </div>
-      </div>
-
-      <style>{`@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-33.333%); } }`}</style>
     </div>
   );
 }

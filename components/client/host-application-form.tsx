@@ -2,10 +2,12 @@
 
 import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { ArrowLeft, ArrowRight, Loader2, Sparkles, Check } from "lucide-react";
 import { useSaveBooster } from "@/lib/queries";
 import type { StoredBooster } from "@/lib/data-mappers";
+
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
 
 type BoosterType = "idea" | "momentum" | "capital";
 
@@ -227,7 +229,6 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
 
   const currentStep = STEPS[step];
   const filler = STEP_FILLER[step];
-  const progress = ((step + 1) / STEPS.length) * 100;
 
   // Auto-focus text inputs when step changes
   useEffect(() => {
@@ -362,58 +363,15 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ backgroundColor: "#f0ebe0", fontFamily: "Georgia, serif" }}
+      style={{ backgroundColor: "#F8FFE8", fontFamily: FN }}
     >
-      {/* ── Top nav bar ─ strip style ───────────────────────────── */}
-      <div className="sticky top-0 z-50" style={{ backgroundColor: "#f0ebe0" }}>
-        <div
-          className="flex w-full items-stretch border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          {/* Left: back to host */}
-          <Link
-            href="/host"
-            className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf]"
-          >
-            <span className="flex items-center gap-2">
-              <ArrowLeft size={11} />
-              <span>Host</span>
-            </span>
-          </Link>
-
-          {/* Right: New Booster + progress */}
-          <div className="flex-1 min-w-0 py-8 flex items-center justify-between px-10">
-            <span>New Booster</span>
-            {!done && (
-              <div className="flex items-center gap-4">
-                <div
-                  className="h-1 rounded-full overflow-hidden"
-                  style={{ width: 140, backgroundColor: "rgba(45,74,62,0.12)" }}
-                >
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${progress}%`, backgroundColor: "#2d4a3e" }}
-                  />
-                </div>
-                <span
-                  className="text-[9px] tracking-[0.15em] uppercase font-bold"
-                  style={{ color: "rgba(45,74,62,0.55)" }}
-                >
-                  {step + 1} / {STEPS.length}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* ── Main split ──────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
 
         {/* ══ LEFT — question ═══════════════════════════════════════ */}
         <div
           className="flex flex-col justify-center px-12 py-12"
-          style={{ width: "75%", borderRight: "1px solid rgba(45,74,62,0.1)" }}
+          style={{ width: "75%", borderRight: "1px solid rgba(15,44,35,0.1)" }}
         >
           {!done ? (
             <div
@@ -426,11 +384,11 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               {/* Step number */}
               <p
                 style={{
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: PX,
                   fontSize: "clamp(60px, 8vw, 100px)",
                   fontWeight: 900,
                   letterSpacing: "-0.04em",
-                  color: "rgba(45,74,62,0.07)",
+                  color: "rgba(15,44,35,0.07)",
                   lineHeight: 1,
                   marginBottom: -16,
                   userSelect: "none",
@@ -442,11 +400,11 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               {/* Question */}
               <h1
                 style={{
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: PX,
                   fontWeight: 900,
                   fontSize: "clamp(22px, 3vw, 32px)",
                   letterSpacing: "-0.025em",
-                  color: "#2d4a3e",
+                  color: "#0F2C23",
                   lineHeight: 1.15,
                   marginBottom: 10,
                 }}
@@ -458,7 +416,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               <p
                 style={{
                   fontSize: 14,
-                  color: "rgba(45,74,62,0.5)",
+                  color: "rgba(15,44,35,0.5)",
                   lineHeight: 1.6,
                   marginBottom: 32,
                 }}
@@ -467,12 +425,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 {!currentStep.required && (
                   <span
                     style={{
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 9,
                       letterSpacing: "0.15em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "rgba(45,74,62,0.3)",
+                      color: "rgba(15,44,35,0.3)",
                       marginLeft: 10,
                     }}
                   >
@@ -497,32 +455,32 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                           justifyContent: "space-between",
                           padding: "18px 22px",
                           borderRadius: 16,
-                          border: `2px solid ${active ? "#2d4a3e" : "rgba(45,74,62,0.12)"}`,
-                          backgroundColor: active ? "#2d4a3e" : "#f5f2ea",
+                          border: `2px solid ${active ? "#0F2C23" : "rgba(15,44,35,0.12)"}`,
+                          backgroundColor: active ? "#0F2C23" : "rgba(15,44,35,0.04)",
                           cursor: "pointer",
                           transition: "all 0.15s ease",
                         }}
                         onMouseEnter={(e) => {
                           if (!active) {
-                            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(45,74,62,0.35)";
-                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#ede8de";
+                            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(15,44,35,0.35)";
+                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(15,44,35,0.07)";
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (!active) {
-                            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(45,74,62,0.12)";
-                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f5f2ea";
+                            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(15,44,35,0.12)";
+                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(15,44,35,0.04)";
                           }
                         }}
                       >
                         <div>
                           <div
                             style={{
-                              fontFamily: "'Inter', sans-serif",
+                              fontFamily: PX,
                               fontWeight: 800,
                               fontSize: 14,
                               letterSpacing: "-0.01em",
-                              color: active ? "#f0ebe0" : "#2d4a3e",
+                              color: active ? "#F8FFE8" : "#0F2C23",
                               marginBottom: 2,
                             }}
                           >
@@ -531,13 +489,13 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                           <div
                             style={{
                               fontSize: 12,
-                              color: active ? "rgba(240,235,224,0.6)" : "rgba(45,74,62,0.45)",
+                              color: active ? "rgba(226,254,165,0.6)" : "rgba(15,44,35,0.45)",
                             }}
                           >
                             {ch.desc}
                           </div>
                         </div>
-                        {active && <Check size={16} style={{ color: "#d6cfc0", flexShrink: 0 }} />}
+                        {active && <Check size={16} style={{ color: "#E2FEA5", flexShrink: 0 }} />}
                       </button>
                     );
                   })}
@@ -557,17 +515,17 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   style={{
                     width: "100%",
                     fontSize: 18,
-                    fontFamily: "Georgia, serif",
-                    color: "#2d4a3e",
+                    fontFamily: FN,
+                    color: "#0F2C23",
                     backgroundColor: "transparent",
                     border: "none",
-                    borderBottom: "2px solid rgba(45,74,62,0.2)",
+                    borderBottom: "2px solid rgba(15,44,35,0.2)",
                     outline: "none",
                     padding: "12px 0",
                     transition: "border-color 0.2s",
                   }}
-                  onFocus={(e) => (e.currentTarget.style.borderBottomColor = "#2d4a3e")}
-                  onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(45,74,62,0.2)")}
+                  onFocus={(e) => (e.currentTarget.style.borderBottomColor = "#0F2C23")}
+                  onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(15,44,35,0.2)")}
                 />
               )}
 
@@ -583,10 +541,10 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   style={{
                     width: "100%",
                     fontSize: 15,
-                    fontFamily: "Georgia, serif",
-                    color: "#2d4a3e",
-                    backgroundColor: "#f5f2ea",
-                    border: "2px solid rgba(45,74,62,0.12)",
+                    fontFamily: FN,
+                    color: "#0F2C23",
+                    backgroundColor: "rgba(15,44,35,0.04)",
+                    border: "2px solid rgba(15,44,35,0.12)",
                     borderRadius: 14,
                     outline: "none",
                     padding: "16px 18px",
@@ -594,8 +552,8 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                     lineHeight: 1.7,
                     transition: "border-color 0.2s",
                   }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#2d4a3e")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(45,74,62,0.12)")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "#0F2C23")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(15,44,35,0.12)")}
                 />
               )}
 
@@ -605,7 +563,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                     fontSize: 12,
                     color: "#8b1c1c",
                     marginTop: 8,
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                   }}
                 >
                   {error}
@@ -625,15 +583,15 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                         gap: 6,
                         padding: "10px 18px",
                         borderRadius: 100,
-                        border: "1.5px solid rgba(45,74,62,0.2)",
+                        border: "1.5px solid rgba(15,44,35,0.2)",
                         backgroundColor: "transparent",
                         cursor: "pointer",
-                        fontFamily: "'Inter', sans-serif",
+                        fontFamily: PX,
                         fontSize: 10,
                         letterSpacing: "0.14em",
                         textTransform: "uppercase",
                         fontWeight: 700,
-                        color: "rgba(45,74,62,0.5)",
+                        color: "rgba(15,44,35,0.5)",
                       }}
                     >
                       <ArrowLeft size={11} />
@@ -651,14 +609,14 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                       padding: "12px 24px",
                       borderRadius: 100,
                       border: "none",
-                      backgroundColor: "#2d4a3e",
+                      backgroundColor: "#0F2C23",
                       cursor: "pointer",
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 10,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "#f0ebe0",
+                      color: "#F8FFE8",
                     }}
                   >
                     {step === STEPS.length - 1 ? "Finish brief" : "Continue"}
@@ -676,12 +634,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                         background: "transparent",
                         border: "none",
                         cursor: "pointer",
-                        fontFamily: "'Inter', sans-serif",
+                        fontFamily: PX,
                         fontSize: 10,
                         letterSpacing: "0.14em",
                         textTransform: "uppercase",
                         fontWeight: 700,
-                        color: "rgba(45,74,62,0.3)",
+                        color: "rgba(15,44,35,0.3)",
                       }}
                     >
                       Skip
@@ -695,10 +653,10 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
             <div>
               <p
                 style={{
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: PX,
                   fontSize: 80,
                   fontWeight: 900,
-                  color: "rgba(45,74,62,0.07)",
+                  color: "rgba(15,44,35,0.07)",
                   lineHeight: 1,
                   marginBottom: -10,
                   userSelect: "none",
@@ -709,11 +667,11 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               </p>
               <h1
                 style={{
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: PX,
                   fontWeight: 900,
                   fontSize: "clamp(22px, 3vw, 30px)",
                   letterSpacing: "-0.025em",
-                  color: "#2d4a3e",
+                  color: "#0F2C23",
                   lineHeight: 1.15,
                   marginBottom: 10,
                 }}
@@ -723,7 +681,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               <p
                 style={{
                   fontSize: 14,
-                  color: "rgba(45,74,62,0.5)",
+                  color: "rgba(15,44,35,0.5)",
                   lineHeight: 1.7,
                   marginBottom: 32,
                   maxWidth: 380,
@@ -737,10 +695,10 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   style={{
                     padding: "12px 16px",
                     borderRadius: 12,
-                    backgroundColor: "rgba(45,74,62,0.06)",
-                    border: "1px solid rgba(45,74,62,0.15)",
+                    backgroundColor: "rgba(15,44,35,0.06)",
+                    border: "1px solid rgba(15,44,35,0.15)",
                     fontSize: 13,
-                    color: "#2d4a3e",
+                    color: "#0F2C23",
                     marginBottom: 20,
                   }}
                 >
@@ -776,14 +734,14 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                       padding: "14px 28px",
                       borderRadius: 100,
                       border: "none",
-                      backgroundColor: "#2d4a3e",
+                      backgroundColor: "#0F2C23",
                       cursor: isGenerating ? "wait" : "pointer",
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 10,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "#f0ebe0",
+                      color: "#F8FFE8",
                       opacity: isGenerating ? 0.7 : 1,
                     }}
                   >
@@ -802,14 +760,14 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                       padding: "14px 28px",
                       borderRadius: 100,
                       border: "none",
-                      backgroundColor: "#2d4a3e",
+                      backgroundColor: "#0F2C23",
                       cursor: isSaving ? "wait" : "pointer",
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 10,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "#f0ebe0",
+                      color: "#F8FFE8",
                       opacity: isSaving ? 0.7 : 1,
                     }}
                   >
@@ -825,12 +783,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                     background: "transparent",
                     border: "none",
                     cursor: "pointer",
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                     fontSize: 10,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
                     fontWeight: 700,
-                    color: "rgba(45,74,62,0.3)",
+                    color: "rgba(15,44,35,0.3)",
                   }}
                 >
                   Edit answers
@@ -843,7 +801,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
         {/* ══ RIGHT — filler / brief preview ═══════════════════════ */}
         <div
           className="flex flex-col"
-          style={{ width: "42%", backgroundColor: "#2d4a3e", overflow: "hidden" }}
+          style={{ width: "42%", backgroundColor: "#0F2C23", overflow: "hidden" }}
         >
           {!done ? (
             <div
@@ -858,12 +816,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 {/* Label */}
                 <p
                   style={{
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                     fontSize: 9,
                     letterSpacing: "0.22em",
                     textTransform: "uppercase",
                     fontWeight: 700,
-                    color: "rgba(240,235,224,0.3)",
+                    color: "rgba(226,254,165,0.3)",
                     marginBottom: 16,
                   }}
                 >
@@ -873,11 +831,11 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 {/* Headline */}
                 <h2
                   style={{
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                     fontWeight: 900,
                     fontSize: "clamp(20px, 2.4vw, 28px)",
                     letterSpacing: "-0.025em",
-                    color: "#f0ebe0",
+                    color: "#F8FFE8",
                     lineHeight: 1.1,
                     marginBottom: 14,
                   }}
@@ -889,7 +847,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 <p
                   style={{
                     fontSize: 13,
-                    color: "rgba(240,235,224,0.55)",
+                    color: "rgba(226,254,165,0.55)",
                     lineHeight: 1.7,
                     marginBottom: 28,
                   }}
@@ -904,18 +862,18 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                     flexDirection: "column",
                     padding: "18px 24px",
                     borderRadius: 18,
-                    backgroundColor: "rgba(240,235,224,0.06)",
-                    border: "1px solid rgba(240,235,224,0.1)",
+                    backgroundColor: "rgba(226,254,165,0.06)",
+                    border: "1px solid rgba(226,254,165,0.1)",
                     alignSelf: "flex-start",
                   }}
                 >
                   <span
                     style={{
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontWeight: 900,
                       fontSize: 26,
                       letterSpacing: "-0.03em",
-                      color: "#d6cfc0",
+                      color: "#E2FEA5",
                       lineHeight: 1,
                       marginBottom: 4,
                     }}
@@ -924,12 +882,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   </span>
                   <span
                     style={{
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 9,
                       letterSpacing: "0.14em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "rgba(240,235,224,0.3)",
+                      color: "rgba(226,254,165,0.3)",
                     }}
                   >
                     {filler.statLabel}
@@ -941,7 +899,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               {summary.length > 0 && (
                 <div
                   style={{
-                    borderTop: "1px solid rgba(240,235,224,0.08)",
+                    borderTop: "1px solid rgba(226,254,165,0.08)",
                     padding: "16px 20px",
                     display: "flex",
                     flexDirection: "column",
@@ -950,12 +908,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 >
                   <p
                     style={{
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 9,
                       letterSpacing: "0.2em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "rgba(240,235,224,0.22)",
+                      color: "rgba(226,254,165,0.22)",
                       marginBottom: 4,
                     }}
                   >
@@ -968,10 +926,10 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                       <div key={s.id} className="flex items-start gap-3">
                         <span
                           style={{
-                            fontFamily: "'Inter', sans-serif",
+                            fontFamily: PX,
                             fontSize: 9,
                             fontWeight: 900,
-                            color: "rgba(240,235,224,0.2)",
+                            color: "rgba(226,254,165,0.2)",
                             letterSpacing: "0.05em",
                             marginTop: 2,
                             flexShrink: 0,
@@ -983,7 +941,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                         <span
                           style={{
                             fontSize: 12,
-                            color: "rgba(240,235,224,0.5)",
+                            color: "rgba(226,254,165,0.5)",
                             lineHeight: 1.5,
                           }}
                         >
@@ -1000,12 +958,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
             <div className="flex flex-col h-full overflow-y-auto px-10 py-10">
               <p
                 style={{
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: PX,
                   fontSize: 9,
                   letterSpacing: "0.22em",
                   textTransform: "uppercase",
                   fontWeight: 700,
-                  color: "rgba(240,235,224,0.3)",
+                  color: "rgba(226,254,165,0.3)",
                   marginBottom: 20,
                 }}
               >
@@ -1022,18 +980,18 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                       <div key={s.id}>
                         <p
                           style={{
-                            fontFamily: "'Inter', sans-serif",
+                            fontFamily: PX,
                             fontSize: 9,
                             letterSpacing: "0.16em",
                             textTransform: "uppercase",
                             fontWeight: 700,
-                            color: "rgba(240,235,224,0.28)",
+                            color: "rgba(226,254,165,0.28)",
                             marginBottom: 4,
                           }}
                         >
                           {s.number} — {s.id.replace(/_/g, " ")}
                         </p>
-                        <p style={{ fontSize: 13, color: "rgba(240,235,224,0.6)", lineHeight: 1.6 }}>
+                        <p style={{ fontSize: 13, color: "rgba(226,254,165,0.6)", lineHeight: 1.6 }}>
                           {val.length > 120 ? val.slice(0, 120) + "…" : val}
                         </p>
                       </div>
@@ -1056,11 +1014,11 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                       <div>
                         <h2
                           style={{
-                            fontFamily: "'Inter', sans-serif",
+                            fontFamily: PX,
                             fontWeight: 900,
                             fontSize: 22,
                             letterSpacing: "-0.02em",
-                            color: "#f0ebe0",
+                            color: "#F8FFE8",
                             lineHeight: 1.1,
                             marginBottom: 8,
                           }}
@@ -1070,31 +1028,31 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                         {slug && (
                           <p
                             style={{
-                              fontFamily: "'Inter', sans-serif",
+                              fontFamily: PX,
                               fontSize: 9,
                               letterSpacing: "0.14em",
                               textTransform: "uppercase",
                               fontWeight: 700,
-                              color: "rgba(240,235,224,0.25)",
+                              color: "rgba(226,254,165,0.25)",
                               marginBottom: 12,
                             }}
                           >
                             /{slug}
                           </p>
                         )}
-                        <p style={{ fontSize: 13, color: "rgba(240,235,224,0.6)", lineHeight: 1.7 }}>
+                        <p style={{ fontSize: 13, color: "rgba(226,254,165,0.6)", lineHeight: 1.7 }}>
                           {overview}
                         </p>
                       </div>
 
                       {goals.length > 0 && (
                         <div>
-                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, color: "rgba(240,235,224,0.25)", marginBottom: 10 }}>Goals</p>
+                          <p style={{ fontFamily: PX, fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, color: "rgba(226,254,165,0.25)", marginBottom: 10 }}>Goals</p>
                           <div className="space-y-2">
                             {goals.map((g, i) => (
                               <div key={i} className="flex items-start gap-3">
-                                <span style={{ color: "rgba(240,235,224,0.2)", fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 10, marginTop: 2 }}>→</span>
-                                <span style={{ fontSize: 13, color: "rgba(240,235,224,0.6)", lineHeight: 1.6 }}>{g}</span>
+                                <span style={{ color: "rgba(226,254,165,0.2)", fontFamily: PX, fontWeight: 900, fontSize: 10, marginTop: 2 }}>→</span>
+                                <span style={{ fontSize: 13, color: "rgba(226,254,165,0.6)", lineHeight: 1.6 }}>{g}</span>
                               </div>
                             ))}
                           </div>
@@ -1103,16 +1061,16 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
 
                       {challenges.length > 0 && (
                         <div>
-                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, color: "rgba(240,235,224,0.25)", marginBottom: 10 }}>Challenges</p>
+                          <p style={{ fontFamily: PX, fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, color: "rgba(226,254,165,0.25)", marginBottom: 10 }}>Challenges</p>
                           <div className="space-y-3">
                             {challenges.slice(0, 3).map((c, i) => (
-                              <div key={i} style={{ padding: "12px 16px", borderRadius: 12, backgroundColor: "rgba(240,235,224,0.05)", border: "1px solid rgba(240,235,224,0.08)" }}>
-                                <p style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 12, color: "rgba(240,235,224,0.8)", marginBottom: 3 }}>{c.title}</p>
-                                <p style={{ fontSize: 12, color: "rgba(240,235,224,0.45)", lineHeight: 1.5 }}>{c.summary}</p>
+                              <div key={i} style={{ padding: "12px 16px", borderRadius: 12, backgroundColor: "rgba(226,254,165,0.05)", border: "1px solid rgba(226,254,165,0.08)" }}>
+                                <p style={{ fontFamily: PX, fontWeight: 700, fontSize: 12, color: "rgba(226,254,165,0.8)", marginBottom: 3 }}>{c.title}</p>
+                                <p style={{ fontSize: 12, color: "rgba(226,254,165,0.45)", lineHeight: 1.5 }}>{c.summary}</p>
                               </div>
                             ))}
                             {challenges.length > 3 && (
-                              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: "rgba(240,235,224,0.25)" }}>+ {challenges.length - 3} more challenges</p>
+                              <p style={{ fontFamily: PX, fontSize: 10, color: "rgba(226,254,165,0.25)" }}>+ {challenges.length - 3} more challenges</p>
                             )}
                           </div>
                         </div>
@@ -1120,14 +1078,14 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
 
                       {schedule.length > 0 && (
                         <div>
-                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, color: "rgba(240,235,224,0.25)", marginBottom: 10 }}>Schedule</p>
+                          <p style={{ fontFamily: PX, fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, color: "rgba(226,254,165,0.25)", marginBottom: 10 }}>Schedule</p>
                           <div className="space-y-2">
                             {schedule.slice(0, 4).map((s, i) => (
                               <div key={i} className="flex items-start gap-3">
-                                <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 9, color: "rgba(240,235,224,0.2)", width: 16, marginTop: 3, flexShrink: 0 }}>{String(i + 1).padStart(2, "0")}</span>
+                                <span style={{ fontFamily: PX, fontWeight: 900, fontSize: 9, color: "rgba(226,254,165,0.2)", width: 16, marginTop: 3, flexShrink: 0 }}>{String(i + 1).padStart(2, "0")}</span>
                                 <div>
-                                  <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 11, color: "rgba(240,235,224,0.7)" }}>{s.phase}</span>
-                                  <span style={{ fontSize: 11, color: "rgba(240,235,224,0.4)", marginLeft: 8 }}>{s.description}</span>
+                                  <span style={{ fontFamily: PX, fontWeight: 700, fontSize: 11, color: "rgba(226,254,165,0.7)" }}>{s.phase}</span>
+                                  <span style={{ fontSize: 11, color: "rgba(226,254,165,0.4)", marginLeft: 8 }}>{s.description}</span>
                                 </div>
                               </div>
                             ))}

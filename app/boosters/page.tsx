@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Lightbulb, Zap, DollarSign, ArrowLeft, ArrowUpRight } from "lucide-react";
+import { Lightbulb, Zap, DollarSign, ArrowUpRight } from "lucide-react";
 import { useIsMounted } from "@/hooks/use-is-mounted";
+
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
+
 const BOOSTERS: {
   type: "idea" | "momentum" | "capital";
   label: string;
@@ -47,10 +51,10 @@ const BOOSTERS: {
 function ArrowCircle({ size = 52 }: { size?: number }) {
   return (
     <span
-      style={{ width: size, height: size }}
-      className="inline-flex items-center justify-center rounded-full bg-[#2d4a3e] text-[#f0ebe0] shrink-0"
+      style={{ width: size, height: size, backgroundColor: "#3C574B" }}
+      className="inline-flex items-center justify-center rounded-full shrink-0"
     >
-      <ArrowUpRight size={size * 0.38} />
+      <ArrowUpRight size={size * 0.38} style={{ color: "#E2FEA5" }} />
     </span>
   );
 }
@@ -59,29 +63,7 @@ export default function BoostersLandingPage() {
   const mounted = useIsMounted();
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
-      {/* Top strip */}
-      <div>
-        <div
-          className="flex w-full items-stretch border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          <Link
-            href="/"
-            className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf]"
-          >
-            <span className="flex items-center gap-2">
-              <ArrowLeft size={11} />
-              <span>Portal</span>
-            </span>
-          </Link>
-          <div className="flex-1 min-w-0 py-8 flex items-center justify-end px-10">
-            <span>Explore boosters</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Scrollable sections */}
+    <main className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
       <div
         className="transition-all duration-500 ease-out"
         style={{
@@ -93,60 +75,61 @@ export default function BoostersLandingPage() {
           const isRight = i % 2 === 1;
           return (
           <section key={b.type} className={`relative flex flex-col ${isRight ? "items-end" : ""}`}>
-            {/* Giant hero word — bleeds left or right, partially behind card */}
             <div
               className={`pt-6 select-none pointer-events-none overflow-hidden ${isRight ? "pr-8 text-right" : "pl-8"}`}
               style={{ lineHeight: 0.85 }}
             >
               <span
-                className="font-black text-[#2d4a3e] block"
+                className="font-black block"
                 style={{
-                  fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+                  fontFamily: PX,
                   fontSize: "clamp(48px, 12vw, 160px)",
                   letterSpacing: "-0.03em",
+                  color: "#3C574B",
                 }}
               >
                 {b.heroWord}
               </span>
             </div>
 
-            {/* Card overlapping the hero word */}
-            <div className={`relative -mt-2.5 px-8 z-10 w-full ${isRight ? "flex flex-col items-end" : ""}`}>
+            <div className={`relative -mt-8 px-8 z-10 w-full ${isRight ? "flex flex-col items-end" : ""}`}>
               <Link href={`/boosters/${b.type}`} className="no-underline block group">
                 <div
                   className="rounded-3xl max-w-[800px] px-10 pt-9 pb-11 transition-transform duration-200 group-hover:scale-[1.005]"
-                  style={{ backgroundColor: "#d6cfc0" }}
+                  style={{ backgroundColor: "#0F2C23" }}
                 >
-                  {/* Top row: big index + label + arrow circle */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-6">
                       <span
-                        className="font-black text-[#2d4a3e] leading-none"
+                        className="font-black leading-none"
                         style={{
-                          fontFamily: "'Inter', sans-serif",
+                          fontFamily: PX,
                           fontSize: "clamp(56px, 8vw, 96px)",
                           letterSpacing: "-0.03em",
+                          color: "#E2FEA5",
                         }}
                       >
                         {b.index}
                       </span>
                       <div>
                         <p
-                          className="font-black text-[#2d4a3e] leading-[1.1]"
+                          className="font-black leading-[1.1]"
                           style={{
-                            fontFamily: "'Inter', sans-serif",
+                            fontFamily: PX,
                             fontSize: "clamp(16px, 2.2vw, 26px)",
                             letterSpacing: "-0.01em",
+                            color: "#E2FEA5",
                           }}
                         >
                           {b.label}
                         </p>
                         <p
-                          className="font-black text-[#2d4a3e] leading-[1.1]"
+                          className="font-black leading-[1.1]"
                           style={{
-                            fontFamily: "'Inter', sans-serif",
+                            fontFamily: PX,
                             fontSize: "clamp(16px, 2.2vw, 26px)",
                             letterSpacing: "-0.01em",
+                            color: "rgba(226,254,165,0.5)",
                           }}
                         >
                           {b.sublabel}
@@ -156,15 +139,15 @@ export default function BoostersLandingPage() {
                     <ArrowCircle size={54} />
                   </div>
 
-                  {/* Description body */}
                   <div className="mt-10 pl-1">
                     <p
-                      className="text-[#2d4a3e] leading-[1.7]"
+                      className="leading-[1.7]"
                       style={{
-                        fontFamily: "'Inter', sans-serif",
+                        fontFamily: FN,
                         fontSize: "clamp(15px, 1.6vw, 19px)",
                         maxWidth: "680px",
                         letterSpacing: "0.005em",
+                        color: "rgba(248,255,232,0.6)",
                       }}
                     >
                       {b.description}
@@ -177,7 +160,6 @@ export default function BoostersLandingPage() {
           );
         })}
 
-        {/* Bottom padding */}
         <div className="h-20" />
       </div>
     </main>

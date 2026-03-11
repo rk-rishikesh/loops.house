@@ -1,13 +1,13 @@
 export default function BoostersLoading() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] p-8">
+    <div className="min-h-screen p-8" style={{ backgroundColor: "#F8FFE8" }}>
       <div className="mx-auto max-w-6xl animate-pulse">
-        <div className="mb-8 h-12 w-72 rounded bg-white/10" />
+        <div className="mb-8 h-12 w-72 rounded" style={{ backgroundColor: "rgba(15,44,35,0.08)" }} />
         <div className="space-y-16">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="flex gap-8">
-              <div className="h-64 flex-1 rounded-lg bg-white/5" />
-              <div className="h-64 w-80 rounded-lg bg-white/5" />
+              <div className="h-64 flex-1 rounded-2xl" style={{ backgroundColor: "rgba(15,44,35,0.05)" }} />
+              <div className="h-64 w-80 rounded-2xl" style={{ backgroundColor: "rgba(15,44,35,0.05)" }} />
             </div>
           ))}
         </div>

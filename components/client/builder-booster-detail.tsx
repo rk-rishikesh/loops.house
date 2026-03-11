@@ -1,19 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft,
   ArrowUpRight,
   FileText,
-  CheckCircle,
-  Clock,
   Trophy,
-  Users,
-  Globe,
-  ChevronDown,
-  ChevronUp,
   Plus,
+  Send,
+  Loader2,
+  Sparkles,
+  Mic2,
+  CalendarDays,
+  Users,
 } from "lucide-react";
 import type {
   StoredBooster,
@@ -22,8 +21,14 @@ import type {
 } from "@/lib/data-mappers";
 import type { AppRole } from "@/lib/supabase/types";
 import { useIsMounted } from "@/hooks/use-is-mounted";
+import { ProjectEditor } from "@/components/client/project-editor";
 
-/* ── Props ──────────────────────────────────────────────────────── */
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
+
+type SectionKey = "ideator" | "mentor" | "info" | "speakers" | "schedule" | "prizes" | "submit";
+type Message = { role: "user" | "assistant"; content: string };
+
 interface BuilderBoosterDetailProps {
   type: string;
   boosterId: string;
@@ -34,200 +39,6 @@ interface BuilderBoosterDetailProps {
   role?: AppRole | null;
 }
 
-/* ─── Type meta (builder-friendly) ──────────────────────────────── */
-const TYPE_META: Record<string, { label: string; navLabel: string }> = {
-  idea: { label: "Idea Booster", navLabel: "Boosters" },
-  momentum: { label: "Momentum Booster", navLabel: "Boosters" },
-  capital: { label: "Capital Booster", navLabel: "Boosters" },
-};
-
-/* ─── Atoms ──────────────────────────────────────────────────────── */
-function MicroLabel({
-  children,
-  light = false,
-}: {
-  children: React.ReactNode;
-  light?: boolean;
-}) {
-  return (
-    <p
-      className="text-[9px] tracking-[0.2em] uppercase font-bold mb-2"
-      style={{
-        fontFamily: "'Inter', sans-serif",
-        color: light ? "rgba(240,235,224,0.38)" : "rgba(45,74,62,0.4)",
-      }}
-    >
-      {children}
-    </p>
-  );
-}
-
-function ArrowCircle({
-  size = 40,
-  inverted = false,
-}: {
-  size?: number;
-  inverted?: boolean;
-}) {
-  return (
-    <span
-      style={{ width: size, height: size }}
-      className={`inline-flex items-center justify-center rounded-full shrink-0 ${
-        inverted ? "bg-[#d6cfc0] text-[#2d4a3e]" : "bg-[#2d4a3e] text-[#f0ebe0]"
-      }`}
-    >
-      <ArrowUpRight size={Math.round(size * 0.4)} />
-    </span>
-  );
-}
-
-/* ─── Collapsible problem accordion ─────────────────────────────── */
-function ProblemAccordion({ items }: { items: string[] }) {
-  const [open, setOpen] = useState<number | null>(0);
-  return (
-    <div className="border-t border-[#f0ebe0]/10">
-      {items.map((item, i) => (
-        <div key={i} className="border-b border-[#f0ebe0]/08">
-          <button
-            type="button"
-            onClick={() => setOpen(open === i ? null : i)}
-            className="w-full flex items-center gap-4 py-5 text-left bg-transparent border-none cursor-pointer"
-          >
-            <span
-              className="font-black text-[#f0ebe0]/18 shrink-0"
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: 12,
-                width: 28,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <p
-              className="flex-1 text-[#f0ebe0]/70 text-sm font-semibold leading-snug truncate"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              {item.length > 90 ? item.slice(0, 90) + "..." : item}
-            </p>
-            {open === i ? (
-              <ChevronUp
-                size={13}
-                style={{ color: "rgba(240,235,224,0.3)", flexShrink: 0 }}
-              />
-            ) : (
-              <ChevronDown
-                size={13}
-                style={{ color: "rgba(240,235,224,0.3)", flexShrink: 0 }}
-              />
-            )}
-          </button>
-          {open === i && (
-            <p
-              className="pb-5 pl-[44px] text-[#f0ebe0]/60 text-sm leading-relaxed"
-              style={{ fontFamily: "Georgia, serif" }}
-            >
-              {item}
-            </p>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ─── Action row card ────────────────────────────────────────────── */
-function ActionCard({
-  href,
-  onClick,
-  label,
-  sublabel,
-  badge,
-  primary = false,
-  disabled = false,
-}: {
-  href?: string;
-  onClick?: () => void;
-  label: string;
-  sublabel?: string;
-  badge?: string;
-  primary?: boolean;
-  disabled?: boolean;
-}) {
-  const bg = disabled ? "rgba(45,74,62,0.04)" : primary ? "#2d4a3e" : "#d6cfc0";
-  const fg = primary ? "#f0ebe0" : "#2d4a3e";
-  const fgSub = primary ? "rgba(240,235,224,0.5)" : "rgba(45,74,62,0.55)";
-  const arrowBg = primary ? "#d6cfc0" : "#2d4a3e";
-  const arrowFg = primary ? "#2d4a3e" : "#f0ebe0";
-
-  const inner = (
-    <div
-      className={`rounded-2xl px-6 py-5 flex items-center gap-4 transition-all duration-200 ${!disabled ? "hover:scale-[1.01]" : ""}`}
-      style={{ backgroundColor: bg, opacity: disabled ? 0.45 : 1 }}
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-          <p
-            className="font-black uppercase text-sm leading-tight"
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              letterSpacing: "-0.01em",
-              color: fg,
-            }}
-          >
-            {label}
-          </p>
-          {badge && (
-            <span
-              className="text-[7px] tracking-[0.14em] uppercase font-bold px-2 py-0.5 rounded-sm"
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                backgroundColor: primary
-                  ? "rgba(214,207,192,0.2)"
-                  : "rgba(45,74,62,0.1)",
-                color: primary ? "#d6cfc0" : "#2d4a3e",
-              }}
-            >
-              {badge}
-            </span>
-          )}
-        </div>
-        {sublabel && (
-          <p
-            className="text-xs leading-snug"
-            style={{ fontFamily: "Georgia, serif", color: fgSub }}
-          >
-            {sublabel}
-          </p>
-        )}
-      </div>
-      {!disabled && (
-        <span
-          className="w-9 h-9 flex items-center justify-center rounded-full shrink-0"
-          style={{ backgroundColor: arrowBg }}
-        >
-          <ArrowUpRight size={14} style={{ color: arrowFg }} />
-        </span>
-      )}
-    </div>
-  );
-
-  if (href && !disabled)
-    return (
-      <Link href={href} className="no-underline block">
-        {inner}
-      </Link>
-    );
-  if (onClick && !disabled)
-    return (
-      <div onClick={onClick} className="cursor-pointer">
-        {inner}
-      </div>
-    );
-  return <div>{inner}</div>;
-}
-
-/* ─── Main component ─────────────────────────────────────────────── */
 export function BuilderBoosterDetail({
   type,
   boosterId,
@@ -239,558 +50,660 @@ export function BuilderBoosterDetail({
 }: BuilderBoosterDetailProps) {
   const mounted = useIsMounted();
 
-  const meta = TYPE_META[type] ?? {
-    label: "Opportunity",
-    navLabel: "Boosters",
-  };
+  const [section, setSection] = useState<SectionKey>("info");
 
-  /* Derive submitted project from submissions */
+  const [ideatorMessages, setIdeatorMessages] = useState<Message[]>([]);
+  const [mentorMessages, setMentorMessages] = useState<Message[]>([]);
+  const [draft, setDraft] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
   const boosterSubmission = submissions.find((s) => s.booster_id === boosterId);
   const submittedProject =
     (boosterSubmission && projects.find((p) => p.project_id === boosterSubmission.project_id)) ?? null;
 
-  /* ── 404 ── */
+  useEffect(() => {
+    const read = () => {
+      const h = (window.location.hash.replace("#", "") || "info") as SectionKey;
+      const valid: SectionKey[] = ["ideator", "mentor", "info", "speakers", "schedule", "prizes", "submit"];
+      setSection(valid.includes(h) ? h : "info");
+    };
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
+  }, []);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 140) + "px";
+  }, [draft]);
+
   if (booster === null) {
     return (
+      <div className="flex flex-col h-screen overflow-hidden p-4" style={{ backgroundColor: "#F8FFE8" }}>
+        <div className="flex-1 rounded-[15px] flex items-center justify-center" style={{ backgroundColor: "#0F2C23" }}>
+          <p style={{ fontFamily: FN, color: "rgba(226,254,165,0.5)" }}>Opportunity not found.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const b: StoredBooster = booster;
+  const hasResources = (b.technical_resources?.length ?? 0) > 0;
+  const hasTracks = (b.sponsor_tracks?.length ?? 0) > 0;
+  const hasChallenges = (b.problem_statements?.length ?? 0) > 0;
+
+  const messages = section === "ideator" ? ideatorMessages : mentorMessages;
+  const setMessages = section === "ideator" ? setIdeatorMessages : setMentorMessages;
+
+  function injectStarter(text: string) {
+    setDraft(text);
+    setTimeout(() => textareaRef.current?.focus(), 100);
+  }
+
+  async function sendMessage(userMessage: string) {
+    if (!userMessage || loading) return;
+    setError(null);
+    setDraft("");
+    setMessages((m) => [...m, { role: "user", content: userMessage }]);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/builder-agents/project-ideator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMessage,
+          conversation_history: messages,
+          booster_context: {
+            problem_statements: b.problem_statements,
+            sponsor_tracks: b.sponsor_tracks,
+            theme: b.theme,
+          },
+          agent: section === "mentor" ? "developer" : "ideator",
+        }),
+      });
+
+      if (!res.ok || !res.body) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || "Request failed");
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let content = "";
+      setMessages((m) => [...m, { role: "assistant", content: "" }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const chunk = line.slice(6);
+          if (chunk === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(chunk);
+            if (parsed.text) {
+              content += parsed.text;
+              setMessages((m) => {
+                const next = [...m];
+                next[next.length - 1] = { role: "assistant", content };
+                return next;
+              });
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", content: "Something went wrong — please try again." },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ─── Section watermarks ─────────────────────────────────────── */
+  const WATERMARKS: Record<SectionKey, string> = {
+    ideator: "IDEATE",
+    mentor: "MENTOR",
+    info: "INFO",
+    speakers: "SPEAKERS",
+    schedule: "SCHEDULE",
+    prizes: "PRIZES",
+    submit: "SUBMIT",
+  };
+
+  const SECTION_META: Record<
+    SectionKey,
+    { label: string; accent: string; accentFaint: string; panelBg: string; panelBorder: string }
+  > = {
+    ideator: {
+      label: "Ideator",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(226,254,165,0.04)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+    mentor: {
+      label: "Mentor",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(226,254,165,0.04)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+    info: {
+      label: "About",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(60,87,75,0.55)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+    speakers: {
+      label: "Speakers",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(60,87,75,0.55)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+    schedule: {
+      label: "Schedule",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(226,254,165,0.04)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+    prizes: {
+      label: "Prizes + Challenges",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(226,254,165,0.04)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+    submit: {
+      label: "Submit",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(60,87,75,0.55)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+  };
+
+  function renderTopBar() {
+    const m = SECTION_META[section];
+    return (
       <div
-        className="min-h-screen px-10 py-12"
-        style={{ backgroundColor: "#f0ebe0" }}
+        className="shrink-0 flex items-center justify-between px-10 py-4"
+        style={{ borderBottom: "1px solid rgba(226,254,165,0.06)" }}
       >
-        <Link
-          href={`/boosters/${type}`}
-          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          <ArrowLeft size={12} /> {meta.navLabel}
-        </Link>
         <p
-          className="mt-12 text-[#2d4a3e]/50"
-          style={{ fontFamily: "Georgia, serif" }}
+          className="text-[9px] tracking-[0.25em] uppercase font-bold"
+          style={{ fontFamily: PX, color: "rgba(226,254,165,0.3)" }}
         >
-          Opportunity not found.
+          {m.label} — {b.name}
+        </p>
+        <p
+          className="text-[9px] tracking-[0.18em] uppercase font-bold"
+          style={{ fontFamily: PX, color: "rgba(226,254,165,0.2)" }}
+        >
+          {WATERMARKS[section]}
         </p>
       </div>
     );
   }
 
-  const hasResources = (booster.technical_resources?.length ?? 0) > 0;
-  const hasTracks = (booster.sponsor_tracks?.length ?? 0) > 0;
+  /* ─── Chat view (shared between Ideator & Mentor) ──────────── */
+  function renderChat() {
+    const isIdeator = section === "ideator";
+    const placeholder = isIdeator ? "Describe your idea or ask for help…" : "Ask your mentor anything…";
 
-  return (
-    <main className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
-      {/* ── Sticky strip nav ─────────────────────────────────────────── */}
-      <div className="sticky top-0 z-50" style={{ backgroundColor: "#f0ebe0" }}>
-        <div
-          className="flex w-full items-stretch border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          {/* Left: back to boosters */}
-          <Link
-            href={`/boosters/${type}`}
-            className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf]"
-          >
-            <span className="flex items-center gap-2">
-              <ArrowLeft size={11} />
-              <span>{meta.navLabel}</span>
-            </span>
-          </Link>
-
-          {/* Right: booster meta + submissions */}
-          <div className="flex-1 min-w-0 py-8 flex items-center justify-between px-10">
-            <span>{meta.label}</span>
-            {submissions.length > 0 && (
-              <span
-                className="text-[9px] tracking-[0.15em] uppercase font-bold px-3 py-1.5 rounded-full"
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  backgroundColor: "#2d4a3e",
-                  color: "#f0ebe0",
-                }}
-              >
-                {submissions.length} submission
-                {submissions.length !== 1 ? "s" : ""}
-              </span>
-            )}
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+        {messages.length === 0 ? (
+          <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-10 py-10">
+            <p
+              className="font-black uppercase leading-none select-none text-center mb-5"
+              style={{ fontFamily: PX, fontSize: "clamp(48px, 6vw, 80px)", letterSpacing: "-0.04em", opacity: 0.04, lineHeight: 0.85, color: "#E2FEA5" }}
+            >
+              {WATERMARKS[section]}
+            </p>
+            <p className="text-sm leading-relaxed text-center max-w-[440px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}>
+              {isIdeator
+                ? "Start with your idea. The Ideator will sharpen it, map it to the challenges, and outline next steps."
+                : "Your AI Mentor can guide you through technical decisions, architecture, and implementation strategy."}
+            </p>
+            <div className="mt-8 grid grid-cols-2 gap-3 max-w-[560px] w-full">
+              {(isIdeator
+                ? [
+                    "I have a rough idea — help me sharpen it",
+                    "Which challenge should I tackle?",
+                    "Turn this into an MVP plan",
+                    "What stack would you recommend?",
+                  ]
+                : [
+                    "Review my architecture approach",
+                    "How should I structure my project?",
+                    "Help me with the technical writeup",
+                    "What are the judging criteria?",
+                  ]
+              ).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => injectStarter(s)}
+                  className="rounded-2xl px-4 py-3.5 text-left text-[12px] transition-all hover:scale-[1.01] flex items-start justify-between gap-3 border-none cursor-pointer"
+                  style={{ fontFamily: FN, backgroundColor: "rgba(226,254,165,0.04)", color: "rgba(226,254,165,0.65)", border: "1px solid rgba(226,254,165,0.08)" }}
+                >
+                  <span className="leading-snug">{s}</span>
+                  <ArrowUpRight size={10} style={{ color: "rgba(226,254,165,0.2)", flexShrink: 0, marginTop: 2 }} />
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto px-10 py-8 flex flex-col gap-5">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                {msg.role === "assistant" && (
+                  <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#E2FEA5" }}>
+                    <Sparkles size={12} style={{ color: "#0F2C23" }} />
+                  </div>
+                )}
+                <div
+                  className="rounded-2xl px-5 py-4 max-w-[78%]"
+                  style={{
+                    backgroundColor: msg.role === "user" ? "rgba(226,254,165,0.12)" : "rgba(226,254,165,0.045)",
+                    borderBottomRightRadius: msg.role === "user" ? 4 : 16,
+                    borderBottomLeftRadius: msg.role === "assistant" ? 4 : 16,
+                    border: msg.role === "assistant" ? "1px solid rgba(226,254,165,0.06)" : "1px solid rgba(226,254,165,0.08)",
+                  }}
+                >
+                  <p className="text-sm leading-[1.85] whitespace-pre-wrap" style={{ fontFamily: FN, color: msg.role === "user" ? "#E2FEA5" : "rgba(226,254,165,0.65)" }}>
+                    {msg.content}
+                  </p>
+                </div>
+              </div>
+            ))}
+            <div ref={bottomRef} />
+          </div>
+        )}
 
-      <div className="px-10 pt-10 pb-24">
-        {/* ── Hero ────────────────────────────────────────────────────── */}
-        <div className="mb-14">
-          <h1
-            className="font-black text-[#2d4a3e] leading-[0.88] uppercase"
+        {/* Input bar */}
+        <form
+          className="shrink-0 px-10 py-6"
+          style={{ borderTop: "1px solid rgba(226,254,165,0.06)" }}
+          onSubmit={(e) => { e.preventDefault(); void sendMessage(draft.trim()); }}
+        >
+          {error && (
+            <p className="mb-3 text-[12px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.6)" }}>{error}</p>
+          )}
+          <div className="flex items-end gap-3">
+            <textarea
+              ref={textareaRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={placeholder}
+              rows={1}
+              disabled={loading}
+              className="flex-1 resize-none outline-none rounded-2xl px-5 py-4 text-sm"
+              style={{ fontFamily: FN, backgroundColor: "rgba(226,254,165,0.035)", color: "#E2FEA5", border: "1px solid rgba(226,254,165,0.1)", lineHeight: 1.7 }}
+            />
+            <button
+              type="submit"
+              disabled={loading || !draft.trim()}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: "#E2FEA5" }}
+              title="Send"
+            >
+              {loading ? (
+                <Loader2 size={16} className="animate-spin" style={{ color: "#0F2C23" }} />
+              ) : (
+                <Send size={16} style={{ color: "#0F2C23" }} />
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  /* ─── Info view ─────────────────────────────────────────────── */
+  function renderInfo() {
+    return (
+      <div className="flex-1 overflow-y-auto px-14 py-14">
+        <div className="grid gap-6" style={{ gridTemplateColumns: "1.1fr 0.9fr" }}>
+          <div
+            className="rounded-2xl p-10"
             style={{
-              fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
-              fontSize: "clamp(44px, 8vw, 118px)",
-              letterSpacing: "-0.025em",
+              backgroundColor: "rgba(226,254,165,0.04)",
+              border: "1px solid rgba(226,254,165,0.06)",
             }}
           >
-            {booster.name}
-          </h1>
-          {booster.theme && (
-            <div className="flex justify-end mt-6">
-              <p
-                className="text-[#2d4a3e]/55 max-w-[440px] text-right leading-relaxed"
-                style={{
-                  fontFamily: "Georgia, serif",
-                  fontSize: "clamp(14px, 1.4vw, 18px)",
-                }}
-              >
-                {booster.theme}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* ── Three-column grid ────────────────────────────────────────── */}
-        <div
-          className="grid gap-6 items-start"
-          style={{ gridTemplateColumns: "1fr 1fr 300px" }}
-        >
-          {/* LEFT -- program info */}
-          <div className="flex flex-col gap-4">
-            {/* About */}
-            {booster.program_goal && (
-              <div
-                className="rounded-3xl p-7"
-                style={{ backgroundColor: "#f5f2ea" }}
-              >
-                <MicroLabel>About this program</MicroLabel>
-                <p
-                  className="text-[#2d4a3e]/70 leading-relaxed mt-2"
-                  style={{
-                    fontFamily: "Georgia, serif",
-                    fontSize: "clamp(14px, 1.3vw, 16px)",
-                    lineHeight: 1.9,
-                  }}
-                >
-                  {booster.program_goal}
-                </p>
-              </div>
-            )}
-
-            {/* Challenges */}
-            {booster.problem_statements.length > 0 && (
-              <div
-                className="rounded-3xl p-7 relative overflow-hidden"
-                style={{ backgroundColor: "#2d4a3e" }}
-              >
-                {/* Watermark */}
-                <span
-                  className="absolute right-4 bottom-0 select-none pointer-events-none font-black text-[#f0ebe0]/03"
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: "clamp(80px, 12vw, 160px)",
-                    letterSpacing: "-0.05em",
-                    lineHeight: 0.85,
-                  }}
-                >
-                  &#9733;
-                </span>
-                <MicroLabel light>Challenges</MicroLabel>
-                <h2
-                  className="font-black text-[#f0ebe0] uppercase mb-6"
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: "clamp(18px, 2.5vw, 28px)",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  {booster.problem_statements.length} Open Problem
-                  {booster.problem_statements.length !== 1 ? "s" : ""}.
-                </h2>
-                <ProblemAccordion items={booster.problem_statements} />
-              </div>
-            )}
-
-            {/* Sponsor tracks */}
-            {hasTracks && (
-              <div
-                className="rounded-3xl p-7"
-                style={{ backgroundColor: "#f5f2ea" }}
-              >
-                <MicroLabel>Sponsor Tracks</MicroLabel>
-                <h2
-                  className="font-black text-[#2d4a3e] uppercase mb-5"
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: "clamp(16px, 2vw, 22px)",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  {booster.sponsor_tracks!.length} Track
-                  {booster.sponsor_tracks!.length !== 1 ? "s" : ""}.
-                </h2>
-                <div className="border-t border-[#2d4a3e]/12">
-                  {booster.sponsor_tracks!.map((t, i) => (
-                    <div
-                      key={i}
-                      className="flex items-start gap-4 py-5 border-b border-[#2d4a3e]/08"
-                    >
-                      <span
-                        className="font-black text-[#2d4a3e]/18 shrink-0 pt-0.5"
-                        style={{
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: 12,
-                          width: 28,
-                          letterSpacing: "-0.02em",
-                        }}
-                      >
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <div>
-                        <p
-                          className="font-semibold text-[#2d4a3e] text-sm mb-1"
-                          style={{ fontFamily: "'Inter', sans-serif" }}
-                        >
-                          {t.sponsor}
-                        </p>
-                        {t.track_description && (
-                          <p
-                            className="text-[#2d4a3e]/60 text-sm leading-relaxed"
-                            style={{ fontFamily: "Georgia, serif" }}
-                          >
-                            {t.track_description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* CENTRE -- meta details */}
-          <div className="flex flex-col gap-4">
-            {/* Prize pool */}
-            {booster.bounty_pool_summary && (
-              <div
-                className="rounded-2xl p-6"
-                style={{ backgroundColor: "#d6cfc0" }}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <Trophy size={12} style={{ color: "rgba(45,74,62,0.5)" }} />
-                  <MicroLabel>Prize Pool</MicroLabel>
-                </div>
-                <p
-                  className="font-black text-[#2d4a3e] uppercase leading-tight"
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: "clamp(16px, 2.2vw, 24px)",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  {booster.bounty_pool_summary}
-                </p>
-              </div>
-            )}
-
-            {/* Timeline */}
-            {booster.timeline && (
-              <div
-                className="rounded-2xl p-6"
-                style={{ backgroundColor: "#d6cfc0" }}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock size={12} style={{ color: "rgba(45,74,62,0.5)" }} />
-                  <MicroLabel>Timeline</MicroLabel>
-                </div>
-                <p
-                  className="text-[#2d4a3e]/75 text-sm leading-relaxed whitespace-pre-wrap"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
-                  {booster.timeline}
-                </p>
-              </div>
-            )}
-
-            {/* Website */}
-            {booster.website_url && (
-              <Link
-                href={booster.website_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group no-underline block"
-              >
-                <div
-                  className="rounded-2xl px-6 py-5 flex items-center gap-4 transition-all duration-200 group-hover:scale-[1.01]"
-                  style={{ backgroundColor: "#f5f2ea" }}
-                >
-                  <Globe size={15} style={{ color: "rgba(45,74,62,0.4)" }} />
-                  <p
-                    className="text-[#2d4a3e]/65 text-sm truncate flex-1"
-                    style={{ fontFamily: "Georgia, serif" }}
-                  >
-                    {booster.website_url.replace(/^https?:\/\//, "")}
-                  </p>
-                  <ArrowCircle size={36} />
-                </div>
-              </Link>
-            )}
-
-            {/* Technical resources */}
-            {hasResources && (
-              <div
-                className="rounded-2xl p-6"
-                style={{ backgroundColor: "#f5f2ea" }}
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <FileText size={12} style={{ color: "rgba(45,74,62,0.5)" }} />
-                  <MicroLabel>Resources</MicroLabel>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {booster.technical_resources!.map((r, i) => (
-                    <Link
-                      key={i}
-                      href={r.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex items-center gap-3 rounded-xl px-4 py-3 no-underline transition-all duration-150 hover:scale-[1.01]"
-                      style={{ backgroundColor: "#d6cfc0" }}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className="text-[#2d4a3e] text-xs font-semibold truncate"
-                          style={{ fontFamily: "'Inter', sans-serif" }}
-                        >
-                          {r.description || r.url}
-                        </p>
-                        {r.description && (
-                          <p
-                            className="text-[#2d4a3e]/40 text-[11px] mt-0.5 truncate"
-                            style={{ fontFamily: "Georgia, serif" }}
-                          >
-                            {r.url.replace(/^https?:\/\//, "")}
-                          </p>
-                        )}
-                      </div>
-                      <ArrowUpRight
-                        size={11}
-                        style={{ color: "rgba(45,74,62,0.35)", flexShrink: 0 }}
-                      />
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Submission count */}
-            {submissions.length > 0 && (
-              <div
-                className="rounded-2xl px-6 py-5 flex items-center gap-4"
-                style={{ backgroundColor: "rgba(45,74,62,0.06)" }}
-              >
-                <Users size={15} style={{ color: "rgba(45,74,62,0.4)" }} />
-                <div>
-                  <p
-                    className="font-black text-[#2d4a3e]"
-                    style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: 24,
-                      letterSpacing: "-0.03em",
-                    }}
-                  >
-                    {submissions.length}
-                  </p>
-                  <p
-                    className="text-[9px] tracking-widest uppercase font-bold text-[#2d4a3e]/40"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
-                    Submission{submissions.length !== 1 ? "s" : ""}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT -- sticky actions */}
-          <aside className="sticky top-[81px] flex flex-col gap-3">
-            <MicroLabel>Actions</MicroLabel>
-
-            {/* Already submitted */}
-            {submittedProject && (
-              <div
-                className="rounded-2xl p-6"
-                style={{ backgroundColor: "#2d4a3e" }}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle size={13} style={{ color: "#d6cfc0" }} />
-                  <p
-                    className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#f0ebe0]/50"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
-                    Submitted
-                  </p>
-                </div>
-                <p
-                  className="font-black text-[#f0ebe0] uppercase leading-tight mb-5"
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: 15,
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  {submittedProject.name}
-                </p>
-                <Link
-                  href={`/boosters/projects/${submittedProject.project_id}?from_type=${type}&from_booster=${boosterId}`}
-                  className="inline-flex items-center gap-2 no-underline rounded-full px-4 py-2.5 transition-all hover:opacity-85"
-                  style={{ backgroundColor: "#d6cfc0" }}
-                >
-                  <span
-                    className="text-[9px] tracking-widest uppercase font-bold text-[#2d4a3e]"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  >
-                    View project
-                  </span>
-                  <ArrowUpRight size={11} style={{ color: "#2d4a3e" }} />
-                </Link>
-              </div>
-            )}
-
-            {/* Apply -- builder */}
-            {mounted && role === "builder" && !submittedProject && (
-              <ActionCard
-                href={`/boosters/${type}/${boosterId}/submit`}
-                label="Apply with project"
-                sublabel="Select or create a project to submit"
-                primary
-              />
-            )}
-
-            {/* Ideate */}
-            <ActionCard
-              href={`/boosters/${type}/${boosterId}/ideate`}
-              label="Ideate project"
-              sublabel="Refine your idea with the AI mentor"
-              badge="AI"
-            />
-
-            {/* Tech Buddy -- disabled until route is built */}
-            {mounted && role === "builder" && hasTracks && (
-              <ActionCard
-                label="Tech Buddy"
-                sublabel="Ask about sponsor APIs and docs"
-                badge="SOON"
-                disabled
-              />
-            )}
-
-            {/* Guest */}
-            {mounted && role !== "builder" && !submittedProject && (
-              <div
-                className="rounded-2xl p-6 border-2 border-dashed"
-                style={{ borderColor: "rgba(45,74,62,0.18)" }}
-              >
-                <p
-                  className="font-black text-[#2d4a3e] uppercase text-sm mb-2"
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Apply with project
-                </p>
-                <p
-                  className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
-                  <Link
-                    href="/login"
-                    className="underline underline-offset-2 text-[#2d4a3e] hover:opacity-70 transition-opacity"
-                  >
-                    Login as Builder
-                  </Link>{" "}
-                  to submit your project to this opportunity.
-                </p>
-                <Link
-                  href="/login"
-                  className="inline-flex items-center gap-1.5 rounded-full no-underline text-[#f0ebe0] text-[9px] tracking-widest uppercase font-bold px-5 py-2.5"
-                  style={{
-                    backgroundColor: "#2d4a3e",
-                    fontFamily: "'Inter', sans-serif",
-                  }}
-                >
-                  <Plus size={10} /> Join & Apply
-                </Link>
-              </div>
-            )}
-
-            {/* How it works */}
-            <div
-              className="rounded-2xl px-5 py-5 mt-2"
-              style={{ backgroundColor: "#f5f2ea" }}
+            <p
+              className="text-[9px] tracking-[0.25em] uppercase font-bold mb-4"
+              style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}
             >
-              <MicroLabel>How it works</MicroLabel>
-              <div className="flex flex-col gap-3 mt-3">
-                {[
-                  { n: "01", t: "Read the challenges and requirements." },
-                  { n: "02", t: "Use the AI mentor to sharpen your idea." },
-                  { n: "03", t: "Submit a project to enter the program." },
-                ].map(({ n, t }) => (
-                  <div key={n} className="flex items-start gap-3">
-                    <span
-                      className="font-black text-[#2d4a3e]/20 shrink-0"
-                      style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: 11,
-                        width: 20,
-                      }}
-                    >
-                      {n}
-                    </span>
-                    <p
-                      className="text-xs text-[#2d4a3e]/55 leading-relaxed"
-                      style={{ fontFamily: "Georgia, serif" }}
-                    >
-                      {t}
-                    </p>
-                  </div>
-                ))}
+              About the hackathon
+            </p>
+            <h1
+              className="font-black uppercase leading-[0.92]"
+              style={{ fontFamily: PX, fontSize: "clamp(34px, 4.6vw, 64px)", letterSpacing: "-0.03em", color: "#E2FEA5" }}
+            >
+              {b.name}
+            </h1>
+            {b.theme && (
+              <p className="mt-4 text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}>
+                {b.theme}
+              </p>
+            )}
+            {b.program_goal && (
+              <p className="mt-6 text-sm leading-[1.95]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>
+                {b.program_goal}
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(226,254,165,0.06)" }}>
+            <div
+              className="h-full w-full flex flex-col"
+              style={{
+                minHeight: 420,
+                backgroundColor: "#3C574B",
+              }}
+            >
+              <div className="px-6 py-5" style={{ borderBottom: "1px solid rgba(226,254,165,0.08)" }}>
+                <p className="text-[9px] tracking-[0.2em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>
+                  Poster
+                </p>
+              </div>
+              <div className="flex-1 flex items-center justify-center px-10">
+                <p className="text-sm text-center" style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}>
+                  Leave space for a hackathon poster image here.
+                </p>
               </div>
             </div>
-          </aside>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      {/* ── Ticker ──────────────────────────────────────────────────── */}
-      <div
-        className="overflow-hidden border-t border-[#2d4a3e]/10 py-3"
-        style={{ backgroundColor: "#e8e2d4" }}
-      >
-        <div
-          className="flex gap-10 whitespace-nowrap"
-          style={{ animation: "ticker 28s linear infinite" }}
+  /* ─── Speakers view ─────────────────────────────────────────── */
+  function renderSpeakers() {
+    return (
+      <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-10">
+        <p className="font-black uppercase leading-none select-none text-center mb-5" style={{ fontFamily: PX, fontSize: "clamp(48px, 6vw, 80px)", letterSpacing: "-0.04em", opacity: 0.04, lineHeight: 0.85, color: "#E2FEA5" }}>
+          SPEAKERS
+        </p>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ backgroundColor: "rgba(226,254,165,0.06)" }}>
+          <Mic2 size={24} style={{ color: "rgba(226,254,165,0.3)" }} />
+        </div>
+        <p className="text-sm text-center max-w-[360px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}>
+          Speaker lineup will be announced soon. Check back for updates on talks, workshops, and panels.
+        </p>
+      </div>
+    );
+  }
+
+  /* ─── Schedule view ─────────────────────────────────────────── */
+  function renderSchedule() {
+    return (
+      <div className="flex-1 overflow-y-auto px-14 py-14">
+        <p className="font-black uppercase leading-none select-none mb-8" style={{ fontFamily: PX, fontSize: "clamp(48px, 6vw, 80px)", letterSpacing: "-0.04em", opacity: 0.04, lineHeight: 0.85, color: "#E2FEA5" }}>
+          SCHEDULE
+        </p>
+        {b.timeline ? (
+          <div className="rounded-2xl p-8" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
+            <div className="flex items-center gap-3 mb-5">
+              <CalendarDays size={14} style={{ color: "#E2FEA5" }} />
+              <p className="text-[9px] tracking-[0.2em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Timeline</p>
+            </div>
+            <p className="text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>{b.timeline}</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20">
+            <CalendarDays size={24} style={{ color: "rgba(226,254,165,0.3)", marginBottom: 16 }} />
+            <p className="text-sm text-center max-w-[360px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}>
+              Schedule details will be available soon.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ─── Prizes view ──────────────────────────────────────────── */
+  function renderPrizes() {
+    return (
+      <div className="flex-1 overflow-y-auto px-14 py-14">
+        <p className="font-black uppercase leading-none select-none mb-8" style={{ fontFamily: PX, fontSize: "clamp(48px, 6vw, 80px)", letterSpacing: "-0.04em", opacity: 0.04, lineHeight: 0.85, color: "#E2FEA5" }}>
+          PRIZES
+        </p>
+
+        {b.bounty_pool_summary && (
+          <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
+            <div className="flex items-center gap-3 mb-4">
+              <Trophy size={14} style={{ color: "#E2FEA5" }} />
+              <p className="text-[9px] tracking-[0.2em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Prize Pool</p>
+            </div>
+            <p className="font-black uppercase" style={{ fontFamily: PX, fontSize: "clamp(28px, 4vw, 48px)", letterSpacing: "-0.02em", color: "#E2FEA5" }}>
+              {b.bounty_pool_summary}
+            </p>
+          </div>
+        )}
+
+        {hasChallenges && (
+          <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: "rgba(60,87,75,0.55)", border: "1px solid rgba(226,254,165,0.06)" }}>
+            <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>
+              {b.problem_statements.length} Challenge{b.problem_statements.length !== 1 ? "s" : ""}
+            </p>
+            <div className="flex flex-col gap-2">
+              {b.problem_statements.map((s, i) => (
+                <div key={i} className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(15,44,35,0.18)" }}>
+                  <span className="font-black shrink-0 mt-0.5" style={{ fontFamily: PX, fontSize: 11, width: 20, color: "rgba(226,254,165,0.22)" }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <p className="text-[12px] leading-relaxed flex-1" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>
+                    {s}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {hasResources && (
+          <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
+            <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Resources</p>
+            <div className="flex flex-col gap-2">
+              {b.technical_resources!.map((r, i) => (
+                <a
+                  key={i}
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 no-underline rounded-xl px-4 py-3 transition-colors"
+                  style={{ backgroundColor: "rgba(226,254,165,0.03)", border: "1px solid rgba(226,254,165,0.06)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(226,254,165,0.07)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(226,254,165,0.03)")}
+                >
+                  <FileText size={12} style={{ color: "rgba(226,254,165,0.35)", flexShrink: 0 }} />
+                  <span className="text-[12px] truncate" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>{r.description || r.url}</span>
+                  <ArrowUpRight size={10} style={{ color: "rgba(226,254,165,0.2)", flexShrink: 0, marginLeft: "auto" }} />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {hasTracks && (
+          <div className="rounded-2xl p-8" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
+            <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Sponsor Tracks</p>
+            <div className="flex flex-col gap-4">
+              {b.sponsor_tracks!.map((t, i) => (
+                <div key={i} className="flex items-start gap-4 rounded-xl px-4 py-3" style={{ backgroundColor: "rgba(226,254,165,0.03)" }}>
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0 mt-1" style={{ backgroundColor: "#E2FEA5" }} />
+                  <div>
+                    <p className="text-[13px] font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.65)" }}>{t.sponsor}</p>
+                    {t.track_description && (
+                      <p className="text-[12px] mt-1 leading-relaxed" style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}>{t.track_description}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {b.judging_criteria && b.judging_criteria.length > 0 && (
+          <div className="rounded-2xl p-8 mt-6" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
+            <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Judging Criteria</p>
+            <div className="flex flex-col gap-3">
+              {b.judging_criteria.map((c, i) => (
+                <div key={i} className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(226,254,165,0.03)" }}>
+                  <span className="font-black shrink-0" style={{ fontFamily: PX, fontSize: 11, width: 20, color: "rgba(226,254,165,0.2)" }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-[12px] font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.6)" }}>{c.name}</p>
+                    {c.description && (
+                      <p className="text-[11px] mt-0.5 leading-relaxed" style={{ fontFamily: FN, color: "rgba(226,254,165,0.3)" }}>{c.description}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!b.bounty_pool_summary && !hasTracks && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Trophy size={24} style={{ color: "rgba(226,254,165,0.3)", marginBottom: 16 }} />
+            <p className="text-sm text-center max-w-[360px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}>
+              Prize details will be announced soon.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ─── Submit view ──────────────────────────────────────────── */
+  function renderSubmit() {
+    if (submittedProject) {
+      const boosterNames: Record<string, string> = { [boosterId]: b.name };
+      const boosterTypes: Record<string, string> = { [boosterId]: type };
+      const projectSubmissions = submissions.filter(
+        (s) => s.project_id === submittedProject.project_id,
+      );
+
+      return (
+        <div className="flex-1 overflow-y-auto">
+          <ProjectEditor
+            initialProject={submittedProject}
+            initialSubmissions={projectSubmissions}
+            initialBoosterNames={boosterNames}
+            initialBoosterTypes={boosterTypes}
+            projectId={submittedProject.project_id}
+            backHref={`/boosters/${type}/${boosterId}#submit`}
+            backLabel="Back to Submit"
+            initialTeamMembers={[]}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-10">
+        <p
+          className="font-black uppercase leading-none select-none text-center mb-8"
+          style={{
+            fontFamily: PX,
+            fontSize: "clamp(48px, 6vw, 80px)",
+            letterSpacing: "-0.04em",
+            opacity: 0.04,
+            lineHeight: 0.85,
+            color: "#E2FEA5",
+          }}
         >
-          {[...Array(3)].map((_, ri) =>
-            [
-              "OPEN CALLS",
-              "\u2605",
-              "BUILD & SHIP",
-              "\u2605",
-              "GRANTS & PRIZES",
-              "\u2605",
-              "HACKATHONS",
-              "\u2605",
-            ].map((t, i) => (
-              <span
-                key={`${ri}-${i}`}
-                className="text-[10px] tracking-[0.2em] uppercase font-bold shrink-0"
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  color: t === "\u2605" ? "#2d4a3e" : "rgba(45,74,62,0.4)",
-                }}
-              >
-                {t}
-              </span>
-            )),
+          SUBMIT
+        </p>
+
+        <div className="text-center max-w-[400px]">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+            style={{ backgroundColor: "rgba(226,254,165,0.06)" }}
+          >
+            <Users size={24} style={{ color: "rgba(226,254,165,0.3)" }} />
+          </div>
+          <p
+            className="text-sm leading-relaxed mb-6"
+            style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
+          >
+            Ready to submit your project? Use the Ideator or Mentor to refine
+            your idea first, then submit when you&apos;re ready.
+          </p>
+          {mounted && role !== "builder" ? (
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-full no-underline text-[10px] tracking-widest uppercase font-bold px-8 py-3.5 transition-transform hover:scale-[1.03]"
+              style={{
+                backgroundColor: "#E2FEA5",
+                color: "#0F2C23",
+                fontFamily: PX,
+              }}
+            >
+              <Plus size={12} /> Sign in to Apply
+            </Link>
+          ) : (
+            <Link
+              href={`/boosters/${type}/${boosterId}/ideate`}
+              className="inline-flex items-center gap-2 rounded-full no-underline text-[10px] tracking-widest uppercase font-bold px-8 py-3.5 transition-transform hover:scale-[1.03]"
+              style={{
+                backgroundColor: "#E2FEA5",
+                color: "#0F2C23",
+                fontFamily: PX,
+              }}
+            >
+              <Plus size={12} /> Submit Project
+            </Link>
           )}
         </div>
       </div>
+    );
+  }
 
-      <style>{`@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-33.333%); } }`}</style>
-    </main>
+  /* ─── Render ────────────────────────────────────────────────── */
+  const SECTION_RENDERER: Record<SectionKey, () => React.JSX.Element> = {
+    ideator: renderChat,
+    mentor: renderChat,
+    info: renderInfo,
+    speakers: renderSpeakers,
+    schedule: renderSchedule,
+    prizes: renderPrizes,
+    submit: renderSubmit,
+  };
+
+  return (
+    <div className="flex flex-col h-screen overflow-hidden p-4" style={{ backgroundColor: "#F8FFE8" }}>
+      <div className="flex-1 rounded-[15px] overflow-hidden flex flex-col min-h-0" style={{ backgroundColor: "#0F2C23" }}>
+        {section !== "submit" && renderTopBar()}
+        {SECTION_RENDERER[section]()}
+      </div>
+    </div>
   );
 }
