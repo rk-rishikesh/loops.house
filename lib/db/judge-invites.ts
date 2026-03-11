@@ -11,7 +11,7 @@ export async function getJudgeInvitesForBooster(
   const { data } = await supabase
     .from("judge_invites")
     .select("*")
-    .eq("booster_id", boosterId)
+    .eq("hackathon_id", boosterId)
     .order("created_at", { ascending: false });
   return data ?? [];
 }
@@ -36,7 +36,7 @@ export async function createJudgeInvite(
   const { data } = await supabase
     .from("judge_invites")
     .insert({
-      booster_id: boosterId,
+      hackathon_id: boosterId,
       judge_user_id: judgeUserId,
       invited_by: invitedBy,
       assigned_tracks: assignedTracks ?? [],

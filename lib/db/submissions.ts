@@ -14,12 +14,12 @@ export async function submitProject(
     .from("submissions")
     .upsert(
       {
-        booster_id: boosterId,
+        hackathon_id: boosterId,
         team_id: teamId,
         project_id: projectId,
         status: "submitted" as SubmissionStatus,
       },
-      { onConflict: "booster_id,project_id" },
+      { onConflict: "hackathon_id,project_id" },
     )
     .select()
     .single();
@@ -32,7 +32,7 @@ export async function getSubmissions(
   const { data } = await supabase
     .from("submissions")
     .select("*")
-    .eq("booster_id", boosterId)
+    .eq("hackathon_id", boosterId)
     .order("created_at", { ascending: false });
   return data ?? [];
 }
@@ -44,11 +44,11 @@ export async function getSubmissionsList(
 ) {
   let query = supabase
     .from("submissions")
-    .select("id, booster_id, project_id, team_id, status, created_at")
+    .select("id, hackathon_id, project_id, team_id, status, created_at")
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (boosterId) query = query.eq("booster_id", boosterId);
+  if (boosterId) query = query.eq("hackathon_id", boosterId);
   const { data } = await query;
   return data ?? [];
 }
@@ -60,7 +60,7 @@ export async function getSubmission(
   const { data } = await supabase
     .from("submissions")
     .select("*")
-    .eq("booster_id", boosterId)
+    .eq("hackathon_id", boosterId)
     .eq("project_id", projectId)
     .single();
   return data;

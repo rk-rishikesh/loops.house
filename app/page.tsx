@@ -12,7 +12,7 @@ export default function PortalPage() {
             Loops
           </h1>
           <p className="mt-3 text-lg text-zinc-600 dark:text-zinc-400 max-w-xl mx-auto">
-            Build, host, and discover booster projects.
+            Build, host, and discover hackathon projects.
           </p>
         </div>
 
@@ -31,15 +31,15 @@ export default function PortalPage() {
           </Link>
 
           <Link
-            href="/boosters"
+            href="/hackathons"
             className="group flex flex-col items-center p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-amber-400 dark:hover:border-amber-600 hover:shadow-lg hover:shadow-amber-500/10 transition-all"
           >
             <div className="p-3 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 group-hover:scale-105 transition-transform">
               <Lightbulb className="w-8 h-8" />
             </div>
-            <h2 className="mt-4 font-semibold text-zinc-900 dark:text-white">Explore Boosters</h2>
+            <h2 className="mt-4 font-semibold text-zinc-900 dark:text-white">Explore Hackathons</h2>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 text-center">
-              Idea, momentum, and capital boosters. Apply with your project.
+              Browse hackathons and apply with your project.
             </p>
           </Link>
 

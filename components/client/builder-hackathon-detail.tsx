@@ -1,0 +1,719 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowUpRight,
+  FileText,
+  Trophy,
+  Plus,
+  Send,
+  Loader2,
+  Sparkles,
+  Mic2,
+  CalendarDays,
+  Users,
+} from "lucide-react";
+import type {
+  StoredHackathon,
+  StoredProject,
+  StoredSubmission,
+} from "@/lib/data-mappers";
+import type { AppRole } from "@/lib/supabase/types";
+import { useIsMounted } from "@/hooks/use-is-mounted";
+import { ProjectEditor } from "@/components/client/project-editor";
+
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
+
+type SectionKey = "ideator" | "mentor" | "info" | "speakers" | "schedule" | "prizes" | "submit";
+type Message = { role: "user" | "assistant"; content: string };
+
+interface BuilderHackathonDetailProps {
+  hackathonId: string;
+  hackathon: StoredHackathon | null;
+  projects: StoredProject[];
+  submissions: StoredSubmission[];
+  isAuthenticated: boolean;
+  role?: AppRole | null;
+}
+
+export function BuilderHackathonDetail({
+  hackathonId,
+  hackathon,
+  projects,
+  submissions,
+  isAuthenticated: _isAuthenticated,
+  role,
+}: BuilderHackathonDetailProps) {
+  const mounted = useIsMounted();
+
+  const [section, setSection] = useState<SectionKey>("info");
+
+  const [ideatorMessages, setIdeatorMessages] = useState<Message[]>([]);
+  const [mentorMessages, setMentorMessages] = useState<Message[]>([]);
+  const [draft, setDraft] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  const hackathonSubmission = submissions.find((s) => s.hackathon_id === hackathonId);
+  const submittedProject =
+    (hackathonSubmission && projects.find((p) => p.project_id === hackathonSubmission.project_id)) ?? null;
+
+  useEffect(() => {
+    const read = () => {
+      const h = (window.location.hash.replace("#", "") || "info") as SectionKey;
+      const valid: SectionKey[] = ["ideator", "mentor", "info", "speakers", "schedule", "prizes", "submit"];
+      setSection(valid.includes(h) ? h : "info");
+    };
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
+  }, []);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 140) + "px";
+  }, [draft]);
+
+  if (hackathon === null) {
+    return (
+      <div className="flex flex-col h-screen overflow-hidden p-4" style={{ backgroundColor: "#F8FFE8" }}>
+        <div className="flex-1 rounded-[15px] flex items-center justify-center" style={{ backgroundColor: "#0F2C23" }}>
+          <p style={{ fontFamily: FN, color: "rgba(226,254,165,0.5)" }}>Opportunity not found.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const h: StoredHackathon = hackathon;
+  const hasResources = (h.technical_resources?.length ?? 0) > 0;
+  const hasTracks = (h.sponsor_tracks?.length ?? 0) > 0;
+  const hasChallenges = (h.problem_statements?.length ?? 0) > 0;
+
+  const messages = section === "ideator" ? ideatorMessages : mentorMessages;
+  const setMessages = section === "ideator" ? setIdeatorMessages : setMentorMessages;
+
+  function injectStarter(text: string) {
+    setDraft(text);
+    setTimeout(() => textareaRef.current?.focus(), 100);
+  }
+
+  async function sendMessage(userMessage: string) {
+    if (!userMessage || loading) return;
+    setError(null);
+    setDraft("");
+    setMessages((m) => [...m, { role: "user", content: userMessage }]);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/builder-agents/project-ideator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMessage,
+          conversation_history: messages,
+          booster_context: {
+            problem_statements: h.problem_statements,
+            sponsor_tracks: h.sponsor_tracks,
+            theme: h.theme,
+          },
+          agent: section === "mentor" ? "developer" : "ideator",
+        }),
+      });
+
+      if (!res.ok || !res.body) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || "Request failed");
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let content = "";
+      setMessages((m) => [...m, { role: "assistant", content: "" }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const chunk = line.slice(6);
+          if (chunk === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(chunk);
+            if (parsed.text) {
+              content += parsed.text;
+              setMessages((m) => {
+                const next = [...m];
+                next[next.length - 1] = { role: "assistant", content };
+                return next;
+              });
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", content: "Something went wrong — please try again." },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ─── Section watermarks ─────────────────────────────────────── */
+  const WATERMARKS: Record<SectionKey, string> = {
+    ideator: "IDEATE",
+    mentor: "MENTOR",
+    info: "INFO",
+    speakers: "SPEAKERS",
+    schedule: "SCHEDULE",
+    prizes: "PRIZES",
+    submit: "SUBMIT",
+  };
+
+  const SECTION_META: Record<
+    SectionKey,
+    { label: string; accent: string; accentFaint: string; panelBg: string; panelBorder: string }
+  > = {
+    ideator: {
+      label: "Ideator",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(226,254,165,0.04)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+    mentor: {
+      label: "Mentor",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(226,254,165,0.04)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+    info: {
+      label: "About",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(60,87,75,0.55)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+    speakers: {
+      label: "Speakers",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(60,87,75,0.55)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+    schedule: {
+      label: "Schedule",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(226,254,165,0.04)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+    prizes: {
+      label: "Prizes + Challenges",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(226,254,165,0.04)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+    submit: {
+      label: "Submit",
+      accent: "#E2FEA5",
+      accentFaint: "rgba(226,254,165,0.35)",
+      panelBg: "rgba(60,87,75,0.55)",
+      panelBorder: "1px solid rgba(226,254,165,0.06)",
+    },
+  };
+
+  function renderTopBar() {
+    const m = SECTION_META[section];
+    return (
+      <div
+        className="shrink-0 flex items-center justify-between px-10 py-4"
+        style={{ borderBottom: "1px solid rgba(226,254,165,0.06)" }}
+      >
+        <p
+          className="text-[9px] tracking-[0.25em] uppercase font-bold"
+          style={{ fontFamily: PX, color: "rgba(226,254,165,0.3)" }}
+        >
+          {m.label} — {h.name}
+        </p>
+        <p
+          className="text-[9px] tracking-[0.18em] uppercase font-bold"
+          style={{ fontFamily: PX, color: "rgba(226,254,165,0.2)" }}
+        >
+          {WATERMARKS[section]}
+        </p>
+      </div>
+    );
+  }
+
+  /* ─── Chat view (shared between Ideator & Mentor) ──────────── */
+  function renderChat() {
+    const isIdeator = section === "ideator";
+    const placeholder = isIdeator ? "Describe your idea or ask for help..." : "Ask your mentor anything...";
+
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+        {messages.length === 0 ? (
+          <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-10 py-10">
+            <p
+              className="font-black uppercase leading-none select-none text-center mb-5"
+              style={{ fontFamily: PX, fontSize: "clamp(48px, 6vw, 80px)", letterSpacing: "-0.04em", opacity: 0.04, lineHeight: 0.85, color: "#E2FEA5" }}
+            >
+              {WATERMARKS[section]}
+            </p>
+            <p className="text-sm leading-relaxed text-center max-w-[440px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}>
+              {isIdeator
+                ? "Start with your idea. The Ideator will sharpen it, map it to the challenges, and outline next steps."
+                : "Your AI Mentor can guide you through technical decisions, architecture, and implementation strategy."}
+            </p>
+            <div className="mt-8 grid grid-cols-2 gap-3 max-w-[560px] w-full">
+              {(isIdeator
+                ? [
+                    "I have a rough idea — help me sharpen it",
+                    "Which challenge should I tackle?",
+                    "Turn this into an MVP plan",
+                    "What stack would you recommend?",
+                  ]
+                : [
+                    "Review my architecture approach",
+                    "How should I structure my project?",
+                    "Help me with the technical writeup",
+                    "What are the judging criteria?",
+                  ]
+              ).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => injectStarter(s)}
+                  className="rounded-2xl px-4 py-3.5 text-left text-[12px] transition-all hover:scale-[1.01] flex items-start justify-between gap-3 border-none cursor-pointer"
+                  style={{ fontFamily: FN, backgroundColor: "rgba(226,254,165,0.04)", color: "rgba(226,254,165,0.65)", border: "1px solid rgba(226,254,165,0.08)" }}
+                >
+                  <span className="leading-snug">{s}</span>
+                  <ArrowUpRight size={10} style={{ color: "rgba(226,254,165,0.2)", flexShrink: 0, marginTop: 2 }} />
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto px-10 py-8 flex flex-col gap-5">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                {msg.role === "assistant" && (
+                  <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#E2FEA5" }}>
+                    <Sparkles size={12} style={{ color: "#0F2C23" }} />
+                  </div>
+                )}
+                <div
+                  className="rounded-2xl px-5 py-4 max-w-[78%]"
+                  style={{
+                    backgroundColor: msg.role === "user" ? "rgba(226,254,165,0.12)" : "rgba(226,254,165,0.045)",
+                    borderBottomRightRadius: msg.role === "user" ? 4 : 16,
+                    borderBottomLeftRadius: msg.role === "assistant" ? 4 : 16,
+                    border: msg.role === "assistant" ? "1px solid rgba(226,254,165,0.06)" : "1px solid rgba(226,254,165,0.08)",
+                  }}
+                >
+                  <p className="text-sm leading-[1.85] whitespace-pre-wrap" style={{ fontFamily: FN, color: msg.role === "user" ? "#E2FEA5" : "rgba(226,254,165,0.65)" }}>
+                    {msg.content}
+                  </p>
+                </div>
+              </div>
+            ))}
+            <div ref={bottomRef} />
+          </div>
+        )}
+
+        {/* Input bar */}
+        <form
+          className="shrink-0 px-10 py-6"
+          style={{ borderTop: "1px solid rgba(226,254,165,0.06)" }}
+          onSubmit={(e) => { e.preventDefault(); void sendMessage(draft.trim()); }}
+        >
+          {error && (
+            <p className="mb-3 text-[12px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.6)" }}>{error}</p>
+          )}
+          <div className="flex items-end gap-3">
+            <textarea
+              ref={textareaRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={placeholder}
+              rows={1}
+              disabled={loading}
+              className="flex-1 resize-none outline-none rounded-2xl px-5 py-4 text-sm"
+              style={{ fontFamily: FN, backgroundColor: "rgba(226,254,165,0.035)", color: "#E2FEA5", border: "1px solid rgba(226,254,165,0.1)", lineHeight: 1.7 }}
+            />
+            <button
+              type="submit"
+              disabled={loading || !draft.trim()}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: "#E2FEA5" }}
+              title="Send"
+            >
+              {loading ? (
+                <Loader2 size={16} className="animate-spin" style={{ color: "#0F2C23" }} />
+              ) : (
+                <Send size={16} style={{ color: "#0F2C23" }} />
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  /* ─── Info view ─────────────────────────────────────────────── */
+  function renderInfo() {
+    return (
+      <div className="flex-1 overflow-y-auto px-14 py-14">
+        <div className="grid gap-6" style={{ gridTemplateColumns: "1.1fr 0.9fr" }}>
+          <div
+            className="rounded-2xl p-10"
+            style={{
+              backgroundColor: "rgba(226,254,165,0.04)",
+              border: "1px solid rgba(226,254,165,0.06)",
+            }}
+          >
+            <p
+              className="text-[9px] tracking-[0.25em] uppercase font-bold mb-4"
+              style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}
+            >
+              About the hackathon
+            </p>
+            <h1
+              className="font-black uppercase leading-[0.92]"
+              style={{ fontFamily: PX, fontSize: "clamp(34px, 4.6vw, 64px)", letterSpacing: "-0.03em", color: "#E2FEA5" }}
+            >
+              {h.name}
+            </h1>
+            {h.theme && (
+              <p className="mt-4 text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}>
+                {h.theme}
+              </p>
+            )}
+            {h.program_goal && (
+              <p className="mt-6 text-sm leading-[1.95]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>
+                {h.program_goal}
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(226,254,165,0.06)" }}>
+            <div
+              className="h-full w-full flex flex-col"
+              style={{
+                minHeight: 420,
+                backgroundColor: "#3C574B",
+              }}
+            >
+              <div className="px-6 py-5" style={{ borderBottom: "1px solid rgba(226,254,165,0.08)" }}>
+                <p className="text-[9px] tracking-[0.2em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>
+                  Poster
+                </p>
+              </div>
+              <div className="flex-1 flex items-center justify-center px-10">
+                <p className="text-sm text-center" style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}>
+                  Leave space for a hackathon poster image here.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Speakers view ─────────────────────────────────────────── */
+  function renderSpeakers() {
+    return (
+      <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-10">
+        <p className="font-black uppercase leading-none select-none text-center mb-5" style={{ fontFamily: PX, fontSize: "clamp(48px, 6vw, 80px)", letterSpacing: "-0.04em", opacity: 0.04, lineHeight: 0.85, color: "#E2FEA5" }}>
+          SPEAKERS
+        </p>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5" style={{ backgroundColor: "rgba(226,254,165,0.06)" }}>
+          <Mic2 size={24} style={{ color: "rgba(226,254,165,0.3)" }} />
+        </div>
+        <p className="text-sm text-center max-w-[360px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}>
+          Speaker lineup will be announced soon. Check back for updates on talks, workshops, and panels.
+        </p>
+      </div>
+    );
+  }
+
+  /* ─── Schedule view ─────────────────────────────────────────── */
+  function renderSchedule() {
+    const hasAnyDate = h.start_date || h.submission_deadline || h.judging_deadline || h.results_date;
+    return (
+      <div className="flex-1 overflow-y-auto px-14 py-14">
+        <p className="font-black uppercase leading-none select-none mb-8" style={{ fontFamily: PX, fontSize: "clamp(48px, 6vw, 80px)", letterSpacing: "-0.04em", opacity: 0.04, lineHeight: 0.85, color: "#E2FEA5" }}>
+          SCHEDULE
+        </p>
+        {hasAnyDate ? (
+          <div className="rounded-2xl p-8" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
+            <div className="flex items-center gap-3 mb-5">
+              <CalendarDays size={14} style={{ color: "#E2FEA5" }} />
+              <p className="text-[9px] tracking-[0.2em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Key Dates</p>
+            </div>
+            <div className="flex flex-col gap-3">
+              {h.start_date && (
+                <p className="text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>Start: {h.start_date}</p>
+              )}
+              {h.submission_deadline && (
+                <p className="text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>Submission Deadline: {h.submission_deadline}</p>
+              )}
+              {h.judging_deadline && (
+                <p className="text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>Judging Deadline: {h.judging_deadline}</p>
+              )}
+              {h.results_date && (
+                <p className="text-sm leading-[1.85]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>Results: {h.results_date}</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20">
+            <CalendarDays size={24} style={{ color: "rgba(226,254,165,0.3)", marginBottom: 16 }} />
+            <p className="text-sm text-center max-w-[360px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}>
+              Schedule details will be available soon.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ─── Prizes view ──────────────────────────────────────────── */
+  function renderPrizes() {
+    return (
+      <div className="flex-1 overflow-y-auto px-14 py-14">
+        <p className="font-black uppercase leading-none select-none mb-8" style={{ fontFamily: PX, fontSize: "clamp(48px, 6vw, 80px)", letterSpacing: "-0.04em", opacity: 0.04, lineHeight: 0.85, color: "#E2FEA5" }}>
+          PRIZES
+        </p>
+
+        {h.bounty_pool_summary && (
+          <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
+            <div className="flex items-center gap-3 mb-4">
+              <Trophy size={14} style={{ color: "#E2FEA5" }} />
+              <p className="text-[9px] tracking-[0.2em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Prize Pool</p>
+            </div>
+            <p className="font-black uppercase" style={{ fontFamily: PX, fontSize: "clamp(28px, 4vw, 48px)", letterSpacing: "-0.02em", color: "#E2FEA5" }}>
+              {h.bounty_pool_summary}
+            </p>
+          </div>
+        )}
+
+        {hasChallenges && (
+          <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: "rgba(60,87,75,0.55)", border: "1px solid rgba(226,254,165,0.06)" }}>
+            <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>
+              {h.problem_statements.length} Challenge{h.problem_statements.length !== 1 ? "s" : ""}
+            </p>
+            <div className="flex flex-col gap-2">
+              {h.problem_statements.map((s, i) => (
+                <div key={i} className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(15,44,35,0.18)" }}>
+                  <span className="font-black shrink-0 mt-0.5" style={{ fontFamily: PX, fontSize: 11, width: 20, color: "rgba(226,254,165,0.22)" }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <p className="text-[12px] leading-relaxed flex-1" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>
+                    {s}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {hasResources && (
+          <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
+            <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Resources</p>
+            <div className="flex flex-col gap-2">
+              {h.technical_resources!.map((r, i) => (
+                <a
+                  key={i}
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 no-underline rounded-xl px-4 py-3 transition-colors"
+                  style={{ backgroundColor: "rgba(226,254,165,0.03)", border: "1px solid rgba(226,254,165,0.06)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(226,254,165,0.07)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(226,254,165,0.03)")}
+                >
+                  <FileText size={12} style={{ color: "rgba(226,254,165,0.35)", flexShrink: 0 }} />
+                  <span className="text-[12px] truncate" style={{ fontFamily: FN, color: "rgba(226,254,165,0.55)" }}>{r.description || r.url}</span>
+                  <ArrowUpRight size={10} style={{ color: "rgba(226,254,165,0.2)", flexShrink: 0, marginLeft: "auto" }} />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {hasTracks && (
+          <div className="rounded-2xl p-8" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
+            <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Sponsor Tracks</p>
+            <div className="flex flex-col gap-4">
+              {h.sponsor_tracks!.map((t, i) => (
+                <div key={i} className="flex items-start gap-4 rounded-xl px-4 py-3" style={{ backgroundColor: "rgba(226,254,165,0.03)" }}>
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0 mt-1" style={{ backgroundColor: "#E2FEA5" }} />
+                  <div>
+                    <p className="text-[13px] font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.65)" }}>{t.sponsor}</p>
+                    {t.track_description && (
+                      <p className="text-[12px] mt-1 leading-relaxed" style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}>{t.track_description}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {h.judging_criteria && h.judging_criteria.length > 0 && (
+          <div className="rounded-2xl p-8 mt-6" style={{ backgroundColor: "rgba(226,254,165,0.04)", border: "1px solid rgba(226,254,165,0.06)" }}>
+            <p className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5" style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}>Judging Criteria</p>
+            <div className="flex flex-col gap-3">
+              {h.judging_criteria.map((c, i) => (
+                <div key={i} className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(226,254,165,0.03)" }}>
+                  <span className="font-black shrink-0" style={{ fontFamily: PX, fontSize: 11, width: 20, color: "rgba(226,254,165,0.2)" }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-[12px] font-bold" style={{ fontFamily: PX, color: "rgba(226,254,165,0.6)" }}>{c.name}</p>
+                    {c.description && (
+                      <p className="text-[11px] mt-0.5 leading-relaxed" style={{ fontFamily: FN, color: "rgba(226,254,165,0.3)" }}>{c.description}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!h.bounty_pool_summary && !hasTracks && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Trophy size={24} style={{ color: "rgba(226,254,165,0.3)", marginBottom: 16 }} />
+            <p className="text-sm text-center max-w-[360px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}>
+              Prize details will be announced soon.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ─── Submit view ──────────────────────────────────────────── */
+  function renderSubmit() {
+    if (submittedProject) {
+      const hackathonNames: Record<string, string> = { [hackathonId]: h.name };
+      const projectSubmissions = submissions.filter(
+        (s) => s.project_id === submittedProject.project_id,
+      );
+
+      return (
+        <div className="flex-1 overflow-y-auto">
+          <ProjectEditor
+            initialProject={submittedProject}
+            initialSubmissions={projectSubmissions}
+            initialHackathonNames={hackathonNames}
+            projectId={submittedProject.project_id}
+            backHref={`/hackathons/${hackathonId}#submit`}
+            backLabel="Back to Submit"
+            initialTeamMembers={[]}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-10">
+        <p
+          className="font-black uppercase leading-none select-none text-center mb-8"
+          style={{
+            fontFamily: PX,
+            fontSize: "clamp(48px, 6vw, 80px)",
+            letterSpacing: "-0.04em",
+            opacity: 0.04,
+            lineHeight: 0.85,
+            color: "#E2FEA5",
+          }}
+        >
+          SUBMIT
+        </p>
+
+        <div className="text-center max-w-[400px]">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+            style={{ backgroundColor: "rgba(226,254,165,0.06)" }}
+          >
+            <Users size={24} style={{ color: "rgba(226,254,165,0.3)" }} />
+          </div>
+          <p
+            className="text-sm leading-relaxed mb-6"
+            style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
+          >
+            Ready to submit your project? Use the Ideator or Mentor to refine
+            your idea first, then submit when you&apos;re ready.
+          </p>
+          {mounted && role !== "builder" ? (
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-full no-underline text-[10px] tracking-widest uppercase font-bold px-8 py-3.5 transition-transform hover:scale-[1.03]"
+              style={{
+                backgroundColor: "#E2FEA5",
+                color: "#0F2C23",
+                fontFamily: PX,
+              }}
+            >
+              <Plus size={12} /> Sign in to Apply
+            </Link>
+          ) : (
+            <Link
+              href={`/hackathons/${hackathonId}/ideate`}
+              className="inline-flex items-center gap-2 rounded-full no-underline text-[10px] tracking-widest uppercase font-bold px-8 py-3.5 transition-transform hover:scale-[1.03]"
+              style={{
+                backgroundColor: "#E2FEA5",
+                color: "#0F2C23",
+                fontFamily: PX,
+              }}
+            >
+              <Plus size={12} /> Submit Project
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── Render ────────────────────────────────────────────────── */
+  const SECTION_RENDERER: Record<SectionKey, () => React.JSX.Element> = {
+    ideator: renderChat,
+    mentor: renderChat,
+    info: renderInfo,
+    speakers: renderSpeakers,
+    schedule: renderSchedule,
+    prizes: renderPrizes,
+    submit: renderSubmit,
+  };
+
+  return (
+    <div className="flex flex-col h-screen overflow-hidden p-4" style={{ backgroundColor: "#F8FFE8" }}>
+      <div className="flex-1 rounded-[15px] overflow-hidden flex flex-col min-h-0" style={{ backgroundColor: "#0F2C23" }}>
+        {section !== "submit" && renderTopBar()}
+        {SECTION_RENDERER[section]()}
+      </div>
+    </div>
+  );
+}

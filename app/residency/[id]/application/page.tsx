@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Loader2, Check, X, Minus, ChevronDown, ArrowUpRight } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useTeams, useBoosters, useSaveProject } from "@/lib/queries";
+import { useTeams, useHackathons, useSaveProject } from "@/lib/queries";
 import { useAuth } from "@/app/providers";
 import { createProfileSchema, type CreateProfileSchema } from "@/lib/validations/schemas";
 
@@ -202,11 +202,11 @@ function NewProfileContent() {
   const hasAppliedDefaults = useRef(false);
 
   const { data: teams = [] } = useTeams(user?.id);
-  const { data: boosters = [] } = useBoosters();
+  const { data: hackathons = [] } = useHackathons();
   const saveProjectMutation = useSaveProject();
 
   const teamIdFromUrl = searchParams.get("team_id");
-  const boosterIdFromUrl = searchParams.get("booster_id");
+  const hackathonIdFromUrl = searchParams.get("hackathon_id");
 
   const {
     register, handleSubmit, reset, trigger, control,
@@ -217,7 +217,7 @@ function NewProfileContent() {
     mode: "onChange",
     defaultValues: {
       team_id: "", name: "", description: "", github_url: "", youtube_url: "",
-      logo_url: "", website_url: "", screenshot_urls: "", social_links: "", booster_id: "",
+      logo_url: "", website_url: "", screenshot_urls: "", social_links: "", hackathon_id: "",
     },
   });
 
@@ -225,15 +225,15 @@ function NewProfileContent() {
     if (hasAppliedDefaults.current) return;
     const validUrlTeam = teamIdFromUrl && teams.some((t) => t.id === teamIdFromUrl) ? teamIdFromUrl : null;
     const fallbackTeamId = teams[0]?.id ?? "";
-    const validUrlBooster = boosterIdFromUrl && boosters.some((b) => b.id === boosterIdFromUrl) ? boosterIdFromUrl : null;
-    if (!validUrlTeam && !fallbackTeamId && !validUrlBooster) return;
+    const validUrlHackathon = hackathonIdFromUrl && hackathons.some((b) => b.id === hackathonIdFromUrl) ? hackathonIdFromUrl : null;
+    if (!validUrlTeam && !fallbackTeamId && !validUrlHackathon) return;
     reset((prev) => ({
       ...prev,
       team_id: validUrlTeam ?? (prev.team_id || fallbackTeamId),
-      booster_id: validUrlBooster ?? prev.booster_id,
+      hackathon_id: validUrlHackathon ?? prev.hackathon_id,
     }));
     hasAppliedDefaults.current = true;
-  }, [teamIdFromUrl, boosterIdFromUrl, teams, boosters, reset]);
+  }, [teamIdFromUrl, hackathonIdFromUrl, teams, hackathons, reset]);
 
   const FORM_STEPS: {
     key: keyof CreateProfileSchema;
@@ -253,10 +253,10 @@ function NewProfileContent() {
     { key: "screenshot_urls",  label: "Any screenshots?",             sub: "One URL per line — show what you built.",   optional: true,                      placeholder: "https://example.com/screen.png", multiline: true },
     { key: "website_url",      label: "Where can people find it?",    sub: "Your live project URL.",                    optional: true,                      placeholder: "https://myproject.com",          type: "url" },
     { key: "social_links",     label: "Social links to share?",       sub: "Format: Label, URL — one per line.",        optional: true,                      placeholder: "Twitter, https://twitter.com/…",  multiline: true },
-    ...(boosters.length > 0 ? [{
-      key: "booster_id" as keyof CreateProfileSchema,
-      label: "Link a booster.",
-      sub: "Connect this profile to a booster.",
+    ...(hackathons.length > 0 ? [{
+      key: "hackathon_id" as keyof CreateProfileSchema,
+      label: "Link a hackathon.",
+      sub: "Connect this profile to a hackathon.",
       optional: true,
     }] : []),
   ];
@@ -502,14 +502,14 @@ function NewProfileContent() {
                 )
               )}
 
-              {/* booster_id */}
-              {activeStep?.key === "booster_id" && boosters.length > 0 && (
+              {/* hackathon_id */}
+              {activeStep?.key === "hackathon_id" && hackathons.length > 0 && (
                 <Controller
-                  name="booster_id"
+                  name="hackathon_id"
                   control={control}
                   render={({ field }) => (
                     <CustomDropdown
-                      options={[{ value: "", label: "None" }, ...boosters.map((b) => ({ value: b.id, label: b.name }))]}
+                      options={[{ value: "", label: "None" }, ...hackathons.map((b) => ({ value: b.id, label: b.name }))]}
                       value={field.value ?? ""}
                       onChange={field.onChange}
                       placeholder="None"
@@ -519,7 +519,7 @@ function NewProfileContent() {
               )}
 
               {/* Text + URL inputs */}
-              {activeStep?.key !== "team_id" && activeStep?.key !== "booster_id" && (
+              {activeStep?.key !== "team_id" && activeStep?.key !== "hackathon_id" && (
                 activeStep?.multiline ? (
                   <textarea
                     rows={4}

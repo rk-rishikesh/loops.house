@@ -3,17 +3,19 @@ import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { generateJSON } from "../../lib/gemini-client";
 import { checkRateLimit } from "../../lib/rate-limiter";
 
-interface BoosterInput {
+interface HackathonInput {
   id: string;
   name: string;
   theme?: string;
-  booster_type?: "idea" | "momentum" | "capital";
   problem_statements: string[];
   website_url?: string;
   technical_docs?: string;
   bounty_pool_summary?: string;
   program_goal?: string;
-  timeline?: string;
+  start_date?: string;
+  submission_deadline?: string;
+  judging_deadline?: string;
+  results_date?: string;
   organizer_notes?: string;
 }
 
@@ -39,7 +41,7 @@ interface ResourcePlan {
 }
 
 interface ResourceProvisionerResponse {
-  booster_id: string;
+  hackathon_id: string;
   resources: ResourcePlan;
   generated_at: string;
 }
@@ -59,40 +61,42 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const booster: BoosterInput | undefined = body?.booster;
+    const hackathon: HackathonInput | undefined = body?.hackathon;
 
-    if (!booster || !booster.id || !booster.name) {
+    if (!hackathon || !hackathon.id || !hackathon.name) {
       return NextResponse.json(
-        { error: "booster with id and name is required" },
+        { error: "hackathon with id and name is required" },
         { status: 400 }
       );
     }
 
-    const boosterBlock = JSON.stringify(
+    const hackathonBlock = JSON.stringify(
       {
-        id: booster.id,
-        name: booster.name,
-        theme: booster.theme,
-        booster_type: booster.booster_type,
-        problem_statements: booster.problem_statements,
-        website_url: booster.website_url,
-        technical_docs: booster.technical_docs,
-        bounty_pool_summary: booster.bounty_pool_summary,
-        program_goal: booster.program_goal,
-        timeline: booster.timeline,
-        organizer_notes: booster.organizer_notes,
+        id: hackathon.id,
+        name: hackathon.name,
+        theme: hackathon.theme,
+        problem_statements: hackathon.problem_statements,
+        website_url: hackathon.website_url,
+        technical_docs: hackathon.technical_docs,
+        bounty_pool_summary: hackathon.bounty_pool_summary,
+        program_goal: hackathon.program_goal,
+        start_date: hackathon.start_date,
+        submission_deadline: hackathon.submission_deadline,
+        judging_deadline: hackathon.judging_deadline,
+        results_date: hackathon.results_date,
+        organizer_notes: hackathon.organizer_notes,
       },
       null,
       2
     );
 
-    const prompt = `You are the Resource Provisioner AI for a builder booster (idea / momentum / capital). A host has filled out an onboarding form and a separate program generator will handle schedule & judging. Your job is to define the technical resources.
+    const prompt = `You are the Resource Provisioner AI for a hackathon. A host has filled out an onboarding form and a separate program generator will handle schedule & judging. Your job is to define the technical resources.
 
-BOOSTER INPUT (from host):
-${boosterBlock}
+HACKATHON INPUT (from host):
+${hackathonBlock}
 
 TASK:
-- Propose a technical resource plan that makes it very easy for builders to start building serious projects for this booster.
+- Propose a technical resource plan that makes it very easy for builders to start building serious projects for this hackathon.
 - Focus on: a concise technical cheatsheet, a small set of thematic tracks, and a mapping from challenge statements to resources.
 
 ASSUMPTIONS:
@@ -126,7 +130,7 @@ Return STRICT JSON matching this TypeScript type:
     const resources = await generateJSON<ResourcePlan>("flash", prompt);
 
     const response: ResourceProvisionerResponse = {
-      booster_id: booster.id,
+      hackathon_id: hackathon.id,
       resources,
       generated_at: new Date().toISOString(),
     };
@@ -141,4 +145,3 @@ Return STRICT JSON matching this TypeScript type:
 export const runtime = "nodejs";
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
-

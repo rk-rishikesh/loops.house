@@ -28,8 +28,8 @@ export function HostNav({ role }: { role: AppRole | null }) {
             <Gavel className="w-4 h-4" /> Judging
           </Link>
           {!isJudge && (
-            <Link href="/host/boosters" className="flex items-center gap-1 text-zinc-600 dark:text-zinc-400 hover:text-amber-600">
-              <Settings className="w-4 h-4" /> Boosters
+            <Link href="/host/hackathons" className="flex items-center gap-1 text-zinc-600 dark:text-zinc-400 hover:text-amber-600">
+              <Settings className="w-4 h-4" /> Hackathons
             </Link>
           )}
           {!isJudge && (

@@ -19,7 +19,7 @@ export default async function ResidencyLandingPage() {
               Apply to the Loops Residency
             </h1>
             <p className="mt-3 text-sm text-zinc-600">
-              Turn your hackathon project into a product with dedicated mentoring, boosters,
+              Turn your hackathon project into a product with dedicated mentoring, hackathons,
               and a structured build loop.
             </p>
           </div>

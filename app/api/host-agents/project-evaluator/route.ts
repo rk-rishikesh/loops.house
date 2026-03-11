@@ -23,7 +23,7 @@ interface ProjectPayload {
   flattened_codebase?: string;
 }
 
-interface BoosterPayload {
+interface HackathonPayload {
   id: string;
   name: string;
   theme?: string;
@@ -33,13 +33,13 @@ interface BoosterPayload {
 
 interface EvaluatorInput {
   project_id: string;
-  booster_id: string;
+  hackathon_id: string;
   judging_rubric?: {
     criteria: JudgingCriterion[];
   };
   judge_mode: "preview" | "official";
   project?: ProjectPayload;
-  booster?: BoosterPayload;
+  hackathon?: HackathonPayload;
 }
 
 interface CriterionScore {
@@ -78,7 +78,7 @@ const DEFAULT_CRITERIA: JudgingCriterion[] = [
   },
   {
     name: "Track/Sponsor Fit",
-    description: "Does it align with the booster theme or sponsor tracks?",
+    description: "Does it align with the hackathon theme or sponsor tracks?",
     weight: 0.15,
     max_score: 100,
   },
@@ -91,10 +91,10 @@ export async function POST(request: NextRequest) {
   try {
     const input: EvaluatorInput = await request.json();
 
-    const boosterId = input.booster_id ?? (input as { hackathon_id?: string }).hackathon_id;
-    if (!input.project_id || !boosterId) {
+    const hackathonId = input.hackathon_id ?? (input as { booster_id?: string }).booster_id;
+    if (!input.project_id || !hackathonId) {
       return NextResponse.json(
-        { error: "project_id and booster_id are required" },
+        { error: "project_id and hackathon_id are required" },
         { status: 400 }
       );
     }
@@ -135,19 +135,19 @@ export async function POST(request: NextRequest) {
 
     const criteriaScores: CriterionScore[] = [];
 
-    const booster = input.booster ?? (input as { hackathon?: BoosterPayload }).hackathon;
-    const boosterBlock = booster
-      ? `\nBOOSTER CONTEXT (use for Track/Sponsor Fit):\nName: ${booster.name}\nTheme: ${booster.theme ?? "N/A"}\nProblem statements: ${(booster.problem_statements ?? []).join("; ")}\nSponsor tracks: ${(booster.sponsor_tracks ?? []).map((t) => `${t.sponsor}: ${t.track_description}`).join("; ") || "N/A"}`
+    const hackathon = input.hackathon ?? (input as { booster?: HackathonPayload }).booster;
+    const hackathonBlock = hackathon
+      ? `\nHACKATHON CONTEXT (use for Track/Sponsor Fit):\nName: ${hackathon.name}\nTheme: ${hackathon.theme ?? "N/A"}\nProblem statements: ${(hackathon.problem_statements ?? []).join("; ")}\nSponsor tracks: ${(hackathon.sponsor_tracks ?? []).map((t) => `${t.sponsor}: ${t.track_description}`).join("; ") || "N/A"}`
       : "";
 
     // Evaluate all criteria in parallel for ~5x speedup
     const criteriaResults = await Promise.all(
       criteria.map(async (criterion) => {
-        const prompt = `You are an AI judge for a booster (idea/momentum/capital). Evaluate this project on a single criterion.
+        const prompt = `You are an AI judge for a hackathon. Evaluate this project on a single criterion.
 
 PROJECT KNOWLEDGE BASE:
 ${kbSummary.slice(0, 100000)}
-${boosterBlock}
+${hackathonBlock}
 
 CRITERION: ${criterion.name}
 DESCRIPTION: ${criterion.description}
@@ -190,7 +190,7 @@ Return JSON:
       return sum + normalized * criterion.weight * 100;
     }, 0);
 
-    const summaryPrompt = `Based on these criterion scores for a booster project, write a 1-paragraph holistic assessment (3-4 sentences).
+    const summaryPrompt = `Based on these criterion scores for a hackathon project, write a 1-paragraph holistic assessment (3-4 sentences).
 
 Scores:
 ${criteriaScores.map((c) => `- ${c.criterion_name}: ${c.score}/${c.max_score} — ${c.justification}`).join("\n")}
@@ -203,7 +203,7 @@ Return JSON: { "summary": "the paragraph" }`;
 
     const evalResult = {
       project_id: input.project_id,
-      booster_id: boosterId,
+      hackathon_id: hackathonId,
       overall_score: Math.round(overallScore),
       overall_summary: summaryResult.summary || "",
       criteria_scores: criteriaScores,
@@ -222,7 +222,7 @@ Return JSON: { "summary": "the paragraph" }`;
       .from("submissions")
       .update({ ai_score: evalResult as unknown as Json })
       .eq("project_id", input.project_id)
-      .eq("booster_id", boosterId)
+      .eq("hackathon_id", hackathonId)
       .select("id")
       .maybeSingle();
 
@@ -241,13 +241,13 @@ Return JSON: { "summary": "the paragraph" }`;
           .from("submissions")
           .upsert(
             {
-              booster_id: boosterId,
+              hackathon_id: hackathonId,
               project_id: input.project_id,
               team_id: profile.team_id,
               ai_score: evalResult as unknown as Json,
               status: "under_review" as const,
             },
-            { onConflict: "booster_id,project_id" },
+            { onConflict: "hackathon_id,project_id" },
           );
         if (upsertError) {
           console.error("[project-evaluator] Upsert fallback failed:", upsertError.message);

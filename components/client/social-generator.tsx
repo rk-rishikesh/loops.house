@@ -7,9 +7,9 @@ import { ArrowLeft, Share2, Loader2, Copy, Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { getProject, getBooster } from "@/lib/storage";
+import { getProject, getHackathon } from "@/lib/storage";
 import { socialAmplifierSchema, type SocialAmplifierSchema } from "@/lib/validations/schemas";
-import type { StoredProject, StoredBooster } from "@/lib/data-mappers";
+import type { StoredProject, StoredHackathon } from "@/lib/data-mappers";
 
 type SocialAmplifierResult = {
   linkedin_post?: string;
@@ -19,24 +19,24 @@ type SocialAmplifierResult = {
 
 export function SocialGenerator({
   projects,
-  boosters,
+  hackathons,
 }: {
   projects: StoredProject[];
-  boosters: StoredBooster[];
+  hackathons: StoredHackathon[];
 }) {
   return (
     <Suspense fallback={<div className="p-8 text-zinc-500">Loading...</div>}>
-      <SocialGeneratorContent projects={projects} boosters={boosters} />
+      <SocialGeneratorContent projects={projects} hackathons={hackathons} />
     </Suspense>
   );
 }
 
 function SocialGeneratorContent({
   projects,
-  boosters,
+  hackathons,
 }: {
   projects: StoredProject[];
-  boosters: StoredBooster[];
+  hackathons: StoredHackathon[];
 }) {
   const searchParams = useSearchParams();
   const projectIdFromUrl = searchParams.get("project_id") ?? "";
@@ -51,13 +51,13 @@ function SocialGeneratorContent({
     resolver: zodResolver(socialAmplifierSchema),
     defaultValues: {
       project_id: projectIdFromUrl || (projects[0]?.project_id ?? ""),
-      booster_id: "",
-      booster_result: "",
+      hackathon_id: "",
+      hackathon_result: "",
       tone: "excited",
     },
   });
 
-  const boosterId = watch("booster_id");
+  const hackathonId = watch("hackathon_id");
 
   const mutation = useMutation({
     mutationFn: async (data: SocialAmplifierSchema): Promise<SocialAmplifierResult> => {
@@ -78,12 +78,12 @@ function SocialGeneratorContent({
         tone: data.tone,
       };
 
-      if (data.booster_id) {
-        const booster = await getBooster(data.booster_id);
-        if (booster) {
-          payload.booster = {
-            name: booster.name,
-            ...(data.booster_result ? { result: data.booster_result } : {}),
+      if (data.hackathon_id) {
+        const hackathon = await getHackathon(data.hackathon_id);
+        if (hackathon) {
+          payload.hackathon = {
+            name: hackathon.name,
+            ...(data.hackathon_result ? { result: data.hackathon_result } : {}),
           };
         }
       }
@@ -121,7 +121,7 @@ function SocialGeneratorContent({
       </Link>
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Social amplifier</h1>
       <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-        Generate LinkedIn and Twitter posts for your project. Pick a project and optional booster context.
+        Generate LinkedIn and Twitter posts for your project. Pick a project and optional hackathon context.
       </p>
 
       <form
@@ -145,23 +145,23 @@ function SocialGeneratorContent({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Booster (optional)</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Hackathon (optional)</label>
           <select
-            {...register("booster_id")}
+            {...register("hackathon_id")}
             className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           >
             <option value="">None</option>
-            {boosters.map((b) => (
+            {hackathons.map((b) => (
               <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
         </div>
 
-        {boosterId && (
+        {hackathonId && (
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Booster result (optional)</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Hackathon result (optional)</label>
             <select
-              {...register("booster_result")}
+              {...register("hackathon_result")}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
             >
               <option value="">Participant</option>

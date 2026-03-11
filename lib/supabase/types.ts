@@ -16,7 +16,6 @@ import type { Database } from "./database.types";
 // Convenience enum aliases — import { AppRole } from "@/lib/supabase/types"
 // ---------------------------------------------------------------------------
 export type AppRole = Database["public"]["Enums"]["app_role"];
-export type BoosterType = Database["public"]["Enums"]["booster_type"];
-export type BoosterStatus = Database["public"]["Enums"]["booster_status"];
+export type HackathonStatus = Database["public"]["Enums"]["hackathon_status"];
 export type SubmissionStatus = Database["public"]["Enums"]["submission_status"];
 export type HostApplicationStatus = Database["public"]["Enums"]["host_application_status"];

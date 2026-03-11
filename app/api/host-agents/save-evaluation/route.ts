@@ -12,11 +12,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { project_id, booster_id, ai_score, human_score, status } = body;
+    const { project_id, hackathon_id, ai_score, human_score, status } = body;
 
-    if (!project_id || !booster_id) {
+    if (!project_id || !hackathon_id) {
       return NextResponse.json(
-        { error: "project_id and booster_id are required" },
+        { error: "project_id and hackathon_id are required" },
         { status: 400 },
       );
     }
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       .from("submissions")
       .update(updates)
       .eq("project_id", project_id)
-      .eq("booster_id", booster_id)
+      .eq("hackathon_id", hackathon_id)
       .select()
       .maybeSingle();
 
@@ -62,14 +62,14 @@ export async function POST(request: NextRequest) {
       }
 
       const upsertPayload: SubmissionInsert = {
-        booster_id,
+        hackathon_id,
         project_id,
         team_id: profile.team_id,
         ...updates,
       };
       const { data: upserted, error: upsertError } = await supabaseAdmin
         .from("submissions")
-        .upsert(upsertPayload, { onConflict: "booster_id,project_id" })
+        .upsert(upsertPayload, { onConflict: "hackathon_id,project_id" })
         .select()
         .single();
 

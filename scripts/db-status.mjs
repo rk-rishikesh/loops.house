@@ -32,7 +32,7 @@ const client = createClient(url, key);
 const tables = [
   'users', 'teams', 'team_members', 'loops_profiles',
   'knowledge_bases', 'knowledge_base_chunks',
-  'boosters', 'booster_tracks', 'booster_track_chunks',
+  'hackathons', 'hackathon_tracks', 'hackathon_track_chunks',
   'submissions', 'host_applications', 'judge_invites', 'rate_limits',
 ];
 
@@ -53,7 +53,7 @@ for (const table of tables) {
 console.log('\n=== RPC Functions ===');
 const rpcs = [
   { name: 'match_kb_chunks', args: { query_embedding: JSON.stringify(Array(768).fill(0)), match_project_id: '00000000-0000-0000-0000-000000000000', match_count: 1 } },
-  { name: 'match_booster_chunks', args: { query_embedding: JSON.stringify(Array(768).fill(0)), match_booster_id: '00000000-0000-0000-0000-000000000000', match_count: 1 } },
+  { name: 'match_hackathon_chunks', args: { query_embedding: JSON.stringify(Array(768).fill(0)), match_hackathon_id: '00000000-0000-0000-0000-000000000000', match_count: 1 } },
   { name: 'check_rate_limit', args: { p_key: '__health_check__', p_max_requests: 999, p_window_ms: 3600000 } },
 ];
 
@@ -74,7 +74,7 @@ await client.from('rate_limits').delete().eq('key', '__health_check__');
 // Check storage buckets
 console.log('\n=== Storage Buckets ===');
 let allBucketsOk = true;
-const expectedBuckets = ['project-assets', 'booster-assets', 'user-avatars'];
+const expectedBuckets = ['project-assets', 'hackathon-assets', 'user-avatars'];
 const { data: buckets, error: bucketsErr } = await client.storage.listBuckets();
 if (bucketsErr) {
   console.log(`  Error: ${bucketsErr.message}`);

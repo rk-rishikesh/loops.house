@@ -15,11 +15,11 @@ export async function GET(request: NextRequest) {
   const view = searchParams.get("view") ?? "metrics";
 
   if (view === "metrics") {
-    const [users, profiles, boosters, submissions, pendingApps] =
+    const [users, profiles, hackathons, submissions, pendingApps] =
       await Promise.all([
         supabaseAdmin.from("users").select("id", { count: "exact", head: true }),
         supabaseAdmin.from("loops_profiles").select("id", { count: "exact", head: true }),
-        supabaseAdmin.from("boosters").select("id", { count: "exact", head: true }),
+        supabaseAdmin.from("hackathons").select("id", { count: "exact", head: true }),
         supabaseAdmin.from("submissions").select("id", { count: "exact", head: true }),
         supabaseAdmin
           .from("host_applications")
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       total_users: users.count ?? 0,
       total_profiles: profiles.count ?? 0,
-      total_boosters: boosters.count ?? 0,
+      total_hackathons: hackathons.count ?? 0,
       total_submissions: submissions.count ?? 0,
       pending_host_applications: pendingApps.count ?? 0,
     });

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { generateJSON } from "../../lib/gemini-client";
 
-interface BoosterPayload {
+interface HackathonPayload {
   id: string;
   name: string;
   theme?: string;
@@ -18,14 +18,14 @@ interface MetricsPayload {
 }
 
 interface MetricInput {
-  booster_id: string;
+  hackathon_id: string;
   report_type: "overview" | "submissions" | "builder-graph" | "momentum-leaderboard" | "full";
   as_of?: string;
-  booster?: BoosterPayload;
+  hackathon?: HackathonPayload;
   metrics?: MetricsPayload;
 }
 
-interface BoosterMetrics {
+interface HackathonMetrics {
   total_registrations: number;
   total_teams: number;
   total_submissions: number;
@@ -46,7 +46,7 @@ interface AnalystOutput {
   highlights: string[];
 }
 
-async function fetchMetrics(_boosterId: string): Promise<BoosterMetrics> {
+async function fetchMetrics(_hackathonId: string): Promise<HackathonMetrics> {
   // MVP: Return placeholder structure. In production, this queries the DB.
   // This function is the integration point for your database layer.
   return {
@@ -70,41 +70,41 @@ export async function POST(request: NextRequest) {
   try {
     const input: MetricInput = await request.json();
 
-    const boosterId = input.booster_id ?? (input as { hackathon_id?: string }).hackathon_id;
-    if (!boosterId) {
-      return NextResponse.json({ error: "booster_id is required" }, { status: 400 });
+    const hackathonId = input.hackathon_id ?? (input as { booster_id?: string }).booster_id;
+    if (!hackathonId) {
+      return NextResponse.json({ error: "hackathon_id is required" }, { status: 400 });
     }
 
     const reportType = input.report_type || "full";
     const asOf = input.as_of || new Date().toISOString();
-    const booster = input.booster ?? (input as { hackathon?: BoosterPayload }).hackathon ?? null;
+    const hackathon = input.hackathon ?? (input as { booster?: HackathonPayload }).booster ?? null;
     const clientMetrics = input.metrics ?? null;
 
-    const totalSubmissions = clientMetrics ? clientMetrics.total_submissions : (await fetchMetrics(boosterId)).total_submissions;
+    const totalSubmissions = clientMetrics ? clientMetrics.total_submissions : (await fetchMetrics(hackathonId)).total_submissions;
 
     if (totalSubmissions === 0) {
       const narrative =
-        booster?.name != null
-          ? `No submissions have been received yet for **${booster.name}**. Once builders start submitting their projects, this report will include participation health, submission quality distribution, popular tech stacks, and notable patterns.`
-          : "No submissions have been received yet for this booster. Once builders start submitting their projects, this report will include participation health, submission quality distribution, popular tech stacks, and notable patterns.";
+        hackathon?.name != null
+          ? `No submissions have been received yet for **${hackathon.name}**. Once builders start submitting their projects, this report will include participation health, submission quality distribution, popular tech stacks, and notable patterns.`
+          : "No submissions have been received yet for this hackathon. Once builders start submitting their projects, this report will include participation health, submission quality distribution, popular tech stacks, and notable patterns.";
       return NextResponse.json({
         narrative,
         raw_metrics: clientMetrics ?? { total_submissions: 0, submissions: [], top_categories: [], top_tech_stacks: [] },
         generated_at: asOf,
         highlights: [
           "No submissions received yet",
-          booster?.name ? `Booster: ${booster.name}` : "Booster selected",
+          hackathon?.name ? `Hackathon: ${hackathon.name}` : "Hackathon selected",
         ],
       });
     }
 
-    const boosterBlock = booster
+    const hackathonBlock = hackathon
       ? JSON.stringify(
           {
-            name: booster.name,
-            theme: booster.theme,
-            problem_statements: booster.problem_statements,
-            sponsor_tracks: booster.sponsor_tracks,
+            name: hackathon.name,
+            theme: hackathon.theme,
+            problem_statements: hackathon.problem_statements,
+            sponsor_tracks: hackathon.sponsor_tracks,
           },
           null,
           2
@@ -125,11 +125,11 @@ export async function POST(request: NextRequest) {
           null,
           2
         )
-      : JSON.stringify(await fetchMetrics(boosterId), null, 2);
+      : JSON.stringify(await fetchMetrics(hackathonId), null, 2);
 
-    const prompt = `You are an event analytics assistant. Based on this booster and its submission data, produce a concise report for the event host.
+    const prompt = `You are an event analytics assistant. Based on this hackathon and its submission data, produce a concise report for the event host.
 
-${boosterBlock ? `BOOSTER:\n${boosterBlock}\n\n` : ""}METRICS / SUBMISSIONS:
+${hackathonBlock ? `HACKATHON:\n${hackathonBlock}\n\n` : ""}METRICS / SUBMISSIONS:
 ${metricsBlock}
 
 Report type requested: ${reportType}
