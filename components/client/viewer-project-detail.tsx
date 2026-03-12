@@ -22,7 +22,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import type { StoredProject } from "@/lib/data-mappers";
+import type { StoredProject, StoredSubmission } from "@/lib/data-mappers";
 import {
   type ChatInputSchema,
   type CodeQuerySchema,
@@ -1016,9 +1016,13 @@ function AIBubble({ onClick, hasMessages }: { onClick: () => void; hasMessages: 
 /* ─── Component ──────────────────────────────────────────────────── */
 export function ViewerProjectDetail({
   project,
+  submissions = [],
+  hackathonNames = {},
 }: {
   project: StoredProject | null;
   projectId: string;
+  submissions?: StoredSubmission[];
+  hackathonNames?: Record<string, string>;
 }) {
   const [chatState, setChatState] = useState<ChatState>("bubble");
   const [chatMsgs] = useState<ChatMessage[]>([]);
@@ -1169,6 +1173,30 @@ export function ViewerProjectDetail({
                   <ExternalLink size={12} style={{ color: "rgba(15,44,35,0.35)", flexShrink: 0 }} />
                 </Link>
               ))}
+            </div>
+          )}
+
+          {/* Hackathon participations */}
+          {submissions.length > 0 && (
+            <div className="rounded-2xl p-5" style={{ backgroundColor: "#0F2C23" }}>
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.15em]"
+                style={{ fontFamily: PX, color: "rgba(226,254,165,0.4)" }}
+              >
+                Incubated at
+              </span>
+              <div className="flex flex-col gap-2 mt-2">
+                {submissions.map((s) => (
+                  <Link
+                    key={s.id}
+                    href={`/hackathons/${s.hackathon_id}`}
+                    className="text-[12px] text-[#F8FFE8]/70 no-underline hover:text-[#F8FFE8] transition-colors"
+                    style={{ fontFamily: FN }}
+                  >
+                    → {hackathonNames[s.hackathon_id] ?? "Hackathon"}
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </aside>

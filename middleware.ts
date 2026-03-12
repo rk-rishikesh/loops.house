@@ -7,7 +7,7 @@ import {
   getBasicCapabilities,
 } from "@/lib/capabilities";
 
-const PUBLIC = ["/hackathons", "/residency", "/events", "/projects"];
+const PUBLIC = ["/hackathons", "/residency", "/projects"];
 
 const CAPS_COOKIE = "x-user-caps";
 const CAPS_HINT_COOKIE = "x-user-caps-hint"; // JS-readable twin

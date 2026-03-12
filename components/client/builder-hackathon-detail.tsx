@@ -21,6 +21,7 @@ import { ProjectEditor } from "@/components/client/project-editor";
 import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { submitProjectAction } from "@/lib/actions";
+import { computePhase } from "@/lib/hackathon-phase";
 import type {
   StoredHackathon,
   StoredProject,
@@ -55,6 +56,8 @@ export function BuilderHackathonDetail({
   isAuthenticated,
 }: BuilderHackathonDetailProps) {
   const mounted = useIsMounted();
+  const phase = hackathon ? computePhase(hackathon) : "upcoming";
+  const canSubmit = phase === "building";
 
   const [section, setSection] = useState<SectionKey>("info");
 
@@ -1080,6 +1083,15 @@ export function BuilderHackathonDetail({
                 <Plus size={12} /> Sign in to Apply
               </Link>
             </>
+          ) : !canSubmit ? (
+            <p
+              className="text-sm leading-relaxed"
+              style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
+            >
+              {phase === "upcoming"
+                ? "Submissions haven't opened yet. Check back when the hackathon starts."
+                : "Submissions are closed. This hackathon is in the " + phase + " phase."}
+            </p>
           ) : availableProjects.length === 0 ? (
             <>
               <p

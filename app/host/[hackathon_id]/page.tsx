@@ -367,19 +367,12 @@ export default async function HostBoosterPage({
                   </div>
                   <div className="flex justify-end">
                     <Link
-                      href={`/judge/${hackathon.id}/${sub.project_id}`}
+                      href={`/projects/${sub.project_id}`}
                       className="group inline-flex items-center gap-0 rounded-full overflow-hidden no-underline transition-all duration-200 hover:shadow-md"
                       style={{ backgroundColor: "#2d4a3e" }}
                     >
                       <span
-                        className="py-2.5 px-3 text-[9px] tracking-[0.15em] uppercase font-bold text-[#f0ebe0] flex items-center gap-2"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      >
-                        <Gavel size={11} />
-                        Grade
-                      </span>
-                      <span
-                        className="w-8 h-8 flex items-center justify-center rounded-full m-1"
+                        className="w-8 h-8 flex items-center justify-center rounded-full border"
                         style={{ backgroundColor: "#d6cfc0" }}
                       >
                         <ArrowUpRight size={13} className="text-[#2d4a3e]" />
