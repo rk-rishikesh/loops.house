@@ -1,11 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createContext, useContext, useEffect, useState } from "react";
 import { CACHE_CONFIG } from "@/lib/cache-config";
-import type { User, Session } from "@supabase/supabase-js";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 
 export interface ClientCapabilities {
   isAdmin: boolean;
@@ -50,11 +49,7 @@ async function fetchCaps(
   userId: string,
 ): Promise<ClientCapabilities | null> {
   const [userResult, cohostResult, judgeResult] = await Promise.all([
-    supabase
-      .from("users")
-      .select("is_admin, is_event_creator")
-      .eq("id", userId)
-      .single(),
+    supabase.from("users").select("is_admin, is_event_creator").eq("id", userId).single(),
     supabase
       .from("hackathon_cohosts")
       .select("hackathon_id", { count: "exact", head: true })

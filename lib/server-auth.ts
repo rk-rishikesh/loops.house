@@ -5,11 +5,8 @@
  * Uses cookie for fast path, falls back to DB.
  */
 
+import { getFullCapabilities, type UserCapabilities } from "@/lib/capabilities";
 import { createServerSupabase } from "@/lib/supabase/server";
-import {
-  getFullCapabilities,
-  type UserCapabilities,
-} from "@/lib/capabilities";
 
 export type { UserCapabilities };
 

@@ -1,15 +1,6 @@
+import { ArrowUpRight, FolderOpen, Plus, Users, Zap } from "lucide-react";
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  Plus,
-  Users,
-  FolderOpen,
-  Zap,
-} from "lucide-react";
-import {
-  getHackathonsServer,
-  getSubmissionsForHackathonsServer,
-} from "@/lib/server-data";
+import { getHackathonsServer, getSubmissionsForHackathonsServer } from "@/lib/server-data";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -60,14 +51,11 @@ export default async function HostDashboardPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
-
       <div className="px-10 pt-10 pb-24">
-
         {/* ══ HERO + STAT ROW ══════════════════════════════════════════
             Heading left — four stat tiles stacked right.             */}
         <div className="mb-14">
           <div className="flex items-start justify-between gap-8">
-
             <div>
               <h1
                 className="font-black text-[#0F2C23] leading-[0.88] uppercase"
@@ -81,9 +69,12 @@ export default async function HostDashboardPage() {
                 <br />
                 DASHBOARD.
               </h1>
-              <p className="text-[#0F2C23]/50 mt-5 max-w-[360px] leading-relaxed"
-                style={{ fontFamily: FN, fontSize: "clamp(14px, 1.3vw, 16px)" }}>
-                Manage programs, review builder submissions, and track engagement across your hackathons.
+              <p
+                className="text-[#0F2C23]/50 mt-5 max-w-[360px] leading-relaxed"
+                style={{ fontFamily: FN, fontSize: "clamp(14px, 1.3vw, 16px)" }}
+              >
+                Manage programs, review builder submissions, and track engagement across your
+                hackathons.
               </p>
             </div>
 
@@ -121,21 +112,29 @@ export default async function HostDashboardPage() {
                   iconColor: "rgba(15,44,35,0.22)",
                 },
               ].map(({ label, value, sub, bg, fg, fgMid, Icon, iconColor }) => (
-                <div key={label}
+                <div
+                  key={label}
                   className="rounded-xl flex items-center gap-4 px-5 py-3"
-                  style={{ backgroundColor: bg, minWidth: 220 }}>
-                  <p className="font-black leading-none"
-                    style={{ fontFamily: PX, fontSize: 22, letterSpacing: "-0.03em", color: fg }}>
+                  style={{ backgroundColor: bg, minWidth: 220 }}
+                >
+                  <p
+                    className="font-black leading-none"
+                    style={{ fontFamily: PX, fontSize: 22, letterSpacing: "-0.03em", color: fg }}
+                  >
                     {value}
                   </p>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[8px] tracking-[0.14em] uppercase font-bold leading-none"
-                      style={{ fontFamily: PX, color: fgMid }}>
+                    <p
+                      className="text-[8px] tracking-[0.14em] uppercase font-bold leading-none"
+                      style={{ fontFamily: PX, color: fgMid }}
+                    >
                       {label}
                     </p>
                     {sub && (
-                      <p className="text-[7px] uppercase mt-1"
-                        style={{ fontFamily: PX, color: fgMid, opacity: 0.65 }}>
+                      <p
+                        className="text-[7px] uppercase mt-1"
+                        style={{ fontFamily: PX, color: fgMid, opacity: 0.65 }}
+                      >
                         {sub}
                       </p>
                     )}
@@ -149,19 +148,25 @@ export default async function HostDashboardPage() {
 
         {/* ══ MAIN SECTION — hosted boosters table ═════════════════════ */}
         <div className="mt-8">
-
           {/* ── Hosted boosters table ──────────────────────────── */}
           <div className="rounded-3xl p-8" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
-
             {/* Section header */}
             <div className="flex items-center justify-between mb-7">
               <div>
-                <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-1"
-                  style={{ fontFamily: PX }}>
+                <p
+                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-1"
+                  style={{ fontFamily: PX }}
+                >
                   Your Programs
                 </p>
-                <h2 className="font-black text-[#0F2C23] uppercase"
-                  style={{ fontFamily: PX, fontSize: "clamp(20px, 2.5vw, 28px)", letterSpacing: "-0.02em" }}>
+                <h2
+                  className="font-black text-[#0F2C23] uppercase"
+                  style={{
+                    fontFamily: PX,
+                    fontSize: "clamp(20px, 2.5vw, 28px)",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
                   Hosted Hackathons.
                 </h2>
               </div>
@@ -170,20 +175,26 @@ export default async function HostDashboardPage() {
             {/* Empty state */}
             {hackathons.length === 0 && (
               <div className="py-20 text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-5"
-                  style={{ backgroundColor: "rgba(15,44,35,0.08)", color: "#0F2C23" }}>
+                <div
+                  className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-5"
+                  style={{ backgroundColor: "rgba(15,44,35,0.08)", color: "#0F2C23" }}
+                >
                   <Zap size={22} />
                 </div>
-                <p className="font-black text-[#0F2C23] uppercase mb-2"
-                  style={{ fontFamily: PX, fontSize: 16, letterSpacing: "-0.01em" }}>
+                <p
+                  className="font-black text-[#0F2C23] uppercase mb-2"
+                  style={{ fontFamily: PX, fontSize: 16, letterSpacing: "-0.01em" }}
+                >
                   No hackathons yet.
                 </p>
                 <p className="text-[#0F2C23]/50 text-sm mb-7" style={{ fontFamily: FN }}>
                   Create your first program to start engaging builders.
                 </p>
-                <Link href="/host/hackathons"
+                <Link
+                  href="/host/hackathons"
                   className="inline-flex items-center gap-2 no-underline rounded-full text-[#E2FEA5] text-[9px] tracking-widest uppercase font-bold px-5 py-2.5"
-                  style={{ backgroundColor: "#0F2C23", fontFamily: PX }}>
+                  style={{ backgroundColor: "#0F2C23", fontFamily: PX }}
+                >
                   <Plus size={10} /> Create Hackathon
                 </Link>
               </div>
@@ -202,13 +213,7 @@ export default async function HostDashboardPage() {
                     borderBottom: "1px solid rgba(15,44,35,0.12)",
                   }}
                 >
-                  {[
-                    "#",
-                    "Program",
-                    "Stats",
-                    "Status",
-                    "",
-                  ].map((col) => (
+                  {["#", "Program", "Stats", "Status", ""].map((col) => (
                     <p
                       key={col}
                       className="text-[9px] tracking-[0.12em] uppercase font-bold text-[#0F2C23]/30"
@@ -227,35 +232,41 @@ export default async function HostDashboardPage() {
                   };
                   const status = getHackathonStatus(b.status);
                   return (
-                    <Link
-                      key={b.id}
-                      href={`/host/${b.id}`}
-                      className="no-underline group"
-                    >
+                    <Link key={b.id} href={`/host/${b.id}`} className="no-underline group">
                       <div
                         className="grid py-5 transition-all rounded-sm hover:bg-[rgba(15,44,35,0.025)]"
                         style={{
-                          gridTemplateColumns:
-                            "24px 1fr 110px 150px 110px 36px",
+                          gridTemplateColumns: "24px 1fr 110px 150px 110px 36px",
                           gap: "0 14px",
                           borderBottom: "1px solid rgba(15,44,35,0.07)",
                           alignItems: "center",
                         }}
                       >
                         {/* Index */}
-                        <span className="font-black text-[#0F2C23]/18 tabular-nums"
-                          style={{ fontFamily: PX, fontSize: 11, letterSpacing: "-0.01em" }}>
+                        <span
+                          className="font-black text-[#0F2C23]/18 tabular-nums"
+                          style={{ fontFamily: PX, fontSize: 11, letterSpacing: "-0.01em" }}
+                        >
                           {String(idx + 1).padStart(2, "0")}
                         </span>
 
                         {/* Name + theme */}
                         <div className="min-w-0">
-                          <p className="font-black text-[#0F2C23] uppercase leading-tight truncate"
-                            style={{ fontFamily: PX, fontSize: "clamp(12px, 1.3vw, 14px)", letterSpacing: "-0.01em" }}>
+                          <p
+                            className="font-black text-[#0F2C23] uppercase leading-tight truncate"
+                            style={{
+                              fontFamily: PX,
+                              fontSize: "clamp(12px, 1.3vw, 14px)",
+                              letterSpacing: "-0.01em",
+                            }}
+                          >
                             {b.name}
                           </p>
                           {b.theme && (
-                            <p className="text-[#0F2C23]/45 text-[11px] mt-0.5 truncate" style={{ fontFamily: FN }}>
+                            <p
+                              className="text-[#0F2C23]/45 text-[11px] mt-0.5 truncate"
+                              style={{ fontFamily: FN }}
+                            >
                               {b.theme}
                             </p>
                           )}
@@ -282,22 +293,24 @@ export default async function HostDashboardPage() {
                               status === "Ongoing"
                                 ? "rgba(76,175,125,0.12)"
                                 : status === "Upcoming"
-                                ? "rgba(214,168,74,0.12)"
-                                : "rgba(15,44,35,0.06)",
+                                  ? "rgba(214,168,74,0.12)"
+                                  : "rgba(15,44,35,0.06)",
                             color:
                               status === "Ongoing"
                                 ? "#2d7a50"
                                 : status === "Upcoming"
-                                ? "#8a6a1a"
-                                : "rgba(15,44,35,0.55)",
+                                  ? "#8a6a1a"
+                                  : "rgba(15,44,35,0.55)",
                           }}
                         >
                           {status}
                         </span>
 
                         {/* Arrow */}
-                        <span className="w-8 h-8 flex items-center justify-center rounded-full transition-transform group-hover:scale-105"
-                          style={{ backgroundColor: "#0F2C23" }}>
+                        <span
+                          className="w-8 h-8 flex items-center justify-center rounded-full transition-transform group-hover:scale-105"
+                          style={{ backgroundColor: "#0F2C23" }}
+                        >
                           <ArrowUpRight size={13} style={{ color: "#E2FEA5" }} />
                         </span>
                       </div>
@@ -309,7 +322,6 @@ export default async function HostDashboardPage() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }

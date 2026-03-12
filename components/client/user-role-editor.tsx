@@ -1,8 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { adminToggleEventCreatorAction, adminToggleAdminAction } from "@/lib/actions";
+import { useTransition } from "react";
+import { adminToggleAdminAction, adminToggleEventCreatorAction } from "@/lib/actions";
 import type { UserListItem } from "@/lib/data-mappers";
 
 export function UserRoleEditor({ users }: { users: UserListItem[] }) {
@@ -25,9 +25,7 @@ export function UserRoleEditor({ users }: { users: UserListItem[] }) {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
-        User Management
-      </h1>
+      <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">User Management</h1>
       <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-8">
         {users.length} registered users
       </p>
@@ -36,12 +34,24 @@ export function UserRoleEditor({ users }: { users: UserListItem[] }) {
         <table className="w-full text-sm">
           <thead className="bg-zinc-100 dark:bg-zinc-800">
             <tr>
-              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Email</th>
-              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Name</th>
-              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Provider</th>
-              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Admin</th>
-              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Event Creator</th>
-              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Joined</th>
+              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">
+                Email
+              </th>
+              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">
+                Name
+              </th>
+              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">
+                Provider
+              </th>
+              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">
+                Admin
+              </th>
+              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">
+                Event Creator
+              </th>
+              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">
+                Joined
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -53,9 +63,7 @@ export function UserRoleEditor({ users }: { users: UserListItem[] }) {
                 <td className="px-4 py-2.5 text-zinc-700 dark:text-zinc-300">
                   {u.display_name ?? "\u2014"}
                 </td>
-                <td className="px-4 py-2.5 text-zinc-500 text-xs">
-                  {u.oauth_provider ?? "email"}
-                </td>
+                <td className="px-4 py-2.5 text-zinc-500 text-xs">{u.oauth_provider ?? "email"}</td>
                 <td className="px-4 py-2.5">
                   <label className="inline-flex items-center gap-2 cursor-pointer">
                     <input
@@ -77,7 +85,9 @@ export function UserRoleEditor({ users }: { users: UserListItem[] }) {
                       disabled={isPending}
                       className="rounded border-zinc-300 dark:border-zinc-700"
                     />
-                    <span className="text-xs text-zinc-500">{u.is_event_creator ? "Yes" : "No"}</span>
+                    <span className="text-xs text-zinc-500">
+                      {u.is_event_creator ? "Yes" : "No"}
+                    </span>
                   </label>
                 </td>
                 <td className="px-4 py-2.5 text-zinc-500 text-xs">

@@ -10,7 +10,10 @@ export function AboutSection() {
     >
       <div className="relative flex items-start px-[38px] py-[40px]" style={{ minHeight: 648 }}>
         {/* Left side: images */}
-        <div className="relative flex items-start gap-4 shrink-0" style={{ width: 600, height: 560 }}>
+        <div
+          className="relative flex items-start gap-4 shrink-0"
+          style={{ width: 600, height: 560 }}
+        >
           {/* Robot/mascot card */}
           <div
             className="relative overflow-hidden rounded-[20px] mt-[180px]"
@@ -52,7 +55,10 @@ export function AboutSection() {
               maxWidth: 543,
             }}
           >
-            Loops House is where builders turn ideas into real, lasting projects. Whether you&apos;re hacking solo or shipping with a team, this is your permanent home to ideate, build, and grow.{"\n\n"}Join hackathons, get AI-powered feedback, and showcase your work to the ecosystem. Every project deserves more than a weekend.
+            Loops House is where builders turn ideas into real, lasting projects. Whether
+            you&apos;re hacking solo or shipping with a team, this is your permanent home to ideate,
+            build, and grow.{"\n\n"}Join hackathons, get AI-powered feedback, and showcase your work
+            to the ecosystem. Every project deserves more than a weekend.
           </p>
 
           {/* CTA */}

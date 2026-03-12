@@ -16,7 +16,7 @@ export type ModelTier = keyof typeof MODELS;
 export async function generateContent(
   model: ModelTier,
   contents: Parameters<typeof ai.models.generateContent>[0]["contents"],
-  config?: Record<string, unknown>
+  config?: Record<string, unknown>,
 ) {
   const response = await ai.models.generateContent({
     model: MODELS[model],
@@ -29,7 +29,7 @@ export async function generateContent(
 export async function generateJSON<T = unknown>(
   model: ModelTier,
   prompt: string,
-  systemInstruction?: string
+  systemInstruction?: string,
 ): Promise<T> {
   const response = await ai.models.generateContent({
     model: MODELS[model],
@@ -47,7 +47,7 @@ export async function generateJSON<T = unknown>(
 export async function streamContent(
   model: ModelTier,
   contents: Parameters<typeof ai.models.generateContentStream>[0]["contents"],
-  config?: Record<string, unknown>
+  config?: Record<string, unknown>,
 ) {
   const stream = await ai.models.generateContentStream({
     model: MODELS[model],

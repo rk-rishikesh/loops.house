@@ -1,10 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import {
-  encodeCapsForCookie,
-  decodeCapsFromCookie,
-  getBasicCapabilities,
   type BasicCapabilities,
+  decodeCapsFromCookie,
+  encodeCapsForCookie,
+  getBasicCapabilities,
 } from "@/lib/capabilities";
 
 const PUBLIC = ["/hackathons", "/residency", "/events", "/projects"];
@@ -55,12 +55,7 @@ export async function middleware(request: NextRequest) {
 
   // Unauthenticated user on a public route → let through
   const isPublicRoute = PUBLIC.some((p) => pathname.startsWith(p));
-  if (
-    !session &&
-    pathname !== "/login" &&
-    !isStaticAssetRequest &&
-    !isPublicRoute
-  ) {
+  if (!session && pathname !== "/login" && !isStaticAssetRequest && !isPublicRoute) {
     // Unauthenticated on protected route → login
     if (
       pathname === "/" ||
@@ -84,8 +79,7 @@ export async function middleware(request: NextRequest) {
   if (!session) return response;
 
   // Extract user ID from JWT
-  const userId = JSON.parse(atob(session.access_token.split(".")[1]))
-    .sub as string;
+  const userId = JSON.parse(atob(session.access_token.split(".")[1])).sub as string;
 
   // Resolve capabilities — cookie first, then DB
   let caps: BasicCapabilities | null = null;

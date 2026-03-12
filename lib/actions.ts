@@ -9,22 +9,20 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { createServerSupabase } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { storedToProfileInsert } from "@/lib/data-mappers";
 import type { StoredProject } from "@/lib/data-mappers";
+import { storedToProfileInsert } from "@/lib/data-mappers";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createServerSupabase } from "@/lib/supabase/server";
 import type { Database, Json, SubmissionStatus } from "@/lib/supabase/types";
 import {
-  createTeamSchema,
   createInvitationSchema,
+  createTeamSchema,
   respondInvitationSchema,
 } from "@/lib/validations/schemas";
 
 // --- Result type ---
 
-export type ActionResult<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type ActionResult<T = void> = { success: true; data: T } | { success: false; error: string };
 
 // --- Auth helper ---
 
@@ -53,9 +51,7 @@ async function getAuthUser() {
 
 // --- Project actions ---
 
-export async function saveProjectAction(
-  project: StoredProject,
-): Promise<ActionResult> {
+export async function saveProjectAction(project: StoredProject): Promise<ActionResult> {
   const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
@@ -70,10 +66,7 @@ export async function saveProjectAction(
       .select();
     if (error) return { success: false, error: error.message };
   } else {
-    const { error } = await supabase
-      .from("loops_profiles")
-      .insert(payload)
-      .select();
+    const { error } = await supabase.from("loops_profiles").insert(payload).select();
     if (error) return { success: false, error: error.message };
   }
 
@@ -82,17 +75,12 @@ export async function saveProjectAction(
   return { success: true, data: undefined };
 }
 
-export async function removeProjectAction(
-  projectId: string,
-): Promise<ActionResult> {
+export async function removeProjectAction(projectId: string): Promise<ActionResult> {
   const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   const supabase = await createServerSupabase();
-  const { error } = await supabase
-    .from("loops_profiles")
-    .delete()
-    .eq("id", projectId);
+  const { error } = await supabase.from("loops_profiles").delete().eq("id", projectId);
   if (error) return { success: false, error: error.message };
 
   revalidatePath("/builder/projects");
@@ -101,25 +89,23 @@ export async function removeProjectAction(
 
 // --- Hackathon actions ---
 
-export async function saveHackathonAction(
-  hackathon: {
-    id: string;
-    name: string;
-    problem_statements: string[];
-    theme?: string;
-    is_exclusive?: boolean;
-    website_url?: string;
-    technical_resources?: { url: string; description: string }[];
-    technical_docs?: string;
-    bounty_pool_summary?: string;
-    program_goal?: string;
-    start_date?: string;
-    submission_deadline?: string;
-    judging_deadline?: string;
-    results_date?: string;
-    organizer_notes?: string;
-  },
-): Promise<ActionResult> {
+export async function saveHackathonAction(hackathon: {
+  id: string;
+  name: string;
+  problem_statements: string[];
+  theme?: string;
+  is_exclusive?: boolean;
+  website_url?: string;
+  technical_resources?: { url: string; description: string }[];
+  technical_docs?: string;
+  bounty_pool_summary?: string;
+  program_goal?: string;
+  start_date?: string;
+  submission_deadline?: string;
+  judging_deadline?: string;
+  results_date?: string;
+  organizer_notes?: string;
+}): Promise<ActionResult> {
   const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
@@ -190,9 +176,9 @@ export async function saveHackathonAction(
 
 // --- Team actions ---
 
-export async function saveTeamAction(
-  data: { name: string },
-): Promise<ActionResult<{ id: string; name: string }>> {
+export async function saveTeamAction(data: {
+  name: string;
+}): Promise<ActionResult<{ id: string; name: string }>> {
   const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
@@ -209,10 +195,12 @@ export async function saveTeamAction(
 
   // Auto-add owner as member
   if (team) {
-    await supabase.from("team_members").upsert(
-      { team_id: team.id, user_id: user.id, role: "owner" },
-      { onConflict: "team_id,user_id" },
-    );
+    await supabase
+      .from("team_members")
+      .upsert(
+        { team_id: team.id, user_id: user.id, role: "owner" },
+        { onConflict: "team_id,user_id" },
+      );
   }
 
   revalidatePath("/builder/teams");
@@ -230,11 +218,7 @@ export async function addTeamMemberAction(
 
   // Verify caller is team owner
   const supabase = await createServerSupabase();
-  const { data: team } = await supabase
-    .from("teams")
-    .select("owner_id")
-    .eq("id", teamId)
-    .single();
+  const { data: team } = await supabase.from("teams").select("owner_id").eq("id", teamId).single();
   if (!team || team.owner_id !== user.id) {
     return { success: false, error: "Only the team owner can add members" };
   }
@@ -286,11 +270,7 @@ export async function removeTeamMemberAction(
 
   // Verify caller is team owner
   const supabase = await createServerSupabase();
-  const { data: team } = await supabase
-    .from("teams")
-    .select("owner_id")
-    .eq("id", teamId)
-    .single();
+  const { data: team } = await supabase.from("teams").select("owner_id").eq("id", teamId).single();
   if (!team || team.owner_id !== user.id) {
     return { success: false, error: "Only the team owner can remove members" };
   }
@@ -344,16 +324,14 @@ export async function submitProjectAction(
 
 // --- Evaluation actions ---
 
-export async function saveHumanEvaluationAction(
-  data: {
-    project_id: string;
-    hackathon_id: string;
-    scores: Record<string, number>;
-    remarks: Record<string, string>;
-    overall_notes: string;
-    overall_score: number;
-  },
-): Promise<ActionResult> {
+export async function saveHumanEvaluationAction(data: {
+  project_id: string;
+  hackathon_id: string;
+  scores: Record<string, number>;
+  remarks: Record<string, string>;
+  overall_notes: string;
+  overall_score: number;
+}): Promise<ActionResult> {
   const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
@@ -385,20 +363,18 @@ export async function saveHumanEvaluationAction(
     return { success: false, error: "Submission not found" };
   }
 
-  const { error } = await supabaseAdmin
-    .from("human_evaluations")
-    .upsert(
-      {
-        submission_id: submission.id,
-        judge_id: user.id,
-        hackathon_id: data.hackathon_id,
-        scores: data.scores as unknown as Json,
-        remarks: data.remarks as unknown as Json,
-        overall_notes: data.overall_notes || null,
-        overall_score: data.overall_score,
-      },
-      { onConflict: "submission_id,judge_id" },
-    );
+  const { error } = await supabaseAdmin.from("human_evaluations").upsert(
+    {
+      submission_id: submission.id,
+      judge_id: user.id,
+      hackathon_id: data.hackathon_id,
+      scores: data.scores as unknown as Json,
+      remarks: data.remarks as unknown as Json,
+      overall_notes: data.overall_notes || null,
+      overall_score: data.overall_score,
+    },
+    { onConflict: "submission_id,judge_id" },
+  );
 
   if (error) return { success: false, error: error.message };
 
@@ -420,7 +396,10 @@ export async function createInvitationAction(data: {
   const parsed = createInvitationSchema.safeParse(data);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
-    console.error("[createInvitationAction] validation failed:", JSON.stringify({ path: issue.path, message: issue.message, received: data }));
+    console.error(
+      "[createInvitationAction] validation failed:",
+      JSON.stringify({ path: issue.path, message: issue.message, received: data }),
+    );
     return { success: false, error: `${issue.path.join(".")}: ${issue.message}` };
   }
 
@@ -456,7 +435,8 @@ export async function createInvitationAction(data: {
         .eq("hackathon_id", hackathon_id!)
         .eq("user_id", user.id)
         .maybeSingle();
-      if (!cohost) return { success: false, error: "Only host, cohost, or admin can invite judges" };
+      if (!cohost)
+        return { success: false, error: "Only host, cohost, or admin can invite judges" };
     }
   }
 
@@ -485,12 +465,15 @@ export async function createInvitationAction(data: {
     project_id: project_id ?? null,
   };
 
-  const { error } = await supabaseAdmin
-    .from("invitations")
-    .insert(insertPayload);
+  const { error } = await supabaseAdmin.from("invitations").insert(insertPayload);
 
   if (error) {
-    console.error("[createInvitationAction] insert failed:", error.message, "payload:", JSON.stringify(insertPayload));
+    console.error(
+      "[createInvitationAction] insert failed:",
+      error.message,
+      "payload:",
+      JSON.stringify(insertPayload),
+    );
     return { success: false, error: error.message };
   }
 
@@ -518,7 +501,8 @@ export async function respondToInvitationAction(data: {
     .eq("status", "pending")
     .single();
 
-  if (fetchError || !invitation) return { success: false, error: "Invitation not found or already resolved" };
+  if (fetchError || !invitation)
+    return { success: false, error: "Invitation not found or already resolved" };
 
   // Verify this user's email matches the invitation
   if (invitation.email !== user.email) {
@@ -529,7 +513,10 @@ export async function respondToInvitationAction(data: {
   const inviterValid = await verifyInviterStillAuthorized(invitation);
   if (!inviterValid) {
     await supabaseAdmin.from("invitations").delete().eq("id", invitation.id);
-    return { success: false, error: "The person who invited you no longer has permission. Invitation removed." };
+    return {
+      success: false,
+      error: "The person who invited you no longer has permission. Invitation removed.",
+    };
   }
 
   if (!parsed.data.accept) {
@@ -543,10 +530,7 @@ export async function respondToInvitationAction(data: {
   const { type, hackathon_id, project_id } = invitation;
 
   if (type === "event_host") {
-    await supabaseAdmin
-      .from("users")
-      .update({ is_event_creator: true })
-      .eq("id", user.id);
+    await supabaseAdmin.from("users").update({ is_event_creator: true }).eq("id", user.id);
   } else if (type === "cohost") {
     await supabaseAdmin
       .from("hackathon_cohosts")
@@ -591,14 +575,12 @@ export async function respondToInvitationAction(data: {
 }
 
 /** Verify the inviter still holds the capability that authorized the invitation */
-async function verifyInviterStillAuthorized(
-  invitation: {
-    type: string;
-    invited_by: string;
-    hackathon_id: string | null;
-    project_id: string | null;
-  },
-): Promise<boolean> {
+async function verifyInviterStillAuthorized(invitation: {
+  type: string;
+  invited_by: string;
+  hackathon_id: string | null;
+  project_id: string | null;
+}): Promise<boolean> {
   const { type, invited_by, hackathon_id, project_id } = invitation;
 
   if (type === "event_host") {

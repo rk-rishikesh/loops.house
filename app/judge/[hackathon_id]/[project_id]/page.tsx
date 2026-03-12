@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/lib/server-auth";
+import { JudgingForm } from "@/components/client/judging-form";
 import { canJudgeHackathon } from "@/lib/capabilities";
+import { getServerAuth } from "@/lib/server-auth";
 import {
-  getSubmissionServer,
-  getProjectServer,
   getHackathonServer,
   getJudgeEvaluationServer,
+  getProjectServer,
+  getSubmissionServer,
 } from "@/lib/server-data";
-import { JudgingForm } from "@/components/client/judging-form";
 
 export default async function JudgeProjectPage({
   params,
@@ -45,11 +45,7 @@ export default async function JudgeProjectPage({
   }
 
   // Fetch this judge's existing evaluation (if any)
-  const myEvaluation = await getJudgeEvaluationServer(
-    hackathon_id,
-    submission.id,
-    auth.userId,
-  );
+  const myEvaluation = await getJudgeEvaluationServer(hackathon_id, submission.id, auth.userId);
 
   return (
     <JudgingForm

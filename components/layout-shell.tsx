@@ -2,7 +2,12 @@
 
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
-import { SideNav, NAV_WIDTH_EXPANDED, NAV_WIDTH_COLLAPSED, onNavToggle } from "@/components/side-nav";
+import {
+  NAV_WIDTH_COLLAPSED,
+  NAV_WIDTH_EXPANDED,
+  onNavToggle,
+  SideNav,
+} from "@/components/side-nav";
 
 function useNavWidth() {
   const collapsed = useSyncExternalStore(

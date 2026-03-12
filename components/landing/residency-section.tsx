@@ -5,8 +5,7 @@ export function ResidencySection() {
     <section
       className="relative w-full overflow-hidden rounded-[35px]"
       style={{
-        background:
-          "linear-gradient(180deg, rgba(15, 44, 35, 0) -100%, #0F2C23 50%)",
+        background: "linear-gradient(180deg, rgba(15, 44, 35, 0) -100%, #0F2C23 50%)",
       }}
     >
       {/* Top content area */}
@@ -45,14 +44,13 @@ export function ResidencySection() {
             style={{ fontFamily: "'Funnel Sans', sans-serif" }}
           >
             <p>
-              The Loops House Residency is a high-intensity, 5 day co-living and
-              co-building program. It&apos;s designed for deep collaboration,
-              removing the isolation of building and replacing it with a focused
-              execution loop.
+              The Loops House Residency is a high-intensity, 5 day co-living and co-building
+              program. It&apos;s designed for deep collaboration, removing the isolation of building
+              and replacing it with a focused execution loop.
             </p>
             <p>
-              Through technical sprints, peer feedback, and ecosystem
-              mentorship, founders move faster from idea to validation together.
+              Through technical sprints, peer feedback, and ecosystem mentorship, founders move
+              faster from idea to validation together.
             </p>
           </div>
 
@@ -101,12 +99,11 @@ export function ResidencySection() {
                 fontWeight: 300,
               }}
             >
-              Building in isolation is a trap. Loops House brings the brightest
-              minds into one room for 5 days of unfiltered growth. By combining
-              Peer Feedback Loops with Ecosystem Mentorship, we eliminate the
-              &ldquo;echo chamber&rdquo; effect. Founders receive no-BS
-              critiques from fellow builders and direct guidance from industry
-              leaders who move the needle.
+              Building in isolation is a trap. Loops House brings the brightest minds into one room
+              for 5 days of unfiltered growth. By combining Peer Feedback Loops with Ecosystem
+              Mentorship, we eliminate the &ldquo;echo chamber&rdquo; effect. Founders receive no-BS
+              critiques from fellow builders and direct guidance from industry leaders who move the
+              needle.
             </p>
           </div>
 
@@ -128,12 +125,10 @@ export function ResidencySection() {
                 fontWeight: 300,
               }}
             >
-              The hardest transition is moving from &ldquo;code that
-              works&rdquo; to &ldquo;a product that scales.&rdquo; Through
-              Rapid-fire Technical Sprints, we strip away the fluff to polish
-              your core features and ensure technical hygiene. We don&apos;t
-              just help you ship; we help you find the traction worth building
-              for.
+              The hardest transition is moving from &ldquo;code that works&rdquo; to &ldquo;a
+              product that scales.&rdquo; Through Rapid-fire Technical Sprints, we strip away the
+              fluff to polish your core features and ensure technical hygiene. We don&apos;t just
+              help you ship; we help you find the traction worth building for.
             </p>
           </div>
 

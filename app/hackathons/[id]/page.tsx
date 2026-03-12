@@ -1,16 +1,12 @@
+import { BuilderHackathonDetail } from "@/components/client/builder-hackathon-detail";
 import { getServerAuth } from "@/lib/server-auth";
 import {
   getHackathonWithTracksServer,
-  getUserProjectsServer,
   getSubmissionsServer,
+  getUserProjectsServer,
 } from "@/lib/server-data";
-import { BuilderHackathonDetail } from "@/components/client/builder-hackathon-detail";
 
-export default async function HackathonDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function HackathonDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const auth = await getServerAuth();
   const { id } = await params;
 

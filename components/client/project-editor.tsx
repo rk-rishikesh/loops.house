@@ -1,35 +1,31 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
 import {
   ArrowLeft,
+  Check,
+  Code2,
   ExternalLink,
   FileText,
-  Code2,
-  Video,
-  Palette,
   Github,
   Globe,
-  Youtube,
-  Share2,
   Loader2,
-  UserPlus,
-  Trash2,
-  Users,
+  Palette,
   Pencil,
-  Check,
+  Share2,
+  Trash2,
+  UserPlus,
+  Users,
+  Video,
+  Youtube,
 } from "lucide-react";
-import {
-  saveProjectAction,
-  createInvitationAction,
-  removeTeamMemberAction,
-} from "@/lib/actions";
-import { useEffect, useState, useTransition } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { ImageUpload } from "@/components/client/image-upload";
+import { createInvitationAction, removeTeamMemberAction, saveProjectAction } from "@/lib/actions";
 import type { StoredProject, StoredSubmission } from "@/lib/data-mappers";
 import type { TeamMemberInfo } from "@/lib/server-data";
-import { ImageUpload } from "@/components/client/image-upload";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -107,11 +103,7 @@ function InlineSaveCancel({
         className="inline-flex items-center gap-1.5 text-[9px] tracking-[0.14em] uppercase font-bold px-3.5 py-2 rounded-full border-none cursor-pointer transition-all hover:opacity-90 disabled:opacity-40"
         style={{ fontFamily: PX, backgroundColor: "#0F2C23", color: "#F8FFE8" }}
       >
-        {saving ? (
-          <Loader2 size={10} className="animate-spin" />
-        ) : (
-          <Check size={10} />
-        )}
+        {saving ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
         {saving ? "Saving…" : "Save"}
       </button>
       <button
@@ -180,13 +172,10 @@ export function ProjectEditor({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const [project, setProject] = useState<StoredProject | null | undefined>(
-    initialProject,
-  );
+  const [project, setProject] = useState<StoredProject | null | undefined>(initialProject);
   const [submissions] = useState<StoredSubmission[]>(initialSubmissions);
   const [hackathonNames] = useState<Record<string, string>>(initialHackathonNames);
-  const [teamMembers, setTeamMembers] =
-    useState<TeamMemberInfo[]>(initialTeamMembers);
+  const [teamMembers, setTeamMembers] = useState<TeamMemberInfo[]>(initialTeamMembers);
   const [memberEmail, setMemberEmail] = useState("");
   const [memberError, setMemberError] = useState<string | null>(null);
   const [memberSuccess, setMemberSuccess] = useState<string | null>(null);
@@ -223,9 +212,7 @@ export function ProjectEditor({
       name: project.name ?? "",
       tagline: project.tagline ?? "",
       description: String(
-        project.refined_description ??
-          (project as { description?: string }).description ??
-          "",
+        project.refined_description ?? (project as { description?: string }).description ?? "",
       ),
       category: project.category ?? "",
       website_url: project.website_url ?? "",
@@ -346,11 +333,7 @@ export function ProjectEditor({
         className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: "#F8FFE8" }}
       >
-        <Loader2
-          size={18}
-          className="animate-spin"
-          style={{ color: "#0F2C23" }}
-        />
+        <Loader2 size={18} className="animate-spin" style={{ color: "#0F2C23" }} />
       </div>
     );
 
@@ -359,10 +342,7 @@ export function ProjectEditor({
 
   if (project === null)
     return (
-      <div
-        className="min-h-screen px-10 py-12"
-        style={{ backgroundColor: "#F8FFE8" }}
-      >
+      <div className="min-h-screen px-10 py-12" style={{ backgroundColor: "#F8FFE8" }}>
         <Link
           href={effectiveBackHref}
           className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#0F2C23]/50 no-underline"
@@ -388,9 +368,7 @@ export function ProjectEditor({
   const screenshots = (p.screenshot_urls ?? []) as string[];
   const tags = (p.tech_stack_tags ?? []) as string[];
   const features = (p.key_features ?? []) as string[];
-  const desc = String(
-    p.refined_description ?? (p as { description?: string }).description ?? "",
-  );
+  const desc = String(p.refined_description ?? (p as { description?: string }).description ?? "");
 
   const links = [
     { key: "github", href: p.github_url, icon: Github, label: "GitHub" },
@@ -445,17 +423,12 @@ export function ProjectEditor({
                   <button
                     key={tab.key}
                     type="button"
-                    onClick={() =>
-                      isEnabled &&
-                      setActiveLabTab(tab.key as typeof activeLabTab)
-                    }
+                    onClick={() => isEnabled && setActiveLabTab(tab.key as typeof activeLabTab)}
                     disabled={!isEnabled}
                     className="inline-flex items-center gap-1.5 rounded-full border-none cursor-pointer px-3.5 py-1.5 text-[8px] tracking-[0.16em] uppercase font-bold disabled:cursor-not-allowed"
                     style={{
                       fontFamily: PX,
-                      backgroundColor: isActive
-                        ? "#E2FEA5"
-                        : "rgba(226,254,165,0.06)",
+                      backgroundColor: isActive ? "#E2FEA5" : "rgba(226,254,165,0.06)",
                       color: isActive ? "#0F2C23" : "rgba(226,254,165,0.4)",
                       opacity: isEnabled ? 1 : 0.35,
                     }}
@@ -488,8 +461,8 @@ export function ProjectEditor({
                   className="text-sm leading-relaxed text-center max-w-[440px]"
                   style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
                 >
-                  Generate polished LinkedIn and X posts to announce your
-                  project. Pick a prompt or write your own.
+                  Generate polished LinkedIn and X posts to announce your project. Pick a prompt or
+                  write your own.
                 </p>
                 <div className="mt-8 grid grid-cols-2 gap-3 max-w-[560px] w-full">
                   {[
@@ -541,9 +514,7 @@ export function ProjectEditor({
                           type="button"
                           onClick={async () => {
                             try {
-                              await navigator.clipboard.writeText(
-                                socialResult.linkedin_post!,
-                              );
+                              await navigator.clipboard.writeText(socialResult.linkedin_post!);
                             } catch {}
                           }}
                           className="text-[8px] tracking-[0.16em] uppercase font-bold px-3 py-1.5 rounded-full border-none cursor-pointer"
@@ -567,55 +538,52 @@ export function ProjectEditor({
                       </p>
                     </div>
                   )}
-                  {socialResult.twitter_post &&
-                    !socialResult.twitter_post.startsWith("Error") && (
-                      <div
-                        className="rounded-2xl p-6"
-                        style={{
-                          backgroundColor: "rgba(226,254,165,0.04)",
-                          border: "1px solid rgba(226,254,165,0.06)",
-                        }}
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <p
-                            className="text-[9px] tracking-[0.2em] uppercase font-bold"
-                            style={{
-                              fontFamily: PX,
-                              color: "rgba(226,254,165,0.3)",
-                            }}
-                          >
-                            X / Twitter
-                          </p>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(
-                                  socialResult.twitter_post!,
-                                );
-                              } catch {}
-                            }}
-                            className="text-[8px] tracking-[0.16em] uppercase font-bold px-3 py-1.5 rounded-full border-none cursor-pointer"
-                            style={{
-                              fontFamily: PX,
-                              backgroundColor: "rgba(226,254,165,0.08)",
-                              color: "rgba(226,254,165,0.5)",
-                            }}
-                          >
-                            Copy
-                          </button>
-                        </div>
+                  {socialResult.twitter_post && !socialResult.twitter_post.startsWith("Error") && (
+                    <div
+                      className="rounded-2xl p-6"
+                      style={{
+                        backgroundColor: "rgba(226,254,165,0.04)",
+                        border: "1px solid rgba(226,254,165,0.06)",
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-4">
                         <p
-                          className="text-sm leading-[1.85] whitespace-pre-wrap"
+                          className="text-[9px] tracking-[0.2em] uppercase font-bold"
                           style={{
-                            fontFamily: FN,
-                            color: "rgba(226,254,165,0.65)",
+                            fontFamily: PX,
+                            color: "rgba(226,254,165,0.3)",
                           }}
                         >
-                          {socialResult.twitter_post}
+                          X / Twitter
                         </p>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(socialResult.twitter_post!);
+                            } catch {}
+                          }}
+                          className="text-[8px] tracking-[0.16em] uppercase font-bold px-3 py-1.5 rounded-full border-none cursor-pointer"
+                          style={{
+                            fontFamily: PX,
+                            backgroundColor: "rgba(226,254,165,0.08)",
+                            color: "rgba(226,254,165,0.5)",
+                          }}
+                        >
+                          Copy
+                        </button>
                       </div>
-                    )}
+                      <p
+                        className="text-sm leading-[1.85] whitespace-pre-wrap"
+                        style={{
+                          fontFamily: FN,
+                          color: "rgba(226,254,165,0.65)",
+                        }}
+                      >
+                        {socialResult.twitter_post}
+                      </p>
+                    </div>
+                  )}
                   {socialResult.suggested_hashtags &&
                     socialResult.suggested_hashtags.length > 0 && (
                       <div className="flex flex-wrap gap-2">
@@ -679,11 +647,7 @@ export function ProjectEditor({
                   title="Generate"
                 >
                   {socialLoading ? (
-                    <Loader2
-                      size={16}
-                      className="animate-spin"
-                      style={{ color: "#0F2C23" }}
-                    />
+                    <Loader2 size={16} className="animate-spin" style={{ color: "#0F2C23" }} />
                   ) : (
                     <Share2 size={16} style={{ color: "#0F2C23" }} />
                   )}
@@ -706,9 +670,7 @@ export function ProjectEditor({
               <input
                 type="text"
                 value={editForm.name}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, name: e.target.value }))
-                }
+                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="Project name"
                 className="outline-none placeholder-[#0F2C23]/30 font-black uppercase"
                 style={{
@@ -723,9 +685,7 @@ export function ProjectEditor({
               <input
                 type="text"
                 value={editForm.tagline}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, tagline: e.target.value }))
-                }
+                onChange={(e) => setEditForm((f) => ({ ...f, tagline: e.target.value }))}
                 placeholder="Tagline — one sentence that captures the essence…"
                 className="outline-none placeholder-[#0F2C23]/30 text-right self-end max-w-[420px] w-full"
                 style={{
@@ -776,10 +736,7 @@ export function ProjectEditor({
         </div>
 
         {/* ── Three-column grid ─────────────────────────────────────────── */}
-        <div
-          className="grid gap-5 items-start"
-          style={{ gridTemplateColumns: "280px 1fr 340px" }}
-        >
+        <div className="grid gap-5 items-start" style={{ gridTemplateColumns: "280px 1fr 340px" }}>
           {/* ═══ LEFT — sidebar ═══════════════════════════════════════════ */}
           <aside className="sticky top-[81px] flex flex-col gap-5">
             {/* Logo */}
@@ -800,10 +757,7 @@ export function ProjectEditor({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <Code2
-                    size={48}
-                    style={{ color: "#0F2C23", opacity: 0.22 }}
-                  />
+                  <Code2 size={48} style={{ color: "#0F2C23", opacity: 0.22 }} />
                 )}
                 <div className="absolute top-3 right-3">
                   <PencilBtn onClick={() => openSection("logo")} />
@@ -813,9 +767,7 @@ export function ProjectEditor({
                 <div className="mt-2">
                   <ImageUpload
                     value={editForm.logo_url}
-                    onChange={(url) =>
-                      setEditForm((f) => ({ ...f, logo_url: url }))
-                    }
+                    onChange={(url) => setEditForm((f) => ({ ...f, logo_url: url }))}
                     placeholder="Upload logo"
                   />
                   <InlineSaveCancel
@@ -841,9 +793,7 @@ export function ProjectEditor({
                     <input
                       type="text"
                       value={editForm.category}
-                      onChange={(e) =>
-                        setEditForm((f) => ({ ...f, category: e.target.value }))
-                      }
+                      onChange={(e) => setEditForm((f) => ({ ...f, category: e.target.value }))}
                       placeholder="e.g. AI, FinTech, DevTool"
                       className="outline-none placeholder-[#0F2C23]/30"
                       style={inlineInputStyle}
@@ -941,9 +891,7 @@ export function ProjectEditor({
                       <input
                         type="url"
                         value={editForm[key]}
-                        onChange={(e) =>
-                          setEditForm((f) => ({ ...f, [key]: e.target.value }))
-                        }
+                        onChange={(e) => setEditForm((f) => ({ ...f, [key]: e.target.value }))}
                         placeholder={placeholder}
                         className="outline-none placeholder-[#0F2C23]/30"
                         style={inlineInputStyle}
@@ -979,10 +927,7 @@ export function ProjectEditor({
                             backgroundColor: "#0F2C23",
                           }}
                         >
-                          <Icon
-                            size={24}
-                            style={{ color: "rgba(226,254,165,0.6)" }}
-                          />
+                          <Icon size={24} style={{ color: "rgba(226,254,165,0.6)" }} />
                           <span
                             className="text-[8px] tracking-[0.14em] uppercase font-bold"
                             style={{
@@ -1047,14 +992,9 @@ export function ProjectEditor({
 
             {/* Hackathon submissions */}
             {submissions.length > 0 && (
-              <div
-                className="rounded-2xl p-5"
-                style={{ backgroundColor: "#0F2C23" }}
-              >
+              <div className="rounded-2xl p-5" style={{ backgroundColor: "#0F2C23" }}>
                 <SectionLabel>
-                  <span style={{ color: "rgba(226,254,165,0.4)" }}>
-                    Incubated at
-                  </span>
+                  <span style={{ color: "rgba(226,254,165,0.4)" }}>Incubated at</span>
                 </SectionLabel>
                 <div className="flex flex-col gap-2 mt-2">
                   {submissions.map((s) => (
@@ -1122,10 +1062,7 @@ export function ProjectEditor({
 
             {/* Gallery */}
             {screenshots.length > 0 && (
-              <div
-                className="rounded-3xl p-7"
-                style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
-              >
+              <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
                 <SectionLabel>Gallery</SectionLabel>
                 <div className="grid grid-cols-2 gap-3 mt-3">
                   {screenshots.slice(0, 4).map((src, i) => (
@@ -1152,10 +1089,7 @@ export function ProjectEditor({
           <aside className="sticky top-[81px] flex flex-col gap-4">
             {/* Features card */}
             {features.length > 0 && (
-              <div
-                className="rounded-3xl p-7"
-                style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
-              >
+              <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
                 <SectionLabel>Key Features</SectionLabel>
                 <div className="border-t border-[#0F2C23]/12 mt-3">
                   {features.slice(0, 8).map((f, i) => (
@@ -1188,10 +1122,7 @@ export function ProjectEditor({
 
             {/* Knowledge base */}
             {(p.kb_sections?.length ?? 0) > 0 && (
-              <div
-                className="rounded-3xl p-7"
-                style={{ backgroundColor: "#0F2C23" }}
-              >
+              <div className="rounded-3xl p-7" style={{ backgroundColor: "#0F2C23" }}>
                 <p
                   className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#F8FFE8]/40 mb-4"
                   style={{ fontFamily: PX }}
@@ -1199,10 +1130,7 @@ export function ProjectEditor({
                   Knowledge Base
                 </p>
                 {typeof p.knowledge_base_chunks === "number" && (
-                  <p
-                    className="text-sm text-[#F8FFE8]/50 mb-4"
-                    style={{ fontFamily: FN }}
-                  >
+                  <p className="text-sm text-[#F8FFE8]/50 mb-4" style={{ fontFamily: FN }}>
                     {p.knowledge_base_chunks} chunks indexed
                   </p>
                 )}
@@ -1326,10 +1254,7 @@ export function ProjectEditor({
                                 className="flex items-start gap-2 text-[12px] text-[#F8FFE8]/60"
                                 style={{ fontFamily: FN }}
                               >
-                                <span className="shrink-0 mt-0.5 opacity-40">
-                                  →
-                                </span>{" "}
-                                {f}
+                                <span className="shrink-0 mt-0.5 opacity-40">→</span> {f}
                               </li>
                             ))}
                           </ul>
@@ -1347,10 +1272,7 @@ export function ProjectEditor({
                           ]
                             .filter((c) => c.value)
                             .map(({ label, value }) => (
-                              <div
-                                key={label}
-                                className="flex flex-col items-center gap-1.5"
-                              >
+                              <div key={label} className="flex flex-col items-center gap-1.5">
                                 <span
                                   className="w-10 h-10 rounded-xl border border-[#F8FFE8]/15"
                                   style={{
@@ -1384,10 +1306,7 @@ export function ProjectEditor({
 
             {/* Tech stack (if no KB) */}
             {tags.length > 0 && !(p.kb_sections?.length ?? 0) && (
-              <div
-                className="rounded-2xl px-6 py-5"
-                style={{ backgroundColor: "#0F2C23" }}
-              >
+              <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#0F2C23" }}>
                 <p
                   className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#F8FFE8]/40 mb-4"
                   style={{ fontFamily: PX }}
@@ -1414,10 +1333,7 @@ export function ProjectEditor({
 
             {/* Manage Team */}
             {p.team_id && (
-              <div
-                className="rounded-3xl p-7"
-                style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
-              >
+              <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
                 <div className="flex items-center gap-2 mb-4">
                   <Users size={13} style={{ color: "#0F2C23", opacity: 0.5 }} />
                   <SectionLabel>Team</SectionLabel>
@@ -1434,10 +1350,7 @@ export function ProjectEditor({
                         <div
                           className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold uppercase"
                           style={{
-                            backgroundColor:
-                              m.role === "owner"
-                                ? "#0F2C23"
-                                : "rgba(15,44,35,0.12)",
+                            backgroundColor: m.role === "owner" ? "#0F2C23" : "rgba(15,44,35,0.12)",
                             color: m.role === "owner" ? "#F8FFE8" : "#0F2C23",
                             fontFamily: PX,
                           }}
@@ -1479,10 +1392,7 @@ export function ProjectEditor({
                             type="button"
                             onClick={() => {
                               startTransition(async () => {
-                                const result = await removeTeamMemberAction(
-                                  p.team_id!,
-                                  m.user_id,
-                                );
+                                const result = await removeTeamMemberAction(p.team_id!, m.user_id);
                                 if (result.success) {
                                   setTeamMembers((prev) =>
                                     prev.filter((x) => x.user_id !== m.user_id),
@@ -1554,18 +1464,12 @@ export function ProjectEditor({
                       </button>
                     </div>
                     {memberError && (
-                      <p
-                        className="text-[11px] mt-2 text-red-700/80"
-                        style={{ fontFamily: FN }}
-                      >
+                      <p className="text-[11px] mt-2 text-red-700/80" style={{ fontFamily: FN }}>
                         {memberError}
                       </p>
                     )}
                     {memberSuccess && (
-                      <p
-                        className="text-[11px] mt-2 text-green-700/80"
-                        style={{ fontFamily: FN }}
-                      >
+                      <p className="text-[11px] mt-2 text-green-700/80" style={{ fontFamily: FN }}>
                         {memberSuccess}
                       </p>
                     )}

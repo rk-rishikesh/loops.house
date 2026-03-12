@@ -1,32 +1,29 @@
 "use client";
 
-import { Suspense, useState, useCallback } from "react";
-import Link from "next/link";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowUpRight,
+  Check,
+  ChevronRight,
   ClipboardEdit,
   Gavel,
   Loader2,
-  Sparkles,
-  Check,
-  ChevronRight,
   Lock,
+  Sparkles,
 } from "lucide-react";
+import Link from "next/link";
+import { Suspense, useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
-import { getProject, getHackathon } from "@/lib/storage";
 import type {
-  StoredProject,
-  StoredHackathon,
-  StoredSubmission,
   HumanEvaluationRow,
+  StoredHackathon,
+  StoredProject,
+  StoredSubmission,
 } from "@/lib/data-mappers";
-import {
-  judgingEvalSchema,
-  type JudgingEvalSchema,
-} from "@/lib/validations/schemas";
+import { getHackathon, getProject } from "@/lib/storage";
+import { type JudgingEvalSchema, judgingEvalSchema } from "@/lib/validations/schemas";
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 type EvalResult = {
@@ -55,14 +52,7 @@ function ScoreRing({ score, max = 100 }: { score: number; max?: number }) {
   return (
     <div className="relative inline-flex items-center justify-center">
       <svg width={104} height={104} style={{ transform: "rotate(-90deg)" }}>
-        <circle
-          cx={52}
-          cy={52}
-          r={r}
-          fill="none"
-          stroke="rgba(214,207,192,0.2)"
-          strokeWidth={7}
-        />
+        <circle cx={52} cy={52} r={r} fill="none" stroke="rgba(214,207,192,0.2)" strokeWidth={7} />
         <circle
           cx={52}
           cy={52}
@@ -102,12 +92,7 @@ function ScoreRing({ score, max = 100 }: { score: number; max?: number }) {
 /* ─── Score bar ──────────────────────────────────────────────────── */
 function ScoreBar({ score, max }: { score: number; max: number }) {
   const pct = Math.min((score / max) * 100, 100);
-  const color =
-    pct >= 70
-      ? "#2d4a3e"
-      : pct >= 45
-        ? "rgba(45,74,62,0.6)"
-        : "rgba(45,74,62,0.3)";
+  const color = pct >= 70 ? "#2d4a3e" : pct >= 45 ? "rgba(45,74,62,0.6)" : "rgba(45,74,62,0.3)";
   return (
     <div
       className="relative h-1.5 rounded-full overflow-hidden"
@@ -277,14 +262,9 @@ const DEFAULT_CRITERIA: { name: string; description: string }[] = [
 ];
 
 /* ─── Parse AI score from JSONB ──────────────────────────────────── */
-function parseAiScore(
-  raw: Record<string, unknown> | null | undefined,
-): EvalResult | null {
-  if (!raw || typeof raw !== "object" || typeof raw.overall_score !== "number")
-    return null;
-  const rawCriteria = raw.criteria_scores as
-    | Array<Record<string, unknown>>
-    | undefined;
+function parseAiScore(raw: Record<string, unknown> | null | undefined): EvalResult | null {
+  if (!raw || typeof raw !== "object" || typeof raw.overall_score !== "number") return null;
+  const rawCriteria = raw.criteria_scores as Array<Record<string, unknown>> | undefined;
   return {
     overall_score: raw.overall_score as number,
     overall_summary: (raw.overall_summary as string) ?? undefined,
@@ -329,11 +309,7 @@ export function JudgingForm({
           className="min-h-screen flex items-center justify-center"
           style={{ backgroundColor: "#f0ebe0" }}
         >
-          <Loader2
-            size={18}
-            className="animate-spin"
-            style={{ color: "#2d4a3e" }}
-          />
+          <Loader2 size={18} className="animate-spin" style={{ color: "#2d4a3e" }} />
         </div>
       }
     >
@@ -449,9 +425,7 @@ function JudgingFormContent({
     onSuccess: (data) => {
       setAiResult(data);
       setSaveError(
-        data.saved === false
-          ? "AI evaluation completed but failed to save to database."
-          : null,
+        data.saved === false ? "AI evaluation completed but failed to save to database." : null,
       );
     },
   });
@@ -467,10 +441,7 @@ function JudgingFormContent({
       });
       const overall =
         humanCriteria.length > 0
-          ? Math.round(
-              humanCriteria.reduce((sum, c) => sum + c.score, 0) /
-                humanCriteria.length,
-            )
+          ? Math.round(humanCriteria.reduce((sum, c) => sum + c.score, 0) / humanCriteria.length)
           : 0;
 
       const res = await fetch("/api/host-agents/save-evaluation", {
@@ -532,10 +503,7 @@ function JudgingFormContent({
 
   const humanEvalOverallScore =
     humanCriteria.length > 0
-      ? Math.round(
-          humanCriteria.reduce((sum, c) => sum + c.score, 0) /
-            humanCriteria.length,
-        )
+      ? Math.round(humanCriteria.reduce((sum, c) => sum + c.score, 0) / humanCriteria.length)
       : 0;
 
   const result = evalMutation.data ?? aiResult;
@@ -594,17 +562,14 @@ function JudgingFormContent({
                 fontSize: "clamp(14px, 1.5vw, 18px)",
               }}
             >
-              Score this project against the predefined criteria. Your evaluation
-              is saved independently from other judges.
+              Score this project against the predefined criteria. Your evaluation is saved
+              independently from other judges.
             </p>
           </div>
         </div>
 
         {/* ── Two-column body ───────────────────────────────────────────── */}
-        <div
-          className="grid gap-8 items-start"
-          style={{ gridTemplateColumns: "1fr 340px" }}
-        >
+        <div className="grid gap-8 items-start" style={{ gridTemplateColumns: "1fr 340px" }}>
           {/* ═══ LEFT — evaluation form + results ════════════════════════ */}
           <div className="flex flex-col gap-10">
             {/* Context cards — project + hackathon */}
@@ -630,10 +595,7 @@ function JudgingFormContent({
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Project card */}
-                <div
-                  className="rounded-2xl p-6"
-                  style={{ backgroundColor: "#d6cfc0" }}
-                >
+                <div className="rounded-2xl p-6" style={{ backgroundColor: "#d6cfc0" }}>
                   <p
                     className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40 mb-3"
                     style={{ fontFamily: "'Inter', sans-serif" }}
@@ -675,10 +637,7 @@ function JudgingFormContent({
                 </div>
 
                 {/* Hackathon card */}
-                <div
-                  className="rounded-2xl p-6"
-                  style={{ backgroundColor: "#2d4a3e" }}
-                >
+                <div className="rounded-2xl p-6" style={{ backgroundColor: "#2d4a3e" }}>
                   <p
                     className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#f0ebe0]/38 mb-3"
                     style={{ fontFamily: "'Inter', sans-serif" }}
@@ -708,10 +667,7 @@ function JudgingFormContent({
               </div>
 
               {(errors.project_id || errors.hackathon_id) && (
-                <p
-                  className="mt-2 text-sm text-red-600"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
+                <p className="mt-2 text-sm text-red-600" style={{ fontFamily: "Georgia, serif" }}>
                   {errors.project_id?.message ?? errors.hackathon_id?.message}
                 </p>
               )}
@@ -747,19 +703,14 @@ function JudgingFormContent({
                   }}
                 >
                   <Lock size={13} style={{ color: "#2d4a3e", opacity: 0.4 }} />
-                  <p
-                    className="text-sm text-[#2d4a3e]/60"
-                    style={{ fontFamily: "Georgia, serif" }}
-                  >
+                  <p className="text-sm text-[#2d4a3e]/60" style={{ fontFamily: "Georgia, serif" }}>
                     AI evaluation completed on{" "}
-                    {new Date(submission.ai_evaluated_at!).toLocaleDateString()}.
-                    Score: {result.overall_score}/100. This cannot be re-run.
+                    {new Date(submission.ai_evaluated_at!).toLocaleDateString()}. Score:{" "}
+                    {result.overall_score}/100. This cannot be re-run.
                   </p>
                 </div>
               ) : (
-                <form
-                  onSubmit={handleSubmit((data) => evalMutation.mutate(data))}
-                >
+                <form onSubmit={handleSubmit((data) => evalMutation.mutate(data))}>
                   <button
                     type="submit"
                     disabled={evalMutation.isPending}
@@ -775,9 +726,7 @@ function JudgingFormContent({
                       ) : (
                         <Sparkles size={13} />
                       )}
-                      {evalMutation.isPending
-                        ? "Evaluating..."
-                        : "Run AI Evaluation"}
+                      {evalMutation.isPending ? "Evaluating..." : "Run AI Evaluation"}
                     </span>
                     <span
                       className="w-10 h-10 flex items-center justify-center rounded-full m-1.5"
@@ -797,10 +746,7 @@ function JudgingFormContent({
                     border: "1px solid rgba(200,60,60,0.15)",
                   }}
                 >
-                  <p
-                    className="text-sm text-red-700"
-                    style={{ fontFamily: "Georgia, serif" }}
-                  >
+                  <p className="text-sm text-red-700" style={{ fontFamily: "Georgia, serif" }}>
                     {evalMutation.error.message}
                   </p>
                 </div>
@@ -814,10 +760,7 @@ function JudgingFormContent({
                     border: "1px solid rgba(200,140,20,0.2)",
                   }}
                 >
-                  <p
-                    className="text-sm"
-                    style={{ fontFamily: "Georgia, serif", color: "#8b6914" }}
-                  >
+                  <p className="text-sm" style={{ fontFamily: "Georgia, serif", color: "#8b6914" }}>
                     {saveError}
                   </p>
                 </div>
@@ -873,8 +816,8 @@ function JudgingFormContent({
                         className="text-[#f0ebe0]/45 text-xs mt-0.5"
                         style={{ fontFamily: "Georgia, serif" }}
                       >
-                        {humanCriteria.filter((c) => c.score > 0).length}{" "}
-                        criteria scored — overall {humanEvalOverallScore}/100
+                        {humanCriteria.filter((c) => c.score > 0).length} criteria scored — overall{" "}
+                        {humanEvalOverallScore}/100
                       </p>
                     </div>
                   </div>
@@ -907,9 +850,7 @@ function JudgingFormContent({
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
                     <ClipboardEdit size={13} />
-                    {existingEvaluation
-                      ? "Edit Your Evaluation"
-                      : "Start Your Evaluation"}
+                    {existingEvaluation ? "Edit Your Evaluation" : "Start Your Evaluation"}
                   </span>
                   <span
                     className="w-10 h-10 flex items-center justify-center rounded-full m-1.5"
@@ -921,10 +862,7 @@ function JudgingFormContent({
               ) : (
                 <div className="flex flex-col gap-5">
                   {/* Overall notes */}
-                  <div
-                    className="rounded-2xl p-6"
-                    style={{ backgroundColor: "#d6cfc0" }}
-                  >
+                  <div className="rounded-2xl p-6" style={{ backgroundColor: "#d6cfc0" }}>
                     <p
                       className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40 mb-3"
                       style={{ fontFamily: "'Inter', sans-serif" }}
@@ -943,12 +881,8 @@ function JudgingFormContent({
                         color: "#2d4a3e",
                         fontFamily: "Georgia, serif",
                       }}
-                      onFocus={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#bfb8a8")
-                      }
-                      onBlur={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#c8c1b1")
-                      }
+                      onFocus={(e) => (e.currentTarget.style.backgroundColor = "#bfb8a8")}
+                      onBlur={(e) => (e.currentTarget.style.backgroundColor = "#c8c1b1")}
                     />
                   </div>
 
@@ -965,11 +899,8 @@ function JudgingFormContent({
                             className="w-12 h-12 rounded-full flex items-center justify-center font-black text-sm"
                             style={{
                               backgroundColor:
-                                criterion.score > 0
-                                  ? "#2d4a3e"
-                                  : "rgba(45,74,62,0.1)",
-                              color:
-                                criterion.score > 0 ? "#f0ebe0" : "#2d4a3e",
+                                criterion.score > 0 ? "#2d4a3e" : "rgba(45,74,62,0.1)",
+                              color: criterion.score > 0 ? "#f0ebe0" : "#2d4a3e",
                               fontFamily: "'Inter', sans-serif",
                               letterSpacing: "-0.02em",
                             }}
@@ -1012,10 +943,7 @@ function JudgingFormContent({
                                             ...c,
                                             score: Math.min(
                                               100,
-                                              Math.max(
-                                                0,
-                                                parseInt(e.target.value) || 0,
-                                              ),
+                                              Math.max(0, parseInt(e.target.value, 10) || 0),
                                             ),
                                           }
                                         : c,
@@ -1024,14 +952,8 @@ function JudgingFormContent({
                                 }
                                 className="w-20 rounded-xl px-3 py-2.5 text-sm outline-none font-semibold text-center transition-colors"
                                 style={{
-                                  backgroundColor:
-                                    criterion.score > 0
-                                      ? "#2d4a3e"
-                                      : "#d6cfc0",
-                                  color:
-                                    criterion.score > 0
-                                      ? "#f0ebe0"
-                                      : "#2d4a3e",
+                                  backgroundColor: criterion.score > 0 ? "#2d4a3e" : "#d6cfc0",
+                                  color: criterion.score > 0 ? "#f0ebe0" : "#2d4a3e",
                                   border: "none",
                                   fontFamily: "'Inter', sans-serif",
                                 }}
@@ -1051,9 +973,7 @@ function JudgingFormContent({
                                 onChange={(e) =>
                                   setHumanCriteria((prev) =>
                                     prev.map((c, i) =>
-                                      i === idx
-                                        ? { ...c, remark: e.target.value }
-                                        : c,
+                                      i === idx ? { ...c, remark: e.target.value } : c,
                                     ),
                                   )
                                 }
@@ -1082,8 +1002,8 @@ function JudgingFormContent({
                         className="font-semibold text-[#f0ebe0] text-sm"
                         style={{ fontFamily: "'Inter', sans-serif" }}
                       >
-                        {humanCriteria.filter((c) => c.score > 0).length}/
-                        {humanCriteria.length} criteria scored
+                        {humanCriteria.filter((c) => c.score > 0).length}/{humanCriteria.length}{" "}
+                        criteria scored
                       </p>
                       <p
                         className="text-[#f0ebe0]/45 text-xs mt-0.5"
@@ -1214,14 +1134,13 @@ function JudgingFormContent({
                 </div>
 
                 {/* Criteria list (read-only, no override) */}
-                {result.criteria_scores &&
-                  result.criteria_scores.length > 0 && (
-                    <div className="flex flex-col gap-3">
-                      {result.criteria_scores.map((c, i) => (
-                        <AiCriteriaCard key={i} criterion={c} index={i} />
-                      ))}
-                    </div>
-                  )}
+                {result.criteria_scores && result.criteria_scores.length > 0 && (
+                  <div className="flex flex-col gap-3">
+                    {result.criteria_scores.map((c, i) => (
+                      <AiCriteriaCard key={i} criterion={c} index={i} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1229,10 +1148,7 @@ function JudgingFormContent({
           {/* ═══ RIGHT sidebar ════════════════════════════════════════════ */}
           <aside className="sticky top-[81px] flex flex-col gap-4">
             {/* Status card */}
-            <div
-              className="rounded-3xl p-7"
-              style={{ backgroundColor: "#f5f2ea" }}
-            >
+            <div className="rounded-3xl p-7" style={{ backgroundColor: "#f5f2ea" }}>
               <p
                 className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40 mb-5"
                 style={{ fontFamily: "'Inter', sans-serif" }}
@@ -1276,14 +1192,10 @@ function JudgingFormContent({
                     <span
                       className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center"
                       style={{
-                        backgroundColor: done
-                          ? "#2d4a3e"
-                          : "rgba(45,74,62,0.1)",
+                        backgroundColor: done ? "#2d4a3e" : "rgba(45,74,62,0.1)",
                       }}
                     >
-                      {done && (
-                        <Check size={10} style={{ color: "#f0ebe0" }} />
-                      )}
+                      {done && <Check size={10} style={{ color: "#f0ebe0" }} />}
                     </span>
                     <div className="flex-1 min-w-0">
                       <p
@@ -1306,10 +1218,7 @@ function JudgingFormContent({
 
             {/* Score summary */}
             {(result || humanEvalSaved) && (
-              <div
-                className="rounded-2xl px-6 py-5"
-                style={{ backgroundColor: "#2d4a3e" }}
-              >
+              <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#2d4a3e" }}>
                 <p
                   className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/38 mb-4"
                   style={{ fontFamily: "'Inter', sans-serif" }}

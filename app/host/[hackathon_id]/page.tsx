@@ -1,21 +1,11 @@
-import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, BarChart3, Gavel } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/lib/server-auth";
-import {
-  getHackathonServer,
-  getProjectsServer,
-  getSubmissionsServer,
-} from "@/lib/server-data";
+import { getHackathonServer, getProjectsServer, getSubmissionsServer } from "@/lib/server-data";
 
 /* ─── Arrow circle ───────────────────────────────────────────────── */
-function ArrowCircle({
-  size = 44,
-  inverted = false,
-}: {
-  size?: number;
-  inverted?: boolean;
-}) {
+function ArrowCircle({ size = 44, inverted = false }: { size?: number; inverted?: boolean }) {
   return (
     <span
       style={{ width: size, height: size }}
@@ -34,7 +24,10 @@ export default async function HostBoosterPage({
   params: Promise<{ hackathon_id: string }>;
 }) {
   const auth = await getServerAuth();
-  if (!auth || !(auth.capabilities.isAdmin || auth.capabilities.isEventCreator || auth.capabilities.isJudge)) {
+  if (
+    !auth ||
+    !(auth.capabilities.isAdmin || auth.capabilities.isEventCreator || auth.capabilities.isJudge)
+  ) {
     redirect("/login");
   }
 
@@ -97,18 +90,14 @@ export default async function HostBoosterPage({
                 fontSize: "clamp(14px, 1.5vw, 18px)",
               }}
             >
-              Hackathon-level view. See analytics and submissions for this
-              specific hackathon.
+              Hackathon-level view. See analytics and submissions for this specific hackathon.
             </p>
           </div>
         </div>
 
         {/* ── Quick actions ────────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-          <Link
-            href={`/host/${hackathon.id}/analytics`}
-            className="group no-underline"
-          >
+          <Link href={`/host/${hackathon.id}/analytics`} className="group no-underline">
             <div
               className="rounded-3xl p-7 flex flex-col justify-between transition-all duration-200 group-hover:scale-[1.01]"
               style={{ backgroundColor: "#2d4a3e", minHeight: 200 }}
@@ -190,10 +179,7 @@ export default async function HostBoosterPage({
             </div>
           </Link>
 
-          <Link
-            href={`/host/${hackathon.id}/judges`}
-            className="group no-underline"
-          >
+          <Link href={`/host/${hackathon.id}/judges`} className="group no-underline">
             <div
               className="rounded-3xl p-7 flex flex-col justify-between transition-all duration-200 group-hover:scale-[1.01]"
               style={{ backgroundColor: "#2d4a3e", minHeight: 200 }}
@@ -282,15 +268,12 @@ export default async function HostBoosterPage({
                 className="text-[#2d4a3e]/50 leading-relaxed"
                 style={{ fontFamily: "Georgia, serif", fontSize: 15 }}
               >
-                Once builders submit to this hackathon, they&apos;ll appear here
-                for grading.
+                Once builders submit to this hackathon, they&apos;ll appear here for grading.
               </p>
             </div>
           ) : (
             submissions.map((sub, idx) => {
-              const project = projects.find(
-                (p) => p.project_id === sub.project_id,
-              );
+              const project = projects.find((p) => p.project_id === sub.project_id);
               if (!project) {
                 return null;
               }

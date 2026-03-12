@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { Upload, X, Loader2 } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 import Image from "next/image";
+import { useCallback, useRef, useState } from "react";
 
 interface ImageUploadProps {
   value?: string;
@@ -52,7 +52,7 @@ export function ImageUpload({
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith("image/")) upload(file);
+    if (file?.type.startsWith("image/")) upload(file);
   };
 
   const isCircle = variant === "circle";
@@ -103,21 +103,13 @@ export function ImageUpload({
           disabled={uploading}
           className={`w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed cursor-pointer transition-all duration-200 ${isCircle ? "rounded-full w-24 h-24" : "rounded-2xl py-8"}`}
           style={{
-            borderColor: dragOver
-              ? "#2d4a3e"
-              : "rgba(45,74,62,0.2)",
-            backgroundColor: dragOver
-              ? "rgba(45,74,62,0.06)"
-              : "transparent",
+            borderColor: dragOver ? "#2d4a3e" : "rgba(45,74,62,0.2)",
+            backgroundColor: dragOver ? "rgba(45,74,62,0.06)" : "transparent",
             fontFamily: "'Inter', sans-serif",
           }}
         >
           {uploading ? (
-            <Loader2
-              size={20}
-              className="animate-spin"
-              style={{ color: "#2d4a3e" }}
-            />
+            <Loader2 size={20} className="animate-spin" style={{ color: "#2d4a3e" }} />
           ) : (
             <>
               <Upload size={18} style={{ color: "#2d4a3e", opacity: 0.4 }} />
@@ -127,10 +119,7 @@ export function ImageUpload({
               >
                 {placeholder}
               </span>
-              <span
-                className="text-[10px]"
-                style={{ color: "rgba(45,74,62,0.25)" }}
-              >
+              <span className="text-[10px]" style={{ color: "rgba(45,74,62,0.25)" }}>
                 PNG, JPG, WebP &middot; max 5 MB
               </span>
             </>
@@ -139,10 +128,7 @@ export function ImageUpload({
       )}
 
       {error && (
-        <p
-          className="mt-1.5 text-xs"
-          style={{ color: "#c0392b", fontFamily: "Georgia, serif" }}
-        >
+        <p className="mt-1.5 text-xs" style={{ color: "#c0392b", fontFamily: "Georgia, serif" }}>
           {error}
         </p>
       )}
@@ -214,7 +200,11 @@ export function MultiImageUpload({
       {value.length > 0 && (
         <div className="grid grid-cols-3 gap-2 mb-3">
           {value.map((url, i) => (
-            <div key={i} className="relative group rounded-xl overflow-hidden" style={{ aspectRatio: "16/9", backgroundColor: "rgba(45,74,62,0.06)" }}>
+            <div
+              key={i}
+              className="relative group rounded-xl overflow-hidden"
+              style={{ aspectRatio: "16/9", backgroundColor: "rgba(45,74,62,0.06)" }}
+            >
               <Image src={url} alt="" fill className="object-cover" />
               <button
                 type="button"
@@ -242,11 +232,7 @@ export function MultiImageUpload({
           }}
         >
           {uploading ? (
-            <Loader2
-              size={16}
-              className="animate-spin"
-              style={{ color: "#2d4a3e" }}
-            />
+            <Loader2 size={16} className="animate-spin" style={{ color: "#2d4a3e" }} />
           ) : (
             <>
               <Upload size={14} style={{ color: "#2d4a3e", opacity: 0.4 }} />
@@ -262,10 +248,7 @@ export function MultiImageUpload({
       )}
 
       {error && (
-        <p
-          className="mt-1.5 text-xs"
-          style={{ color: "#c0392b", fontFamily: "Georgia, serif" }}
-        >
+        <p className="mt-1.5 text-xs" style={{ color: "#c0392b", fontFamily: "Georgia, serif" }}>
           {error}
         </p>
       )}

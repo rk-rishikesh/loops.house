@@ -1,23 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useMutation } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowUpRight,
   BarChart3,
-  Loader2,
-  Sparkles,
-  Users,
-  Trophy,
   Clock,
   Cpu,
   Layers,
+  Loader2,
+  Sparkles,
+  Trophy,
+  Users,
   Zap,
 } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
-import type { StoredHackathon } from "@/lib/data-mappers";
+import Link from "next/link";
+import { useState } from "react";
 import type { HackathonStats } from "@/app/host/[hackathon_id]/analytics/page";
+import type { StoredHackathon } from "@/lib/data-mappers";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -84,25 +84,27 @@ function StatCard({
 }
 
 /* ─── Bar Chart Row ──────────────────────────────────────────────── */
-function BarRow({
-  label,
-  count,
-  max,
-}: {
-  label: string;
-  count: number;
-  max: number;
-}) {
+function BarRow({ label, count, max }: { label: string; count: number; max: number }) {
   const pct = max > 0 ? (count / max) * 100 : 0;
   return (
     <div className="flex items-center gap-3 py-2">
       <span
         className="text-xs font-medium shrink-0 text-right"
-        style={{ fontFamily: FN, color: "#0F2C23", width: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+        style={{
+          fontFamily: FN,
+          color: "#0F2C23",
+          width: 120,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
       >
         {label}
       </span>
-      <div className="flex-1 h-6 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,44,35,0.06)" }}>
+      <div
+        className="flex-1 h-6 rounded-full overflow-hidden"
+        style={{ backgroundColor: "rgba(15,44,35,0.06)" }}
+      >
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{ width: `${Math.max(pct, 3)}%`, backgroundColor: "#0F2C23" }}
@@ -249,31 +251,14 @@ export function HackathonAnalytics({
             value={`${stats.aiEvaluatedCount}/${stats.totalSubmissions}`}
             icon={Cpu}
           />
-          <StatCard
-            label="Judge Reviews"
-            value={stats.humanEvaluationCount}
-            icon={Trophy}
-          />
+          <StatCard label="Judge Reviews" value={stats.humanEvaluationCount} icon={Trophy} />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-14">
-          <StatCard
-            label="Avg Momentum"
-            value={stats.avgMomentumScore}
-            icon={Zap}
-          />
-          <StatCard
-            label="Current Phase"
-            value={stats.currentPhase.toUpperCase()}
-            icon={Clock}
-          />
+          <StatCard label="Avg Momentum" value={stats.avgMomentumScore} icon={Zap} />
+          <StatCard label="Current Phase" value={stats.currentPhase.toUpperCase()} icon={Clock} />
           {Object.entries(stats.submissionsByStatus).map(([status, count]) => (
-            <StatCard
-              key={status}
-              label={status}
-              value={count}
-              icon={BarChart3}
-            />
+            <StatCard key={status} label={status} value={count} icon={BarChart3} />
           ))}
         </div>
 
@@ -441,10 +426,7 @@ export function HackathonAnalytics({
               )}
 
               {aiResult.highlights && aiResult.highlights.length > 0 && (
-                <div
-                  className="rounded-3xl p-8"
-                  style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
-                >
+                <div className="rounded-3xl p-8" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
                   <p
                     className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-1"
                     style={{ fontFamily: PX }}
@@ -504,20 +486,18 @@ export function HackathonAnalytics({
           style={{ animation: "ticker 28s linear infinite" }}
         >
           {[...Array(3)].map((_, ri) =>
-            ["ANALYTICS", "★", "REAL-TIME STATS", "★", "HOST DASHBOARD", "★"].map(
-              (t, i) => (
-                <span
-                  key={`${ri}-${i}`}
-                  className="text-[10px] tracking-[0.2em] uppercase font-bold shrink-0"
-                  style={{
-                    fontFamily: PX,
-                    color: t === "★" ? "#0F2C23" : "rgba(15,44,35,0.4)",
-                  }}
-                >
-                  {t}
-                </span>
-              ),
-            ),
+            ["ANALYTICS", "★", "REAL-TIME STATS", "★", "HOST DASHBOARD", "★"].map((t, i) => (
+              <span
+                key={`${ri}-${i}`}
+                className="text-[10px] tracking-[0.2em] uppercase font-bold shrink-0"
+                style={{
+                  fontFamily: PX,
+                  color: t === "★" ? "#0F2C23" : "rgba(15,44,35,0.4)",
+                }}
+              >
+                {t}
+              </span>
+            )),
           )}
         </div>
       </div>

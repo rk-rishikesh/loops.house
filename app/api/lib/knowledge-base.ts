@@ -9,11 +9,7 @@ export interface KnowledgeBaseEntry {
   }[];
 }
 
-export function chunkText(
-  text: string,
-  chunkSize: number = 1500,
-  overlap: number = 200
-): string[] {
+export function chunkText(text: string, chunkSize: number = 1500, overlap: number = 200): string[] {
   const chunks: string[] = [];
   const words = text.split(/\s+/);
   let start = 0;
@@ -29,7 +25,7 @@ export function chunkText(
 }
 
 export async function buildKnowledgeBase(
-  entry: KnowledgeBaseEntry
+  entry: KnowledgeBaseEntry,
 ): Promise<{ chunkCount: number }> {
   const allText = entry.sections.map((s) => s.content).join("\n\n---\n\n");
   const textChunks = chunkText(allText);
@@ -40,9 +36,8 @@ export async function buildKnowledgeBase(
     text,
     embedding: embeddings[i],
     metadata: {
-      source: entry.sections.find((s) =>
-        text.includes(s.content.slice(0, 50))
-      )?.source ?? "profile",
+      source:
+        entry.sections.find((s) => text.includes(s.content.slice(0, 50)))?.source ?? "profile",
     },
   }));
 

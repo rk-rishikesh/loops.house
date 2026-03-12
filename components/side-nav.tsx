@@ -1,37 +1,49 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
+import type { LucideIcon } from "lucide-react";
 import {
-  LayoutGrid,
-  Zap,
-  FolderOpen,
-  Users,
-  Eye,
-  LogOut,
   ArrowLeft,
-  Sparkles,
+  Bell,
+  CalendarDays,
+  Eye,
+  FolderOpen,
+  Gavel,
+  Globe,
   GraduationCap,
   Info,
+  LayoutGrid,
+  LogOut,
   Mic2,
-  CalendarDays,
-  Trophy,
-  Send,
-  Pencil,
-  Share2,
-  Globe,
-  Gavel,
-  Bell,
   PanelLeftClose,
   PanelLeftOpen,
+  Pencil,
+  Send,
+  Share2,
+  Sparkles,
+  Trophy,
+  Users,
+  Zap,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-
-import { signOut } from "@/lib/auth";
-import { clearAuthCookies } from "@/components/logout-button";
 import { useAuth } from "@/app/providers";
-import type { LucideIcon } from "lucide-react";
+import { signOut } from "@/lib/auth";
+
+function clearAuthCookies() {
+  document.cookie.split(";").forEach((c) => {
+    const name = c.trim().split("=")[0];
+    if (
+      name.startsWith("sb-") ||
+      name === "x-user-role-hint" ||
+      name === "x-user-caps" ||
+      name === "x-user-caps-hint"
+    ) {
+      document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    }
+  });
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    Config — define nav items for each context
@@ -73,8 +85,7 @@ const GLOBAL_NAV: NavItem[] = [
     href: "/host",
     icon: Users,
     label: "Host",
-    visible: (caps) =>
-      !!caps?.isEventCreator || !!caps?.isCohost || !!caps?.isAdmin,
+    visible: (caps) => !!caps?.isEventCreator || !!caps?.isCohost || !!caps?.isAdmin,
   },
 ];
 
@@ -157,9 +168,7 @@ type NavContext =
 
 function resolveNavContext(pathname: string): NavContext {
   // Hackathon-scoped project editor: /hackathons/[id]/project/[projectId]
-  const hackathonProjectMatch = pathname.match(
-    /^\/hackathons\/([^/]+)\/project\/[^/]+$/,
-  );
+  const hackathonProjectMatch = pathname.match(/^\/hackathons\/([^/]+)\/project\/[^/]+$/);
   if (hackathonProjectMatch) {
     const [, hackathonId] = hackathonProjectMatch;
     return {
@@ -172,8 +181,7 @@ function resolveNavContext(pathname: string): NavContext {
 
   // Builder project editor: /builder/projects/[id]
   const isBuilderProject =
-    /^\/builder\/projects\/[^/]+$/.test(pathname) &&
-    pathname !== "/builder/projects";
+    /^\/builder\/projects\/[^/]+$/.test(pathname) && pathname !== "/builder/projects";
   if (isBuilderProject) {
     return {
       kind: "project",
@@ -290,10 +298,7 @@ function BackButton({
     >
       <ArrowLeft size={16} style={{ color: COLOR_ON, flexShrink: 0 }} />
       {!collapsed && (
-        <span
-          className="text-xs whitespace-nowrap overflow-hidden"
-          style={{ color: COLOR_OFF }}
-        >
+        <span className="text-xs whitespace-nowrap overflow-hidden" style={{ color: COLOR_OFF }}>
           {label}
         </span>
       )}
@@ -312,10 +317,7 @@ function NavItemRow({
 }) {
   const content = (
     <>
-      <item.icon
-        size={18}
-        style={{ color: active ? COLOR_ON : COLOR_OFF, flexShrink: 0 }}
-      />
+      <item.icon size={18} style={{ color: active ? COLOR_ON : COLOR_OFF, flexShrink: 0 }} />
       {!collapsed && (
         <span
           className="text-sm whitespace-nowrap overflow-hidden"
@@ -356,29 +358,14 @@ function NavItemRow({
   );
 }
 
-function GlobalNavItems({
-  pathname,
-  collapsed,
-}: {
-  pathname: string;
-  collapsed: boolean;
-}) {
+function GlobalNavItems({ pathname, collapsed }: { pathname: string; collapsed: boolean }) {
   const { capabilities } = useAuth();
 
   return (
     <>
-      {GLOBAL_NAV.filter(
-        (item) => !item.visible || item.visible(capabilities),
-      ).map((item) => {
+      {GLOBAL_NAV.filter((item) => !item.visible || item.visible(capabilities)).map((item) => {
         const active = isGlobalActive(item.href, pathname);
-        return (
-          <NavItemRow
-            key={item.href}
-            item={item}
-            active={active}
-            collapsed={collapsed}
-          />
-        );
+        return <NavItemRow key={item.href} item={item} active={active} collapsed={collapsed} />;
       })}
     </>
   );
@@ -441,15 +428,12 @@ export function SideNav() {
   const { collapsed, toggle } = useCollapsed();
 
   const [loggingOut, setLoggingOut] = useState(false);
-  const [activeHash, setActiveHash] = useState(
-    ctx.kind !== "global" ? ctx.defaultTab : "",
-  );
+  const [activeHash, setActiveHash] = useState(ctx.kind !== "global" ? ctx.defaultTab : "");
   const lockRef = useRef(false);
 
   useEffect(() => {
     if (ctx.kind === "global") return;
-    const read = () =>
-      setActiveHash(window.location.hash.replace("#", "") || ctx.defaultTab);
+    const read = () => setActiveHash(window.location.hash.replace("#", "") || ctx.defaultTab);
     read();
     window.addEventListener("hashchange", read);
     return () => window.removeEventListener("hashchange", read);
@@ -502,11 +486,7 @@ export function SideNav() {
 
         <div className="flex flex-col gap-1">
           {ctx.kind !== "global" ? (
-            <HashTabItems
-              tabs={ctx.tabs}
-              activeHash={activeHash}
-              collapsed={collapsed}
-            />
+            <HashTabItems tabs={ctx.tabs} activeHash={activeHash} collapsed={collapsed} />
           ) : (
             <GlobalNavItems pathname={pathname} collapsed={collapsed} />
           )}
@@ -529,14 +509,8 @@ export function SideNav() {
             <PanelLeftOpen size={17} style={{ color: COLOR_OFF }} />
           ) : (
             <>
-              <PanelLeftClose
-                size={17}
-                style={{ color: COLOR_OFF, flexShrink: 0 }}
-              />
-              <span
-                className="text-xs whitespace-nowrap"
-                style={{ color: COLOR_OFF }}
-              >
+              <PanelLeftClose size={17} style={{ color: COLOR_OFF, flexShrink: 0 }} />
+              <span className="text-xs whitespace-nowrap" style={{ color: COLOR_OFF }}>
                 Collapse
               </span>
             </>
@@ -556,10 +530,7 @@ export function SideNav() {
         >
           <LogOut size={17} style={{ color: COLOR_OFF, flexShrink: 0 }} />
           {!collapsed && (
-            <span
-              className="text-xs whitespace-nowrap"
-              style={{ color: COLOR_OFF }}
-            >
+            <span className="text-xs whitespace-nowrap" style={{ color: COLOR_OFF }}>
               Sign out
             </span>
           )}

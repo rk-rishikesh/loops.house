@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
+import { type NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import type { Json } from "@/lib/supabase/types";
 
 export async function POST(request: NextRequest) {
@@ -156,8 +156,7 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "An unexpected error occurred";
+    const message = error instanceof Error ? error.message : "An unexpected error occurred";
     console.error("[save-evaluation] error:", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
-import { useSaveHackathon } from "@/lib/queries";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import type { StoredHackathon } from "@/lib/data-mappers";
+import { useSaveHackathon } from "@/lib/queries";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -95,7 +95,8 @@ const STEPS = [
     question: "Anything else the AI should know?",
     hint: "Partners, constraints, tone, or what success looks like to you.",
     type: "textarea" as const,
-    placeholder: "Anything you'd tell a human co-host about constraints, partners, or success criteria.",
+    placeholder:
+      "Anything you'd tell a human co-host about constraints, partners, or success criteria.",
     field: "organizer_notes" as const,
     required: false,
   },
@@ -312,7 +313,6 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
     >
       {/* ── Main split ──────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
-
         {/* ══ LEFT — question ═══════════════════════════════════════ */}
         <div
           className="flex flex-col justify-center px-12 py-12"
@@ -455,79 +455,79 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
 
               {/* ── Nav buttons ── */}
               <div className="flex items-center gap-3 mt-8">
-                  {step > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleBack}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        padding: "10px 18px",
-                        borderRadius: 100,
-                        border: "1.5px solid rgba(15,44,35,0.2)",
-                        backgroundColor: "transparent",
-                        cursor: "pointer",
-                        fontFamily: PX,
-                        fontSize: 10,
-                        letterSpacing: "0.14em",
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        color: "rgba(15,44,35,0.5)",
-                      }}
-                    >
-                      <ArrowLeft size={11} />
-                      Back
-                    </button>
-                  )}
-
+                {step > 0 && (
                   <button
                     type="button"
-                    onClick={handleNext}
+                    onClick={handleBack}
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 8,
-                      padding: "12px 24px",
+                      gap: 6,
+                      padding: "10px 18px",
                       borderRadius: 100,
-                      border: "none",
-                      backgroundColor: "#0F2C23",
+                      border: "1.5px solid rgba(15,44,35,0.2)",
+                      backgroundColor: "transparent",
                       cursor: "pointer",
                       fontFamily: PX,
                       fontSize: 10,
-                      letterSpacing: "0.18em",
+                      letterSpacing: "0.14em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "#F8FFE8",
+                      color: "rgba(15,44,35,0.5)",
                     }}
                   >
-                    {step === STEPS.length - 1 ? "Finish brief" : "Continue"}
-                    <ArrowRight size={12} />
+                    <ArrowLeft size={11} />
+                    Back
                   </button>
+                )}
 
-                  {!currentStep.required && step < STEPS.length - 1 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setForm((prev) => ({ ...prev, [currentStep.field]: "" }));
-                        animateStep(step + 1);
-                      }}
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        cursor: "pointer",
-                        fontFamily: PX,
-                        fontSize: 10,
-                        letterSpacing: "0.14em",
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        color: "rgba(15,44,35,0.3)",
-                      }}
-                    >
-                      Skip
-                    </button>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "12px 24px",
+                    borderRadius: 100,
+                    border: "none",
+                    backgroundColor: "#0F2C23",
+                    cursor: "pointer",
+                    fontFamily: PX,
+                    fontSize: 10,
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                    color: "#F8FFE8",
+                  }}
+                >
+                  {step === STEPS.length - 1 ? "Finish brief" : "Continue"}
+                  <ArrowRight size={12} />
+                </button>
+
+                {!currentStep.required && step < STEPS.length - 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm((prev) => ({ ...prev, [currentStep.field]: "" }));
+                      animateStep(step + 1);
+                    }}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: PX,
+                      fontSize: 10,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      fontWeight: 700,
+                      color: "rgba(15,44,35,0.3)",
+                    }}
+                  >
+                    Skip
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             /* ── Done state ── */
@@ -568,7 +568,8 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   maxWidth: 380,
                 }}
               >
-                Your answers are ready to hand off to the AI agent. It will turn your brief into a full program outline — challenges, judging criteria, schedule, and more.
+                Your answers are ready to hand off to the AI agent. It will turn your brief into a
+                full program outline — challenges, judging criteria, schedule, and more.
               </p>
 
               {successMessage && (
@@ -626,7 +627,11 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                       opacity: isGenerating ? 0.7 : 1,
                     }}
                   >
-                    {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    {isGenerating ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <Sparkles size={12} />
+                    )}
                     {isGenerating ? "Generating…" : "Generate program draft"}
                   </button>
                 ) : (
@@ -652,7 +657,11 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                       opacity: isSaving ? 0.7 : 1,
                     }}
                   >
-                    {isSaving ? <Loader2 size={12} className="animate-spin" /> : <ArrowRight size={12} />}
+                    {isSaving ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <ArrowRight size={12} />
+                    )}
                     {isSaving ? "Saving…" : "Save hackathon"}
                   </button>
                 )}
@@ -802,7 +811,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   </p>
                   {summary.slice(-4).map((s) => {
                     const val = form[s.field as FormField]?.toString().trim();
-                    const truncated = val && val.length > 60 ? val.slice(0, 60) + "…" : val;
+                    const truncated = val && val.length > 60 ? `${val.slice(0, 60)}…` : val;
                     return (
                       <div key={s.id} className="flex items-start gap-3">
                         <span
@@ -872,8 +881,10 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                         >
                           {s.number} — {s.id.replace(/_/g, " ")}
                         </p>
-                        <p style={{ fontSize: 13, color: "rgba(226,254,165,0.6)", lineHeight: 1.6 }}>
-                          {val.length > 120 ? val.slice(0, 120) + "…" : val}
+                        <p
+                          style={{ fontSize: 13, color: "rgba(226,254,165,0.6)", lineHeight: 1.6 }}
+                        >
+                          {val.length > 120 ? `${val.slice(0, 120)}…` : val}
                         </p>
                       </div>
                     );
@@ -921,19 +932,51 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                             /{slug}
                           </p>
                         )}
-                        <p style={{ fontSize: 13, color: "rgba(226,254,165,0.6)", lineHeight: 1.7 }}>
+                        <p
+                          style={{ fontSize: 13, color: "rgba(226,254,165,0.6)", lineHeight: 1.7 }}
+                        >
                           {overview}
                         </p>
                       </div>
 
                       {goals.length > 0 && (
                         <div>
-                          <p style={{ fontFamily: PX, fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, color: "rgba(226,254,165,0.25)", marginBottom: 10 }}>Goals</p>
+                          <p
+                            style={{
+                              fontFamily: PX,
+                              fontSize: 9,
+                              letterSpacing: "0.18em",
+                              textTransform: "uppercase",
+                              fontWeight: 700,
+                              color: "rgba(226,254,165,0.25)",
+                              marginBottom: 10,
+                            }}
+                          >
+                            Goals
+                          </p>
                           <div className="space-y-2">
                             {goals.map((g, i) => (
                               <div key={i} className="flex items-start gap-3">
-                                <span style={{ color: "rgba(226,254,165,0.2)", fontFamily: PX, fontWeight: 900, fontSize: 10, marginTop: 2 }}>→</span>
-                                <span style={{ fontSize: 13, color: "rgba(226,254,165,0.6)", lineHeight: 1.6 }}>{g}</span>
+                                <span
+                                  style={{
+                                    color: "rgba(226,254,165,0.2)",
+                                    fontFamily: PX,
+                                    fontWeight: 900,
+                                    fontSize: 10,
+                                    marginTop: 2,
+                                  }}
+                                >
+                                  →
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 13,
+                                    color: "rgba(226,254,165,0.6)",
+                                    lineHeight: 1.6,
+                                  }}
+                                >
+                                  {g}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -942,16 +985,62 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
 
                       {challenges.length > 0 && (
                         <div>
-                          <p style={{ fontFamily: PX, fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, color: "rgba(226,254,165,0.25)", marginBottom: 10 }}>Challenges</p>
+                          <p
+                            style={{
+                              fontFamily: PX,
+                              fontSize: 9,
+                              letterSpacing: "0.18em",
+                              textTransform: "uppercase",
+                              fontWeight: 700,
+                              color: "rgba(226,254,165,0.25)",
+                              marginBottom: 10,
+                            }}
+                          >
+                            Challenges
+                          </p>
                           <div className="space-y-3">
                             {challenges.slice(0, 3).map((c, i) => (
-                              <div key={i} style={{ padding: "12px 16px", borderRadius: 12, backgroundColor: "rgba(226,254,165,0.05)", border: "1px solid rgba(226,254,165,0.08)" }}>
-                                <p style={{ fontFamily: PX, fontWeight: 700, fontSize: 12, color: "rgba(226,254,165,0.8)", marginBottom: 3 }}>{c.title}</p>
-                                <p style={{ fontSize: 12, color: "rgba(226,254,165,0.45)", lineHeight: 1.5 }}>{c.summary}</p>
+                              <div
+                                key={i}
+                                style={{
+                                  padding: "12px 16px",
+                                  borderRadius: 12,
+                                  backgroundColor: "rgba(226,254,165,0.05)",
+                                  border: "1px solid rgba(226,254,165,0.08)",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    fontFamily: PX,
+                                    fontWeight: 700,
+                                    fontSize: 12,
+                                    color: "rgba(226,254,165,0.8)",
+                                    marginBottom: 3,
+                                  }}
+                                >
+                                  {c.title}
+                                </p>
+                                <p
+                                  style={{
+                                    fontSize: 12,
+                                    color: "rgba(226,254,165,0.45)",
+                                    lineHeight: 1.5,
+                                  }}
+                                >
+                                  {c.summary}
+                                </p>
                               </div>
                             ))}
                             {challenges.length > 3 && (
-                              <p style={{ fontFamily: PX, fontSize: 10, color: "rgba(226,254,165,0.25)" }}>+ {challenges.length - 3} more challenges</p>
+                              <p
+                                style={{
+                                  fontFamily: PX,
+                                  fontSize: 10,
+                                  color: "rgba(226,254,165,0.25)",
+                                }}
+                              >
+                                + {challenges.length - 3} more challenges
+                              </p>
                             )}
                           </div>
                         </div>
@@ -959,14 +1048,55 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
 
                       {schedule.length > 0 && (
                         <div>
-                          <p style={{ fontFamily: PX, fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, color: "rgba(226,254,165,0.25)", marginBottom: 10 }}>Schedule</p>
+                          <p
+                            style={{
+                              fontFamily: PX,
+                              fontSize: 9,
+                              letterSpacing: "0.18em",
+                              textTransform: "uppercase",
+                              fontWeight: 700,
+                              color: "rgba(226,254,165,0.25)",
+                              marginBottom: 10,
+                            }}
+                          >
+                            Schedule
+                          </p>
                           <div className="space-y-2">
                             {schedule.slice(0, 4).map((s, i) => (
                               <div key={i} className="flex items-start gap-3">
-                                <span style={{ fontFamily: PX, fontWeight: 900, fontSize: 9, color: "rgba(226,254,165,0.2)", width: 16, marginTop: 3, flexShrink: 0 }}>{String(i + 1).padStart(2, "0")}</span>
+                                <span
+                                  style={{
+                                    fontFamily: PX,
+                                    fontWeight: 900,
+                                    fontSize: 9,
+                                    color: "rgba(226,254,165,0.2)",
+                                    width: 16,
+                                    marginTop: 3,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {String(i + 1).padStart(2, "0")}
+                                </span>
                                 <div>
-                                  <span style={{ fontFamily: PX, fontWeight: 700, fontSize: 11, color: "rgba(226,254,165,0.7)" }}>{s.phase}</span>
-                                  <span style={{ fontSize: 11, color: "rgba(226,254,165,0.4)", marginLeft: 8 }}>{s.description}</span>
+                                  <span
+                                    style={{
+                                      fontFamily: PX,
+                                      fontWeight: 700,
+                                      fontSize: 11,
+                                      color: "rgba(226,254,165,0.7)",
+                                    }}
+                                  >
+                                    {s.phase}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: 11,
+                                      color: "rgba(226,254,165,0.4)",
+                                      marginLeft: 8,
+                                    }}
+                                  >
+                                    {s.description}
+                                  </span>
                                 </div>
                               </div>
                             ))}

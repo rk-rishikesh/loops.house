@@ -69,8 +69,10 @@ export function BuildPurposeSection() {
               maxWidth: 287,
             }}
           >
-            Validate before you scale<br />
-            Ship with conviction<br />
+            Validate before you scale
+            <br />
+            Ship with conviction
+            <br />
             Build for the long term
           </p>
 

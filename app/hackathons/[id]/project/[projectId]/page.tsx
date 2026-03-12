@@ -1,7 +1,13 @@
-import { getServerAuth } from "@/lib/server-auth";
-import { getProjectServer, getProjectSubmissionsServer, getHackathonsByIdsServer, getTeamMembersServer, getTeamOwnerServer } from "@/lib/server-data";
 import { redirect } from "next/navigation";
 import { ProjectEditor } from "@/components/client/project-editor";
+import { getServerAuth } from "@/lib/server-auth";
+import {
+  getHackathonsByIdsServer,
+  getProjectServer,
+  getProjectSubmissionsServer,
+  getTeamMembersServer,
+  getTeamOwnerServer,
+} from "@/lib/server-data";
 
 export default async function HackathonProjectPage({
   params,
@@ -18,7 +24,9 @@ export default async function HackathonProjectPage({
     getProjectSubmissionsServer(projectId),
   ]);
 
-  const hackathonIds = [...new Set(submissions.map((s: { hackathon_id: string }) => s.hackathon_id))];
+  const hackathonIds = [
+    ...new Set(submissions.map((s: { hackathon_id: string }) => s.hackathon_id)),
+  ];
   const hackathonMap = hackathonIds.length > 0 ? await getHackathonsByIdsServer(hackathonIds) : {};
   const hackathonNames: Record<string, string> = {};
   for (const [id, b] of Object.entries(hackathonMap)) {

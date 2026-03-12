@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { generateJSON } from "../../lib/gemini-client";
 
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (!input.project?.name || !input.project?.tagline) {
       return NextResponse.json(
         { error: "project.name and project.tagline are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

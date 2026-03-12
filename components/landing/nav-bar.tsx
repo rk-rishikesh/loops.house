@@ -22,7 +22,13 @@ export function NavBar() {
         </span>
       </Link>
       <Link href="/" className="no-underline">
-        <Image src="/landing/nav-logo.png" alt="Loops" width={148} height={40} className="object-contain" />
+        <Image
+          src="/landing/nav-logo.png"
+          alt="Loops"
+          width={148}
+          height={40}
+          className="object-contain"
+        />
       </Link>
     </nav>
   );

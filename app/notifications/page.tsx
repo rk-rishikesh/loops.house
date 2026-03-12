@@ -32,8 +32,7 @@ export default async function NotificationsPage() {
                 fontSize: "clamp(14px, 1.5vw, 18px)",
               }}
             >
-              Pending invitations and updates. Accept or decline to manage your
-              roles.
+              Pending invitations and updates. Accept or decline to manage your roles.
             </p>
           </div>
         </div>

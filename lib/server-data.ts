@@ -5,21 +5,21 @@
  * Import this in server components instead of lib/storage.ts.
  */
 
-import { createServerSupabase } from "@/lib/supabase/server";
-import {
-  profileToStored,
-  hackathonToStored,
-  teamToStored,
-  submissionToStored,
-} from "@/lib/data-mappers";
 import type {
-  StoredProject,
-  StoredHackathon,
-  StoredTeam,
-  StoredSubmission,
   HumanEvaluationRow,
+  StoredHackathon,
+  StoredProject,
+  StoredSubmission,
+  StoredTeam,
   TeamRow,
 } from "@/lib/data-mappers";
+import {
+  hackathonToStored,
+  profileToStored,
+  submissionToStored,
+  teamToStored,
+} from "@/lib/data-mappers";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 // Re-export types for convenience
 export type { StoredProject, StoredHackathon, StoredTeam, StoredSubmission, HumanEvaluationRow };
@@ -37,9 +37,7 @@ export async function getProjectsServer(): Promise<StoredProject[]> {
 }
 
 /** Returns only projects where the given user is a team member. */
-export async function getUserProjectsServer(
-  userId: string,
-): Promise<StoredProject[]> {
+export async function getUserProjectsServer(userId: string): Promise<StoredProject[]> {
   const supabase = await createServerSupabase();
 
   // Get team IDs the user belongs to
@@ -63,9 +61,7 @@ export async function getUserProjectsServer(
   return (data ?? []).map(profileToStored);
 }
 
-export async function getProjectServer(
-  projectId: string,
-): Promise<StoredProject | null> {
+export async function getProjectServer(projectId: string): Promise<StoredProject | null> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("loops_profiles")
@@ -88,30 +84,21 @@ export async function getHackathonsServer(): Promise<StoredHackathon[]> {
   return (data ?? []).map(hackathonToStored);
 }
 
-export async function getHackathonServer(
-  id: string,
-): Promise<StoredHackathon | null> {
+export async function getHackathonServer(id: string): Promise<StoredHackathon | null> {
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("hackathons")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const { data, error } = await supabase.from("hackathons").select("*").eq("id", id).single();
   if (error) console.error("[server-data] getHackathonServer:", error.message);
   return data ? hackathonToStored(data) : null;
 }
 
-export async function getHackathonWithTracksServer(
-  id: string,
-): Promise<StoredHackathon | null> {
+export async function getHackathonWithTracksServer(id: string): Promise<StoredHackathon | null> {
   const supabase = await createServerSupabase();
   const { data: hackathon, error } = await supabase
     .from("hackathons")
     .select("*")
     .eq("id", id)
     .single();
-  if (error)
-    console.error("[server-data] getHackathonWithTracksServer:", error.message);
+  if (error) console.error("[server-data] getHackathonWithTracksServer:", error.message);
   if (!hackathon) return null;
 
   const { data: tracks, error: tracksError } = await supabase
@@ -119,10 +106,7 @@ export async function getHackathonWithTracksServer(
     .select("sponsor_name, track_description")
     .eq("hackathon_id", id);
   if (tracksError)
-    console.error(
-      "[server-data] getHackathonWithTracksServer tracks:",
-      tracksError.message,
-    );
+    console.error("[server-data] getHackathonWithTracksServer tracks:", tracksError.message);
 
   const stored = hackathonToStored(hackathon);
   stored.sponsor_tracks = (tracks ?? []).map((t) => ({
@@ -141,12 +125,9 @@ export async function getTeamsServer(userId?: string): Promise<StoredTeam[]> {
       .from("team_members")
       .select("teams(*)")
       .eq("user_id", userId);
-    if (error)
-      console.error("[server-data] getTeamsServer(userId):", error.message);
+    if (error) console.error("[server-data] getTeamsServer(userId):", error.message);
     return (
-      data
-        ?.map((d) => (d as Record<string, unknown>).teams as TeamRow)
-        .filter(Boolean) ?? []
+      data?.map((d) => (d as Record<string, unknown>).teams as TeamRow).filter(Boolean) ?? []
     ).map(teamToStored);
   }
   const { data, error } = await supabase
@@ -159,11 +140,7 @@ export async function getTeamsServer(userId?: string): Promise<StoredTeam[]> {
 
 export async function getTeamServer(id: string): Promise<StoredTeam | null> {
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("teams")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const { data, error } = await supabase.from("teams").select("*").eq("id", id).single();
   if (error) console.error("[server-data] getTeamServer:", error.message);
   return data ? teamToStored(data) : null;
 }
@@ -178,16 +155,13 @@ export type TeamMemberInfo = {
   avatar_url: string | null;
 };
 
-export async function getTeamMembersServer(
-  teamId: string,
-): Promise<TeamMemberInfo[]> {
+export async function getTeamMembersServer(teamId: string): Promise<TeamMemberInfo[]> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("team_members")
     .select("user_id, role, users(id, email, display_name, avatar_url)")
     .eq("team_id", teamId);
-  if (error)
-    console.error("[server-data] getTeamMembersServer:", error.message);
+  if (error) console.error("[server-data] getTeamMembersServer:", error.message);
   return (data ?? []).map((m) => {
     const u = (m as Record<string, unknown>).users as {
       id: string;
@@ -205,31 +179,22 @@ export async function getTeamMembersServer(
   });
 }
 
-export async function getTeamOwnerServer(
-  teamId: string,
-): Promise<string | null> {
+export async function getTeamOwnerServer(teamId: string): Promise<string | null> {
   const supabase = await createServerSupabase();
-  const { data } = await supabase
-    .from("teams")
-    .select("owner_id")
-    .eq("id", teamId)
-    .single();
+  const { data } = await supabase.from("teams").select("owner_id").eq("id", teamId).single();
   return data?.owner_id ?? null;
 }
 
 // --- Submissions ---
 
-export async function getSubmissionsServer(
-  hackathonId: string,
-): Promise<StoredSubmission[]> {
+export async function getSubmissionsServer(hackathonId: string): Promise<StoredSubmission[]> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("submissions")
     .select("*")
     .eq("hackathon_id", hackathonId)
     .order("created_at", { ascending: false });
-  if (error)
-    console.error("[server-data] getSubmissionsServer:", error.message);
+  if (error) console.error("[server-data] getSubmissionsServer:", error.message);
   return (data ?? []).map(submissionToStored);
 }
 
@@ -258,25 +223,18 @@ export async function getSubmissionsForHackathonsServer(
     .select("*")
     .in("hackathon_id", hackathonIds)
     .order("created_at", { ascending: false });
-  if (error)
-    console.error(
-      "[server-data] getSubmissionsForHackathonsServer:",
-      error.message,
-    );
+  if (error) console.error("[server-data] getSubmissionsForHackathonsServer:", error.message);
   return (data ?? []).map(submissionToStored);
 }
 
-export async function getProjectSubmissionsServer(
-  projectId: string,
-): Promise<StoredSubmission[]> {
+export async function getProjectSubmissionsServer(projectId: string): Promise<StoredSubmission[]> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("submissions")
     .select("*")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
-  if (error)
-    console.error("[server-data] getProjectSubmissionsServer:", error.message);
+  if (error) console.error("[server-data] getProjectSubmissionsServer:", error.message);
   return (data ?? []).map(submissionToStored);
 }
 
@@ -317,12 +275,8 @@ export async function getHackathonsByIdsServer(
 ): Promise<Record<string, StoredHackathon>> {
   if (ids.length === 0) return {};
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("hackathons")
-    .select("*")
-    .in("id", ids);
-  if (error)
-    console.error("[server-data] getHackathonsByIdsServer:", error.message);
+  const { data, error } = await supabase.from("hackathons").select("*").in("id", ids);
+  if (error) console.error("[server-data] getHackathonsByIdsServer:", error.message);
   const map: Record<string, StoredHackathon> = {};
   (data ?? []).forEach((b) => {
     map[b.id] = hackathonToStored(b);

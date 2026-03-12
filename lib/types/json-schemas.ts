@@ -57,7 +57,5 @@ export function asJsonArray<T>(val: Json | null, fallback: T[] = []): T[] {
 
 /** Safely narrow a `Json | null` value to a typed object. */
 export function asJsonObject<T>(val: Json | null, fallback: T): T {
-  return val && typeof val === "object" && !Array.isArray(val)
-    ? (val as unknown as T)
-    : fallback;
+  return val && typeof val === "object" && !Array.isArray(val) ? (val as unknown as T) : fallback;
 }

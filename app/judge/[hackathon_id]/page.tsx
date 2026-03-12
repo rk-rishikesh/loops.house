@@ -1,13 +1,9 @@
-import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Gavel } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/lib/server-auth";
 import { canJudgeHackathon } from "@/lib/capabilities";
-import {
-  getHackathonServer,
-  getProjectsServer,
-  getSubmissionsServer,
-} from "@/lib/server-data";
+import { getServerAuth } from "@/lib/server-auth";
+import { getHackathonServer, getProjectsServer, getSubmissionsServer } from "@/lib/server-data";
 
 export default async function JudgeHackathonPage({
   params,
@@ -136,15 +132,12 @@ export default async function JudgeHackathonPage({
                 className="text-[#2d4a3e]/50 leading-relaxed"
                 style={{ fontFamily: "Georgia, serif", fontSize: 15 }}
               >
-                Once builders submit to this hackathon, they&apos;ll appear here
-                for grading.
+                Once builders submit to this hackathon, they&apos;ll appear here for grading.
               </p>
             </div>
           ) : (
             submissions.map((sub, idx) => {
-              const project = projects.find(
-                (p) => p.project_id === sub.project_id,
-              );
+              const project = projects.find((p) => p.project_id === sub.project_id);
               if (!project) return null;
               return (
                 <div

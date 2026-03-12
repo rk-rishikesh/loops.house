@@ -8,7 +8,7 @@
  * so the rest of the codebase can import named enums directly.
  */
 
-export type { Database, Json, Tables, TablesInsert, TablesUpdate, Enums } from "./database.types";
+export type { Database, Enums, Json, Tables, TablesInsert, TablesUpdate } from "./database.types";
 
 import type { Database } from "./database.types";
 

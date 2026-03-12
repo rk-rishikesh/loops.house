@@ -1,7 +1,13 @@
-import { getServerAuth } from "@/lib/server-auth";
-import { getProjectServer, getProjectSubmissionsServer, getHackathonsByIdsServer, getTeamMembersServer, getTeamOwnerServer } from "@/lib/server-data";
 import { redirect } from "next/navigation";
 import { ProjectEditor } from "@/components/client/project-editor";
+import { getServerAuth } from "@/lib/server-auth";
+import {
+  getHackathonsByIdsServer,
+  getProjectServer,
+  getProjectSubmissionsServer,
+  getTeamMembersServer,
+  getTeamOwnerServer,
+} from "@/lib/server-data";
 
 export default async function BuilderProjectDetailPage({
   params,

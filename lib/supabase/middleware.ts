@@ -1,8 +1,5 @@
+import { type BasicCapabilities, getBasicCapabilities } from "@/lib/capabilities";
 import { createServerSupabase } from "./server";
-import {
-  getBasicCapabilities,
-  type BasicCapabilities,
-} from "@/lib/capabilities";
 
 export type AuthUser = {
   id: string;

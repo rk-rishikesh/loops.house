@@ -12,30 +12,51 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { useAuth } from "@/app/providers";
-import { useHackathons, useSaveProject, useTeams } from "@/lib/queries";
+import { ImageUpload, MultiImageUpload } from "@/components/client/image-upload";
+import { saveTeamAction } from "@/lib/actions";
+import type { StoredTeam } from "@/lib/data-mappers";
+import { useSaveProject } from "@/lib/queries";
 import { type CreateProfileSchema, createProfileSchema } from "@/lib/validations/schemas";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 const STEPS = ["code-reader", "demo-reader", "theme-reader", "knowledge-base"] as const;
 type StepStatus = "pending" | "started" | "done" | "failed" | "skipped";
 
-// ─── Dropdown ─────────────────────────────────────────────────────────────────
-interface DropdownOption {
-  value: string;
-  label: string;
+// ─── Step progress dots ───────────────────────────────────────────────────────
+function StepDots({ total, current }: { total: number; current: number }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      {Array.from({ length: total }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-full transition-all duration-300"
+          style={{
+            width: i === current ? 24 : 6,
+            height: 6,
+            backgroundColor:
+              i === current
+                ? "#2d4a3e"
+                : i < current
+                  ? "rgba(45,74,62,0.4)"
+                  : "rgba(45,74,62,0.15)",
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
+// ─── Custom dropdown ──────────────────────────────────────────────────────────
 function CustomDropdown({
   options,
   value,
   onChange,
   placeholder = "Select…",
 }: {
-  options: DropdownOption[];
+  options: { value: string; label: string }[];
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
@@ -63,10 +84,7 @@ function CustomDropdown({
           color: open ? "#f0ebe0" : selected ? "#2d4a3e" : "rgba(45,74,62,0.45)",
         }}
       >
-        <span
-          className="font-semibold text-base"
-          style={{ fontFamily: "'Inter', sans-serif", letterSpacing: "0.01em" }}
-        >
+        <span className="font-semibold text-base" style={{ fontFamily: "'Inter', sans-serif" }}>
           {selected ? selected.label : placeholder}
         </span>
         <ChevronDown
@@ -124,43 +142,17 @@ function CustomDropdown({
   );
 }
 
-// ─── Progress step indicator ──────────────────────────────────────────────────
-function StepDots({ total, current }: { total: number; current: number }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      {Array.from({ length: total }).map((_, i) => (
-        <div
-          key={i}
-          className="rounded-full transition-all duration-300"
-          style={{
-            width: i === current ? 24 : 6,
-            height: 6,
-            backgroundColor:
-              i === current
-                ? "#2d4a3e"
-                : i < current
-                  ? "rgba(45,74,62,0.4)"
-                  : "rgba(45,74,62,0.15)",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
 // ─── Progress panel ───────────────────────────────────────────────────────────
 function ProgressPanel({
-  steps,
   progress,
-  errors,
+  errors: pErrors,
 }: {
-  steps: readonly string[];
   progress: Record<string, StepStatus>;
   errors: Record<string, string>;
 }) {
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: "#2d4a3e" }}>
-      <div className="px-6 py-4 border-b border-[#f0ebe0]/08">
+    <div className="rounded-2xl overflow-hidden max-w-lg" style={{ backgroundColor: "#2d4a3e" }}>
+      <div className="px-6 py-4 border-b" style={{ borderColor: "rgba(240,235,224,0.08)" }}>
         <p
           className="text-[10px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/50"
           style={{ fontFamily: "'Inter', sans-serif" }}
@@ -169,11 +161,11 @@ function ProgressPanel({
         </p>
       </div>
       <div className="px-6 py-5 flex flex-col gap-3">
-        {steps.map((s) => {
+        {STEPS.map((s) => {
           const status = progress[s] ?? "pending";
           return (
             <div key={s} className="flex items-center gap-3">
-              <span className="shrink-0">
+              <span className="shrink-0 w-4">
                 {status === "done" && <Check size={14} style={{ color: "#d6cfc0" }} />}
                 {status === "failed" && <X size={14} style={{ color: "#ff8080" }} />}
                 {status === "skipped" && (
@@ -184,7 +176,7 @@ function ProgressPanel({
                 )}
                 {status === "pending" && (
                   <span
-                    className="block w-3.5 h-3.5 rounded-full"
+                    className="block w-3 h-3 rounded-full"
                     style={{ backgroundColor: "rgba(240,235,224,0.15)" }}
                   />
                 )}
@@ -203,9 +195,12 @@ function ProgressPanel({
               >
                 {s.replace(/-/g, " ")}
               </span>
-              {status === "failed" && errors[s] && (
-                <span className="text-[10px] text-[#ff8080] opacity-70 max-w-[120px] truncate">
-                  {errors[s]}
+              {status === "failed" && pErrors[s] && (
+                <span
+                  className="text-[10px] max-w-[120px] truncate"
+                  style={{ color: "#ff8080", opacity: 0.7 }}
+                >
+                  {pErrors[s]}
                 </span>
               )}
             </div>
@@ -216,28 +211,16 @@ function ProgressPanel({
   );
 }
 
-// ─── Main export ──────────────────────────────────────────────────────────────
-export default function NewProfilePage() {
-  return (
-    <Suspense
-      fallback={
-        <div
-          className="min-h-screen flex items-center justify-center"
-          style={{ backgroundColor: "#f0ebe0" }}
-        >
-          <Loader2 size={20} className="animate-spin text-[#2d4a3e]" />
-        </div>
-      }
-    >
-      <NewProfileContent />
-    </Suspense>
-  );
+// ─── Props ────────────────────────────────────────────────────────────────────
+interface NewProfileFormProps {
+  teams: StoredTeam[];
+  userId: string;
+  initialTeamId?: string;
 }
 
-function NewProfileContent() {
+// ─── Main ─────────────────────────────────────────────────────────────────────
+export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewProfileFormProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState<Record<string, StepStatus>>({});
@@ -246,13 +229,9 @@ function NewProfileContent() {
   const [animDir, setAnimDir] = useState<1 | -1>(1);
   const [animKey, setAnimKey] = useState(0);
   const hasAppliedDefaults = useRef(false);
+  const [screenshotFiles, setScreenshotFiles] = useState<string[]>([]);
 
-  const { data: teams = [] } = useTeams(user?.id);
-  const { data: hackathons = [] } = useHackathons();
   const saveProjectMutation = useSaveProject();
-
-  const teamIdFromUrl = searchParams.get("team_id");
-  const hackathonIdFromUrl = searchParams.get("hackathon_id");
 
   const {
     register,
@@ -275,27 +254,20 @@ function NewProfileContent() {
       website_url: "",
       screenshot_urls: "",
       social_links: "",
-      hackathon_id: "",
     },
   });
 
   useEffect(() => {
     if (hasAppliedDefaults.current) return;
     const validUrlTeam =
-      teamIdFromUrl && teams.some((t) => t.id === teamIdFromUrl) ? teamIdFromUrl : null;
-    const fallbackTeamId = teams[0]?.id ?? "";
-    const validUrlHackathon =
-      hackathonIdFromUrl && hackathons.some((b) => b.id === hackathonIdFromUrl)
-        ? hackathonIdFromUrl
-        : null;
-    if (!validUrlTeam && !fallbackTeamId && !validUrlHackathon) return;
+      initialTeamId && teams.some((t) => t.id === initialTeamId) ? initialTeamId : null;
+    if (!validUrlTeam) return;
     reset((prev) => ({
       ...prev,
-      team_id: validUrlTeam ?? (prev.team_id || fallbackTeamId),
-      hackathon_id: validUrlHackathon ?? prev.hackathon_id,
+      team_id: validUrlTeam,
     }));
     hasAppliedDefaults.current = true;
-  }, [teamIdFromUrl, hackathonIdFromUrl, teams, hackathons, reset]);
+  }, [initialTeamId, teams, reset]);
 
   const FORM_STEPS: {
     key: keyof CreateProfileSchema;
@@ -305,12 +277,8 @@ function NewProfileContent() {
     placeholder?: string;
     type?: string;
     multiline?: boolean;
+    upload?: "logo" | "screenshots";
   }[] = [
-    {
-      key: "team_id",
-      label: "Which team is this for?",
-      sub: "Select the team this profile belongs to.",
-    },
     {
       key: "name",
       label: "Name your project.",
@@ -342,19 +310,17 @@ function NewProfileContent() {
     },
     {
       key: "logo_url",
-      label: "Add a logo URL.",
+      label: "Upload a logo.",
       sub: "Show off your brand identity.",
       optional: true,
-      placeholder: "https://example.com/logo.png",
-      type: "url",
+      upload: "logo",
     },
     {
       key: "screenshot_urls",
       label: "Any screenshots?",
-      sub: "One URL per line — show what you built.",
+      sub: "Upload images that show what you built.",
       optional: true,
-      placeholder: "https://example.com/screen.png",
-      multiline: true,
+      upload: "screenshots",
     },
     {
       key: "website_url",
@@ -372,22 +338,26 @@ function NewProfileContent() {
       placeholder: "Twitter, https://twitter.com/…",
       multiline: true,
     },
-    ...(hackathons.length > 0
+    ...(teams.length > 0
       ? [
           {
-            key: "hackathon_id" as keyof CreateProfileSchema,
-            label: "Link a hackathon.",
-            sub: "Connect this profile to a hackathon.",
+            key: "team_id" as keyof CreateProfileSchema,
+            label: "Assign to an existing team?",
+            sub: "Or we\u2019ll auto-create one for you.",
             optional: true,
           },
         ]
       : []),
+    // TODO: Hackathon linking removed — submissions handle hackathon association now.
+    // Future: add policy to prevent >1 submission per user per hackathon.
+    // Tracking algorithm: get all user teams → get team projects → check if any
+    // team→project already has a submission for that hackathon before allowing a new one.
   ];
 
   const totalSteps = FORM_STEPS.length;
   const activeStep = FORM_STEPS[Math.min(currentStep, totalSteps - 1)];
   const isLastStep = currentStep === totalSteps - 1;
-  const teamId = watch("team_id");
+  const projectName = watch("name");
 
   const navigateTo = (next: number, dir: 1 | -1) => {
     setAnimDir(dir);
@@ -413,12 +383,20 @@ function NewProfileContent() {
       setLoading(true);
       STEPS.forEach((s) => setProgress((p) => ({ ...p, [s]: "pending" })));
 
-      const screenshotUrls = data.screenshot_urls
-        ? data.screenshot_urls
-            .split("\n")
-            .map((u) => u.trim())
-            .filter(Boolean)
-        : undefined;
+      // Auto-create team if none selected
+      let resolvedTeamId = data.team_id;
+      if (!resolvedTeamId) {
+        const teamName = `${data.name}(Team)`;
+        const result = await saveTeamAction({ name: teamName });
+        if (!result.success) {
+          setError(result.error || "Failed to auto-create team");
+          setLoading(false);
+          return;
+        }
+        resolvedTeamId = result.data.id;
+      }
+
+      const screenshotUrls = screenshotFiles.length > 0 ? screenshotFiles : undefined;
       const socialLinks = data.social_links
         ? data.social_links
             .split("\n")
@@ -442,6 +420,7 @@ function NewProfileContent() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...data,
+            team_id: resolvedTeamId,
             screenshot_urls: screenshotUrls,
             social_links: socialLinks,
           }),
@@ -508,7 +487,7 @@ function NewProfileContent() {
         if (lastComplete && typeof lastComplete.project_id === "string") {
           await saveProjectMutation.mutateAsync({
             ...lastComplete,
-            team_id: data.team_id,
+            team_id: resolvedTeamId,
             created_at: new Date().toISOString(),
           } as import("@/lib/storage").StoredProject);
           router.push(`/builder/projects/${lastComplete.project_id}`);
@@ -521,12 +500,12 @@ function NewProfileContent() {
         setLoading(false);
       }
     },
-    [router, saveProjectMutation],
+    [router, saveProjectMutation, screenshotFiles],
   );
 
-  // Shared input style
   const inputBase: React.CSSProperties = {
     width: "100%",
+    maxWidth: 520,
     backgroundColor: "#d6cfc0",
     border: "none",
     borderRadius: 16,
@@ -539,9 +518,13 @@ function NewProfileContent() {
     letterSpacing: "0.01em",
   };
 
+  const animStyle: React.CSSProperties = {
+    animation: `${animDir > 0 ? "slideUpIn" : "slideDownIn"} 0.38s cubic-bezier(0.22,1,0.36,1) both`,
+  };
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#f0ebe0" }}>
-      {/* ── Top nav ──────────────────────────────────────────────────────────── */}
+      {/* ── Nav ─────────────────────────────────────────────────────────────── */}
       <header
         className="flex items-center justify-between px-10 py-5 border-b"
         style={{ borderColor: "rgba(45,74,62,0.12)", backgroundColor: "#f0ebe0" }}
@@ -555,7 +538,7 @@ function NewProfileContent() {
         </Link>
 
         <p
-          className="text-[10px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40 absolute left-1/2 -translate-x-1/2"
+          className="absolute left-1/2 -translate-x-1/2 text-[10px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
           Create Profile
@@ -566,24 +549,17 @@ function NewProfileContent() {
 
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
       <div className="flex flex-1">
-        {/* LEFT — form area */}
-        <main className="flex-1 flex flex-col justify-center px-10 md:px-20 lg:px-32 py-16 max-w-3xl">
+        {/* LEFT — form */}
+        <main className="flex-1 flex flex-col justify-center px-10 md:px-20 lg:px-32 py-16">
           <form onSubmit={handleSubmit(onSubmit)}>
             {/* Step header */}
-            <div
-              key={`header-${animKey}`}
-              className="mb-10"
-              style={{
-                animation: `${animDir > 0 ? "slideUpIn" : "slideDownIn"} 0.38s cubic-bezier(0.22,1,0.36,1) both`,
-              }}
-            >
-              {/* Step counter + optional badge */}
+            <div key={`hdr-${animKey}`} style={{ ...animStyle, marginBottom: 40 }}>
               <div className="flex items-center gap-3 mb-5">
                 <span
-                  className="font-black text-[#2d4a3e]/20 leading-none"
+                  className="font-black text-[#2d4a3e]/18 leading-none"
                   style={{
                     fontFamily: "'Inter', sans-serif",
-                    fontSize: "clamp(36px, 6vw, 64px)",
+                    fontSize: "clamp(40px, 6vw, 72px)",
                     letterSpacing: "-0.03em",
                   }}
                 >
@@ -602,10 +578,8 @@ function NewProfileContent() {
                   </span>
                 )}
               </div>
-
-              {/* Question */}
               <h1
-                className="font-black text-[#2d4a3e] leading-[0.9] mb-4 uppercase"
+                className="font-black text-[#2d4a3e] leading-[0.9] uppercase mb-4"
                 style={{
                   fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
                   fontSize: "clamp(28px, 4.5vw, 56px)",
@@ -616,86 +590,69 @@ function NewProfileContent() {
               </h1>
               <p
                 className="text-[#2d4a3e]/50 leading-relaxed"
-                style={{ fontFamily: "Georgia, serif", fontSize: "clamp(14px, 1.5vw, 16px)" }}
+                style={{ fontFamily: "Georgia, serif", fontSize: "clamp(14px, 1.4vw, 16px)" }}
               >
                 {activeStep?.sub}
               </p>
             </div>
 
-            {/* Input area */}
-            <div
-              key={`input-${animKey}`}
-              style={{
-                animation: `${animDir > 0 ? "slideUpIn" : "slideDownIn"} 0.38s cubic-bezier(0.22,1,0.36,1) 0.06s both`,
-                maxWidth: 520,
-              }}
-            >
-              {/* team_id */}
-              {activeStep?.key === "team_id" &&
-                (teams.length === 0 ? (
-                  <div>
-                    <p
-                      className="text-sm text-[#2d4a3e]/50 mb-6"
-                      style={{ fontFamily: "Georgia, serif" }}
-                    >
-                      You don&apos;t have any teams yet.
-                    </p>
-                    <Link
-                      href="/builder/teams"
-                      className="inline-flex items-center gap-2 rounded-full no-underline text-[#f0ebe0] text-[10px] tracking-widest uppercase font-bold px-6 py-3"
-                      style={{ backgroundColor: "#2d4a3e", fontFamily: "'Inter', sans-serif" }}
-                    >
-                      Create a team <ArrowRight size={12} />
-                    </Link>
-                  </div>
-                ) : (
-                  <Controller
-                    name="team_id"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomDropdown
-                        options={teams.map((t) => ({ value: t.id, label: t.name }))}
-                        value={field.value ?? ""}
-                        onChange={field.onChange}
-                        placeholder="Select a team…"
-                      />
-                    )}
-                  />
-                ))}
-
-              {/* hackathon_id */}
-              {activeStep?.key === "hackathon_id" && hackathons.length > 0 && (
+            {/* Input */}
+            <div key={`inp-${animKey}`} style={{ ...animStyle, animationDelay: "0.06s" }}>
+              {/* team_id — optional, only shown when user has teams */}
+              {activeStep?.key === "team_id" && teams.length > 0 && (
                 <Controller
-                  name="hackathon_id"
+                  name="team_id"
                   control={control}
                   render={({ field }) => (
                     <CustomDropdown
                       options={[
-                        { value: "", label: "None" },
-                        ...hackathons.map((b) => ({ value: b.id, label: b.name })),
+                        { value: "", label: `Auto-create: ${projectName || "Project"}(Team)` },
+                        ...teams.map((t) => ({ value: t.id, label: t.name })),
                       ]}
                       value={field.value ?? ""}
                       onChange={field.onChange}
-                      placeholder="None"
+                      placeholder={`Auto-create: ${projectName || "Project"}(Team)`}
                     />
                   )}
                 />
               )}
 
-              {/* Text + URL inputs */}
+              {/* hackathon_id step removed — linking happens via submissions now */}
+
+              {/* Upload inputs */}
+              {activeStep?.upload === "logo" && (
+                <Controller
+                  name="logo_url"
+                  control={control}
+                  render={({ field }) => (
+                    <ImageUpload
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Upload logo"
+                    />
+                  )}
+                />
+              )}
+
+              {activeStep?.upload === "screenshots" && (
+                <MultiImageUpload
+                  value={screenshotFiles}
+                  onChange={(urls) => setScreenshotFiles(urls)}
+                  max={10}
+                  placeholder="Upload screenshots"
+                />
+              )}
+
+              {/* Text / URL inputs */}
               {activeStep?.key !== "team_id" &&
-                activeStep?.key !== "hackathon_id" &&
+                !activeStep?.upload &&
                 (activeStep?.multiline ? (
                   <textarea
                     rows={4}
                     placeholder={activeStep.placeholder}
                     {...register(activeStep.key)}
-                    className="w-full resize-none outline-none transition-all duration-200 placeholder-[#2d4a3e]/30"
-                    style={{
-                      ...inputBase,
-                      fontFamily: "Georgia, serif",
-                      lineHeight: 1.7,
-                    }}
+                    className="resize-none outline-none placeholder-[#2d4a3e]/30"
+                    style={{ ...inputBase, fontFamily: "Georgia, serif", lineHeight: 1.7 }}
                     onFocus={(e) => (e.currentTarget.style.backgroundColor = "#cdc7b7")}
                     onBlur={(e) => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
                   />
@@ -704,7 +661,7 @@ function NewProfileContent() {
                     type={activeStep?.type ?? "text"}
                     placeholder={activeStep?.placeholder}
                     {...register(activeStep!.key)}
-                    className="outline-none transition-all duration-200 placeholder-[#2d4a3e]/30"
+                    className="outline-none placeholder-[#2d4a3e]/30"
                     style={inputBase}
                     onFocus={(e) => (e.currentTarget.style.backgroundColor = "#cdc7b7")}
                     onBlur={(e) => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
@@ -721,14 +678,14 @@ function NewProfileContent() {
                 </p>
               )}
 
-              {/* Loading progress */}
+              {/* Progress */}
               {loading && (
                 <div className="mt-6">
-                  <ProgressPanel steps={STEPS} progress={progress} errors={progressErrors} />
+                  <ProgressPanel progress={progress} errors={progressErrors} />
                 </div>
               )}
 
-              {/* Submit error */}
+              {/* Error */}
               {error && !loading && (
                 <p
                   className="mt-4 text-sm"
@@ -739,21 +696,18 @@ function NewProfileContent() {
               )}
             </div>
 
-            {/* Action buttons */}
+            {/* Buttons */}
             <div
-              key={`btns-${animKey}`}
+              key={`btn-${animKey}`}
               className="flex items-center gap-4 mt-12 flex-wrap"
-              style={{
-                animation: `${animDir > 0 ? "slideUpIn" : "slideDownIn"} 0.38s cubic-bezier(0.22,1,0.36,1) 0.12s both`,
-              }}
+              style={{ ...animStyle, animationDelay: "0.12s" }}
             >
-              {/* Back */}
               {currentStep > 0 && (
                 <button
                   type="button"
                   onClick={handlePrev}
                   disabled={loading}
-                  className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all duration-200 text-[10px] tracking-widest uppercase font-bold px-5 py-3 hover:opacity-70"
+                  className="inline-flex items-center gap-2 rounded-full cursor-pointer transition-all duration-200 hover:opacity-70 text-[10px] tracking-widest uppercase font-bold px-5 py-3"
                   style={{
                     backgroundColor: "transparent",
                     color: "#2d4a3e",
@@ -765,7 +719,6 @@ function NewProfileContent() {
                 </button>
               )}
 
-              {/* Continue / Submit */}
               {!isLastStep ? (
                 <button
                   type="button"
@@ -783,7 +736,7 @@ function NewProfileContent() {
               ) : (
                 <button
                   type="submit"
-                  disabled={loading || !isValid || !teamId}
+                  disabled={loading || !isValid}
                   className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all duration-200 hover:opacity-90 disabled:opacity-40 text-[10px] tracking-widest uppercase font-bold px-7 py-3"
                   style={{
                     backgroundColor: "#2d4a3e",
@@ -796,7 +749,6 @@ function NewProfileContent() {
                 </button>
               )}
 
-              {/* Skip */}
               {activeStep?.optional && !isLastStep && (
                 <button
                   type="button"
@@ -811,12 +763,12 @@ function NewProfileContent() {
           </form>
         </main>
 
-        {/* RIGHT — decorative panel */}
+        {/* RIGHT — decorative sidebar */}
         <aside
-          className="hidden lg:flex w-[380px] shrink-0 flex-col justify-between p-10 relative overflow-hidden"
+          className="hidden lg:flex w-[360px] shrink-0 flex-col justify-between p-10 relative overflow-hidden"
           style={{ backgroundColor: "#2d4a3e" }}
         >
-          {/* Subtle dot grid */}
+          {/* Dot grid texture */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -826,15 +778,11 @@ function NewProfileContent() {
             }}
           />
 
-          {/* Top — step fraction */}
+          {/* Big faint step number */}
           <div className="relative z-10">
             <p
-              className="font-black text-[#f0ebe0]/10 leading-none"
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: 96,
-                letterSpacing: "-0.04em",
-              }}
+              className="font-black text-[#f0ebe0]/08 leading-none"
+              style={{ fontFamily: "'Inter', sans-serif", fontSize: 100, letterSpacing: "-0.04em" }}
             >
               {String(currentStep + 1).padStart(2, "0")}
             </p>
@@ -846,38 +794,37 @@ function NewProfileContent() {
             </p>
           </div>
 
-          {/* Middle — step list preview */}
-          <div className="relative z-10 flex flex-col gap-2">
-            {FORM_STEPS.slice(Math.max(0, currentStep - 1), currentStep + 4).map((step, i) => {
+          {/* Step preview list */}
+          <div className="relative z-10 flex flex-col gap-2.5">
+            {FORM_STEPS.slice(Math.max(0, currentStep - 1), currentStep + 5).map((step, i) => {
               const absIdx = Math.max(0, currentStep - 1) + i;
-              const isCurrent = absIdx === currentStep;
+              const isCur = absIdx === currentStep;
               const isPast = absIdx < currentStep;
               return (
                 <div
                   key={step.key}
                   className="flex items-center gap-3 transition-all duration-300"
-                  style={{ opacity: isCurrent ? 1 : isPast ? 0.35 : 0.2 }}
+                  style={{ opacity: isCur ? 1 : isPast ? 0.35 : 0.18 }}
                 >
                   {isPast ? (
-                    <Check size={12} style={{ color: "#d6cfc0", flexShrink: 0 }} />
+                    <Check size={11} style={{ color: "#d6cfc0", flexShrink: 0 }} />
                   ) : (
                     <div
-                      className="shrink-0 rounded-full"
+                      className="rounded-full shrink-0"
                       style={{
-                        width: isCurrent ? 8 : 6,
-                        height: isCurrent ? 8 : 6,
-                        backgroundColor: isCurrent ? "#d6cfc0" : "rgba(214,207,192,0.4)",
+                        width: isCur ? 8 : 6,
+                        height: isCur ? 8 : 6,
+                        backgroundColor: isCur ? "#d6cfc0" : "rgba(214,207,192,0.4)",
                       }}
                     />
                   )}
                   <p
                     className="truncate"
                     style={{
-                      fontFamily: isCurrent ? "'Inter', sans-serif" : "Georgia, serif",
-                      fontSize: isCurrent ? 13 : 12,
-                      fontWeight: isCurrent ? 700 : 400,
-                      color: isCurrent ? "#f0ebe0" : "#d6cfc0",
-                      letterSpacing: isCurrent ? "0.01em" : 0,
+                      fontFamily: isCur ? "'Inter', sans-serif" : "Georgia, serif",
+                      fontSize: isCur ? 13 : 12,
+                      fontWeight: isCur ? 700 : 400,
+                      color: isCur ? "#f0ebe0" : "#d6cfc0",
                     }}
                   >
                     {step.label}
@@ -887,7 +834,7 @@ function NewProfileContent() {
             })}
           </div>
 
-          {/* Bottom — arrow + label */}
+          {/* Bottom label + arrow */}
           <div className="relative z-10 flex items-end justify-between">
             <p
               className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#f0ebe0]/25"
@@ -905,7 +852,6 @@ function NewProfileContent() {
         </aside>
       </div>
 
-      {/* Animations */}
       <style>{`
         @keyframes slideUpIn {
           from { opacity: 0; transform: translateY(18px); }
@@ -916,7 +862,6 @@ function NewProfileContent() {
           to   { opacity: 1; transform: translateY(0); }
         }
         textarea::placeholder, input::placeholder { color: rgba(45,74,62,0.35); }
-        textarea:focus, input:focus { outline: none; }
       `}</style>
     </div>
   );

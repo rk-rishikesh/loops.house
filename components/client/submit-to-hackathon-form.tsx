@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, ArrowRight, Send, Check, AlertCircle } from "lucide-react";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { submitProjectSchema, type SubmitProjectSchema } from "@/lib/validations/schemas";
+import { AlertCircle, ArrowLeft, ArrowRight, Check, Send } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { useForm } from "react-hook-form";
 import { submitProjectAction } from "@/lib/actions";
 import type { StoredHackathon, StoredProject, StoredSubmission } from "@/lib/data-mappers";
+import { type SubmitProjectSchema, submitProjectSchema } from "@/lib/validations/schemas";
 
 export function SubmitToHackathonForm({
   hackathon,
@@ -66,13 +66,20 @@ export function SubmitToHackathonForm({
           <Link
             href="/builder/new"
             className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[10px] tracking-[0.18em] uppercase font-bold no-underline"
-            style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#2d4a3e", color: "#f0ebe0" }}
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              backgroundColor: "#2d4a3e",
+              color: "#f0ebe0",
+            }}
           >
             <span>Create new project</span>
             <ArrowRight size={11} />
           </Link>
         </div>
-        <h1 className="text-2xl font-bold text-[#2d4a3e]" style={{ fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>
+        <h1
+          className="text-2xl font-bold text-[#2d4a3e]"
+          style={{ fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}
+        >
           Submit project
         </h1>
         <p className="mt-2 text-[#2d4a3e]/70" style={{ fontFamily: "Georgia, serif" }}>
@@ -81,17 +88,18 @@ export function SubmitToHackathonForm({
         </p>
 
         {submitted ? (
-        <div className="mt-8 p-6 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 flex items-center gap-3">
-          <Check className="w-6 h-6 shrink-0" />
-          <div>
-            <p className="font-medium">Project submitted</p>
-            <p className="text-sm opacity-90">Redirecting to project...</p>
+          <div className="mt-8 p-6 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 flex items-center gap-3">
+            <Check className="w-6 h-6 shrink-0" />
+            <div>
+              <p className="font-medium">Project submitted</p>
+              <p className="text-sm opacity-90">Redirecting to project...</p>
+            </div>
           </div>
-        </div>
         ) : projects.length === 0 ? (
           <div className="mt-8 p-6 rounded-2xl border border-[#2d4a3e]/15 bg-[#f5f2ea]">
             <p className="text-sm text-[#2d4a3e]/70" style={{ fontFamily: "Georgia, serif" }}>
-              You don&apos;t have any projects yet. Create one first, then submit it to this hackathon.
+              You don&apos;t have any projects yet. Create one first, then submit it to this
+              hackathon.
             </p>
           </div>
         ) : (
@@ -119,11 +127,17 @@ export function SubmitToHackathonForm({
                       className="rounded-full border-[#2d4a3e]/40 text-[#2d4a3e] focus:ring-[#2d4a3e]"
                     />
                     <div className="min-w-0 flex-1">
-                      <span className="font-semibold text-[#2d4a3e]" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      <span
+                        className="font-semibold text-[#2d4a3e]"
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      >
                         {p.name}
                       </span>
                       {p.tagline && (
-                        <p className="text-sm text-[#2d4a3e]/60 truncate" style={{ fontFamily: "Georgia, serif" }}>
+                        <p
+                          className="text-sm text-[#2d4a3e]/60 truncate"
+                          style={{ fontFamily: "Georgia, serif" }}
+                        >
                           {p.tagline}
                         </p>
                       )}
@@ -148,7 +162,8 @@ export function SubmitToHackathonForm({
                 opacity: isPending ? 0.7 : 1,
               }}
             >
-              <Send className="w-4 h-4" /> {isPending ? "Submitting..." : `Submit to ${hackathon.name}`}
+              <Send className="w-4 h-4" />{" "}
+              {isPending ? "Submitting..." : `Submit to ${hackathon.name}`}
             </button>
           </form>
         )}

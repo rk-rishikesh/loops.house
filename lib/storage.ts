@@ -9,30 +9,30 @@
  * and re-exported here for backward compatibility.
  */
 
-import { createClient } from "@/lib/supabase/client";
-import type { Database, Json } from "@/lib/supabase/types";
+import type { SubmissionStatus, TeamRow } from "@/lib/data-mappers";
 import {
+  hackathonToStored,
   profileToStored,
   storedToProfileInsert,
-  hackathonToStored,
-  teamToStored,
   submissionToStored,
+  teamToStored,
 } from "@/lib/data-mappers";
-import type { TeamRow, SubmissionStatus } from "@/lib/data-mappers";
+import { createClient } from "@/lib/supabase/client";
+import type { Database, Json } from "@/lib/supabase/types";
 
 // Re-export all types and interfaces for backward compatibility
 export type {
-  StoredProject,
-  StoredHackathon,
-  StoredTeam,
-  StoredSubmission,
+  EvaluationScore,
+  HackathonRow,
   HackathonStatus,
   ProfileRow,
-  HackathonRow,
-  TeamRow,
+  StoredHackathon,
+  StoredProject,
+  StoredSubmission,
+  StoredTeam,
   SubmissionRow,
+  TeamRow,
   UserListItem,
-  EvaluationScore,
 } from "@/lib/data-mappers";
 
 // --- Supabase client ---
@@ -110,11 +110,7 @@ export async function getHackathons() {
 
 export async function getHackathon(id: string) {
   await ensureAuthReady();
-  const { data, error } = await sb()
-    .from("hackathons")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const { data, error } = await sb().from("hackathons").select("*").eq("id", id).single();
   if (error) console.error("[storage] getHackathon:", error.message);
   return data ? hackathonToStored(data) : null;
 }
@@ -155,7 +151,9 @@ export async function getTeams(userId?: string) {
       .select("teams(*)")
       .eq("user_id", userId);
     if (error) console.error("[storage] getTeams(userId):", error.message);
-    return (data?.map((d) => (d as Record<string, unknown>).teams as TeamRow).filter(Boolean) ?? []).map(teamToStored);
+    return (
+      data?.map((d) => (d as Record<string, unknown>).teams as TeamRow).filter(Boolean) ?? []
+    ).map(teamToStored);
   }
   const { data, error } = await sb()
     .from("teams")
@@ -167,16 +165,17 @@ export async function getTeams(userId?: string) {
 
 export async function getTeam(id: string) {
   await ensureAuthReady();
-  const { data, error } = await sb()
-    .from("teams")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const { data, error } = await sb().from("teams").select("*").eq("id", id).single();
   if (error) console.error("[storage] getTeam:", error.message);
   return data ? teamToStored(data) : null;
 }
 
-export async function saveTeam(team: { id?: string; name: string; owner_id: string; created_at?: string }) {
+export async function saveTeam(team: {
+  id?: string;
+  name: string;
+  owner_id: string;
+  created_at?: string;
+}) {
   await ensureAuthReady();
   const payload: Database["public"]["Tables"]["teams"]["Insert"] = {
     name: team.name,
@@ -193,10 +192,12 @@ export async function saveTeam(team: { id?: string; name: string; owner_id: stri
 
   // Auto-add owner as member
   if (data) {
-    const { error: memberError } = await sb().from("team_members").upsert(
-      { team_id: data.id, user_id: data.owner_id, role: "owner" },
-      { onConflict: "team_id,user_id" },
-    );
+    const { error: memberError } = await sb()
+      .from("team_members")
+      .upsert(
+        { team_id: data.id, user_id: data.owner_id, role: "owner" },
+        { onConflict: "team_id,user_id" },
+      );
     if (memberError) console.error("[storage] saveTeam member:", memberError.message);
   }
 }
@@ -252,13 +253,12 @@ export async function getHackathonSubmissions(hackathonId: string) {
 export async function getHackathonsByIds(ids: string[]) {
   await ensureAuthReady();
   if (ids.length === 0) return {};
-  const { data, error } = await sb()
-    .from("hackathons")
-    .select("*")
-    .in("id", ids);
+  const { data, error } = await sb().from("hackathons").select("*").in("id", ids);
   if (error) console.error("[storage] getHackathonsByIds:", error.message);
   const map: Record<string, import("@/lib/data-mappers").StoredHackathon> = {};
-  (data ?? []).forEach((b) => { map[b.id] = hackathonToStored(b); });
+  (data ?? []).forEach((b) => {
+    map[b.id] = hackathonToStored(b);
+  });
   return map;
 }
 

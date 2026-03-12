@@ -8,23 +8,17 @@
 import type { Database, Json } from "@/lib/supabase/types";
 import type {
   ColorsJson,
+  EvaluationScore,
+  JudgingCriterionItem,
   LinkItem,
   TechnicalResourceItem,
-  JudgingCriterionItem,
-  EvaluationScore,
 } from "@/lib/types/json-schemas";
 import { asJsonArray, asJsonObject } from "@/lib/types/json-schemas";
 
 export type { Database };
 
 // Re-export JSON schema types for convenience
-export type {
-  ColorsJson,
-  LinkItem,
-  TechnicalResourceItem,
-  JudgingCriterionItem,
-  EvaluationScore,
-};
+export type { ColorsJson, LinkItem, TechnicalResourceItem, JudgingCriterionItem, EvaluationScore };
 
 // Re-export enum types from the DB types
 export type HackathonStatus = Database["public"]["Enums"]["hackathon_status"];
@@ -48,7 +42,13 @@ export type HackathonJudgeRow = Database["public"]["Tables"]["hackathon_judges"]
 /** Subset of user columns for the admin user list */
 export type UserListItem = Pick<
   UserRow,
-  "id" | "email" | "display_name" | "is_admin" | "is_event_creator" | "oauth_provider" | "created_at"
+  | "id"
+  | "email"
+  | "display_name"
+  | "is_admin"
+  | "is_event_creator"
+  | "oauth_provider"
+  | "created_at"
 >;
 
 // --- StoredXxx interfaces ---

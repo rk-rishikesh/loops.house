@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/lib/server-auth";
-import {
-  getHackathonServer,
-  getSubmissionsServer,
-  getProjectsServer,
-  getHackathonJudgesServer,
-} from "@/lib/server-data";
-import { createServerSupabase } from "@/lib/supabase/server";
 import { HackathonAnalytics } from "@/components/client/analytics-report-generator";
 import type { StoredProject } from "@/lib/data-mappers";
+import { getServerAuth } from "@/lib/server-auth";
+import {
+  getHackathonJudgesServer,
+  getHackathonServer,
+  getProjectsServer,
+  getSubmissionsServer,
+} from "@/lib/server-data";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export type HackathonStats = {
   totalSubmissions: number;
@@ -119,10 +119,6 @@ export default async function HostBoosterAnalyticsPage({
   };
 
   return (
-    <HackathonAnalytics
-      hackathon={hackathon}
-      stats={stats}
-      backHref={`/host/${hackathon.id}`}
-    />
+    <HackathonAnalytics hackathon={hackathon} stats={stats} backHref={`/host/${hackathon.id}`} />
   );
 }

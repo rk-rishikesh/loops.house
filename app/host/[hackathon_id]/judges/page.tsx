@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { getServerAuth } from "@/lib/server-auth";
-import { getHackathonServer, getHackathonInvitationsServer } from "@/lib/server-data";
 import { JudgeInviteForm } from "@/components/client/judge-invite-form";
+import { getServerAuth } from "@/lib/server-auth";
+import { getHackathonInvitationsServer, getHackathonServer } from "@/lib/server-data";
 
 export default async function HostBoosterJudgesPage({
   params,

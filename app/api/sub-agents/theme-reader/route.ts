@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { ai, MODELS } from "../../lib/gemini-client";
 
@@ -43,7 +43,7 @@ async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType
 
 export async function analyzeTheme(
   screenshotUrls: string[],
-  logoUrl?: string
+  logoUrl?: string,
 ): Promise<ThemeReaderOutput> {
   const allUrls = [...(logoUrl ? [logoUrl] : []), ...screenshotUrls.slice(0, MAX_SCREENSHOTS)];
 

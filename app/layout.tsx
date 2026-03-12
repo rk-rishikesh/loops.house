@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import {
+  DM_Mono,
+  Funnel_Sans,
   Geist,
   Geist_Mono,
-  Press_Start_2P,
-  DM_Mono,
   Pixelify_Sans,
-  Funnel_Sans,
+  Press_Start_2P,
 } from "next/font/google";
-import { SupabaseProvider } from "./providers";
 import { LayoutShell } from "@/components/layout-shell";
+import { SupabaseProvider } from "./providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -89,8 +89,8 @@ export default function RootLayout({
                 color: "rgba(15,44,35,0.7)",
               }}
             >
-              This experience is designed for desktop screens. Please switch to
-              a laptop or desktop to continue.
+              This experience is designed for desktop screens. Please switch to a laptop or desktop
+              to continue.
             </p>
           </div>
         </div>

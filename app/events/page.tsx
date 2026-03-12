@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+import { ArrowUpRight, CalendarDays } from "lucide-react";
 import Link from "next/link";
-import { CalendarDays, ArrowUpRight } from "lucide-react";
+import { redirect } from "next/navigation";
 import { getServerAuth } from "@/lib/server-auth";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
@@ -146,4 +146,3 @@ export default async function EventsPage() {
     </div>
   );
 }
-

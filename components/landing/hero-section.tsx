@@ -1,12 +1,15 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
 export function HeroSection() {
   return (
-    <section className="relative w-full rounded-t-[15px] overflow-hidden" style={{ backgroundColor: "#0F2C23" }}>
+    <section
+      className="relative w-full rounded-t-[15px] overflow-hidden"
+      style={{ backgroundColor: "#0F2C23" }}
+    >
       <div className="relative px-[35px] pt-[60px] pb-[38px]" style={{ minHeight: 618 }}>
         {/* Large LOOPS HOUSE text */}
         <h1
@@ -18,7 +21,8 @@ export function HeroSection() {
             color: "#F8FFE8",
           }}
         >
-          L<span className="relative inline-block">
+          L
+          <span className="relative inline-block">
             {/* The OO cutout box */}
             <span
               className="inline-block rounded-[12px] overflow-hidden align-middle"
@@ -46,11 +50,15 @@ export function HeroSection() {
                 OO
               </span>
             </span>
-          </span>PS HOUSE
+          </span>
+          PS HOUSE
         </h1>
 
         {/* Hero graphic (small illustration between letters) */}
-        <div className="absolute" style={{ left: "9.77%", top: "30.42%", width: "17.19%", height: "32.69%" }}>
+        <div
+          className="absolute"
+          style={{ left: "9.77%", top: "30.42%", width: "17.19%", height: "32.69%" }}
+        >
           <Image src="/landing/hero-graphic.png" alt="" fill className="object-contain" />
         </div>
 
@@ -81,11 +89,15 @@ export function HeroSection() {
             bottom: 50,
           }}
         >
-          Discover hackathons, build with AI-powered tools, and connect with a community of builders.
+          Discover hackathons, build with AI-powered tools, and connect with a community of
+          builders.
         </p>
 
         {/* Bottom CTA buttons */}
-        <div className="absolute flex flex-wrap items-center gap-3" style={{ right: 36, bottom: 38 }}>
+        <div
+          className="absolute flex flex-wrap items-center gap-3"
+          style={{ right: 36, bottom: 38 }}
+        >
           <Link
             href="/projects"
             className="inline-flex items-center justify-center rounded-full no-underline border transition-colors hover:bg-[rgba(226,254,165,0.1)]"

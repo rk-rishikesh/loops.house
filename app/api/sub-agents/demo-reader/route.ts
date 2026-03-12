@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { ai, MODELS } from "../../lib/gemini-client";
 
@@ -28,7 +28,7 @@ function extractVideoId(url: string): string | null {
 
 export async function analyzeYoutube(
   url: string,
-  problemStatement?: string
+  problemStatement?: string,
 ): Promise<DemoReaderOutput> {
   const videoId = extractVideoId(url);
   if (!videoId) throw new Error("Invalid YouTube URL");
@@ -86,7 +86,9 @@ Return a STRICT JSON object:
     tech_mentioned: result.tech_mentioned || [],
     timestamps: result.timestamps || [],
     ...(result.problem_alignment ? { problem_alignment: result.problem_alignment } : {}),
-    ...(result.problem_alignment_reason ? { problem_alignment_reason: result.problem_alignment_reason } : {}),
+    ...(result.problem_alignment_reason
+      ? { problem_alignment_reason: result.problem_alignment_reason }
+      : {}),
     raw_transcript: result.raw_transcript || "",
   };
 }

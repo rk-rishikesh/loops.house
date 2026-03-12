@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { streamContent } from "../../lib/gemini-client";
 
@@ -31,15 +31,14 @@ RULES:
 
 const MAX_HISTORY = 15;
 
-function summarizeHistory(history: { role: string; content: string }[]): { role: string; content: string }[] {
+function summarizeHistory(
+  history: { role: string; content: string }[],
+): { role: string; content: string }[] {
   if (history.length <= MAX_HISTORY) return history;
   const older = history.slice(0, history.length - MAX_HISTORY);
   const recent = history.slice(history.length - MAX_HISTORY);
   const summary = older.map((m) => `${m.role}: ${m.content.slice(0, 100)}`).join("\n");
-  return [
-    { role: "user", content: `[Earlier conversation summary]\n${summary}` },
-    ...recent,
-  ];
+  return [{ role: "user", content: `[Earlier conversation summary]\n${summary}` }, ...recent];
 }
 
 export async function POST(request: NextRequest) {

@@ -1,6 +1,6 @@
-import { createServerSupabase } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 function getDashboardUrl(user: { is_admin: boolean; is_event_creator: boolean }): string {
   if (user.is_admin) return "/admin";

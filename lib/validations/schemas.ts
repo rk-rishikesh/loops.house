@@ -82,7 +82,8 @@ export const createInvitationSchema = z
   .refine(
     (data) => {
       if (data.type === "event_host") return !data.hackathon_id && !data.project_id;
-      if (data.type === "cohost" || data.type === "judge") return !!data.hackathon_id && !data.project_id;
+      if (data.type === "cohost" || data.type === "judge")
+        return !!data.hackathon_id && !data.project_id;
       if (data.type === "project_member") return !!data.project_id;
       return false;
     },

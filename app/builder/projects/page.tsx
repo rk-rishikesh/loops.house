@@ -1,8 +1,8 @@
+import { ArrowUpRight, FolderOpen, PlusCircle } from "lucide-react";
 import Link from "next/link";
-import { ArrowUpRight, PlusCircle, FolderOpen } from "lucide-react";
-import { getProjectsServer, getTeamsServer } from "@/lib/server-data";
-import { getServerAuth } from "@/lib/server-auth";
 import type { StoredProject } from "@/lib/data-mappers";
+import { getServerAuth } from "@/lib/server-auth";
+import { getProjectsServer, getTeamsServer } from "@/lib/server-data";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -79,12 +79,9 @@ export default async function BuilderProjectsPage() {
   const projects = allProjects.filter((p) => p.team_id && userTeamIds.has(p.team_id));
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
-
       <div className="px-10 pt-10 pb-24">
-
         {/* ── Hero heading ─────────────────────────────────────────────────── */}
         <div className="mb-16 flex flex-row justify-between">
-          
           <h1
             className="font-black leading-[0.88] uppercase"
             style={{
@@ -104,9 +101,14 @@ export default async function BuilderProjectsPage() {
             <div className="flex flex-col items-end gap-5">
               <p
                 className="max-w-[380px] text-right leading-relaxed"
-                style={{ fontFamily: FN, fontSize: "clamp(15px, 1.6vw, 19px)", color: "rgba(15,44,35,0.55)" }}
+                style={{
+                  fontFamily: FN,
+                  fontSize: "clamp(15px, 1.6vw, 19px)",
+                  color: "rgba(15,44,35,0.55)",
+                }}
               >
-                Create a project and let AI agents refine your story, generate social posts, and apply to hackathons with confidence.
+                Create a project and let AI agents refine your story, generate social posts, and
+                apply to hackathons with confidence.
               </p>
 
               {/* Create new — pill CTA */}
@@ -122,7 +124,10 @@ export default async function BuilderProjectsPage() {
                   <PlusCircle size={13} />
                   New Project
                 </span>
-                <span className="w-10 h-10 flex items-center justify-center rounded-full m-1" style={{ backgroundColor: "#E2FEA5" }}>
+                <span
+                  className="w-10 h-10 flex items-center justify-center rounded-full m-1"
+                  style={{ backgroundColor: "#E2FEA5" }}
+                >
                   <ArrowUpRight size={14} style={{ color: "#0F2C23" }} />
                 </span>
               </Link>
@@ -144,7 +149,13 @@ export default async function BuilderProjectsPage() {
             <p
               key={col}
               className={`text-[10px] tracking-[0.14em] uppercase font-semibold ${
-                i === 0 ? "text-left" : i === 2 ? "text-center" : i === 3 ? "text-right" : "text-left"
+                i === 0
+                  ? "text-left"
+                  : i === 2
+                    ? "text-center"
+                    : i === 3
+                      ? "text-right"
+                      : "text-left"
               }`}
               style={{ fontFamily: PX, color: "rgba(15,44,35,0.4)" }}
             >
@@ -155,7 +166,10 @@ export default async function BuilderProjectsPage() {
 
         {/* ── Table body ───────────────────────────────────────────────────── */}
         {projects.length === 0 ? (
-          <div className="py-24 text-center border-b" style={{ borderColor: "rgba(15,44,35,0.12)" }}>
+          <div
+            className="py-24 text-center border-b"
+            style={{ borderColor: "rgba(15,44,35,0.12)" }}
+          >
             <div
               className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-6"
               style={{ backgroundColor: "rgba(15,44,35,0.08)", color: "#0F2C23" }}
@@ -188,12 +202,9 @@ export default async function BuilderProjectsPage() {
             </Link>
           </div>
         ) : (
-          projects.map((p, idx) => (
-            <ProjectRow key={p.project_id} project={p} index={idx} />
-          ))
+          projects.map((p, idx) => <ProjectRow key={p.project_id} project={p} index={idx} />)
         )}
       </div>
-
     </div>
   );
 }
