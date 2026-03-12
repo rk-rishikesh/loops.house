@@ -58,10 +58,7 @@ export async function uploadScreenshot(
 }
 
 /** Upload user avatar */
-export async function uploadAvatar(
-  userId: string,
-  file: File | Blob,
-): Promise<string> {
+export async function uploadAvatar(userId: string, file: File | Blob): Promise<string> {
   const path = `${userId}/avatar`;
   return uploadFile("user-avatars", path, file);
 }

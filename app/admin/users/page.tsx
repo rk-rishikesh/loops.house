@@ -1,7 +1,7 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { getServerAuth } from "@/lib/server-auth";
 import { redirect } from "next/navigation";
 import { UserRoleEditor } from "@/components/client/user-role-editor";
+import { getServerAuth } from "@/lib/server-auth";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export default async function AdminUsersPage() {
   const auth = await getServerAuth();

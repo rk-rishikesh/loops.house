@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
+import { type NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
+import type { Json } from "@/lib/supabase/types";
 import { generateJSON } from "../../lib/gemini-client";
 import { getChunks } from "../../lib/vector-store";
-import type { Json } from "@/lib/supabase/types";
 
 interface JudgingCriterion {
   name: string;
@@ -91,8 +91,7 @@ export async function POST(request: NextRequest) {
   try {
     const input: EvaluatorInput = await request.json();
 
-    const hackathonId =
-      input.hackathon_id ?? (input as { hackathon_id?: string }).hackathon_id;
+    const hackathonId = input.hackathon_id ?? (input as { hackathon_id?: string }).hackathon_id;
     if (!input.project_id || !hackathonId) {
       return NextResponse.json(
         { error: "project_id and hackathon_id are required" },
@@ -133,9 +132,7 @@ export async function POST(request: NextRequest) {
         p.key_features?.length
           ? `Key features:\n${p.key_features.map((f) => `- ${f}`).join("\n")}`
           : "",
-        p.tech_stack_tags?.length
-          ? `Tech stack: ${p.tech_stack_tags.join(", ")}`
-          : "",
+        p.tech_stack_tags?.length ? `Tech stack: ${p.tech_stack_tags.join(", ")}` : "",
         p.category ? `Category: ${p.category}` : "",
         p.flattened_codebase
           ? `\n--- Code (excerpt) ---\n${p.flattened_codebase.slice(0, 50000)}`
@@ -165,8 +162,7 @@ export async function POST(request: NextRequest) {
 
     const criteriaScores: CriterionScore[] = [];
 
-    const hackathon =
-      input.hackathon ?? (input as { hackathon?: HackathonPayload }).hackathon;
+    const hackathon = input.hackathon ?? (input as { hackathon?: HackathonPayload }).hackathon;
     const hackathonBlock = hackathon
       ? `\nHACKATHON CONTEXT (use for Track/Sponsor Fit):\nName: ${hackathon.name}\nTheme: ${hackathon.theme ?? "N/A"}\nProblem statements: ${(hackathon.problem_statements ?? []).join("; ")}\nSponsor tracks: ${(hackathon.sponsor_tracks ?? []).map((t) => `${t.sponsor}: ${t.track_description}`).join("; ") || "N/A"}`
       : "";
@@ -208,8 +204,7 @@ Return JSON:
           criterion_name: criterion.name,
           score: Math.min(Math.max(result.score || 40, 0), criterion.max_score),
           max_score: criterion.max_score,
-          justification:
-            result.justification || "Insufficient data for evaluation.",
+          justification: result.justification || "Insufficient data for evaluation.",
           strength: result.strength || "N/A",
           improvement: result.improvement || "N/A",
         } satisfies CriterionScore;
@@ -231,10 +226,7 @@ Overall: ${Math.round(overallScore)}/100
 
 Return JSON: { "summary": "the paragraph" }`;
 
-    const summaryResult = await generateJSON<{ summary: string }>(
-      "pro",
-      summaryPrompt,
-    );
+    const summaryResult = await generateJSON<{ summary: string }>("pro", summaryPrompt);
 
     const evalResult = {
       project_id: input.project_id,
@@ -268,10 +260,7 @@ Return JSON: { "summary": "the paragraph" }`;
       .maybeSingle();
 
     if (saveError) {
-      console.error(
-        "[project-evaluator] Failed to save ai_score:",
-        saveError.message,
-      );
+      console.error("[project-evaluator] Failed to save ai_score:", saveError.message);
     } else if (!updated) {
       // No submission row exists — create one via upsert
       const { data: profile } = await supabaseAdmin
@@ -281,30 +270,23 @@ Return JSON: { "summary": "the paragraph" }`;
         .single();
 
       if (profile?.team_id) {
-        const { error: upsertError } = await supabaseAdmin
-          .from("submissions")
-          .upsert(
-            {
-              hackathon_id: hackathonId,
-              project_id: input.project_id,
-              team_id: profile.team_id,
-              ...aiUpdate,
-              status: "under_review" as const,
-            },
-            { onConflict: "hackathon_id,project_id" },
-          );
+        const { error: upsertError } = await supabaseAdmin.from("submissions").upsert(
+          {
+            hackathon_id: hackathonId,
+            project_id: input.project_id,
+            team_id: profile.team_id,
+            ...aiUpdate,
+            status: "under_review" as const,
+          },
+          { onConflict: "hackathon_id,project_id" },
+        );
         if (upsertError) {
-          console.error(
-            "[project-evaluator] Upsert fallback failed:",
-            upsertError.message,
-          );
+          console.error("[project-evaluator] Upsert fallback failed:", upsertError.message);
         } else {
           saved = true;
         }
       } else {
-        console.error(
-          "[project-evaluator] Cannot create submission — project has no team_id",
-        );
+        console.error("[project-evaluator] Cannot create submission — project has no team_id");
       }
     } else {
       saved = true;
@@ -312,8 +294,7 @@ Return JSON: { "summary": "the paragraph" }`;
 
     return NextResponse.json({ ...evalResult, saved });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "An unexpected error occurred";
+    const message = error instanceof Error ? error.message : "An unexpected error occurred";
     console.error("project-evaluator error:", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }

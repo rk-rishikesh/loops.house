@@ -1,7 +1,7 @@
-import { Users, FolderOpen, Rocket, FileText, Mail } from "lucide-react";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { getServerAuth } from "@/lib/server-auth";
+import { FileText, FolderOpen, Mail, Rocket, Users } from "lucide-react";
 import { redirect } from "next/navigation";
+import { getServerAuth } from "@/lib/server-auth";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export default async function AdminDashboardPage() {
   const auth = await getServerAuth();
@@ -9,17 +9,16 @@ export default async function AdminDashboardPage() {
     redirect("/login");
   }
 
-  const [users, profiles, hackathons, submissions, pendingInvitations] =
-    await Promise.all([
-      supabaseAdmin.from("users").select("id", { count: "exact", head: true }),
-      supabaseAdmin.from("loops_profiles").select("id", { count: "exact", head: true }),
-      supabaseAdmin.from("hackathons").select("id", { count: "exact", head: true }),
-      supabaseAdmin.from("submissions").select("id", { count: "exact", head: true }),
-      supabaseAdmin
-        .from("invitations")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending"),
-    ]);
+  const [users, profiles, hackathons, submissions, pendingInvitations] = await Promise.all([
+    supabaseAdmin.from("users").select("id", { count: "exact", head: true }),
+    supabaseAdmin.from("loops_profiles").select("id", { count: "exact", head: true }),
+    supabaseAdmin.from("hackathons").select("id", { count: "exact", head: true }),
+    supabaseAdmin.from("submissions").select("id", { count: "exact", head: true }),
+    supabaseAdmin
+      .from("invitations")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+  ]);
 
   const metrics = {
     total_users: users.count ?? 0,
@@ -31,10 +30,25 @@ export default async function AdminDashboardPage() {
 
   const cards = [
     { label: "Total Users", value: metrics.total_users, icon: Users, color: "text-blue-600" },
-    { label: "Loops Profiles", value: metrics.total_profiles, icon: FolderOpen, color: "text-violet-600" },
+    {
+      label: "Loops Profiles",
+      value: metrics.total_profiles,
+      icon: FolderOpen,
+      color: "text-violet-600",
+    },
     { label: "Hackathons", value: metrics.total_hackathons, icon: Rocket, color: "text-amber-600" },
-    { label: "Submissions", value: metrics.total_submissions, icon: FileText, color: "text-green-600" },
-    { label: "Pending Invitations", value: metrics.pending_invitations, icon: Mail, color: "text-red-600" },
+    {
+      label: "Submissions",
+      value: metrics.total_submissions,
+      icon: FileText,
+      color: "text-green-600",
+    },
+    {
+      label: "Pending Invitations",
+      value: metrics.pending_invitations,
+      icon: Mail,
+      color: "text-red-600",
+    },
   ];
 
   return (
@@ -55,9 +69,7 @@ export default async function AdminDashboardPage() {
                 {card.label}
               </span>
             </div>
-            <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
-              {card.value}
-            </p>
+            <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{card.value}</p>
           </div>
         ))}
       </div>

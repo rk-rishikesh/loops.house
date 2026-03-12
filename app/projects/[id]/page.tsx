@@ -1,5 +1,5 @@
-import { getProjectServer } from "@/lib/server-data";
 import { ViewerProjectDetail } from "@/components/client/viewer-project-detail";
+import { getProjectServer } from "@/lib/server-data";
 
 export default async function ViewerProjectDetailPage({
   params,

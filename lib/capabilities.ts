@@ -35,11 +35,7 @@ export async function getBasicCapabilities(
   userId: string,
 ): Promise<BasicCapabilities | null> {
   const [userResult, cohostResult, judgeResult] = await Promise.all([
-    supabase
-      .from("users")
-      .select("is_admin, is_event_creator")
-      .eq("id", userId)
-      .single(),
+    supabase.from("users").select("is_admin, is_event_creator").eq("id", userId).single(),
     supabase
       .from("hackathon_cohosts")
       .select("hackathon_id", { count: "exact", head: true })
@@ -66,19 +62,9 @@ export async function getFullCapabilities(
   userId: string,
 ): Promise<UserCapabilities | null> {
   const [userResult, cohostResult, judgeResult] = await Promise.all([
-    supabase
-      .from("users")
-      .select("is_admin, is_event_creator")
-      .eq("id", userId)
-      .single(),
-    supabase
-      .from("hackathon_cohosts")
-      .select("hackathon_id")
-      .eq("user_id", userId),
-    supabase
-      .from("hackathon_judges")
-      .select("hackathon_id")
-      .eq("user_id", userId),
+    supabase.from("users").select("is_admin, is_event_creator").eq("id", userId).single(),
+    supabase.from("hackathon_cohosts").select("hackathon_id").eq("user_id", userId),
+    supabase.from("hackathon_judges").select("hackathon_id").eq("user_id", userId),
   ]);
 
   if (!userResult.data) return null;
@@ -100,10 +86,7 @@ export async function getFullCapabilities(
  * Encode basic capabilities into a cookie string.
  * Format: "userId:flag1,flag2,..."
  */
-export function encodeCapsForCookie(
-  userId: string,
-  caps: BasicCapabilities,
-): string {
+export function encodeCapsForCookie(userId: string, caps: BasicCapabilities): string {
   const flags: string[] = [];
   if (caps.isAdmin) flags.push("admin");
   if (caps.isEventCreator) flags.push("event_creator");
@@ -137,17 +120,10 @@ export function canManageHackathon(
   userId: string,
   hackathonId: string,
 ): boolean {
-  return (
-    caps.isAdmin ||
-    hackathonHostId === userId ||
-    caps.cohostOf.includes(hackathonId)
-  );
+  return caps.isAdmin || hackathonHostId === userId || caps.cohostOf.includes(hackathonId);
 }
 
 /** Check if user can judge a specific hackathon */
-export function canJudgeHackathon(
-  caps: UserCapabilities,
-  hackathonId: string,
-): boolean {
+export function canJudgeHackathon(caps: UserCapabilities, hackathonId: string): boolean {
   return caps.isAdmin || caps.judgeOf.includes(hackathonId);
 }

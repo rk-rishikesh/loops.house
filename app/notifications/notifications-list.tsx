@@ -1,9 +1,9 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
+import { Bell, Crown, FolderOpen, Gavel, Users } from "lucide-react";
 import { useTransition } from "react";
 import { respondToInvitationAction } from "@/lib/actions";
-import { Bell, Users, Gavel, FolderOpen, Crown } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
 type Invitation = {
   id: string;
@@ -16,14 +16,19 @@ type Invitation = {
   users: { email: string; display_name: string | null } | null;
 };
 
-const TYPE_CONFIG: Record<
-  string,
-  { label: string; icon: LucideIcon; color: string }
-> = {
-  event_host: { label: "Event Host Invitations", icon: Crown, color: "#b8860b" },
+const TYPE_CONFIG: Record<string, { label: string; icon: LucideIcon; color: string }> = {
+  event_host: {
+    label: "Event Host Invitations",
+    icon: Crown,
+    color: "#b8860b",
+  },
   cohost: { label: "Co-host Invitations", icon: Users, color: "#2d6a9f" },
   judge: { label: "Judge Invitations", icon: Gavel, color: "#7c3aed" },
-  project_member: { label: "Project Member Invitations", icon: FolderOpen, color: "#2d4a3e" },
+  project_member: {
+    label: "Project Member Invitations",
+    icon: FolderOpen,
+    color: "#2d4a3e",
+  },
 };
 
 function InvitationCard({ invitation }: { invitation: Invitation }) {
@@ -44,8 +49,7 @@ function InvitationCard({ invitation }: { invitation: Invitation }) {
     });
   }
 
-  const inviterName =
-    invitation.users?.display_name || invitation.users?.email || "Someone";
+  const inviterName = invitation.users?.display_name || invitation.users?.email || "Someone";
   const date = new Date(invitation.created_at).toLocaleDateString();
 
   return (
@@ -62,7 +66,11 @@ function InvitationCard({ invitation }: { invitation: Invitation }) {
         </span>
         <span
           className="text-xs"
-          style={{ color: "#2d4a3e", opacity: 0.45, fontFamily: "Georgia, serif" }}
+          style={{
+            color: "#2d4a3e",
+            opacity: 0.45,
+            fontFamily: "Georgia, serif",
+          }}
         >
           {date}
         </span>
@@ -95,14 +103,10 @@ function InvitationCard({ invitation }: { invitation: Invitation }) {
   );
 }
 
-export function NotificationsList({
-  invitations,
-}: {
-  invitations: Invitation[];
-}) {
+export function NotificationsList({ invitations }: { invitations: Invitation[] }) {
   if (invitations.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-3">
+      <div className="flex flex-col items-center justify-center h-full py-20 gap-3">
         <div
           className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-2"
           style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e" }}
@@ -130,13 +134,10 @@ export function NotificationsList({
   }
 
   // Group by type, only show groups that have invitations
-  const grouped = invitations.reduce<Record<string, Invitation[]>>(
-    (acc, inv) => {
-      (acc[inv.type] ??= []).push(inv);
-      return acc;
-    },
-    {},
-  );
+  const grouped = invitations.reduce<Record<string, Invitation[]>>((acc, inv) => {
+    (acc[inv.type] ??= []).push(inv);
+    return acc;
+  }, {});
 
   const typeOrder = ["event_host", "cohost", "judge", "project_member"];
 
@@ -157,7 +158,10 @@ export function NotificationsList({
                 <Icon size={16} style={{ color: config.color }} />
                 <span
                   className="text-xs font-bold uppercase tracking-wider"
-                  style={{ color: config.color, fontFamily: "'Inter', sans-serif" }}
+                  style={{
+                    color: config.color,
+                    fontFamily: "'Inter', sans-serif",
+                  }}
                 >
                   {config.label}
                 </span>

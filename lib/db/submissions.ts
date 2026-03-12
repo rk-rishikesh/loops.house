@@ -26,9 +26,7 @@ export async function submitProject(
   return data;
 }
 
-export async function getSubmissions(
-  boosterId: string,
-): Promise<SubmissionRow[]> {
+export async function getSubmissions(boosterId: string): Promise<SubmissionRow[]> {
   const { data } = await supabase
     .from("submissions")
     .select("*")
@@ -70,15 +68,10 @@ export async function updateScore(
   submissionId: string,
   updates: { ai_score?: Json; ai_evaluated_at?: string; momentum_score?: number },
 ): Promise<void> {
-  await supabase
-    .from("submissions")
-    .update(updates)
-    .eq("id", submissionId);
+  await supabase.from("submissions").update(updates).eq("id", submissionId);
 }
 
-export async function getProjectSubmissions(
-  projectId: string,
-): Promise<SubmissionRow[]> {
+export async function getProjectSubmissions(projectId: string): Promise<SubmissionRow[]> {
   const { data } = await supabase
     .from("submissions")
     .select("*")

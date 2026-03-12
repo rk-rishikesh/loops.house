@@ -1,21 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import {
   ArrowLeft,
-  ArrowUpRight,
   ArrowRight,
-  Plus,
-  Sparkles,
+  ArrowUpRight,
   Loader2,
   Pencil,
+  Plus,
+  Save,
+  Sparkles,
   Trash2,
   X,
-  Save,
 } from "lucide-react";
-import { useSaveHackathon } from "@/lib/queries";
+import Link from "next/link";
+import { useState } from "react";
 import type { StoredHackathon } from "@/lib/data-mappers";
+import { useSaveHackathon } from "@/lib/queries";
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 interface ProgramDraft {
@@ -275,12 +275,8 @@ export function HackathonForm({
   const [formStep, setFormStep] = useState<FormStep>("theme");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>({ ...EMPTY_FORM });
-  const [programDraft, setProgramDraft] = useState<ProgramDraftResponse | null>(
-    null,
-  );
-  const [resourcePlan, setResourcePlan] = useState<ResourcePlanResponse | null>(
-    null,
-  );
+  const [programDraft, setProgramDraft] = useState<ProgramDraftResponse | null>(null);
+  const [resourcePlan, setResourcePlan] = useState<ResourcePlanResponse | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -384,9 +380,7 @@ export function HackathonForm({
       if (pj.draft?.hackathon_name) set("name", pj.draft.hackathon_name);
       setView("review");
     } catch (err) {
-      setAiError(
-        err instanceof Error ? err.message : "Failed to run hackathon agents",
-      );
+      setAiError(err instanceof Error ? err.message : "Failed to run hackathon agents");
       setView("form");
       setFormStep("notes");
     }
@@ -399,8 +393,7 @@ export function HackathonForm({
       ...payload,
       host_id: userId,
       created_at:
-        hackathons.find((h) => h.id === payload.id)?.created_at ??
-        new Date().toISOString(),
+        hackathons.find((h) => h.id === payload.id)?.created_at ?? new Date().toISOString(),
     };
     await saveHackathonMutation.mutateAsync(hackathon);
     setSaving(false);
@@ -485,8 +478,7 @@ export function HackathonForm({
                   fontSize: "clamp(14px, 1.5vw, 18px)",
                 }}
               >
-                Create hackathons. Fill a brief and let the AI draft the full
-                program.
+                Create hackathons. Fill a brief and let the AI draft the full program.
               </p>
             </div>
           </div>
@@ -592,10 +584,7 @@ export function HackathonForm({
                   </p>
                 )}
               </div>
-              <p
-                className="text-[#2d4a3e]/50 text-sm"
-                style={{ fontFamily: "Georgia, serif" }}
-              >
+              <p className="text-[#2d4a3e]/50 text-sm" style={{ fontFamily: "Georgia, serif" }}>
                 {h.problem_statements.length} statement
                 {h.problem_statements.length !== 1 ? "s" : ""}
               </p>
@@ -617,10 +606,7 @@ export function HackathonForm({
           {/* Footer */}
           {hackathons.length > 0 && (
             <div className="flex items-center justify-between mt-8 pt-5 border-t border-[#2d4a3e]/08">
-              <p
-                className="text-[11px] text-[#2d4a3e]/40"
-                style={{ fontFamily: "Georgia, serif" }}
-              >
+              <p className="text-[11px] text-[#2d4a3e]/40" style={{ fontFamily: "Georgia, serif" }}>
                 {hackathons.length} hackathon
                 {hackathons.length !== 1 ? "s" : ""}
               </p>
@@ -672,15 +658,8 @@ export function HackathonForm({
                 border: "1px solid rgba(200,60,60,0.15)",
               }}
             >
-              <X
-                size={13}
-                className="shrink-0 mt-0.5"
-                style={{ color: "#cc2222" }}
-              />
-              <p
-                className="text-sm text-red-700"
-                style={{ fontFamily: "Georgia, serif" }}
-              >
+              <X size={13} className="shrink-0 mt-0.5" style={{ color: "#cc2222" }} />
+              <p className="text-sm text-red-700" style={{ fontFamily: "Georgia, serif" }}>
                 {aiError}
               </p>
             </div>
@@ -695,8 +674,7 @@ export function HackathonForm({
                   className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed"
                   style={{ fontFamily: "Georgia, serif" }}
                 >
-                  Give your hackathon a one-line theme. This frames the
-                  challenge for builders.
+                  Give your hackathon a one-line theme. This frames the challenge for builders.
                 </p>
                 <FieldLabel>Theme (optional)</FieldLabel>
                 <Input
@@ -718,8 +696,8 @@ export function HackathonForm({
                   className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed"
                   style={{ fontFamily: "Georgia, serif" }}
                 >
-                  In one or two sentences — what do you want this hackathon to
-                  achieve for builders and sponsors?
+                  In one or two sentences — what do you want this hackathon to achieve for builders
+                  and sponsors?
                 </p>
                 <FieldLabel>Program Goal</FieldLabel>
                 <Textarea
@@ -742,8 +720,8 @@ export function HackathonForm({
                   className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed"
                   style={{ fontFamily: "Georgia, serif" }}
                 >
-                  List the problems builders should solve. One per line. The AI
-                  will expand these into full challenge statements.
+                  List the problems builders should solve. One per line. The AI will expand these
+                  into full challenge statements.
                 </p>
                 <FieldLabel>Problem Statements (one per line)</FieldLabel>
                 <Textarea
@@ -755,8 +733,7 @@ export function HackathonForm({
                   rows={5}
                 />
                 <FieldHint>
-                  Leave blank to let the AI generate these from your theme and
-                  goal.
+                  Leave blank to let the AI generate these from your theme and goal.
                 </FieldHint>
                 <div className="mt-5">
                   <NextButton onClick={() => setFormStep("bounty")} />
@@ -849,8 +826,7 @@ export function HackathonForm({
                   className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed"
                   style={{ fontFamily: "Georgia, serif" }}
                 >
-                  Your program or sponsor website. Builders will see this on
-                  your hackathon page.
+                  Your program or sponsor website. Builders will see this on your hackathon page.
                 </p>
                 <FieldLabel>Website URL (optional)</FieldLabel>
                 <Input
@@ -873,8 +849,7 @@ export function HackathonForm({
                   className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed"
                   style={{ fontFamily: "Georgia, serif" }}
                 >
-                  Notion docs, API references, SDK guides — anything technical
-                  builders will need.
+                  Notion docs, API references, SDK guides — anything technical builders will need.
                 </p>
                 <div className="flex flex-col gap-3">
                   {form.technical_resources.map((res, i) => (
@@ -888,8 +863,8 @@ export function HackathonForm({
                         onChange={(v) =>
                           setForm((f) => ({
                             ...f,
-                            technical_resources: f.technical_resources.map(
-                              (r, j) => (j === i ? { ...r, url: v } : r),
+                            technical_resources: f.technical_resources.map((r, j) =>
+                              j === i ? { ...r, url: v } : r,
                             ),
                           }))
                         }
@@ -901,9 +876,8 @@ export function HackathonForm({
                         onChange={(v) =>
                           setForm((f) => ({
                             ...f,
-                            technical_resources: f.technical_resources.map(
-                              (r, j) =>
-                                j === i ? { ...r, description: v } : r,
+                            technical_resources: f.technical_resources.map((r, j) =>
+                              j === i ? { ...r, description: v } : r,
                             ),
                           }))
                         }
@@ -914,9 +888,7 @@ export function HackathonForm({
                         onClick={() =>
                           setForm((f) => ({
                             ...f,
-                            technical_resources: f.technical_resources.filter(
-                              (_, j) => j !== i,
-                            ),
+                            technical_resources: f.technical_resources.filter((_, j) => j !== i),
                           }))
                         }
                         className="w-8 h-8 rounded-xl flex items-center justify-center self-center border-none cursor-pointer transition-all hover:opacity-70"
@@ -963,8 +935,8 @@ export function HackathonForm({
                   className="text-[#2d4a3e]/55 text-sm mb-5 leading-relaxed"
                   style={{ fontFamily: "Georgia, serif" }}
                 >
-                  Freeform scratchpad for the AI: constraints, success criteria,
-                  partners, rough ideas. Anything you'd tell a human co-host.
+                  Freeform scratchpad for the AI: constraints, success criteria, partners, rough
+                  ideas. Anything you'd tell a human co-host.
                 </p>
                 <FieldLabel>Organizer Notes (optional)</FieldLabel>
                 <Textarea
@@ -993,8 +965,7 @@ export function HackathonForm({
                       className="text-[#f0ebe0]/50 text-sm mt-1"
                       style={{ fontFamily: "Georgia, serif" }}
                     >
-                      AI will draft the full program and technical resources
-                      from your brief.
+                      AI will draft the full program and technical resources from your brief.
                     </p>
                   </div>
                   <button
@@ -1026,11 +997,7 @@ export function HackathonForm({
                   className="mt-4 inline-flex items-center gap-2 text-[9px] tracking-widest uppercase font-bold text-[#2d4a3e]/40 hover:text-[#2d4a3e] transition-colors border-none bg-transparent cursor-pointer"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
-                  {saving ? (
-                    <Loader2 size={10} className="animate-spin" />
-                  ) : (
-                    <Save size={10} />
-                  )}
+                  {saving ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />}
                   Skip AI and save directly
                 </button>
               </div>
@@ -1051,11 +1018,7 @@ export function HackathonForm({
             className="w-20 h-20 rounded-3xl flex items-center justify-center mb-8"
             style={{ backgroundColor: "#2d4a3e" }}
           >
-            <Sparkles
-              size={32}
-              style={{ color: "#d6cfc0" }}
-              className="animate-pulse"
-            />
+            <Sparkles size={32} style={{ color: "#d6cfc0" }} className="animate-pulse" />
           </div>
           <h2
             className="font-black text-[#2d4a3e] uppercase text-center mb-4"
@@ -1074,15 +1037,11 @@ export function HackathonForm({
             className="text-[#2d4a3e]/50 text-center max-w-sm leading-relaxed"
             style={{ fontFamily: "Georgia, serif", fontSize: 15 }}
           >
-            Generating program outline, challenge statements, and technical
-            resources from your brief.
+            Generating program outline, challenge statements, and technical resources from your
+            brief.
           </p>
           <div className="flex items-center gap-2 mt-8">
-            {[
-              "Program outline",
-              "Challenge statements",
-              "Technical resources",
-            ].map((label, i) => (
+            {["Program outline", "Challenge statements", "Technical resources"].map((label, i) => (
               <span
                 key={label}
                 className="text-[8px] tracking-[0.12em] uppercase font-bold px-3 py-1.5 rounded-full"
@@ -1124,23 +1083,16 @@ export function HackathonForm({
                 className="text-[#2d4a3e]/55 max-w-[320px] text-right leading-relaxed"
                 style={{ fontFamily: "Georgia, serif", fontSize: 15 }}
               >
-                The AI has drafted your hackathon. Review and save — you can
-                edit everything after.
+                The AI has drafted your hackathon. Review and save — you can edit everything after.
               </p>
             </div>
           </div>
 
-          <div
-            className="grid gap-8 items-start"
-            style={{ gridTemplateColumns: "1fr 320px" }}
-          >
+          <div className="grid gap-8 items-start" style={{ gridTemplateColumns: "1fr 320px" }}>
             {/* Left — main content */}
             <div className="flex flex-col gap-5">
               {/* Hackathon identity */}
-              <div
-                className="rounded-3xl p-7"
-                style={{ backgroundColor: "#2d4a3e" }}
-              >
+              <div className="rounded-3xl p-7" style={{ backgroundColor: "#2d4a3e" }}>
                 <p
                   className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/38 mb-4"
                   style={{ fontFamily: "'Inter', sans-serif" }}
@@ -1157,19 +1109,12 @@ export function HackathonForm({
                 >
                   {form.name || programDraft?.draft.hackathon_name || "Unnamed"}
                 </p>
-                {form.id && (
-                  <p className="text-[#f0ebe0]/40 text-xs mt-2 font-mono">
-                    {form.id}
-                  </p>
-                )}
+                {form.id && <p className="text-[#f0ebe0]/40 text-xs mt-2 font-mono">{form.id}</p>}
               </div>
 
               {/* Program overview */}
               {programDraft?.draft.overview && (
-                <div
-                  className="rounded-3xl p-7"
-                  style={{ backgroundColor: "#f5f2ea" }}
-                >
+                <div className="rounded-3xl p-7" style={{ backgroundColor: "#f5f2ea" }}>
                   <p
                     className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40 mb-3"
                     style={{ fontFamily: "'Inter', sans-serif" }}
@@ -1187,10 +1132,7 @@ export function HackathonForm({
 
               {/* Goals */}
               {(programDraft?.draft.goals?.length ?? 0) > 0 && (
-                <div
-                  className="rounded-3xl p-7"
-                  style={{ backgroundColor: "#f5f2ea" }}
-                >
+                <div className="rounded-3xl p-7" style={{ backgroundColor: "#f5f2ea" }}>
                   <p
                     className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40 mb-1"
                     style={{ fontFamily: "'Inter', sans-serif" }}
@@ -1237,10 +1179,7 @@ export function HackathonForm({
 
               {/* Challenges */}
               {(programDraft?.draft.challenge_statements?.length ?? 0) > 0 && (
-                <div
-                  className="rounded-3xl p-7"
-                  style={{ backgroundColor: "#f5f2ea" }}
-                >
+                <div className="rounded-3xl p-7" style={{ backgroundColor: "#f5f2ea" }}>
                   <p
                     className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40 mb-1"
                     style={{ fontFamily: "'Inter', sans-serif" }}
@@ -1255,8 +1194,7 @@ export function HackathonForm({
                       letterSpacing: "-0.02em",
                     }}
                   >
-                    {programDraft!.draft.challenge_statements.length}{" "}
-                    Challenges.
+                    {programDraft!.draft.challenge_statements.length} Challenges.
                   </h3>
                   <div className="border-t border-[#2d4a3e]/12">
                     {programDraft!.draft.challenge_statements.map((c, i) => (
@@ -1308,10 +1246,7 @@ export function HackathonForm({
 
               {/* Resource cheatsheet */}
               {resourcePlan?.resources.technical_cheatsheet && (
-                <div
-                  className="rounded-3xl p-7"
-                  style={{ backgroundColor: "#2d4a3e" }}
-                >
+                <div className="rounded-3xl p-7" style={{ backgroundColor: "#2d4a3e" }}>
                   <p
                     className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/38 mb-3"
                     style={{ fontFamily: "'Inter', sans-serif" }}
@@ -1334,10 +1269,7 @@ export function HackathonForm({
 
               {/* Tracks */}
               {(resourcePlan?.resources.tracks?.length ?? 0) > 0 && (
-                <div
-                  className="rounded-3xl p-7"
-                  style={{ backgroundColor: "#f5f2ea" }}
-                >
+                <div className="rounded-3xl p-7" style={{ backgroundColor: "#f5f2ea" }}>
                   <p
                     className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40 mb-1"
                     style={{ fontFamily: "'Inter', sans-serif" }}
@@ -1394,10 +1326,7 @@ export function HackathonForm({
             {/* Right sidebar */}
             <aside className="sticky top-[81px] flex flex-col gap-4">
               {/* Save CTA */}
-              <div
-                className="rounded-3xl p-7"
-                style={{ backgroundColor: "#2d4a3e" }}
-              >
+              <div className="rounded-3xl p-7" style={{ backgroundColor: "#2d4a3e" }}>
                 <p
                   className="font-black text-[#f0ebe0] uppercase mb-2"
                   style={{
@@ -1412,8 +1341,7 @@ export function HackathonForm({
                   className="text-[#f0ebe0]/50 text-sm mb-6 leading-relaxed"
                   style={{ fontFamily: "Georgia, serif" }}
                 >
-                  Save this hackathon. You can edit all details from the list at
-                  any time.
+                  Save this hackathon. You can edit all details from the list at any time.
                 </p>
                 <button
                   type="button"
@@ -1431,11 +1359,7 @@ export function HackathonForm({
                     textTransform: "uppercase",
                   }}
                 >
-                  {saving ? (
-                    <Loader2 size={12} className="animate-spin" />
-                  ) : (
-                    <Save size={12} />
-                  )}
+                  {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                   {saving ? "Saving..." : "Save Hackathon"}
                 </button>
                 <button
@@ -1461,10 +1385,7 @@ export function HackathonForm({
               </div>
 
               {/* Summary */}
-              <div
-                className="rounded-2xl px-6 py-5"
-                style={{ backgroundColor: "#d6cfc0" }}
-              >
+              <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#d6cfc0" }}>
                 <p
                   className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40 mb-4"
                   style={{ fontFamily: "'Inter', sans-serif" }}
@@ -1475,9 +1396,7 @@ export function HackathonForm({
                   {[
                     {
                       label: "Challenges",
-                      value: String(
-                        programDraft?.draft.challenge_statements?.length ?? "-",
-                      ),
+                      value: String(programDraft?.draft.challenge_statements?.length ?? "-"),
                     },
                     {
                       label: "Goals",
@@ -1485,9 +1404,7 @@ export function HackathonForm({
                     },
                     {
                       label: "Tracks",
-                      value: String(
-                        resourcePlan?.resources.tracks?.length ?? "-",
-                      ),
+                      value: String(resourcePlan?.resources.tracks?.length ?? "-"),
                     },
                   ].map(({ label, value }) => (
                     <div
@@ -1530,14 +1447,7 @@ export function HackathonForm({
           style={{ animation: "ticker 28s linear infinite" }}
         >
           {[...Array(3)].map((_, ri) =>
-            [
-              "HACKATHONS",
-              "★",
-              "HOST DASHBOARD",
-              "★",
-              "AI PROGRAM BUILDER",
-              "★",
-            ].map((t, i) => (
+            ["HACKATHONS", "★", "HOST DASHBOARD", "★", "AI PROGRAM BUILDER", "★"].map((t, i) => (
               <span
                 key={`${ri}-${i}`}
                 className="text-[10px] tracking-[0.2em] uppercase font-bold shrink-0"

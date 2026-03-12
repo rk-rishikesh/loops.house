@@ -73,11 +73,21 @@ export function FooterSection() {
       <div className="relative w-full h-[250px] sm:h-[350px] md:h-[420px] pointer-events-none">
         {/* Tree right */}
         <div className="absolute right-[10%] sm:right-[16%] bottom-0 w-[35%] sm:w-[28%] h-full">
-          <Image src="/landing/footer-tree1.png" alt="" fill className="object-contain object-bottom" />
+          <Image
+            src="/landing/footer-tree1.png"
+            alt=""
+            fill
+            className="object-contain object-bottom"
+          />
         </div>
         {/* Tree left */}
         <div className="absolute left-[10%] sm:left-[16%] bottom-0 w-[35%] sm:w-[28%] h-full">
-          <Image src="/landing/footer-tree2.png" alt="" fill className="object-contain object-bottom" />
+          <Image
+            src="/landing/footer-tree2.png"
+            alt=""
+            fill
+            className="object-contain object-bottom"
+          />
         </div>
         {/* Cat */}
         <div className="absolute right-[15%] sm:right-[20%] bottom-[8%] w-[200px] h-[200px] sm:w-[350px] sm:h-[350px] md:w-[450px] md:h-[450px]">

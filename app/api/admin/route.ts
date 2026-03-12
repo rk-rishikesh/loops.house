@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,17 +21,16 @@ export async function GET(request: NextRequest) {
   const view = searchParams.get("view") ?? "metrics";
 
   if (view === "metrics") {
-    const [users, profiles, hackathons, submissions, pendingInvitations] =
-      await Promise.all([
-        supabaseAdmin.from("users").select("id", { count: "exact", head: true }),
-        supabaseAdmin.from("loops_profiles").select("id", { count: "exact", head: true }),
-        supabaseAdmin.from("hackathons").select("id", { count: "exact", head: true }),
-        supabaseAdmin.from("submissions").select("id", { count: "exact", head: true }),
-        supabaseAdmin
-          .from("invitations")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "pending"),
-      ]);
+    const [users, profiles, hackathons, submissions, pendingInvitations] = await Promise.all([
+      supabaseAdmin.from("users").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("loops_profiles").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("hackathons").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("submissions").select("id", { count: "exact", head: true }),
+      supabaseAdmin
+        .from("invitations")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
+    ]);
 
     return NextResponse.json({
       total_users: users.count ?? 0,
@@ -62,10 +61,7 @@ export async function PATCH(request: NextRequest) {
   const body = await request.json();
   const parsed = adminToggleSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0].message },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
   const { user_id, field, value } = parsed.data;
 

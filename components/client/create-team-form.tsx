@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Users, Plus } from "lucide-react";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createTeamSchema, type CreateTeamSchema } from "@/lib/validations/schemas";
+import { ArrowLeft, Plus, Users } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { useForm } from "react-hook-form";
 import { saveTeamAction } from "@/lib/actions";
 import type { StoredTeam } from "@/lib/data-mappers";
+import { type CreateTeamSchema, createTeamSchema } from "@/lib/validations/schemas";
 
 export function CreateTeamForm({ teams }: { teams: StoredTeam[] }) {
   const router = useRouter();
@@ -65,7 +65,6 @@ export function CreateTeamForm({ teams }: { teams: StoredTeam[] }) {
                 {...register("name")}
                 placeholder="Team name"
                 className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
-                autoFocus
               />
               <button
                 type="submit"
@@ -76,7 +75,10 @@ export function CreateTeamForm({ teams }: { teams: StoredTeam[] }) {
               </button>
               <button
                 type="button"
-                onClick={() => { setAdding(false); reset(); }}
+                onClick={() => {
+                  setAdding(false);
+                  reset();
+                }}
                 className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-zinc-600 dark:text-zinc-400"
               >
                 Cancel

@@ -8,10 +8,7 @@ type ProfileUpdate = Database["public"]["Tables"]["loops_profiles"]["Update"];
 const supabase = createClient();
 
 export async function getProjects(teamId?: string): Promise<ProfileRow[]> {
-  let query = supabase
-    .from("loops_profiles")
-    .select("*")
-    .order("created_at", { ascending: false });
+  let query = supabase.from("loops_profiles").select("*").order("created_at", { ascending: false });
 
   if (teamId) query = query.eq("team_id", teamId);
   const { data } = await query;
@@ -43,11 +40,7 @@ export async function getProjectsList(
 }
 
 export async function getProject(id: string): Promise<ProfileRow | null> {
-  const { data } = await supabase
-    .from("loops_profiles")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const { data } = await supabase.from("loops_profiles").select("*").eq("id", id).single();
   return data;
 }
 
@@ -66,11 +59,7 @@ export async function saveProject(
     return data;
   }
   // Insert new
-  const { data } = await supabase
-    .from("loops_profiles")
-    .insert(project)
-    .select()
-    .single();
+  const { data } = await supabase.from("loops_profiles").insert(project).select().single();
   return data;
 }
 

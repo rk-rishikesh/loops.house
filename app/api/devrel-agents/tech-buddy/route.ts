@@ -1,7 +1,7 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
+import { cosineSimilarity, embedBatch, embedText } from "../../lib/embeddings";
 import { streamContent } from "../../lib/gemini-client";
-import { embedText, embedBatch, cosineSimilarity } from "../../lib/embeddings";
 
 interface TechBuddyInput {
   message: string;
@@ -56,10 +56,7 @@ RULES:
 - Do NOT use your general knowledge about these technologies — only use what is in the provided documents.
 - You CAN explain what a sponsor API does based on its docs. You CAN show example usage IF it appears in the docs.`;
 
-export async function loadResources(
-  hackathonId: string,
-  bundle: ResourceBundle,
-): Promise<void> {
+export async function loadResources(hackathonId: string, bundle: ResourceBundle): Promise<void> {
   const chunks: { text: string; source: string }[] = [];
 
   for (const track of bundle.sponsor_tracks) {
@@ -159,22 +156,20 @@ export async function POST(request: NextRequest) {
     }
 
     const input: TechBuddyInput = body;
-    const bid =
-      input.hackathon_id ?? (input as { hackathon_id?: string }).hackathon_id;
+    const bid = input.hackathon_id ?? (input as { hackathon_id?: string }).hackathon_id;
     if (!input.message || !bid) {
-      return new Response(
-        JSON.stringify({ error: "message and hackathon_id are required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "message and hackathon_id are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const retrieved = await retrieveChunks(bid, input.message);
 
     if (retrieved.length === 0) {
-      return new Response(
-        JSON.stringify({ response: NO_INFO_RESPONSE, sources: [] }),
-        { headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ response: NO_INFO_RESPONSE, sources: [] }), {
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const contextBlock = retrieved
@@ -209,9 +204,7 @@ export async function POST(request: NextRequest) {
           for await (const chunk of response) {
             const text = chunk.text;
             if (text) {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ text })}\n\n`),
-              );
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
             }
           }
           controller.enqueue(
@@ -235,8 +228,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "An unexpected error occurred";
+    const message = error instanceof Error ? error.message : "An unexpected error occurred";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

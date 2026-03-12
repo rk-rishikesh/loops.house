@@ -1,6 +1,6 @@
-import { getTeamsServer } from "@/lib/server-data";
-import { getServerAuth } from "@/lib/server-auth";
 import { CreateTeamForm } from "@/components/client/create-team-form";
+import { getServerAuth } from "@/lib/server-auth";
+import { getTeamsServer } from "@/lib/server-data";
 
 export default async function BuilderTeamsPage() {
   const auth = await getServerAuth();

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { analyzeYoutube } from "@/lib/agents/youtube";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 
 export const maxDuration = 120;
 

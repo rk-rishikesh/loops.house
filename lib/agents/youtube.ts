@@ -63,9 +63,7 @@ function buildResult(aiResult: Record<string, unknown>, url: string): YoutubeAna
   return {
     title: (aiResult.title as string) || "YouTube Video",
     transcript:
-      (aiResult.transcript as string) ||
-      insights.summary ||
-      "Synthesis provided by Gemini.",
+      (aiResult.transcript as string) || insights.summary || "Synthesis provided by Gemini.",
     keyMoments: (aiResult.keyMoments as YoutubeAnalysisResult["keyMoments"]) || [],
     insights,
     fullContent: `YouTube Video: ${url}\n\nSynthesis: ${(aiResult.transcript as string) || ""}`,

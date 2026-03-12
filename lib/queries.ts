@@ -1,21 +1,19 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/app/providers";
+import type { StoredHackathon, StoredProject, StoredTeam } from "@/lib/storage";
 import {
-  getProjects,
-  getHackathons,
-  getTeams,
-  getProject,
   getHackathon,
-  getHackathonSubmissions,
-  getSubmissionsForHackathons,
-  saveTeam,
-  saveProject,
+  getHackathons,
+  getProject,
+  getProjects,
+  getTeams,
   saveHackathon,
+  saveProject,
+  saveTeam,
   submitProjectToHackathon,
 } from "@/lib/storage";
-import type { StoredProject, StoredHackathon, StoredTeam, StoredSubmission } from "@/lib/storage";
-import { useAuth } from "@/app/providers";
 
 // --- Query key factory ---
 
@@ -36,7 +34,6 @@ export const queryKeys = {
   },
   submissions: {
     forHackathon: (hackathonId: string) => ["submissions", "hackathon", hackathonId] as const,
-    forHackathons: (hackathonIds: string[]) => ["submissions", "hackathons", hackathonIds] as const,
   },
 };
 
@@ -84,24 +81,6 @@ export function useHackathon(id: string) {
     queryKey: queryKeys.hackathons.detail(id),
     queryFn: () => getHackathon(id),
     enabled: !loading && !!id,
-  });
-}
-
-export function useSubmissions(hackathonId?: string) {
-  const { loading } = useAuth();
-  return useQuery<StoredSubmission[]>({
-    queryKey: queryKeys.submissions.forHackathon(hackathonId ?? ""),
-    queryFn: () => getHackathonSubmissions(hackathonId!),
-    enabled: !loading && !!hackathonId,
-  });
-}
-
-export function useSubmissionsForHackathons(hackathonIds: string[]) {
-  const { loading } = useAuth();
-  return useQuery<StoredSubmission[]>({
-    queryKey: queryKeys.submissions.forHackathons(hackathonIds),
-    queryFn: () => getSubmissionsForHackathons(hackathonIds),
-    enabled: !loading && hackathonIds.length > 0,
   });
 }
 

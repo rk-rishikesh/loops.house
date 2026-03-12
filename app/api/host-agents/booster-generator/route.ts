@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { generateJSON } from "../../lib/gemini-client";
 import { checkRateLimit } from "../../lib/rate-limiter";
@@ -60,8 +60,12 @@ export async function POST(request: NextRequest) {
   const rl = await checkRateLimit(`hackathon-gen:${auth.user.id}`, 5, 86400000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: "Rate limit exceeded. Try again later.", remaining: rl.remaining, resetAt: rl.resetAt },
-      { status: 429 }
+      {
+        error: "Rate limit exceeded. Try again later.",
+        remaining: rl.remaining,
+        resetAt: rl.resetAt,
+      },
+      { status: 429 },
     );
   }
 
@@ -72,7 +76,7 @@ export async function POST(request: NextRequest) {
     if (!hackathon || !hackathon.id || !hackathon.name) {
       return NextResponse.json(
         { error: "hackathon with id and name is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -93,7 +97,7 @@ export async function POST(request: NextRequest) {
         organizer_notes: hackathon.organizer_notes,
       },
       null,
-      2
+      2,
     );
 
     const prompt = `You are a program designer for a hackathon. A host has filled out an onboarding form. Using ONLY that information, draft a complete but editable program.

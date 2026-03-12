@@ -1,9 +1,14 @@
-import { getServerAuth } from "@/lib/server-auth";
-import { getHackathonServer, getProjectsServer, getSubmissionsServer, getTeamsServer } from "@/lib/server-data";
-import { redirect } from "next/navigation";
-import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { SubmitToHackathonForm } from "@/components/client/submit-to-hackathon-form";
+import { getServerAuth } from "@/lib/server-auth";
+import {
+  getHackathonServer,
+  getProjectsServer,
+  getSubmissionsServer,
+  getTeamsServer,
+} from "@/lib/server-data";
 
 export default async function SubmitToHackathonPage({
   params,
@@ -43,10 +48,6 @@ export default async function SubmitToHackathonPage({
   }
 
   return (
-    <SubmitToHackathonForm
-      hackathon={hackathon}
-      projects={projects}
-      submissions={submissions}
-    />
+    <SubmitToHackathonForm hackathon={hackathon} projects={projects} submissions={submissions} />
   );
 }

@@ -1,5 +1,5 @@
-import { getHackathonsServer } from "@/lib/server-data";
 import { HackathonListPage } from "@/components/client/hackathon-list-page";
+import { getHackathonsServer } from "@/lib/server-data";
 
 export default async function HackathonsPage() {
   const boosters = await getHackathonsServer();

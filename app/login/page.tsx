@@ -1,17 +1,19 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft, Github, Mail } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Mail, Github } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { signInWithOAuth, signInWithEmail, signUpWithEmail } from "@/lib/auth";
-import { loginSchema, type LoginSchema } from "@/lib/validations/schemas";
 import { useAuth } from "@/app/providers";
+import { signInWithEmail, signInWithOAuth, signUpWithEmail } from "@/lib/auth";
+import { type LoginSchema, loginSchema } from "@/lib/validations/schemas";
 
-function getDashboard(caps: { isAdmin: boolean; isEventCreator: boolean; isCohost: boolean; isJudge: boolean } | null): string {
+function getDashboard(
+  caps: { isAdmin: boolean; isEventCreator: boolean; isCohost: boolean; isJudge: boolean } | null,
+): string {
   if (!caps) return "/dashboard";
   if (caps.isAdmin) return "/admin";
   if (caps.isEventCreator || caps.isCohost) return "/host";
@@ -45,9 +47,7 @@ function LoginPageContent() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [oauthLoading, setOauthLoading] = useState(false);
   const [serverError, setServerError] = useState(
-    authError === "auth_failed"
-      ? "Authentication failed. Please try again."
-      : "",
+    authError === "auth_failed" ? "Authentication failed. Please try again." : "",
   );
   const [message, setMessage] = useState("");
 
@@ -62,10 +62,7 @@ function LoginPageContent() {
   async function handleOAuth(provider: "google" | "github") {
     setServerError("");
     setOauthLoading(true);
-    const { error } = await signInWithOAuth(
-      provider,
-      explicitRedirect ?? undefined,
-    );
+    const { error } = await signInWithOAuth(provider, explicitRedirect ?? undefined);
     if (error) {
       setServerError(error.message);
       setOauthLoading(false);
@@ -86,10 +83,7 @@ function LoginPageContent() {
         setMessage("Check your email for a confirmation link.");
       }
     } else {
-      const { error } = await signInWithEmail(
-        data.email,
-        data.password,
-      );
+      const { error } = await signInWithEmail(data.email, data.password);
       if (error) {
         setServerError(error.message);
       } else {
@@ -184,9 +178,7 @@ function LoginPageContent() {
                 <div className="w-full border-t border-zinc-200" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-[#ECEEE5] px-2 text-zinc-500">
-                  or continue with email
-                </span>
+                <span className="bg-[#ECEEE5] px-2 text-zinc-500">or continue with email</span>
               </div>
             </div>
 
@@ -213,10 +205,7 @@ function LoginPageContent() {
                 )}
               </div>
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-zinc-700 mb-1"
-                >
+                <label htmlFor="password" className="block text-sm font-medium text-zinc-700 mb-1">
                   Password
                 </label>
                 <input
@@ -233,9 +222,7 @@ function LoginPageContent() {
                 )}
               </div>
 
-              {serverError && (
-                <p className="text-sm text-red-600">{serverError}</p>
-              )}
+              {serverError && <p className="text-sm text-red-600">{serverError}</p>}
               {message && <p className="text-sm text-emerald-700">{message}</p>}
 
               <button

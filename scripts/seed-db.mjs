@@ -16,11 +16,11 @@
  * Environment: reads from .env in project root
  */
 
-import { createClient } from "@supabase/supabase-js";
-import { readFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -58,9 +58,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  console.error(
-    "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env",
-  );
+  console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env");
   process.exit(1);
 }
 
@@ -215,10 +213,7 @@ async function clearAll() {
     if (error && !error.message.includes("0 rows")) {
       // rate_limits uses 'key' PK not 'id'
       if (table === "rate_limits") {
-        const { error: e2 } = await supabase
-          .from(table)
-          .delete()
-          .neq("key", "__nonexistent__");
+        const { error: e2 } = await supabase.from(table).delete().neq("key", "__nonexistent__");
         if (e2) console.error(`  [WARN] ${table}:`, e2.message);
         else console.log(`  [OK]   Cleared ${table}`);
         continue;
@@ -288,7 +283,10 @@ async function seedUsers() {
       })
       .eq("id", authId);
 
-    check(`  Updated flags for ${u.email} (admin=${u.is_admin}, event_creator=${u.is_event_creator})`, updateResult);
+    check(
+      `  Updated flags for ${u.email} (admin=${u.is_admin}, event_creator=${u.is_event_creator})`,
+      updateResult,
+    );
 
     // Store the actual auth ID back so we can reference it
     u._authId = authId;
@@ -302,9 +300,7 @@ async function seedTeams() {
   console.log("\n--- Seeding teams ---");
 
   const builder = TEST_USERS.find((u) => u.email === "builder@loopsflow.test");
-  const builder2 = TEST_USERS.find(
-    (u) => u.email === "builder2@loopsflow.test",
-  );
+  const builder2 = TEST_USERS.find((u) => u.email === "builder2@loopsflow.test");
 
   // Team Alpha (owned by builder)
   check(
@@ -339,9 +335,7 @@ async function seedTeams() {
     "Team Beta members",
     await supabase
       .from("team_members")
-      .insert([
-        { team_id: IDS.team_beta, user_id: builder2._authId, role: "owner" },
-      ]),
+      .insert([{ team_id: IDS.team_beta, user_id: builder2._authId, role: "owner" }]),
   );
 }
 
@@ -358,8 +352,7 @@ async function seedHackathons() {
       id: IDS.hackathon_idea,
       host_id: host._authId,
       name: "ETH Denver 2026 Hackathon",
-      description:
-        "48-hour hackathon to build the next generation of decentralized applications.",
+      description: "48-hour hackathon to build the next generation of decentralized applications.",
       theme: "Build the future of Web3",
       problem_statements: [
         "How can DeFi be made more accessible to mainstream users?",
@@ -367,11 +360,9 @@ async function seedHackathons() {
         "How can on-chain identity solutions preserve privacy?",
       ],
       website_url: "https://ethdenver.com",
-      technical_docs:
-        "Solidity best practices, Hardhat testing, ERC-20/721/1155 patterns.",
+      technical_docs: "Solidity best practices, Hardhat testing, ERC-20/721/1155 patterns.",
       bounty_pool_summary: "$50K in prizes across 3 sponsor tracks",
-      program_goal:
-        "Identify and support innovative DeFi, identity, and governance ideas.",
+      program_goal: "Identify and support innovative DeFi, identity, and governance ideas.",
       organizer_notes: "Focus on usability and real-world adoption potential.",
       status: "active",
       start_date: "2026-02-28T00:00:00Z",
@@ -383,8 +374,7 @@ async function seedHackathons() {
       id: IDS.hackathon_momentum,
       host_id: host._authId,
       name: "Loops Momentum Sprint",
-      description:
-        "4-week acceleration program for projects with initial traction.",
+      description: "4-week acceleration program for projects with initial traction.",
       theme: "From prototype to product",
       problem_statements: [
         "How do you get your first 100 users?",
@@ -402,16 +392,14 @@ async function seedHackathons() {
       id: IDS.hackathon_capital,
       host_id: host._authId,
       name: "Capital Raise Hackathon Q1",
-      description:
-        "Pitch day and fundraising bootcamp for seed-stage projects.",
+      description: "Pitch day and fundraising bootcamp for seed-stage projects.",
       theme: "Fundraising fundamentals",
       problem_statements: [
         "How to craft a compelling pitch deck?",
         "What do investors look for in early-stage crypto projects?",
         "How to structure a token raise vs equity?",
       ],
-      bounty_pool_summary:
-        "$100K lead investment + $500K follow-on opportunity",
+      bounty_pool_summary: "$100K lead investment + $500K follow-on opportunity",
       program_goal: "Connect 5 projects with investors for seed funding.",
       status: "draft",
       start_date: "2026-04-01T00:00:00Z",
@@ -440,10 +428,7 @@ async function seedHackathonTracks() {
         "Build tools, libraries, or protocols that improve Ethereum core infrastructure.",
       docs_text:
         "EIPs reference: https://eips.ethereum.org. Solidity docs: https://docs.soliditylang.org",
-      api_endpoints: [
-        "https://mainnet.infura.io/v3/",
-        "https://eth.llamarpc.com",
-      ],
+      api_endpoints: ["https://mainnet.infura.io/v3/", "https://eth.llamarpc.com"],
     },
     {
       id: IDS.track_pol,
@@ -460,12 +445,9 @@ async function seedHackathonTracks() {
       hackathon_id: IDS.hackathon_idea,
       sponsor_name: "Arbitrum DAO",
       track_name: "DeFi Innovation",
-      track_description:
-        "Create novel DeFi primitives on Arbitrum One or Arbitrum Nova.",
+      track_description: "Create novel DeFi primitives on Arbitrum One or Arbitrum Nova.",
       docs_text: "Arbitrum developer docs: https://docs.arbitrum.io",
-      sdk_examples: [
-        "const provider = new ethers.JsonRpcProvider('https://arb1.arbitrum.io/rpc')",
-      ],
+      sdk_examples: ["const provider = new ethers.JsonRpcProvider('https://arb1.arbitrum.io/rpc')"],
     },
   ];
 
@@ -489,14 +471,7 @@ async function seedProjects() {
       refined_description:
         "YieldFlow Protocol is an AI-powered yield optimization engine that automatically rebalances user deposits across multiple DeFi lending protocols (Aave, Compound, Morpho) to maximize risk-adjusted returns. It uses on-chain analytics and predictive models to anticipate rate changes and move funds proactively.",
       category: "DeFi",
-      tech_stack: [
-        "Solidity",
-        "Hardhat",
-        "React",
-        "TypeScript",
-        "ethers.js",
-        "The Graph",
-      ],
+      tech_stack: ["Solidity", "Hardhat", "React", "TypeScript", "ethers.js", "The Graph"],
       colors: {
         primary_color: "#6366f1",
         secondary_color: "#818cf8",
@@ -513,16 +488,9 @@ async function seedProjects() {
       logo_url: "https://placehold.co/200x200",
       github_url: "https://github.com/example/yieldflow",
       website_url: "https://yieldflow.example.com",
-      screenshot_urls: [
-        "https://placehold.co/800x450",
-        "https://placehold.co/800x450",
-      ],
-      additional_links: [
-        { label: "Docs", url: "https://docs.yieldflow.example.com" },
-      ],
-      social_links: [
-        { label: "Twitter", url: "https://twitter.com/yieldflow" },
-      ],
+      screenshot_urls: ["https://placehold.co/800x450", "https://placehold.co/800x450"],
+      additional_links: [{ label: "Docs", url: "https://docs.yieldflow.example.com" }],
+      social_links: [{ label: "Twitter", url: "https://twitter.com/yieldflow" }],
       flattened_codebase:
         "// contracts/YieldVault.sol\npragma solidity ^0.8.20;\n\nimport '@openzeppelin/contracts/token/ERC20/ERC20.sol';\n\ncontract YieldVault is ERC20 {\n    mapping(address => uint256) public deposits;\n    \n    function deposit(uint256 amount) external {\n        deposits[msg.sender] += amount;\n        _mint(msg.sender, amount);\n    }\n    \n    function rebalance() external {\n        // AI-driven rebalancing logic\n    }\n}\n",
       kb_sections: ["profile", "code", "theme"],
@@ -567,13 +535,7 @@ async function seedProjects() {
       refined_description:
         "DevConnect Hub is a professional networking platform designed exclusively for Web3 developers. It uses on-chain credentials and GitHub activity to verify skills, matches developers with project opportunities, and provides a reputation system based on contributions to open-source Web3 projects.",
       category: "Social / Developer Tools",
-      tech_stack: [
-        "Next.js",
-        "TypeScript",
-        "Supabase",
-        "Tailwind CSS",
-        "Prisma",
-      ],
+      tech_stack: ["Next.js", "TypeScript", "Supabase", "Tailwind CSS", "Prisma"],
       colors: {
         primary_color: "#10b981",
         secondary_color: "#34d399",
@@ -697,7 +659,6 @@ async function seedSubmissions() {
   ];
 
   check("Submissions", await supabase.from("submissions").insert(submissions));
-
 }
 
 // ---------------------------------------------------------------------------
@@ -706,7 +667,7 @@ async function seedSubmissions() {
 async function seedHackathonRoles() {
   console.log("\n--- Seeding hackathon judges & cohosts ---");
 
-  const host = TEST_USERS.find((u) => u.email === "host@loopsflow.test");
+  const _host = TEST_USERS.find((u) => u.email === "host@loopsflow.test");
   const judge = TEST_USERS.find((u) => u.email === "judge@loopsflow.test");
   const admin = TEST_USERS.find((u) => u.email === "admin@loopsflow.test");
 
@@ -770,12 +731,7 @@ function parseCSV(text) {
         row.push(field);
       } else {
         let field = "";
-        while (
-          i < text.length &&
-          text[i] !== "," &&
-          text[i] !== "\n" &&
-          text[i] !== "\r"
-        ) {
+        while (i < text.length && text[i] !== "," && text[i] !== "\n" && text[i] !== "\r") {
           field += text[i];
           i++;
         }
@@ -839,9 +795,7 @@ async function seedCSVData() {
   const userMap = new Map(); // email → { authId, teamId }
   for (const [email, info] of submitterMap) {
     const displayName = `${info.firstName} ${info.lastName}`.trim();
-    const username = `${info.firstName}_${info.lastName}`
-      .toLowerCase()
-      .replace(/[^a-z0-9_]/g, "");
+    const username = `${info.firstName}_${info.lastName}`.toLowerCase().replace(/[^a-z0-9_]/g, "");
 
     const { data, error } = await supabase.auth.admin.createUser({
       email,
@@ -858,10 +812,7 @@ async function seedCSVData() {
     const authId = data.user.id;
     console.log(`  [OK]   User ${displayName} (${email})`);
 
-    await supabase
-      .from("users")
-      .update({ display_name: displayName, username })
-      .eq("id", authId);
+    await supabase.from("users").update({ display_name: displayName, username }).eq("id", authId);
 
     const teamId = randomUUID();
     await supabase.from("teams").insert({
@@ -896,20 +847,16 @@ async function seedCSVData() {
     const projectDesc = row[col("Project Description")]?.trim() || "";
     const githubUrl = row[col("Project Source Code")]?.trim() || "";
     const demoUrl =
-      row[col("Project Live Demo")]?.trim() ||
-      row[col("Project Live Demo ")]?.trim() ||
-      "";
+      row[col("Project Live Demo")]?.trim() || row[col("Project Live Demo ")]?.trim() || "";
     const presentationUrl = row[col("Project Presentation")]?.trim() || "";
     const videoUrl = row[col("Project Video Demo")]?.trim() || "";
     const twitter = submitterMap.get(email)?.twitter || "";
 
     // Tagline = first sentence of problem statement (max 200 chars)
-    const tagline =
-      problemStatement.split(/[.\n]/)[0]?.trim().slice(0, 200) || projectName;
+    const tagline = problemStatement.split(/[.\n]/)[0]?.trim().slice(0, 200) || projectName;
 
     const additionalLinks = [];
-    if (presentationUrl)
-      additionalLinks.push({ label: "Presentation", url: presentationUrl });
+    if (presentationUrl) additionalLinks.push({ label: "Presentation", url: presentationUrl });
     if (videoUrl) additionalLinks.push({ label: "Video Demo", url: videoUrl });
 
     const socialLinks = [];
@@ -951,9 +898,7 @@ async function seedCSVData() {
   }
 
   console.log(`  [OK]   ${projectCount} hackathon projects`);
-  console.log(
-    `  [OK]   ${submissionCount} submissions → ETH Denver Hackathon`,
-  );
+  console.log(`  [OK]   ${submissionCount} submissions → ETH Denver Hackathon`);
   return { users: userMap.size, projects: projectCount };
 }
 
@@ -989,7 +934,9 @@ async function main() {
   console.log("  Email                       Password       Admin  EventCreator");
   console.log("  -----------------------------------------------------------------------");
   for (const u of TEST_USERS) {
-    console.log(`  ${u.email.padEnd(30)} ${u.password.padEnd(15)} ${String(u.is_admin).padEnd(7)} ${u.is_event_creator}`);
+    console.log(
+      `  ${u.email.padEnd(30)} ${u.password.padEnd(15)} ${String(u.is_admin).padEnd(7)} ${u.is_event_creator}`,
+    );
   }
   if (csv.users > 0) {
     console.log("");
@@ -1000,27 +947,15 @@ async function main() {
 
   console.log("\n  BUILDER (builder@loopsflow.test / Builder123!):");
   console.log("  1. Login at /login with email/password");
-  console.log(
-    "  2. Visit /builder → see project hub with 2 projects (YieldFlow, ArtChain)",
-  );
+  console.log("  2. Visit /builder → see project hub with 2 projects (YieldFlow, ArtChain)");
   console.log("  3. Visit /builder/projects → view project list");
-  console.log(
-    "  4. Visit /builder/projects/<id> → see full project details, colors, KB tabs",
-  );
-  console.log(
-    "  5. Click 'Share (generate posts)' → test Social Amplifier AI agent",
-  );
-  console.log(
-    "  6. Visit /builder/new → create a new project profile (needs GitHub URL)",
-  );
+  console.log("  4. Visit /builder/projects/<id> → see full project details, colors, KB tabs");
+  console.log("  5. Click 'Share (generate posts)' → test Social Amplifier AI agent");
+  console.log("  6. Visit /builder/new → create a new project profile (needs GitHub URL)");
   console.log("  7. Visit /builder/teams → see Team Alpha membership");
-  console.log(
-    "  8. Visit /builder/ideate → test AI ideation chat (select a hackathon)",
-  );
+  console.log("  8. Visit /builder/ideate → test AI ideation chat (select a hackathon)");
   console.log("  9. Visit /hackathons → browse available hackathons");
-  console.log(
-    "  10. Visit /hackathons/<id>/submit → submit project to hackathon",
-  );
+  console.log("  10. Visit /hackathons/<id>/submit → submit project to hackathon");
 
   console.log("\n  HOST (host@loopsflow.test / Host123!):");
   console.log("  1. Login at /login with email/password");
@@ -1028,67 +963,37 @@ async function main() {
   console.log(
     "  3. Click 'Grade project' → opens /host/judging with pre-selected project+hackathon",
   );
-  console.log(
-    "  4. Visit /host/hackathons → create/edit hackathons, run AI generator",
-  );
-  console.log(
-    "  5. Visit /host/analytics → select hackathon, generate AI analytics report",
-  );
-  console.log(
-    "  6. Visit /host/judging → evaluate any project against any hackathon",
-  );
+  console.log("  4. Visit /host/hackathons → create/edit hackathons, run AI generator");
+  console.log("  5. Visit /host/analytics → select hackathon, generate AI analytics report");
+  console.log("  6. Visit /host/judging → evaluate any project against any hackathon");
 
   console.log("\n  VIEWER (viewer@loopsflow.test / Viewer123!):");
   console.log("  1. Login at /login with email/password");
   console.log("  2. Visit /viewer → see all projects gallery");
-  console.log(
-    "  3. Visit /viewer/projects/<id> → project detail + code query + chat",
-  );
-  console.log(
-    "  4. Test code query: ask 'How does the deposit function work?'",
-  );
-  console.log(
-    "  5. Test project chat: have multi-turn conversation about the project",
-  );
-  console.log(
-    "  6. Visit /hackathons → browse hackathons (public, no auth required)",
-  );
+  console.log("  3. Visit /viewer/projects/<id> → project detail + code query + chat");
+  console.log("  4. Test code query: ask 'How does the deposit function work?'");
+  console.log("  5. Test project chat: have multi-turn conversation about the project");
+  console.log("  6. Visit /hackathons → browse hackathons (public, no auth required)");
 
   console.log("\n  ADMIN (admin@loopsflow.test / Admin123!):");
   console.log("  1. Login at /login with email/password");
   console.log("  2. Admin can access all builder routes (/builder/*)");
   console.log("  3. Admin can access all host routes (/host/*)");
-  console.log(
-    "  4. Admin can use all AI agents (all API routes allow 'admin' role)",
-  );
+  console.log("  4. Admin can use all AI agents (all API routes allow 'admin' role)");
   console.log("  5. Admin can review host applications");
 
   console.log("\n  JUDGE (judge@loopsflow.test / Judge123!):");
   console.log("  1. Login at /login with email/password");
   console.log("  2. Judge can access /host/judging → evaluate projects");
-  console.log(
-    "  3. Judge has an invite for ETH Denver Hackathon (tracks: Ethereum, Polygon)",
-  );
-  console.log(
-    "  4. Judge uses project-evaluator API (only agent allowing 'judge' role)",
-  );
+  console.log("  3. Judge has an invite for ETH Denver Hackathon (tracks: Ethereum, Polygon)");
+  console.log("  4. Judge uses project-evaluator API (only agent allowing 'judge' role)");
 
   console.log("\n--- Seeded Data Summary ---");
-  console.log(
-    `  Users:          ${6 + csv.users} (6 test + ${csv.users} hackathon)`,
-  );
-  console.log(
-    `  Teams:          ${2 + csv.users} (2 test + ${csv.users} hackathon)`,
-  );
-  console.log(
-    `  Projects:       ${3 + csv.projects} (3 test + ${csv.projects} hackathon)`,
-  );
-  console.log(
-    "  Hackathons:     3 (idea active, momentum active, capital draft)",
-  );
-  console.log(
-    "  Hackathon Tracks: 3 (Ethereum, Polygon, Arbitrum on Idea Hackathon)",
-  );
+  console.log(`  Users:          ${6 + csv.users} (6 test + ${csv.users} hackathon)`);
+  console.log(`  Teams:          ${2 + csv.users} (2 test + ${csv.users} hackathon)`);
+  console.log(`  Projects:       ${3 + csv.projects} (3 test + ${csv.projects} hackathon)`);
+  console.log("  Hackathons:     3 (idea active, momentum active, capital draft)");
+  console.log("  Hackathon Tracks: 3 (Ethereum, Polygon, Arbitrum on Idea Hackathon)");
   console.log(
     `  Submissions:    ${3 + csv.projects} (3 test + ${csv.projects} hackathon → Idea Hackathon)`,
   );

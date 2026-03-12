@@ -38,17 +38,11 @@ export async function ensureKnowledgeBase(projectId: string): Promise<string> {
 }
 
 /** Insert chunks into the knowledge base (replaces existing for project) */
-export async function upsertChunks(
-  projectId: string,
-  chunks: KBChunk[],
-): Promise<void> {
+export async function upsertChunks(projectId: string, chunks: KBChunk[]): Promise<void> {
   const kbId = await ensureKnowledgeBase(projectId);
 
   // Delete old chunks for this project
-  await supabaseAdmin
-    .from("knowledge_base_chunks")
-    .delete()
-    .eq("project_id", projectId);
+  await supabaseAdmin.from("knowledge_base_chunks").delete().eq("project_id", projectId);
 
   if (chunks.length === 0) return;
 
@@ -96,9 +90,7 @@ export async function queryTopK(
 }
 
 /** Get all chunks for a project (non-vector, for full context) */
-export async function getChunks(
-  projectId: string,
-): Promise<{ content: string; metadata: Json }[]> {
+export async function getChunks(projectId: string): Promise<{ content: string; metadata: Json }[]> {
   const { data } = await supabaseAdmin
     .from("knowledge_base_chunks")
     .select("content, metadata")
@@ -118,12 +110,6 @@ export async function hasProject(projectId: string): Promise<boolean> {
 
 /** Delete all KB data for a project */
 export async function deleteProjectKB(projectId: string): Promise<void> {
-  await supabaseAdmin
-    .from("knowledge_base_chunks")
-    .delete()
-    .eq("project_id", projectId);
-  await supabaseAdmin
-    .from("knowledge_bases")
-    .delete()
-    .eq("project_id", projectId);
+  await supabaseAdmin.from("knowledge_base_chunks").delete().eq("project_id", projectId);
+  await supabaseAdmin.from("knowledge_bases").delete().eq("project_id", projectId);
 }

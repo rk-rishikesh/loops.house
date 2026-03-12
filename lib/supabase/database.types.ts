@@ -83,6 +83,102 @@ export type Database = {
           },
         ]
       }
+      hackathon_results: {
+        Row: {
+          ai_score_weighted: number
+          created_at: string | null
+          final_score: number
+          hackathon_id: string
+          id: string
+          judge_score_weighted: number
+          project_id: string
+          rank: number
+          raw_ai_score: number | null
+          raw_judge_avg_score: number | null
+          submission_id: string
+        }
+        Insert: {
+          ai_score_weighted?: number
+          created_at?: string | null
+          final_score?: number
+          hackathon_id: string
+          id?: string
+          judge_score_weighted?: number
+          project_id: string
+          rank: number
+          raw_ai_score?: number | null
+          raw_judge_avg_score?: number | null
+          submission_id: string
+        }
+        Update: {
+          ai_score_weighted?: number
+          created_at?: string | null
+          final_score?: number
+          hackathon_id?: string
+          id?: string
+          judge_score_weighted?: number
+          project_id?: string
+          rank?: number
+          raw_ai_score?: number | null
+          raw_judge_avg_score?: number | null
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hackathon_results_hackathon_id_fkey"
+            columns: ["hackathon_id"]
+            isOneToOne: false
+            referencedRelation: "hackathons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hackathon_results_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "loops_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hackathon_results_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hackathon_speakers: {
+        Row: {
+          created_at: string | null
+          hackathon_id: string
+          id: string
+          image_url: string | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          hackathon_id: string
+          id?: string
+          image_url?: string | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          hackathon_id?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hackathon_speakers_hackathon_id_fkey"
+            columns: ["hackathon_id"]
+            isOneToOne: false
+            referencedRelation: "hackathons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hackathon_track_chunks: {
         Row: {
           content: string
@@ -177,9 +273,11 @@ export type Database = {
       }
       hackathons: {
         Row: {
+          ai_weight: number | null
           bounty_pool_summary: string | null
           created_at: string
           description: string | null
+          finalized_at: string | null
           host_id: string
           id: string
           is_exclusive: boolean
@@ -201,9 +299,11 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          ai_weight?: number | null
           bounty_pool_summary?: string | null
           created_at?: string
           description?: string | null
+          finalized_at?: string | null
           host_id: string
           id?: string
           is_exclusive?: boolean
@@ -225,9 +325,11 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          ai_weight?: number | null
           bounty_pool_summary?: string | null
           created_at?: string
           description?: string | null
+          finalized_at?: string | null
           host_id?: string
           id?: string
           is_exclusive?: boolean

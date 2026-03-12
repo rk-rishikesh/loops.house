@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUpRight, Clock, Trophy, Zap } from "lucide-react";
 import Link from "next/link";
-import { ArrowUpRight, Trophy, Zap, Clock } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
@@ -75,11 +75,17 @@ function TerminalTypewriter({ lines }: { lines: string[] }) {
         {["rgba(15,44,35,0.15)", "rgba(15,44,35,0.1)", "rgba(15,44,35,0.1)"].map((c, i) => (
           <span key={i} className="w-2 h-2 rounded-full" style={{ backgroundColor: c }} />
         ))}
-        <span className="ml-2 text-[8px] tracking-[0.14em] uppercase font-bold" style={{ fontFamily: PX, color: "rgba(15,44,35,0.25)" }}>
+        <span
+          className="ml-2 text-[8px] tracking-[0.14em] uppercase font-bold"
+          style={{ fontFamily: PX, color: "rgba(15,44,35,0.25)" }}
+        >
           terminal
         </span>
       </div>
-      <div className="flex flex-col gap-0.5" style={{ fontFamily: MONO, fontSize: 12, lineHeight: 1.7 }}>
+      <div
+        className="flex flex-col gap-0.5"
+        style={{ fontFamily: MONO, fontSize: 12, lineHeight: 1.7 }}
+      >
         <AnimatePresence>
           {displayedLines.map((line, i) => (
             <motion.p
@@ -88,7 +94,12 @@ function TerminalTypewriter({ lines }: { lines: string[] }) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.15 }}
               className="m-0"
-              style={{ color: line.includes("ready") || line.includes("online") ? "#0F2C23" : "rgba(15,44,35,0.45)" }}
+              style={{
+                color:
+                  line.includes("ready") || line.includes("online")
+                    ? "#0F2C23"
+                    : "rgba(15,44,35,0.45)",
+              }}
             >
               {line}
             </motion.p>
@@ -97,7 +108,9 @@ function TerminalTypewriter({ lines }: { lines: string[] }) {
         {typing !== null && (
           <p className="m-0" style={{ color: "rgba(15,44,35,0.55)" }}>
             {typing}
-            <span style={{ opacity: cursorVisible ? 1 : 0, color: "#0F2C23", fontWeight: 700 }}>▋</span>
+            <span style={{ opacity: cursorVisible ? 1 : 0, color: "#0F2C23", fontWeight: 700 }}>
+              ▋
+            </span>
           </p>
         )}
       </div>
@@ -106,9 +119,9 @@ function TerminalTypewriter({ lines }: { lines: string[] }) {
 }
 
 const TAB_CONFIG: { id: TabId; label: string }[] = [
-  { id: "ongoing",  label: "Open Now" },
+  { id: "ongoing", label: "Open Now" },
   { id: "upcoming", label: "Upcoming" },
-  { id: "past",     label: "Past" },
+  { id: "past", label: "Past" },
 ];
 
 function deriveStatus(hackathon: Hackathon, idx: number): EventStatus {
@@ -153,9 +166,7 @@ function FeaturedHero({ b }: { b: Hackathon }) {
           FEATURED
         </span>
 
-        <div
-          className="flex items-center justify-between px-9 py-5"
-        >
+        <div className="flex items-center justify-between px-9 py-5">
           <span
             className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[9px] tracking-[0.16em] uppercase font-bold"
             style={{ fontFamily: PX, backgroundColor: "#E2FEA5", color: "#0F2C23" }}
@@ -187,14 +198,20 @@ function FeaturedHero({ b }: { b: Hackathon }) {
             )}
           </div>
 
-          <div className="flex flex-col justify-center gap-2 shrink-0 uppercase" style={{ minWidth: 180 }}>
+          <div
+            className="flex flex-col justify-center gap-2 shrink-0 uppercase"
+            style={{ minWidth: 180 }}
+          >
             {b.problem_statements.length > 0 && (
               <div
                 className="flex items-center gap-3 rounded-xl px-3.5 py-5"
                 style={{ backgroundColor: "#3C574B" }}
               >
                 <Zap size={11} style={{ color: "#f0c060", flexShrink: 0 }} />
-                <span className="text-[11px]" style={{ fontFamily: PX, color: "rgba(226,254,165,0.7)" }}>
+                <span
+                  className="text-[11px]"
+                  style={{ fontFamily: PX, color: "rgba(226,254,165,0.7)" }}
+                >
                   {b.problem_statements.length} challenges
                 </span>
               </div>
@@ -205,7 +222,10 @@ function FeaturedHero({ b }: { b: Hackathon }) {
                 style={{ backgroundColor: "#3C574B" }}
               >
                 <Trophy size={11} style={{ color: "#4caf7d", flexShrink: 0 }} />
-                <span className="text-[11px] truncate" style={{ fontFamily: PX, color: "rgba(226,254,165,0.7)" }}>
+                <span
+                  className="text-[11px] truncate"
+                  style={{ fontFamily: PX, color: "rgba(226,254,165,0.7)" }}
+                >
                   {String(b.bounty_pool_summary).slice(0, 32)}
                 </span>
               </div>
@@ -216,7 +236,10 @@ function FeaturedHero({ b }: { b: Hackathon }) {
                 style={{ backgroundColor: "#3C574B" }}
               >
                 <Clock size={11} style={{ color: "#E2FEA5", flexShrink: 0 }} />
-                <span className="text-[11px] truncate" style={{ fontFamily: PX, color: "rgba(226,254,165,0.7)" }}>
+                <span
+                  className="text-[11px] truncate"
+                  style={{ fontFamily: PX, color: "rgba(226,254,165,0.7)" }}
+                >
                   Due {b.submission_deadline}
                 </span>
               </div>
@@ -246,7 +269,10 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
       >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ backgroundColor: dotColor }}
+            />
             <span
               className="text-[8px] tracking-[0.18em] uppercase font-bold"
               style={{ fontFamily: PX, color: fgSub }}
@@ -275,11 +301,8 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
         </h3>
 
         {b.theme && (
-          <p
-            className="text-sm leading-relaxed mb-5"
-            style={{ fontFamily: FN, color: fgSub }}
-          >
-            {b.theme.length > 72 ? b.theme.slice(0, 72) + "..." : b.theme}
+          <p className="text-sm leading-relaxed mb-5" style={{ fontFamily: FN, color: fgSub }}>
+            {b.theme.length > 72 ? `${b.theme.slice(0, 72)}...` : b.theme}
           </p>
         )}
 
@@ -287,7 +310,11 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
           {b.problem_statements.length > 0 && (
             <span
               className="text-[8px] tracking-widest uppercase font-bold px-2.5 py-1 rounded-sm"
-              style={{ fontFamily: PX, backgroundColor: isPast ? "rgba(15,44,35,0.06)" : "rgba(15,44,35,0.08)", color: fgSub }}
+              style={{
+                fontFamily: PX,
+                backgroundColor: isPast ? "rgba(15,44,35,0.06)" : "rgba(15,44,35,0.08)",
+                color: fgSub,
+              }}
             >
               {b.problem_statements.length} challenge{b.problem_statements.length !== 1 ? "s" : ""}
             </span>
@@ -295,7 +322,11 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
           {b.bounty_pool_summary && (
             <span
               className="text-[8px] tracking-widest uppercase font-bold px-2.5 py-1 rounded-sm"
-              style={{ fontFamily: PX, backgroundColor: isPast ? "rgba(15,44,35,0.06)" : "rgba(15,44,35,0.08)", color: fgSub }}
+              style={{
+                fontFamily: PX,
+                backgroundColor: isPast ? "rgba(15,44,35,0.06)" : "rgba(15,44,35,0.08)",
+                color: fgSub,
+              }}
             >
               Prize pool
             </span>
@@ -306,29 +337,25 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
   );
 }
 
-export function HackathonListPage({
-  list,
-}: {
-  list: Hackathon[];
-}) {
+export function HackathonListPage({ list }: { list: Hackathon[] }) {
   const mounted = useIsMounted();
   const withStatus = list.map((h, idx) => ({ ...h, _status: deriveStatus(h, idx) as EventStatus }));
 
   const featured = withStatus[0] ?? null;
 
   const bucketed: Record<TabId, typeof withStatus> = {
-    ongoing:  withStatus.filter(h => h._status === "ongoing"),
-    upcoming: withStatus.filter(h => h._status === "upcoming"),
-    past:     withStatus.filter(h => h._status === "past"),
+    ongoing: withStatus.filter((h) => h._status === "ongoing"),
+    upcoming: withStatus.filter((h) => h._status === "upcoming"),
+    past: withStatus.filter((h) => h._status === "past"),
   };
-  if (featured && !bucketed.ongoing.find(h => h.id === featured.id)) {
+  if (featured && !bucketed.ongoing.find((h) => h.id === featured.id)) {
     bucketed.ongoing = [featured, ...bucketed.ongoing];
   }
 
   const counts: Record<TabId, number> = {
-    ongoing:  bucketed.ongoing.length,
+    ongoing: bucketed.ongoing.length,
     upcoming: bucketed.upcoming.length,
-    past:     bucketed.past.length,
+    past: bucketed.past.length,
   };
 
   const [activeTab, setActiveTab] = useState<TabId>("ongoing");
@@ -336,7 +363,6 @@ export function HackathonListPage({
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
-
       <div
         className="px-10 pt-10 pb-24 transition-all duration-500 ease-out"
         style={{
@@ -365,7 +391,11 @@ export function HackathonListPage({
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4, delay: 0.2 }}
               className="mt-4 leading-relaxed max-w-[560px]"
-              style={{ fontFamily: FN, fontSize: "clamp(14px, 1.4vw, 17px)", color: "rgba(15,44,35,0.55)" }}
+              style={{
+                fontFamily: FN,
+                fontSize: "clamp(14px, 1.4vw, 17px)",
+                color: "rgba(15,44,35,0.55)",
+              }}
             >
               {TAGLINE}
             </motion.p>
@@ -381,17 +411,22 @@ export function HackathonListPage({
             className="rounded-3xl p-16 text-center"
             style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
           >
-            <Zap size={24} style={{ color: "#0F2C23", opacity: 0.3, margin: "0 auto 16px", display: "block" }} />
+            <Zap
+              size={24}
+              style={{ color: "#0F2C23", opacity: 0.3, margin: "0 auto 16px", display: "block" }}
+            />
             <p
               className="font-black uppercase mb-2"
-              style={{ fontFamily: PX, fontSize: 18, letterSpacing: "-0.02em", color: "rgba(15,44,35,0.45)" }}
+              style={{
+                fontFamily: PX,
+                fontSize: 18,
+                letterSpacing: "-0.02em",
+                color: "rgba(15,44,35,0.45)",
+              }}
             >
               No open calls yet.
             </p>
-            <p
-              className="text-sm mb-6"
-              style={{ fontFamily: FN, color: "rgba(15,44,35,0.4)" }}
-            >
+            <p className="text-sm mb-6" style={{ fontFamily: FN, color: "rgba(15,44,35,0.4)" }}>
               Hosts are adding programs — check back soon.
             </p>
           </div>
@@ -414,7 +449,7 @@ export function HackathonListPage({
                 backgroundColor: "#F8FFE8",
               }}
             >
-              {TAB_CONFIG.map(tab => {
+              {TAB_CONFIG.map((tab) => {
                 const on = tab.id === activeTab;
                 return (
                   <button
@@ -441,7 +476,7 @@ export function HackathonListPage({
             {/* ── Grid ── */}
             {tabItems.length > 0 ? (
               <div className="grid gap-4 mt-8" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-                {tabItems.map(h => (
+                {tabItems.map((h) => (
                   <HackCard key={h.id} b={h} status={h._status} />
                 ))}
               </div>

@@ -1,13 +1,13 @@
 import {
-  NavBar,
-  HeroSection,
   AboutSection,
   BuildPurposeSection,
-  ResidencySection,
-  HowItWorksSection,
-  PartnersSection,
   FaqSection,
   FooterSection,
+  HeroSection,
+  HowItWorksSection,
+  NavBar,
+  PartnersSection,
+  ResidencySection,
 } from "@/components/landing";
 
 export default function LandingPage() {

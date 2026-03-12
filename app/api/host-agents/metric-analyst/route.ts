@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { generateJSON } from "../../lib/gemini-client";
 
@@ -24,12 +24,7 @@ interface MetricsPayload {
 
 interface MetricInput {
   hackathon_id: string;
-  report_type:
-    | "overview"
-    | "submissions"
-    | "builder-graph"
-    | "momentum-leaderboard"
-    | "full";
+  report_type: "overview" | "submissions" | "builder-graph" | "momentum-leaderboard" | "full";
   as_of?: string;
   hackathon?: HackathonPayload;
   metrics?: MetricsPayload;
@@ -80,21 +75,15 @@ export async function POST(request: NextRequest) {
   try {
     const input: MetricInput = await request.json();
 
-    const hackathonId =
-      input.hackathon_id ?? (input as { hackathon_id?: string }).hackathon_id;
+    const hackathonId = input.hackathon_id ?? (input as { hackathon_id?: string }).hackathon_id;
     if (!hackathonId) {
-      return NextResponse.json(
-        { error: "hackathon_id is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "hackathon_id is required" }, { status: 400 });
     }
 
     const reportType = input.report_type || "full";
     const asOf = input.as_of || new Date().toISOString();
     const hackathon =
-      input.hackathon ??
-      (input as { hackathon?: HackathonPayload }).hackathon ??
-      null;
+      input.hackathon ?? (input as { hackathon?: HackathonPayload }).hackathon ?? null;
     const clientMetrics = input.metrics ?? null;
 
     const totalSubmissions = clientMetrics
@@ -117,9 +106,7 @@ export async function POST(request: NextRequest) {
         generated_at: asOf,
         highlights: [
           "No submissions received yet",
-          hackathon?.name
-            ? `Hackathon: ${hackathon.name}`
-            : "Hackathon selected",
+          hackathon?.name ? `Hackathon: ${hackathon.name}` : "Hackathon selected",
         ],
       });
     }
@@ -181,8 +168,7 @@ Return JSON:
       highlights: result.highlights || [],
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "An unexpected error occurred";
+    const message = error instanceof Error ? error.message : "An unexpected error occurred";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

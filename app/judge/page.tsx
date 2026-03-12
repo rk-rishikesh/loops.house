@@ -1,11 +1,11 @@
+import { ArrowUpRight, Calendar, Gavel, Users } from "lucide-react";
 import Link from "next/link";
-import { ArrowUpRight, Gavel, Calendar, Users } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/lib/server-auth";
 import {
-  getUserJudgeHackathonsServer,
   getHackathonsByIdsServer,
   getSubmissionsForHackathonsServer,
+  getUserJudgeHackathonsServer,
 } from "@/lib/server-data";
 
 function ArrowCircle({ size = 44 }: { size?: number }) {
@@ -109,8 +109,7 @@ export default async function JudgeDashboardPage() {
                 fontSize: "clamp(14px, 1.5vw, 18px)",
               }}
             >
-              Your judging dashboard. Select a hackathon to review and score
-              submissions.
+              Your judging dashboard. Select a hackathon to review and score submissions.
             </p>
           </div>
         </div>
@@ -120,11 +119,7 @@ export default async function JudgeDashboardPage() {
           {hackathons.map((h) => {
             const subCount = subCountMap[h.id] ?? 0;
             return (
-              <Link
-                key={h.id}
-                href={`/judge/${h.id}`}
-                className="group no-underline"
-              >
+              <Link key={h.id} href={`/judge/${h.id}`} className="group no-underline">
                 <div
                   className="rounded-3xl p-7 flex flex-col justify-between transition-all duration-200 group-hover:scale-[1.01]"
                   style={{ backgroundColor: "#2d4a3e", minHeight: 220 }}
@@ -150,12 +145,18 @@ export default async function JudgeDashboardPage() {
                       {h.name}
                     </h3>
                     <div className="flex items-center gap-4 mt-3">
-                      <span className="flex items-center gap-1.5 text-[#f0ebe0]/50 text-sm" style={{ fontFamily: "Georgia, serif" }}>
+                      <span
+                        className="flex items-center gap-1.5 text-[#f0ebe0]/50 text-sm"
+                        style={{ fontFamily: "Georgia, serif" }}
+                      >
                         <Users size={13} />
                         {subCount} submission{subCount !== 1 ? "s" : ""}
                       </span>
                       {h.start_date && (
-                        <span className="flex items-center gap-1.5 text-[#f0ebe0]/50 text-sm" style={{ fontFamily: "Georgia, serif" }}>
+                        <span
+                          className="flex items-center gap-1.5 text-[#f0ebe0]/50 text-sm"
+                          style={{ fontFamily: "Georgia, serif" }}
+                        >
                           <Calendar size={13} />
                           {new Date(h.start_date).toLocaleDateString()}
                         </span>

@@ -1,6 +1,6 @@
-import { getServerAuth } from "@/lib/server-auth";
 import { redirect } from "next/navigation";
 import { HostApplicationForm } from "@/components/client/host-application-form";
+import { getServerAuth } from "@/lib/server-auth";
 
 export default async function HostApplicationPage() {
   const auth = await getServerAuth();
@@ -10,4 +10,3 @@ export default async function HostApplicationPage() {
 
   return <HostApplicationForm userId={auth.userId} />;
 }
-
