@@ -33,7 +33,7 @@ const tables = [
   'users', 'teams', 'team_members', 'loops_profiles',
   'knowledge_bases', 'knowledge_base_chunks',
   'hackathons', 'hackathon_tracks', 'hackathon_track_chunks',
-  'submissions', 'host_applications', 'judge_invites', 'rate_limits',
+  'submissions', 'invitations', 'hackathon_cohosts', 'hackathon_judges', 'rate_limits',
 ];
 
 console.log('=== Tables ===');

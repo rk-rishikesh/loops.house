@@ -117,7 +117,8 @@ const TEST_USERS = [
     id: IDS.builder_user,
     email: "builder@loopsflow.test",
     password: "Builder123!",
-    role: "builder",
+    is_admin: false,
+    is_event_creator: false,
     display_name: "Alice Builder",
     username: "alice_builder",
   },
@@ -125,7 +126,8 @@ const TEST_USERS = [
     id: IDS.builder2_user,
     email: "builder2@loopsflow.test",
     password: "Builder2123!",
-    role: "builder",
+    is_admin: false,
+    is_event_creator: false,
     display_name: "Dave Builder",
     username: "dave_builder",
   },
@@ -133,7 +135,8 @@ const TEST_USERS = [
     id: IDS.host_user,
     email: "host@loopsflow.test",
     password: "Host123!",
-    role: "host",
+    is_admin: false,
+    is_event_creator: true,
     display_name: "Bob Host",
     username: "bob_host",
   },
@@ -141,7 +144,8 @@ const TEST_USERS = [
     id: IDS.viewer_user,
     email: "viewer@loopsflow.test",
     password: "Viewer123!",
-    role: "viewer",
+    is_admin: false,
+    is_event_creator: false,
     display_name: "Carol Viewer",
     username: "carol_viewer",
   },
@@ -149,7 +153,8 @@ const TEST_USERS = [
     id: IDS.admin_user,
     email: "admin@loopsflow.test",
     password: "Admin123!",
-    role: "admin",
+    is_admin: true,
+    is_event_creator: true,
     display_name: "Eve Admin",
     username: "eve_admin",
   },
@@ -157,7 +162,8 @@ const TEST_USERS = [
     id: IDS.judge_user,
     email: "judge@loopsflow.test",
     password: "Judge123!",
-    role: "judge",
+    is_admin: false,
+    is_event_creator: false,
     display_name: "Frank Judge",
     username: "frank_judge",
   },
@@ -187,9 +193,11 @@ async function clearAll() {
     "hackathon_track_chunks",
     "knowledge_base_chunks",
     "knowledge_bases",
+    "human_evaluations",
     "submissions",
-    "judge_invites",
-    "host_applications",
+    "invitations",
+    "hackathon_judges",
+    "hackathon_cohosts",
     "hackathon_tracks",
     "loops_profiles",
     "team_members",
@@ -268,18 +276,19 @@ async function seedUsers() {
     const authId = data.user.id;
     console.log(`  [OK]   Auth user ${u.email} (${authId})`);
 
-    // The trigger handle_new_user() auto-creates public.users with role='builder'.
-    // We need to update the role and other fields.
+    // The trigger handle_new_user() auto-creates public.users.
+    // We need to update the flags and other fields.
     const updateResult = await supabase
       .from("users")
       .update({
-        role: u.role,
+        is_admin: u.is_admin,
+        is_event_creator: u.is_event_creator,
         display_name: u.display_name,
         username: u.username,
       })
       .eq("id", authId);
 
-    check(`  Updated role to '${u.role}' for ${u.email}`, updateResult);
+    check(`  Updated flags for ${u.email} (admin=${u.is_admin}, event_creator=${u.is_event_creator})`, updateResult);
 
     // Store the actual auth ID back so we can reference it
     u._authId = authId;
@@ -650,10 +659,7 @@ async function seedSubmissions() {
           { name: "Track/Sponsor Fit", score: 78, weight: 0.15 },
         ],
       },
-      human_score: {
-        overall_score: 79,
-        notes: "Strong technical foundation, needs better UX.",
-      },
+      ai_evaluated_at: new Date().toISOString(),
       momentum_score: 42,
     },
     {
@@ -663,7 +669,6 @@ async function seedSubmissions() {
       project_id: IDS.project_nft,
       status: "submitted",
       ai_score: {},
-      human_score: {},
       momentum_score: 0,
     },
     {
@@ -686,69 +691,53 @@ async function seedSubmissions() {
           { name: "Track/Sponsor Fit", score: 72, weight: 0.15 },
         ],
       },
-      human_score: {},
+      ai_evaluated_at: new Date().toISOString(),
       momentum_score: 15,
     },
   ];
 
   check("Submissions", await supabase.from("submissions").insert(submissions));
+
 }
 
 // ---------------------------------------------------------------------------
-// Step 9: Create judge invites
+// Step 9: Create hackathon judges and cohosts
 // ---------------------------------------------------------------------------
-async function seedJudgeInvites() {
-  console.log("\n--- Seeding judge invites ---");
+async function seedHackathonRoles() {
+  console.log("\n--- Seeding hackathon judges & cohosts ---");
 
   const host = TEST_USERS.find((u) => u.email === "host@loopsflow.test");
   const judge = TEST_USERS.find((u) => u.email === "judge@loopsflow.test");
-
-  check(
-    "Judge invite",
-    await supabase.from("judge_invites").insert({
-      hackathon_id: IDS.hackathon_idea,
-      judge_user_id: judge._authId,
-      assigned_tracks: [IDS.track_eth, IDS.track_pol],
-      invited_by: host._authId,
-      accepted: true,
-    }),
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Step 10: Create host applications
-// ---------------------------------------------------------------------------
-async function seedHostApplications() {
-  console.log("\n--- Seeding host applications ---");
-
-  const builder = TEST_USERS.find((u) => u.email === "builder@loopsflow.test");
   const admin = TEST_USERS.find((u) => u.email === "admin@loopsflow.test");
 
   check(
-    "Host application (pending)",
-    await supabase.from("host_applications").insert({
-      user_id: builder._authId,
-      event_name: "Community Hack Night",
-      expected_participants: 50,
-      contact: "alice@example.com",
-      description:
-        "A monthly community hackathon focused on local developer engagement.",
-      status: "pending",
+    "Hackathon judge (Frank → Idea Hackathon)",
+    await supabase.from("hackathon_judges").insert({
+      hackathon_id: IDS.hackathon_idea,
+      user_id: judge._authId,
     }),
   );
 
   check(
-    "Host application (approved)",
-    await supabase.from("host_applications").insert({
+    "Hackathon cohost (Eve Admin → Idea Hackathon)",
+    await supabase.from("hackathon_cohosts").insert({
+      hackathon_id: IDS.hackathon_idea,
       user_id: admin._authId,
-      event_name: "Startup Accelerator Cohort 3",
-      expected_participants: 200,
-      contact: "eve@example.com",
-      description: "8-week acceleration program for pre-seed Web3 startups.",
-      status: "approved",
-      reviewed_by: admin._authId,
     }),
   );
+
+  // Seed human evaluations (per-judge, after judge role is created)
+  const { error: heErr } = await supabase.from("human_evaluations").insert({
+    submission_id: IDS.sub_defi_idea,
+    judge_id: judge._authId,
+    hackathon_id: IDS.hackathon_idea,
+    scores: { Innovation: 80, "Technical Execution": 85, Impact: 75, Presentation: 70 },
+    remarks: { Innovation: "Interesting DeFi approach", "Technical Execution": "Clean codebase" },
+    overall_notes: "Strong technical foundation, needs better UX.",
+    overall_score: 79,
+  });
+  if (heErr) console.warn("  [WARN] human_evaluations seed:", heErr.message);
+  else console.log("  [OK]   Human evaluation (Frank → DeFi submission)");
 }
 
 // ---------------------------------------------------------------------------
@@ -871,7 +860,7 @@ async function seedCSVData() {
 
     await supabase
       .from("users")
-      .update({ role: "builder", display_name: displayName, username })
+      .update({ display_name: displayName, username })
       .eq("id", authId);
 
     const teamId = randomUUID();
@@ -956,7 +945,6 @@ async function seedCSVData() {
       project_id: projectId,
       status: "submitted",
       ai_score: {},
-      human_score: {},
       momentum_score: 0,
     });
     if (!subResult.error) submissionCount++;
@@ -986,8 +974,7 @@ async function main() {
   await seedProjects();
   await seedKnowledgeBases();
   await seedSubmissions();
-  await seedJudgeInvites();
-  await seedHostApplications();
+  await seedHackathonRoles();
   const csv = await seedCSVData();
 
   // ---------------------------------------------------------------------------
@@ -999,10 +986,10 @@ async function main() {
 
   console.log("\n--- Test Credentials ---");
   console.log("");
-  console.log("  Email                       Password       Role");
-  console.log("  -------------------------------------------------------");
+  console.log("  Email                       Password       Admin  EventCreator");
+  console.log("  -----------------------------------------------------------------------");
   for (const u of TEST_USERS) {
-    console.log(`  ${u.email.padEnd(30)} ${u.password.padEnd(15)} ${u.role}`);
+    console.log(`  ${u.email.padEnd(30)} ${u.password.padEnd(15)} ${String(u.is_admin).padEnd(7)} ${u.is_event_creator}`);
   }
   if (csv.users > 0) {
     console.log("");
@@ -1105,8 +1092,8 @@ async function main() {
   console.log(
     `  Submissions:    ${3 + csv.projects} (3 test + ${csv.projects} hackathon → Idea Hackathon)`,
   );
-  console.log("  Judge Invites:  1 (Frank Judge → Idea Hackathon)");
-  console.log("  Host Apps:      2 (1 pending, 1 approved)");
+  console.log("  Hackathon Judges: 1 (Frank Judge → Idea Hackathon)");
+  console.log("  Hackathon Cohosts: 1 (Eve Admin → Idea Hackathon)");
   console.log("  Knowledge Bases:2 (YieldFlow, ArtChain)");
   console.log("");
 }

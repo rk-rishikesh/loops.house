@@ -1,4 +1,4 @@
-export default function HostLayout({
+export default function JudgeLayout({
   children,
 }: {
   children: React.ReactNode;

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/lib/server-auth";
-import { getHackathonServer } from "@/lib/server-data";
+import { getHackathonServer, getHackathonInvitationsServer } from "@/lib/server-data";
 import { JudgeInviteForm } from "@/components/client/judge-invite-form";
 
 export default async function HostBoosterJudgesPage({
@@ -9,7 +9,7 @@ export default async function HostBoosterJudgesPage({
   params: Promise<{ hackathon_id: string }>;
 }) {
   const auth = await getServerAuth();
-  if (!auth || !["host", "admin"].includes(auth.role)) {
+  if (!auth || !(auth.capabilities.isAdmin || auth.capabilities.isEventCreator)) {
     redirect("/login");
   }
 
@@ -18,7 +18,11 @@ export default async function HostBoosterJudgesPage({
     redirect("/host");
   }
 
-  const hackathon = await getHackathonServer(hackathon_id);
+  const [hackathon, invites] = await Promise.all([
+    getHackathonServer(hackathon_id),
+    getHackathonInvitationsServer(hackathon_id, "judge"),
+  ]);
+
   if (!hackathon) {
     redirect("/host");
   }
@@ -27,6 +31,7 @@ export default async function HostBoosterJudgesPage({
     <JudgeInviteForm
       hackathons={[hackathon]}
       initialHackathonId={hackathon.id}
+      initialInvites={invites}
       hideHackathonPicker
     />
   );

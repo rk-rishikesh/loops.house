@@ -47,7 +47,7 @@ interface ResourceProvisionerResponse {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAuth(["host", "admin"]);
+  const auth = await requireAuth((caps) => caps.isAdmin || caps.isEventCreator);
   if (!auth) return unauthorized();
 
   // Rate limit: 5 requests per day per user

@@ -10,10 +10,79 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
+      hackathon_cohosts: {
+        Row: {
+          created_at: string
+          hackathon_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hackathon_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hackathon_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hackathon_cohosts_hackathon_id_fkey"
+            columns: ["hackathon_id"]
+            isOneToOne: false
+            referencedRelation: "hackathons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hackathon_cohosts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hackathon_judges: {
+        Row: {
+          assigned_tracks: string[] | null
+          created_at: string
+          hackathon_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_tracks?: string[] | null
+          created_at?: string
+          hackathon_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_tracks?: string[] | null
+          created_at?: string
+          hackathon_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hackathon_judges_hackathon_id_fkey"
+            columns: ["hackathon_id"]
+            isOneToOne: false
+            referencedRelation: "hackathons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hackathon_judges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hackathon_track_chunks: {
         Row: {
           content: string
@@ -189,108 +258,121 @@ export type Database = {
           },
         ]
       }
-      host_applications: {
+      human_evaluations: {
         Row: {
-          contact: string | null
           created_at: string
-          description: string | null
-          event_name: string
-          expected_participants: number | null
+          hackathon_id: string
           id: string
-          reviewed_by: string | null
-          status: Database["public"]["Enums"]["host_application_status"]
+          judge_id: string
+          overall_notes: string | null
+          overall_score: number
+          remarks: Json
+          scores: Json
+          submission_id: string
           updated_at: string
-          user_id: string
         }
         Insert: {
-          contact?: string | null
-          created_at?: string
-          description?: string | null
-          event_name: string
-          expected_participants?: number | null
-          id?: string
-          reviewed_by?: string | null
-          status?: Database["public"]["Enums"]["host_application_status"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          contact?: string | null
-          created_at?: string
-          description?: string | null
-          event_name?: string
-          expected_participants?: number | null
-          id?: string
-          reviewed_by?: string | null
-          status?: Database["public"]["Enums"]["host_application_status"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "host_applications_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "host_applications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      judge_invites: {
-        Row: {
-          accepted: boolean | null
-          assigned_tracks: string[] | null
-          created_at: string
-          hackathon_id: string
-          id: string
-          invited_by: string
-          judge_user_id: string
-        }
-        Insert: {
-          accepted?: boolean | null
-          assigned_tracks?: string[] | null
           created_at?: string
           hackathon_id: string
           id?: string
-          invited_by: string
-          judge_user_id: string
+          judge_id: string
+          overall_notes?: string | null
+          overall_score?: number
+          remarks?: Json
+          scores?: Json
+          submission_id: string
+          updated_at?: string
         }
         Update: {
-          accepted?: boolean | null
-          assigned_tracks?: string[] | null
           created_at?: string
           hackathon_id?: string
           id?: string
-          invited_by?: string
-          judge_user_id?: string
+          judge_id?: string
+          overall_notes?: string | null
+          overall_score?: number
+          remarks?: Json
+          scores?: Json
+          submission_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "judge_invites_hackathon_id_fkey"
+            foreignKeyName: "human_evaluations_hackathon_id_fkey"
             columns: ["hackathon_id"]
             isOneToOne: false
             referencedRelation: "hackathons"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "judge_invites_invited_by_fkey"
+            foreignKeyName: "human_evaluations_judge_id_fkey"
+            columns: ["judge_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "human_evaluations_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitations: {
+        Row: {
+          created_at: string
+          email: string
+          hackathon_id: string | null
+          id: string
+          invited_by: string
+          project_id: string | null
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["invitation_status"]
+          type: Database["public"]["Enums"]["invitation_type"]
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          hackathon_id?: string | null
+          id?: string
+          invited_by: string
+          project_id?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["invitation_status"]
+          type: Database["public"]["Enums"]["invitation_type"]
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          hackathon_id?: string | null
+          id?: string
+          invited_by?: string
+          project_id?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["invitation_status"]
+          type?: Database["public"]["Enums"]["invitation_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_hackathon_id_fkey"
+            columns: ["hackathon_id"]
+            isOneToOne: false
+            referencedRelation: "hackathons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_invited_by_fkey"
             columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "judge_invites_judge_user_id_fkey"
-            columns: ["judge_user_id"]
+            foreignKeyName: "invitations_project_id_fkey"
+            columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "loops_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -497,10 +579,10 @@ export type Database = {
       }
       submissions: {
         Row: {
+          ai_evaluated_at: string | null
           ai_score: Json | null
           created_at: string
           hackathon_id: string
-          human_score: Json | null
           id: string
           momentum_score: number | null
           project_id: string
@@ -509,10 +591,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_evaluated_at?: string | null
           ai_score?: Json | null
           created_at?: string
           hackathon_id: string
-          human_score?: Json | null
           id?: string
           momentum_score?: number | null
           project_id: string
@@ -521,10 +603,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_evaluated_at?: string | null
           ai_score?: Json | null
           created_at?: string
           hackathon_id?: string
-          human_score?: Json | null
           id?: string
           momentum_score?: number | null
           project_id?: string
@@ -631,8 +713,9 @@ export type Database = {
           display_name: string | null
           email: string
           id: string
+          is_admin: boolean
+          is_event_creator: boolean
           oauth_provider: string | null
-          role: Database["public"]["Enums"]["app_role"]
           updated_at: string
           username: string | null
         }
@@ -642,8 +725,9 @@ export type Database = {
           display_name?: string | null
           email: string
           id: string
+          is_admin?: boolean
+          is_event_creator?: boolean
           oauth_provider?: string | null
-          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           username?: string | null
         }
@@ -653,8 +737,9 @@ export type Database = {
           display_name?: string | null
           email?: string
           id?: string
+          is_admin?: boolean
+          is_event_creator?: boolean
           oauth_provider?: string | null
-          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           username?: string | null
         }
@@ -673,10 +758,10 @@ export type Database = {
           reset_at: string
         }[]
       }
-      match_hackathon_track_chunks: {
+      match_hackathon_chunks: {
         Args: {
-          match_hackathon_id: string
           match_count?: number
+          match_hackathon_id: string
           match_threshold?: number
           query_embedding: string
         }
@@ -703,9 +788,14 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "builder" | "host" | "viewer" | "admin" | "judge"
-      hackathon_status: "draft" | "active" | "judging" | "completed" | "archived"
-      host_application_status: "pending" | "approved" | "rejected"
+      hackathon_status:
+        | "draft"
+        | "active"
+        | "judging"
+        | "completed"
+        | "archived"
+      invitation_status: "pending" | "accepted" | "rejected"
+      invitation_type: "event_host" | "cohost" | "judge" | "project_member"
       submission_status:
         | "draft"
         | "submitted"
@@ -839,9 +929,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["builder", "host", "viewer", "admin", "judge"],
       hackathon_status: ["draft", "active", "judging", "completed", "archived"],
-      host_application_status: ["pending", "approved", "rejected"],
+      invitation_status: ["pending", "accepted", "rejected"],
+      invitation_type: ["event_host", "cohost", "judge", "project_member"],
       submission_status: [
         "draft",
         "submitted",

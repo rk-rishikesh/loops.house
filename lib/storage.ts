@@ -31,9 +31,7 @@ export type {
   HackathonRow,
   TeamRow,
   SubmissionRow,
-  HostAppWithUser,
   UserListItem,
-  JudgeInviteWithUser,
   EvaluationScore,
 } from "@/lib/data-mappers";
 

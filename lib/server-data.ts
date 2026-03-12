@@ -17,11 +17,12 @@ import type {
   StoredHackathon,
   StoredTeam,
   StoredSubmission,
+  HumanEvaluationRow,
   TeamRow,
 } from "@/lib/data-mappers";
 
 // Re-export types for convenience
-export type { StoredProject, StoredHackathon, StoredTeam, StoredSubmission };
+export type { StoredProject, StoredHackathon, StoredTeam, StoredSubmission, HumanEvaluationRow };
 
 // --- Projects ---
 
@@ -32,6 +33,33 @@ export async function getProjectsServer(): Promise<StoredProject[]> {
     .select("*")
     .order("created_at", { ascending: false });
   if (error) console.error("[server-data] getProjectsServer:", error.message);
+  return (data ?? []).map(profileToStored);
+}
+
+/** Returns only projects where the given user is a team member. */
+export async function getUserProjectsServer(
+  userId: string,
+): Promise<StoredProject[]> {
+  const supabase = await createServerSupabase();
+
+  // Get team IDs the user belongs to
+  const { data: memberships, error: memberErr } = await supabase
+    .from("team_members")
+    .select("team_id")
+    .eq("user_id", userId);
+  if (memberErr) {
+    console.error("[server-data] getUserProjectsServer memberships:", memberErr.message);
+    return [];
+  }
+  if (!memberships || memberships.length === 0) return [];
+
+  const teamIds = memberships.map((m) => m.team_id);
+  const { data, error } = await supabase
+    .from("loops_profiles")
+    .select("*")
+    .in("team_id", teamIds)
+    .order("created_at", { ascending: false });
+  if (error) console.error("[server-data] getUserProjectsServer:", error.message);
   return (data ?? []).map(profileToStored);
 }
 
@@ -252,6 +280,38 @@ export async function getProjectSubmissionsServer(
   return (data ?? []).map(submissionToStored);
 }
 
+// --- Human Evaluations ---
+
+export async function getJudgeEvaluationServer(
+  hackathonId: string,
+  submissionId: string,
+  judgeId: string,
+): Promise<HumanEvaluationRow | null> {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("human_evaluations")
+    .select("*")
+    .eq("hackathon_id", hackathonId)
+    .eq("submission_id", submissionId)
+    .eq("judge_id", judgeId)
+    .maybeSingle();
+  if (error) console.error("[server-data] getJudgeEvaluationServer:", error.message);
+  return data;
+}
+
+export async function getSubmissionEvaluationsServer(
+  submissionId: string,
+): Promise<HumanEvaluationRow[]> {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("human_evaluations")
+    .select("*")
+    .eq("submission_id", submissionId)
+    .order("created_at", { ascending: false });
+  if (error) console.error("[server-data] getSubmissionEvaluationsServer:", error.message);
+  return data ?? [];
+}
+
 export async function getHackathonsByIdsServer(
   ids: string[],
 ): Promise<Record<string, StoredHackathon>> {
@@ -268,4 +328,93 @@ export async function getHackathonsByIdsServer(
     map[b.id] = hackathonToStored(b);
   });
   return map;
+}
+
+// --- Invitations ---
+
+export async function getPendingInvitationsServer(email: string) {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("invitations")
+    .select("*, users!invited_by(email, display_name)")
+    .eq("email", email)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+  if (error) console.error("[server-data] getPendingInvitationsServer:", error.message);
+  return data ?? [];
+}
+
+export async function getPendingInvitationCountServer(email: string): Promise<number> {
+  const supabase = await createServerSupabase();
+  const { count, error } = await supabase
+    .from("invitations")
+    .select("*", { count: "exact", head: true })
+    .eq("email", email)
+    .eq("status", "pending");
+  if (error) console.error("[server-data] getPendingInvitationCountServer:", error.message);
+  return count ?? 0;
+}
+
+// --- Hackathon role queries ---
+
+export async function getUserCohostHackathonsServer(userId: string): Promise<string[]> {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("hackathon_cohosts")
+    .select("hackathon_id")
+    .eq("user_id", userId);
+  if (error) console.error("[server-data] getUserCohostHackathonsServer:", error.message);
+  return (data ?? []).map((r) => r.hackathon_id);
+}
+
+export async function getUserJudgeHackathonsServer(userId: string): Promise<string[]> {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("hackathon_judges")
+    .select("hackathon_id")
+    .eq("user_id", userId);
+  if (error) console.error("[server-data] getUserJudgeHackathonsServer:", error.message);
+  return (data ?? []).map((r) => r.hackathon_id);
+}
+
+export async function getHackathonCohostsServer(hackathonId: string) {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("hackathon_cohosts")
+    .select("user_id, users(email, display_name, avatar_url)")
+    .eq("hackathon_id", hackathonId);
+  if (error) console.error("[server-data] getHackathonCohostsServer:", error.message);
+  return data ?? [];
+}
+
+export async function getHackathonJudgesServer(hackathonId: string) {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("hackathon_judges")
+    .select("user_id, assigned_tracks, users(email, display_name, avatar_url)")
+    .eq("hackathon_id", hackathonId);
+  if (error) console.error("[server-data] getHackathonJudgesServer:", error.message);
+  return data ?? [];
+}
+
+export type InvitationRow = {
+  id: string;
+  email: string;
+  status: string;
+  created_at: string;
+};
+
+export async function getHackathonInvitationsServer(
+  hackathonId: string,
+  type: "judge" | "cohost" = "judge",
+): Promise<InvitationRow[]> {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("invitations")
+    .select("id, email, status, created_at")
+    .eq("hackathon_id", hackathonId)
+    .eq("type", type)
+    .order("created_at", { ascending: false });
+  if (error) console.error("[server-data] getHackathonInvitationsServer:", error.message);
+  return (data as InvitationRow[]) ?? [];
 }

@@ -15,8 +15,6 @@ import {
   submitProjectToHackathon,
 } from "@/lib/storage";
 import type { StoredProject, StoredHackathon, StoredTeam, StoredSubmission } from "@/lib/storage";
-import { getRole } from "@/lib/auth";
-import type { AppRole } from "@/lib/auth";
 import { useAuth } from "@/app/providers";
 
 // --- Query key factory ---
@@ -40,7 +38,6 @@ export const queryKeys = {
     forHackathon: (hackathonId: string) => ["submissions", "hackathon", hackathonId] as const,
     forHackathons: (hackathonIds: string[]) => ["submissions", "hackathons", hackathonIds] as const,
   },
-  role: ["role"] as const,
 };
 
 // --- Hooks ---
@@ -105,15 +102,6 @@ export function useSubmissionsForHackathons(hackathonIds: string[]) {
     queryKey: queryKeys.submissions.forHackathons(hackathonIds),
     queryFn: () => getSubmissionsForHackathons(hackathonIds),
     enabled: !loading && hackathonIds.length > 0,
-  });
-}
-
-export function useRole() {
-  const { user, loading } = useAuth();
-  return useQuery<AppRole | null>({
-    queryKey: queryKeys.role,
-    queryFn: () => getRole(user!.id),
-    enabled: !loading && !!user,
   });
 }
 

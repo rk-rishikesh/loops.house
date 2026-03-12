@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   FileText,
@@ -13,15 +14,16 @@ import {
   Mic2,
   CalendarDays,
   Users,
+  ChevronDown,
 } from "lucide-react";
 import type {
   StoredHackathon,
   StoredProject,
   StoredSubmission,
 } from "@/lib/data-mappers";
-import type { AppRole } from "@/lib/supabase/types";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { ProjectEditor } from "@/components/client/project-editor";
+import { submitProjectAction } from "@/lib/actions";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -35,7 +37,6 @@ interface BuilderHackathonDetailProps {
   projects: StoredProject[];
   submissions: StoredSubmission[];
   isAuthenticated: boolean;
-  role?: AppRole | null;
 }
 
 export function BuilderHackathonDetail({
@@ -43,8 +44,7 @@ export function BuilderHackathonDetail({
   hackathon,
   projects,
   submissions,
-  isAuthenticated: _isAuthenticated,
-  role,
+  isAuthenticated,
 }: BuilderHackathonDetailProps) {
   const mounted = useIsMounted();
 
@@ -59,7 +59,13 @@ export function BuilderHackathonDetail({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const hackathonSubmission = submissions.find((s) => s.hackathon_id === hackathonId);
+  // Find the submission for THIS hackathon that belongs to one of the user's projects.
+  // submissions contains ALL submissions for the hackathon (RLS is public-read),
+  // so we must cross-reference against the user's own projects.
+  const userProjectIds = new Set(projects.map((p) => p.project_id));
+  const hackathonSubmission = submissions.find(
+    (s) => s.hackathon_id === hackathonId && userProjectIds.has(s.project_id),
+  );
   const submittedProject =
     (hackathonSubmission && projects.find((p) => p.project_id === hackathonSubmission.project_id)) ?? null;
 
@@ -637,6 +643,16 @@ export function BuilderHackathonDetail({
       );
     }
 
+    // Already-submitted project IDs for this hackathon (to filter them out)
+    const submittedProjectIds = new Set(
+      submissions
+        .filter((s) => s.hackathon_id === hackathonId)
+        .map((s) => s.project_id),
+    );
+    const availableProjects = projects.filter(
+      (p) => !submittedProjectIds.has(p.project_id),
+    );
+
     return (
       <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-10">
         <p
@@ -660,37 +676,54 @@ export function BuilderHackathonDetail({
           >
             <Users size={24} style={{ color: "rgba(226,254,165,0.3)" }} />
           </div>
-          <p
-            className="text-sm leading-relaxed mb-6"
-            style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
-          >
-            Ready to submit your project? Use the Ideator or Mentor to refine
-            your idea first, then submit when you&apos;re ready.
-          </p>
-          {mounted && role !== "builder" ? (
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 rounded-full no-underline text-[10px] tracking-widest uppercase font-bold px-8 py-3.5 transition-transform hover:scale-[1.03]"
-              style={{
-                backgroundColor: "#E2FEA5",
-                color: "#0F2C23",
-                fontFamily: PX,
-              }}
-            >
-              <Plus size={12} /> Sign in to Apply
-            </Link>
+
+          {mounted && !isAuthenticated ? (
+            <>
+              <p
+                className="text-sm leading-relaxed mb-6"
+                style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
+              >
+                Sign in to submit your project to this hackathon.
+              </p>
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-full no-underline text-[10px] tracking-widest uppercase font-bold px-8 py-3.5 transition-transform hover:scale-[1.03]"
+                style={{
+                  backgroundColor: "#E2FEA5",
+                  color: "#0F2C23",
+                  fontFamily: PX,
+                }}
+              >
+                <Plus size={12} /> Sign in to Apply
+              </Link>
+            </>
+          ) : availableProjects.length === 0 ? (
+            <>
+              <p
+                className="text-sm leading-relaxed mb-6"
+                style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
+              >
+                {projects.length === 0
+                  ? "You don't have any projects yet. Create one first, then come back to submit."
+                  : "All your projects have already been submitted to this hackathon."}
+              </p>
+              <Link
+                href="/builder/new"
+                className="inline-flex items-center gap-2 rounded-full no-underline text-[10px] tracking-widest uppercase font-bold px-8 py-3.5 transition-transform hover:scale-[1.03]"
+                style={{
+                  backgroundColor: "#E2FEA5",
+                  color: "#0F2C23",
+                  fontFamily: PX,
+                }}
+              >
+                <Plus size={12} /> Create Project
+              </Link>
+            </>
           ) : (
-            <Link
-              href={`/hackathons/${hackathonId}/ideate`}
-              className="inline-flex items-center gap-2 rounded-full no-underline text-[10px] tracking-widest uppercase font-bold px-8 py-3.5 transition-transform hover:scale-[1.03]"
-              style={{
-                backgroundColor: "#E2FEA5",
-                color: "#0F2C23",
-                fontFamily: PX,
-              }}
-            >
-              <Plus size={12} /> Submit Project
-            </Link>
+            <SubmitProjectPicker
+              projects={availableProjects}
+              hackathonId={hackathonId}
+            />
           )}
         </div>
       </div>
@@ -714,6 +747,107 @@ export function BuilderHackathonDetail({
         {section !== "submit" && renderTopBar()}
         {SECTION_RENDERER[section]()}
       </div>
+    </div>
+  );
+}
+
+/* ─── Submit Project Picker ─────────────────────────────────── */
+
+function SubmitProjectPicker({
+  projects,
+  hackathonId,
+}: {
+  projects: StoredProject[];
+  hackathonId: string;
+}) {
+  const router = useRouter();
+  const [selectedId, setSelectedId] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const selectedProject = projects.find((p) => p.project_id === selectedId);
+
+  function handleSubmit() {
+    if (!selectedProject) return;
+    setSubmitError(null);
+    startTransition(async () => {
+      const result = await submitProjectAction(
+        hackathonId,
+        selectedProject.team_id ?? "",
+        selectedProject.project_id,
+      );
+      if (!result.success) {
+        setSubmitError(result.error ?? "Failed to submit");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="w-full">
+      <p
+        className="text-sm leading-relaxed mb-6"
+        style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
+      >
+        Select a project to submit to this hackathon.
+      </p>
+
+      {/* Dropdown */}
+      <div className="relative mb-4">
+        <select
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value)}
+          className="w-full appearance-none rounded-xl px-4 py-3 pr-10 text-sm outline-none cursor-pointer"
+          style={{
+            fontFamily: FN,
+            backgroundColor: "rgba(226,254,165,0.08)",
+            color: "#E2FEA5",
+            border: "1px solid rgba(226,254,165,0.15)",
+          }}
+        >
+          <option value="" disabled>
+            Choose a project…
+          </option>
+          {projects.map((p) => (
+            <option key={p.project_id} value={p.project_id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          size={16}
+          className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ color: "rgba(226,254,165,0.4)" }}
+        />
+      </div>
+
+      {submitError && (
+        <p
+          className="text-xs mb-3"
+          style={{ fontFamily: FN, color: "#ff6b6b" }}
+        >
+          {submitError}
+        </p>
+      )}
+
+      <button
+        onClick={handleSubmit}
+        disabled={!selectedId || isPending}
+        className="inline-flex items-center gap-2 rounded-full text-[10px] tracking-widest uppercase font-bold px-8 py-3.5 transition-all hover:scale-[1.03] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+        style={{
+          backgroundColor: "#E2FEA5",
+          color: "#0F2C23",
+          fontFamily: PX,
+        }}
+      >
+        {isPending ? (
+          <Loader2 size={12} className="animate-spin" />
+        ) : (
+          <Send size={12} />
+        )}
+        {isPending ? "Submitting…" : "Submit Project"}
+      </button>
     </div>
   );
 }

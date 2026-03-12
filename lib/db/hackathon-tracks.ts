@@ -44,7 +44,7 @@ export async function matchHackathonChunks(
   topK = 5,
   minSimilarity = 0.75,
 ): Promise<{ content: string; source: string; similarity: number }[]> {
-  const { data, error } = await supabaseAdmin.rpc("match_hackathon_track_chunks", {
+  const { data, error } = await supabaseAdmin.rpc("match_hackathon_chunks", {
     query_embedding: JSON.stringify(queryEmbedding),
     match_hackathon_id: hackathonId,
     match_count: topK,

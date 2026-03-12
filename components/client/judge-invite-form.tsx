@@ -1,50 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowUpRight, Users, Send, Check, Clock, Loader2, X } from "lucide-react";
-import type { StoredHackathon, JudgeInviteWithUser } from "@/lib/data-mappers";
+import { createInvitationAction } from "@/lib/actions";
+import type { StoredHackathon } from "@/lib/data-mappers";
+import type { InvitationRow } from "@/lib/server-data";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
-/* ─── Skeleton row ───────────────────────────────────────────────── */
-function SkeletonRow() {
-  return (
-    <div
-      className="grid py-6 border-b border-[#0F2C23]/10 animate-pulse"
-      style={{ gridTemplateColumns: "64px 1fr 1fr 120px 100px", gap: "0 20px" }}
-    >
-      <div className="h-4 w-8 rounded bg-[#0F2C23]/08" />
-      <div className="h-4 w-40 rounded bg-[#0F2C23]/08" />
-      <div className="h-4 w-28 rounded bg-[#0F2C23]/05" />
-      <div className="h-5 w-20 rounded-full bg-[#0F2C23]/07" />
-      <div className="h-3 w-16 rounded bg-[#0F2C23]/05" />
-    </div>
-  );
-}
-
 /* ─── Component ──────────────────────────────────────────────────── */
-export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonPicker = false }: { hackathons: StoredHackathon[]; initialHackathonId?: string; hideHackathonPicker?: boolean; }) {
+export function JudgeInviteForm({ hackathons, initialHackathonId, initialInvites = [], hideHackathonPicker = false }: { hackathons: StoredHackathon[]; initialHackathonId?: string; initialInvites?: InvitationRow[]; hideHackathonPicker?: boolean; }) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const [selectedHackathon, setSelectedHackathon] = useState<string>(
     initialHackathonId ?? ""
   );
-  const [invites,         setInvites]         = useState<JudgeInviteWithUser[]>([]);
-  const [loadingInvites,  setLoadingInvites]  = useState(false);
   const [email,           setEmail]           = useState("");
   const [inviting,        setInviting]        = useState(false);
   const [error,           setError]           = useState<string | null>(null);
   const [success,         setSuccess]         = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!selectedHackathon) return;
-    setLoadingInvites(true);
-    fetch(`/api/judge-invites?hackathon_id=${selectedHackathon}`)
-      .then((r) => r.json())
-      .then(setInvites)
-      .catch(() => setInvites([]))
-      .finally(() => setLoadingInvites(false));
-  }, [selectedHackathon]);
+  const invites = initialInvites;
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
@@ -53,17 +32,15 @@ export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonP
     setError(null);
     setSuccess(null);
     try {
-      const res = await fetch("/api/judge-invites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hackathon_id: selectedHackathon, judge_email: email }),
+      const result = await createInvitationAction({
+        type: "judge",
+        email,
+        hackathon_id: selectedHackathon,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!result.success) throw new Error(result.error);
       setSuccess(`Invited ${email}`);
       setEmail("");
-      const updated = await fetch(`/api/judge-invites?hackathon_id=${selectedHackathon}`).then((r) => r.json());
-      setInvites(updated);
+      startTransition(() => router.refresh());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to invite judge");
     } finally {
@@ -72,8 +49,8 @@ export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonP
   }
 
   const activeHackathon   = hackathons.find((b) => b.id === selectedHackathon);
-  const acceptedCount   = invites.filter((i) => i.accepted).length;
-  const pendingCount    = invites.filter((i) => !i.accepted).length;
+  const acceptedCount   = invites.filter((i) => i.status === "accepted").length;
+  const pendingCount    = invites.filter((i) => i.status === "pending").length;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
@@ -130,7 +107,7 @@ export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonP
               className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
               style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
             >
-              Invite judges to your hackathons by email. They must have an account on the platform.
+              Invite judges to your hackathons by email. They&apos;ll receive an invitation when they sign up.
             </p>
           </div>
         </div>
@@ -138,7 +115,7 @@ export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonP
         {/* ── Two-column body ───────────────────────────────────────────── */}
         <div className="grid gap-8 items-start" style={{ gridTemplateColumns: "1fr 320px" }}>
 
-          {/* ═══ LEFT ════════════════════════════════════════════════════ */}
+          {/* LEFT */}
           <div className="flex flex-col gap-10">
 
             {/* Step 01 — Pick a hackathon */}
@@ -297,7 +274,7 @@ export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonP
                         style={{ fontFamily: PX }}
                       >
                         {inviting ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
-                        {inviting ? "Inviting…" : "Invite"}
+                        {inviting ? "Inviting..." : "Invite"}
                       </span>
                       <span
                         className="w-8 h-8 flex items-center justify-center rounded-full m-1"
@@ -362,9 +339,9 @@ export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonP
                 {/* Table header */}
                 <div
                   className="grid border-b border-t border-[#0F2C23]/20 py-3"
-                  style={{ gridTemplateColumns: "64px 1fr 1fr 120px 100px", gap: "0 20px" }}
+                  style={{ gridTemplateColumns: "64px 1fr 120px 100px", gap: "0 20px" }}
                 >
-                  {["No.", "Email", "Name", "Status", "Invited"].map((col) => (
+                  {["No.", "Email", "Status", "Invited"].map((col) => (
                     <p
                       key={col}
                       className="text-[11px] tracking-[0.12em] uppercase font-semibold text-[#0F2C23]/40"
@@ -376,13 +353,7 @@ export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonP
                 </div>
 
                 {/* Rows */}
-                {loadingInvites ? (
-                  <>
-                    <SkeletonRow />
-                    <SkeletonRow />
-                    <SkeletonRow />
-                  </>
-                ) : invites.length === 0 ? (
+                {invites.length === 0 ? (
                   <div className="py-20 text-center border-b border-[#0F2C23]/12">
                     <div
                       className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-5"
@@ -405,7 +376,7 @@ export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonP
                     <div
                       key={inv.id}
                       className="grid items-center py-6 border-b border-[#0F2C23]/10 transition-all duration-150 hover:bg-[#0F2C23]/[0.02] rounded-sm"
-                      style={{ gridTemplateColumns: "64px 1fr 1fr 120px 100px", gap: "0 20px" }}
+                      style={{ gridTemplateColumns: "64px 1fr 120px 100px", gap: "0 20px" }}
                     >
                       <p
                         className="font-bold text-[#0F2C23]"
@@ -417,24 +388,18 @@ export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonP
                         className="text-[#0F2C23]/80 text-sm truncate"
                         style={{ fontFamily: FN }}
                       >
-                        {inv.users?.email ?? "—"}
-                      </p>
-                      <p
-                        className="text-[#0F2C23]/55 text-sm truncate"
-                        style={{ fontFamily: FN }}
-                      >
-                        {inv.users?.display_name ?? "—"}
+                        {inv.email}
                       </p>
                       <div>
                         <span
                           className="inline-flex items-center gap-1.5 text-[8px] tracking-[0.14em] uppercase font-bold px-3 py-1.5 rounded-full"
                           style={{
                             fontFamily: PX,
-                            backgroundColor: inv.accepted ? "#0F2C23" : "rgba(15,44,35,0.1)",
-                            color: inv.accepted ? "#F8FFE8" : "rgba(15,44,35,0.55)",
+                            backgroundColor: inv.status === "accepted" ? "#0F2C23" : "rgba(15,44,35,0.1)",
+                            color: inv.status === "accepted" ? "#F8FFE8" : "rgba(15,44,35,0.55)",
                           }}
                         >
-                          {inv.accepted ? (
+                          {inv.status === "accepted" ? (
                             <><Check size={8} /> Accepted</>
                           ) : (
                             <><Clock size={8} /> Pending</>
@@ -463,7 +428,7 @@ export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonP
             )}
           </div>
 
-          {/* ═══ RIGHT sidebar ════════════════════════════════════════════ */}
+          {/* RIGHT sidebar */}
           <aside className="sticky top-[81px] flex flex-col gap-4">
 
             {/* Status card */}
@@ -548,12 +513,12 @@ export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonP
               <div className="flex flex-col gap-3">
                 {(hideHackathonPicker
                   ? [
-                      { n: "01", t: "Enter a judge's email address. They must already have a platform account." },
+                      { n: "01", t: "Enter a judge's email address. No account needed — they&apos;ll see the invite on sign-up." },
                       { n: "02", t: "Judges receive an invite and can accept it to gain judging access for this hackathon." },
                     ]
                   : [
                       { n: "01", t: "Select a hackathon — each one has its own pool of judges." },
-                      { n: "02", t: "Enter a judge's email address. They must already have a platform account." },
+                      { n: "02", t: "Enter a judge's email address. No account needed — they&apos;ll see the invite on sign-up." },
                       { n: "03", t: "Judges receive an invite and can accept it to gain judging access for that hackathon." },
                     ]
                 ).map(({ n, t }) => (
@@ -579,11 +544,11 @@ export function JudgeInviteForm({ hackathons, initialHackathonId, hideHackathonP
       <div className="overflow-hidden border-t border-[#0F2C23]/10 py-3" style={{ backgroundColor: "#F8FFE8" }}>
         <div className="flex gap-10 whitespace-nowrap" style={{ animation: "ticker 28s linear infinite" }}>
           {[...Array(3)].map((_, ri) =>
-            ["JUDGE MANAGEMENT", "★", "INVITE JUDGES", "★", "HOST DASHBOARD", "★"].map((t, i) => (
+            ["JUDGE MANAGEMENT", "\u2605", "INVITE JUDGES", "\u2605", "HOST DASHBOARD", "\u2605"].map((t, i) => (
               <span
                 key={`${ri}-${i}`}
                 className="text-[10px] tracking-[0.2em] uppercase font-bold shrink-0"
-                style={{ fontFamily: PX, color: t === "★" ? "#0F2C23" : "rgba(15,44,35,0.4)" }}
+                style={{ fontFamily: PX, color: t === "\u2605" ? "#0F2C23" : "rgba(15,44,35,0.4)" }}
               >
                 {t}
               </span>

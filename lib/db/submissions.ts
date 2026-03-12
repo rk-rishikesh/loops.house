@@ -68,7 +68,7 @@ export async function getSubmission(
 
 export async function updateScore(
   submissionId: string,
-  updates: { ai_score?: Json; human_score?: Json; momentum_score?: number },
+  updates: { ai_score?: Json; ai_evaluated_at?: string; momentum_score?: number },
 ): Promise<void> {
   await supabase
     .from("submissions")

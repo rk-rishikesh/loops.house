@@ -5,7 +5,7 @@ import { signOut } from "@/lib/auth";
 export function clearAuthCookies() {
   document.cookie.split(";").forEach((c) => {
     const name = c.trim().split("=")[0];
-    if (name.startsWith("sb-") || name === "x-user-role-hint") {
+    if (name.startsWith("sb-") || name === "x-user-role-hint" || name === "x-user-caps" || name === "x-user-caps-hint") {
       document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     }
   });

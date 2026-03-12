@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-export const appRoleSchema = z.enum(["builder", "host", "viewer", "admin", "judge"]);
-
 // --- Client-side form schemas ---
 
 export const loginSchema = z.object({
@@ -70,32 +68,43 @@ export const ideateInputSchema = z.object({
 });
 export type IdeateInputSchema = z.infer<typeof ideateInputSchema>;
 
-// Judge invites
-export const judgeInviteCreateSchema = z.object({
-  hackathon_id: z.string().min(1, "Hackathon ID is required"),
-  judge_email: z.string().email(),
-  assigned_tracks: z.array(z.string()).optional(),
+// --- Invitations ---
+
+export const invitationTypeSchema = z.enum(["event_host", "cohost", "judge", "project_member"]);
+
+export const createInvitationSchema = z
+  .object({
+    type: invitationTypeSchema,
+    email: z.string().email("Valid email required"),
+    hackathon_id: z.string().min(1).optional(),
+    project_id: z.string().min(1).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.type === "event_host") return !data.hackathon_id && !data.project_id;
+      if (data.type === "cohost" || data.type === "judge") return !!data.hackathon_id && !data.project_id;
+      if (data.type === "project_member") return !!data.project_id;
+      return false;
+    },
+    { message: "Invalid invitation parameters for type" },
+  );
+
+export type CreateInvitationSchema = z.infer<typeof createInvitationSchema>;
+
+export const respondInvitationSchema = z.object({
+  invitation_id: z.string().min(1),
+  accept: z.boolean(),
+});
+export type RespondInvitationSchema = z.infer<typeof respondInvitationSchema>;
+
+// --- Admin ---
+
+export const adminToggleEventCreatorSchema = z.object({
+  user_id: z.string().min(1),
+  is_event_creator: z.boolean(),
 });
 
-export const judgeInviteAcceptSchema = z.object({
-  id: z.string().min(1, "Invite ID is required"),
-});
-
-// Host applications
-export const hostApplicationCreateSchema = z.object({
-  event_name: z.string().min(1).max(200),
-  expected_participants: z.number().int().positive().optional(),
-  contact: z.string().max(500).optional(),
-  description: z.string().max(2000).optional(),
-});
-
-export const hostApplicationReviewSchema = z.object({
-  id: z.string().min(1, "Application ID is required"),
-  status: z.enum(["approved", "rejected"]),
-});
-
-// Admin
-export const adminRoleUpdateSchema = z.object({
-  user_id: z.string().min(1, "User ID is required"),
-  role: appRoleSchema,
+export const adminToggleAdminSchema = z.object({
+  user_id: z.string().min(1),
+  is_admin: z.boolean(),
 });

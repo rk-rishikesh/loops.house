@@ -2,18 +2,23 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateUserRoleAction } from "@/lib/actions";
+import { adminToggleEventCreatorAction, adminToggleAdminAction } from "@/lib/actions";
 import type { UserListItem } from "@/lib/data-mappers";
-
-const ROLES = ["builder", "host", "viewer", "admin", "judge"] as const;
 
 export function UserRoleEditor({ users }: { users: UserListItem[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  function handleRoleChange(userId: string, newRole: string) {
+  function handleToggleAdmin(userId: string, checked: boolean) {
     startTransition(async () => {
-      await updateUserRoleAction(userId, newRole);
+      await adminToggleAdminAction(userId, checked);
+      router.refresh();
+    });
+  }
+
+  function handleToggleEventCreator(userId: string, checked: boolean) {
+    startTransition(async () => {
+      await adminToggleEventCreatorAction(userId, checked);
       router.refresh();
     });
   }
@@ -34,7 +39,8 @@ export function UserRoleEditor({ users }: { users: UserListItem[] }) {
               <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Email</th>
               <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Name</th>
               <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Provider</th>
-              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Role</th>
+              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Admin</th>
+              <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Event Creator</th>
               <th className="text-left px-4 py-2.5 font-medium text-zinc-600 dark:text-zinc-400">Joined</th>
             </tr>
           </thead>
@@ -45,24 +51,34 @@ export function UserRoleEditor({ users }: { users: UserListItem[] }) {
                   {u.email}
                 </td>
                 <td className="px-4 py-2.5 text-zinc-700 dark:text-zinc-300">
-                  {u.display_name ?? "—"}
+                  {u.display_name ?? "\u2014"}
                 </td>
                 <td className="px-4 py-2.5 text-zinc-500 text-xs">
                   {u.oauth_provider ?? "email"}
                 </td>
                 <td className="px-4 py-2.5">
-                  <select
-                    value={u.role}
-                    onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                    disabled={isPending}
-                    className="rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2 py-1 text-xs"
-                  >
-                    {ROLES.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={u.is_admin}
+                      onChange={(e) => handleToggleAdmin(u.id, e.target.checked)}
+                      disabled={isPending}
+                      className="rounded border-zinc-300 dark:border-zinc-700"
+                    />
+                    <span className="text-xs text-zinc-500">{u.is_admin ? "Yes" : "No"}</span>
+                  </label>
+                </td>
+                <td className="px-4 py-2.5">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={u.is_event_creator}
+                      onChange={(e) => handleToggleEventCreator(u.id, e.target.checked)}
+                      disabled={isPending}
+                      className="rounded border-zinc-300 dark:border-zinc-700"
+                    />
+                    <span className="text-xs text-zinc-500">{u.is_event_creator ? "Yes" : "No"}</span>
+                  </label>
                 </td>
                 <td className="px-4 py-2.5 text-zinc-500 text-xs">
                   {new Date(u.created_at).toLocaleDateString()}

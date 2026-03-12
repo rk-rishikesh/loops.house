@@ -29,7 +29,8 @@ export type {
 // Re-export enum types from the DB types
 export type HackathonStatus = Database["public"]["Enums"]["hackathon_status"];
 export type SubmissionStatus = Database["public"]["Enums"]["submission_status"];
-export type HostApplicationStatus = Database["public"]["Enums"]["host_application_status"];
+export type InvitationType = Database["public"]["Enums"]["invitation_type"];
+export type InvitationStatus = Database["public"]["Enums"]["invitation_status"];
 
 // --- Row type aliases ---
 
@@ -37,27 +38,18 @@ export type ProfileRow = Database["public"]["Tables"]["loops_profiles"]["Row"];
 export type HackathonRow = Database["public"]["Tables"]["hackathons"]["Row"];
 export type TeamRow = Database["public"]["Tables"]["teams"]["Row"];
 export type SubmissionRow = Database["public"]["Tables"]["submissions"]["Row"];
-export type HostApplicationRow = Database["public"]["Tables"]["host_applications"]["Row"];
 export type UserRow = Database["public"]["Tables"]["users"]["Row"];
-export type JudgeInviteRow = Database["public"]["Tables"]["judge_invites"]["Row"];
+export type InvitationRow = Database["public"]["Tables"]["invitations"]["Row"];
+export type HackathonCohostRow = Database["public"]["Tables"]["hackathon_cohosts"]["Row"];
+export type HackathonJudgeRow = Database["public"]["Tables"]["hackathon_judges"]["Row"];
 
 // --- Shared types for admin/host views ---
-
-/** Host application with joined user data (for admin reviews) */
-export type HostAppWithUser = HostApplicationRow & {
-  users: Pick<UserRow, "email" | "display_name"> | null;
-};
 
 /** Subset of user columns for the admin user list */
 export type UserListItem = Pick<
   UserRow,
-  "id" | "email" | "display_name" | "role" | "oauth_provider" | "created_at"
+  "id" | "email" | "display_name" | "is_admin" | "is_event_creator" | "oauth_provider" | "created_at"
 >;
-
-/** Judge invite with joined user data */
-export type JudgeInviteWithUser = JudgeInviteRow & {
-  users?: Pick<UserRow, "email" | "display_name"> | null;
-};
 
 // --- StoredXxx interfaces ---
 
@@ -124,10 +116,12 @@ export interface StoredSubmission {
   project_id: string;
   status: SubmissionStatus;
   ai_score: EvaluationScore;
-  human_score: EvaluationScore;
+  ai_evaluated_at: string | null;
   momentum_score: number;
   created_at: string;
 }
+
+export type HumanEvaluationRow = Database["public"]["Tables"]["human_evaluations"]["Row"];
 
 // --- Mapper functions ---
 
@@ -229,7 +223,7 @@ export function submissionToStored(s: SubmissionRow): StoredSubmission {
     project_id: s.project_id,
     status: s.status,
     ai_score: asJsonObject<EvaluationScore>(s.ai_score, {}),
-    human_score: asJsonObject<EvaluationScore>(s.human_score, {}),
+    ai_evaluated_at: s.ai_evaluated_at ?? null,
     momentum_score: Number(s.momentum_score ?? 0),
     created_at: s.created_at,
   };

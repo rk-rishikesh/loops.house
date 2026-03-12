@@ -1,7 +1,7 @@
 import { getServerAuth } from "@/lib/server-auth";
 import {
   getHackathonWithTracksServer,
-  getProjectsServer,
+  getUserProjectsServer,
   getSubmissionsServer,
 } from "@/lib/server-data";
 import { BuilderHackathonDetail } from "@/components/client/builder-hackathon-detail";
@@ -16,7 +16,7 @@ export default async function HackathonDetailPage({
 
   const [hackathon, projects, submissions] = await Promise.all([
     getHackathonWithTracksServer(id),
-    auth ? getProjectsServer() : Promise.resolve([]),
+    auth ? getUserProjectsServer(auth.userId) : Promise.resolve([]),
     auth ? getSubmissionsServer(id) : Promise.resolve([]),
   ]);
 
@@ -27,7 +27,6 @@ export default async function HackathonDetailPage({
       projects={projects}
       submissions={submissions}
       isAuthenticated={!!auth}
-      role={auth?.role ?? null}
     />
   );
 }

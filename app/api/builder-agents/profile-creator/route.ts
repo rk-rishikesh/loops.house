@@ -34,7 +34,7 @@ function mergeTechStack(
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAuth(["builder", "host", "admin"]);
+  const auth = await requireAuth();
   if (!auth) return unauthorized();
 
   const input: ProfileInput = await request.json();

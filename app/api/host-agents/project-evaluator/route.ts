@@ -85,7 +85,7 @@ const DEFAULT_CRITERIA: JudgingCriterion[] = [
 ];
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAuth(["host", "judge", "admin"]);
+  const auth = await requireAuth((caps) => caps.isAdmin || caps.isEventCreator || caps.isJudge);
   if (!auth) return unauthorized();
 
   try {
@@ -98,6 +98,24 @@ export async function POST(request: NextRequest) {
         { error: "project_id and hackathon_id are required" },
         { status: 400 },
       );
+    }
+
+    // Check if AI evaluation already exists — refuse to re-run
+    const { data: existingSub } = await supabaseAdmin
+      .from("submissions")
+      .select("ai_evaluated_at, ai_score")
+      .eq("project_id", input.project_id)
+      .eq("hackathon_id", hackathonId)
+      .maybeSingle();
+
+    if (existingSub?.ai_evaluated_at) {
+      // Return existing evaluation instead of re-running
+      return NextResponse.json({
+        ...((existingSub.ai_score as Record<string, unknown>) ?? {}),
+        saved: true,
+        locked: true,
+        message: "AI evaluation already exists and cannot be overridden.",
+      });
     }
 
     let kbSummary: string;
@@ -234,10 +252,16 @@ Return JSON: { "summary": "the paragraph" }`;
     };
 
     // Persist AI evaluation to DB (server-side, bypasses RLS)
+    // Also set ai_evaluated_at to lock future re-runs
     let saved = false;
+    const aiUpdate = {
+      ai_score: evalResult as unknown as Json,
+      ai_evaluated_at: new Date().toISOString(),
+    };
+
     const { data: updated, error: saveError } = await supabaseAdmin
       .from("submissions")
-      .update({ ai_score: evalResult as unknown as Json })
+      .update(aiUpdate)
       .eq("project_id", input.project_id)
       .eq("hackathon_id", hackathonId)
       .select("id")
@@ -264,7 +288,7 @@ Return JSON: { "summary": "the paragraph" }`;
               hackathon_id: hackathonId,
               project_id: input.project_id,
               team_id: profile.team_id,
-              ai_score: evalResult as unknown as Json,
+              ...aiUpdate,
               status: "under_review" as const,
             },
             { onConflict: "hackathon_id,project_id" },

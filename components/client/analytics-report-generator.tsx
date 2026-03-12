@@ -2,11 +2,22 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, BarChart3, Loader2, Sparkles, TrendingUp, Layers } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  BarChart3,
+  Loader2,
+  Sparkles,
+  Users,
+  Trophy,
+  Clock,
+  Cpu,
+  Layers,
+  Zap,
+} from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { getProjects, getHackathonSubmissions } from "@/lib/storage";
 import type { StoredHackathon } from "@/lib/data-mappers";
-import { type AnalyticsFilterSchema } from "@/lib/validations/schemas";
+import type { HackathonStats } from "@/app/host/[hackathon_id]/analytics/page";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -18,475 +29,495 @@ type AnalyticsResult = {
   raw_metrics?: unknown;
   generated_at?: string;
 };
-type ReportType = AnalyticsFilterSchema["report_type"];
 
-/* ─── Helpers ────────────────────────────────────────────────────── */
-async function buildMetricsForHackathon(hackathonId: string) {
-  const [allProjects, hackathonSubs] = await Promise.all([getProjects(), getHackathonSubmissions(hackathonId)]);
-  const submittedProjectIds = new Set(hackathonSubs.map((s) => s.project_id));
-  const projects = allProjects.filter((p) => submittedProjectIds.has(p.project_id));
-  const submissions = projects.map((p) => ({
-    name: p.name, category: p.category,
-    tech_stack_tags: p.tech_stack_tags ?? [], created_at: p.created_at,
-  }));
-  const categoryCounts = new Map<string, number>();
-  const techCounts     = new Map<string, number>();
-  for (const s of submissions) {
-    if (s.category) categoryCounts.set(s.category, (categoryCounts.get(s.category) ?? 0) + 1);
-    for (const t of s.tech_stack_tags ?? []) {
-      if (t) techCounts.set(t, (techCounts.get(t) ?? 0) + 1);
-    }
-  }
-  const top_categories  = Array.from(categoryCounts.entries()).map(([category, count]) => ({ category, count })).sort((a, b) => b.count - a.count).slice(0, 10);
-  const top_tech_stacks = Array.from(techCounts.entries()).map(([tech, count]) => ({ tech, count })).sort((a, b) => b.count - a.count).slice(0, 15);
-  return { total_submissions: submissions.length, submissions, top_categories, top_tech_stacks };
-}
-
-/* ─── Report type config ─────────────────────────────────────────── */
-const REPORT_TYPES: { value: ReportType; label: string; desc: string; icon: React.ElementType }[] = [
-  { value: "overview",    label: "Overview",    desc: "High-level snapshot of participation and themes",        icon: BarChart3  },
-  { value: "submissions", label: "Submissions", desc: "Deep dive into project quality and category breakdown",  icon: Layers     },
-  { value: "full",        label: "Full Report", desc: "Complete narrative covering all metrics and highlights", icon: TrendingUp },
-];
-
-/* ─── Highlight bar ──────────────────────────────────────────────── */
-function HighlightBar({ text, index }: { text: string; index: number }) {
+/* ─── Stat Card ──────────────────────────────────────────────────── */
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  accent = false,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ElementType;
+  accent?: boolean;
+}) {
   return (
-    <div className="flex items-start gap-4 py-5 border-b border-[#0F2C23]/08">
-      <span
-        className="font-black text-[#0F2C23]/18 leading-none shrink-0 pt-0.5"
-        style={{ fontFamily: PX, fontSize: 13, letterSpacing: "-0.02em", width: 24 }}
+    <div
+      className="rounded-2xl p-5 flex flex-col gap-3"
+      style={{
+        backgroundColor: accent ? "#0F2C23" : "rgba(15,44,35,0.04)",
+      }}
+    >
+      <div
+        className="w-9 h-9 rounded-xl flex items-center justify-center"
+        style={{
+          backgroundColor: accent ? "rgba(226,254,165,0.12)" : "rgba(15,44,35,0.08)",
+        }}
       >
-        {String(index + 1).padStart(2, "0")}
-      </span>
-      <p className="text-[#0F2C23]/70 leading-relaxed text-sm flex-1" style={{ fontFamily: FN }}>
-        {text}
-      </p>
+        <Icon size={16} style={{ color: accent ? "#E2FEA5" : "#0F2C23" }} />
+      </div>
+      <div>
+        <p
+          className="font-black leading-none"
+          style={{
+            fontFamily: PX,
+            fontSize: "clamp(22px, 2.5vw, 32px)",
+            letterSpacing: "-0.02em",
+            color: accent ? "#E2FEA5" : "#0F2C23",
+          }}
+        >
+          {value}
+        </p>
+        <p
+          className="text-[9px] tracking-[0.15em] uppercase font-bold mt-1.5"
+          style={{
+            fontFamily: PX,
+            color: accent ? "rgba(226,254,165,0.45)" : "rgba(15,44,35,0.4)",
+          }}
+        >
+          {label}
+        </p>
+      </div>
     </div>
   );
 }
 
-/* ─── Component ──────────────────────────────────────────────────── */
-export function AnalyticsReportGenerator({
+/* ─── Bar Chart Row ──────────────────────────────────────────────── */
+function BarRow({
+  label,
+  count,
+  max,
+}: {
+  label: string;
+  count: number;
+  max: number;
+}) {
+  const pct = max > 0 ? (count / max) * 100 : 0;
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <span
+        className="text-xs font-medium shrink-0 text-right"
+        style={{ fontFamily: FN, color: "#0F2C23", width: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+      >
+        {label}
+      </span>
+      <div className="flex-1 h-6 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,44,35,0.06)" }}>
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${Math.max(pct, 3)}%`, backgroundColor: "#0F2C23" }}
+        />
+      </div>
+      <span
+        className="text-xs font-bold shrink-0"
+        style={{ fontFamily: PX, color: "#0F2C23", width: 28, textAlign: "right" }}
+      >
+        {count}
+      </span>
+    </div>
+  );
+}
+
+/* ─── Phase Badge ────────────────────────────────────────────────── */
+function PhaseBadge({ phase }: { phase: string }) {
+  const colors: Record<string, { bg: string; text: string }> = {
+    draft: { bg: "rgba(15,44,35,0.08)", text: "#0F2C23" },
+    active: { bg: "rgba(34,197,94,0.15)", text: "#166534" },
+    judging: { bg: "rgba(234,179,8,0.15)", text: "#854d0e" },
+    completed: { bg: "rgba(59,130,246,0.15)", text: "#1e40af" },
+    archived: { bg: "rgba(107,114,128,0.15)", text: "#374151" },
+  };
+  const c = colors[phase] ?? colors.draft;
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-3 py-1 text-[10px] tracking-[0.12em] uppercase font-bold"
+      style={{ fontFamily: PX, backgroundColor: c.bg, color: c.text }}
+    >
+      {phase}
+    </span>
+  );
+}
+
+/* ─── Main Component ─────────────────────────────────────────────── */
+export function HackathonAnalytics({
   hackathon,
+  stats,
   backHref,
 }: {
   hackathon: StoredHackathon;
+  stats: HackathonStats;
   backHref: string;
 }) {
-  const [reportType,      setReportType]      = useState<ReportType>("full");
+  const [aiResult, setAiResult] = useState<AnalyticsResult | null>(null);
+  const canTriggerAI = stats.currentPhase === "judging";
 
-  const mutation = useMutation({
-    mutationFn: async (data: AnalyticsFilterSchema): Promise<AnalyticsResult> => {
-      const metrics = await buildMetricsForHackathon(data.hackathon_id);
+  const aiMutation = useMutation({
+    mutationFn: async (): Promise<AnalyticsResult> => {
+      // Build metrics payload from stats
+      const metrics = {
+        total_submissions: stats.totalSubmissions,
+        top_categories: stats.topCategories,
+        top_tech_stacks: stats.topTechStacks,
+        submissions: [], // AI only needs aggregates
+      };
       const res = await fetch("/api/host-agents/metric-analyst", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          hackathon_id: data.hackathon_id, report_type: data.report_type,
-          hackathon: { id: hackathon.id, name: hackathon.name, theme: hackathon.theme, problem_statements: hackathon.problem_statements },
+          hackathon_id: hackathon.id,
+          report_type: "full",
+          hackathon: {
+            id: hackathon.id,
+            name: hackathon.name,
+            theme: hackathon.theme,
+            problem_statements: hackathon.problem_statements,
+          },
           metrics,
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to generate report");
+      if (!res.ok) throw new Error(json.error || "Failed to generate analysis");
       return json as AnalyticsResult;
     },
+    onSuccess: (data) => setAiResult(data),
   });
-
-  const result        = mutation.data;
-  const isRunning = mutation.isPending;
-
-  const handleGenerate = () => {
-    mutation.mutate(
-      { hackathon_id: hackathon.id, report_type: reportType } satisfies AnalyticsFilterSchema,
-    );
-  };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
-
-      {/* ── Nav ─────────────────────────────────────────────────────── */}
+      {/* ── Nav ───────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-50" style={{ backgroundColor: "#F8FFE8" }}>
-        <div className="pt-0">
-          <div
-            className="flex w-full items-stretch border-t border-b border-[#0F2C23] text-[10px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]"
-            style={{ fontFamily: PX }}
+        <div
+          className="flex w-full items-stretch border-t border-b border-[#0F2C23] text-[10px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]"
+          style={{ fontFamily: PX }}
+        >
+          <Link
+            href={backHref}
+            className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#0F2C23] no-underline hover:bg-[rgba(15,44,35,0.06)]"
           >
-            <Link
-              href={backHref}
-              className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#0F2C23] no-underline hover:bg-[rgba(15,44,35,0.06)]"
-            >
-              <span className="flex items-center gap-2">
-                <ArrowLeft size={11} />
-                <span>Host</span>
-              </span>
-            </Link>
-            <div className="flex-1 min-w-0 py-8 flex items-center justify-end px-10">
-              <span>{hackathon.name} ANALYTICS</span>
+            <span className="flex items-center gap-2">
+              <ArrowLeft size={11} />
+              <span>Host</span>
+            </span>
+          </Link>
+          <div className="flex-1 min-w-0 py-8 flex items-center justify-between px-10">
+            <div className="flex items-center gap-3">
+              <PhaseBadge phase={stats.currentPhase} />
+              {stats.daysToDeadline !== null && (
+                <span
+                  className="text-[10px] tracking-[0.12em] uppercase font-bold"
+                  style={{
+                    fontFamily: PX,
+                    color: stats.daysToDeadline <= 3 ? "#dc2626" : "rgba(15,44,35,0.45)",
+                  }}
+                >
+                  {stats.daysToDeadline > 0
+                    ? `${stats.daysToDeadline}d left`
+                    : stats.daysToDeadline === 0
+                      ? "Today"
+                      : `${Math.abs(stats.daysToDeadline)}d ago`}
+                </span>
+              )}
             </div>
+            <span>{hackathon.name} ANALYTICS</span>
           </div>
         </div>
       </div>
 
       <div className="px-10 pt-10 pb-24">
-
-        {/* ── Hero heading ─────────────────────────────────────────────── */}
+        {/* ── Hero ───────────────────────────────────────────────── */}
         <div className="mb-14">
           <h1
             className="font-black text-[#0F2C23] leading-[0.88] uppercase"
             style={{
               fontFamily: PX,
-              fontSize: "clamp(52px, 9vw, 138px)",
+              fontSize: "clamp(42px, 7vw, 110px)",
               letterSpacing: "-0.025em",
             }}
           >
-            ANALYTICS
+            {hackathon.name}
             <br />
-            REPORT.
+            <span style={{ color: "rgba(15,44,35,0.15)" }}>ANALYTICS.</span>
           </h1>
-          <div className="flex justify-end mt-8">
+        </div>
+
+        {/* ── Stat Cards Grid ────────────────────────────────────── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
+          <StatCard label="Submissions" value={stats.totalSubmissions} icon={Layers} accent />
+          <StatCard label="Judges" value={stats.judgeCount} icon={Users} />
+          <StatCard
+            label="AI Evaluated"
+            value={`${stats.aiEvaluatedCount}/${stats.totalSubmissions}`}
+            icon={Cpu}
+          />
+          <StatCard
+            label="Judge Reviews"
+            value={stats.humanEvaluationCount}
+            icon={Trophy}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-14">
+          <StatCard
+            label="Avg Momentum"
+            value={stats.avgMomentumScore}
+            icon={Zap}
+          />
+          <StatCard
+            label="Current Phase"
+            value={stats.currentPhase.toUpperCase()}
+            icon={Clock}
+          />
+          {Object.entries(stats.submissionsByStatus).map(([status, count]) => (
+            <StatCard
+              key={status}
+              label={status}
+              value={count}
+              icon={BarChart3}
+            />
+          ))}
+        </div>
+
+        {/* ── Two-column: Categories + Tech Stacks ───────────────── */}
+        <div className="grid gap-8 items-start" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          {/* Categories */}
+          <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.03)" }}>
             <p
-              className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
-              style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
+              className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5"
+              style={{ fontFamily: PX }}
             >
-              Generate an AI narrative from your hackathon data. Choose a report type, pick a hackathon, and run.
+              Top Categories
             </p>
+            {stats.topCategories.length > 0 ? (
+              <div>
+                {stats.topCategories.map((c) => (
+                  <BarRow
+                    key={c.category}
+                    label={c.category}
+                    count={c.count}
+                    max={stats.topCategories[0].count}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[#0F2C23]/40" style={{ fontFamily: FN }}>
+                No category data yet
+              </p>
+            )}
+          </div>
+
+          {/* Tech Stacks */}
+          <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.03)" }}>
+            <p
+              className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5"
+              style={{ fontFamily: PX }}
+            >
+              Top Tech Stacks
+            </p>
+            {stats.topTechStacks.length > 0 ? (
+              <div>
+                {stats.topTechStacks.map((t) => (
+                  <BarRow
+                    key={t.tech}
+                    label={t.tech}
+                    count={t.count}
+                    max={stats.topTechStacks[0].count}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[#0F2C23]/40" style={{ fontFamily: FN }}>
+                No tech stack data yet
+              </p>
+            )}
           </div>
         </div>
 
-        {/* ── Two-column body ───────────────────────────────────────────── */}
-        <div className="grid gap-8 items-start" style={{ gridTemplateColumns: "1fr 360px" }}>
-
-          {/* ═══ LEFT ════════════════════════════════════════════════════ */}
-          <div className="flex flex-col gap-10">
-
-            {/* Step 1 — Report type card tiles */}
+        {/* ── AI Analysis Section ────────────────────────────────── */}
+        <div className="mt-14">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <div className="flex items-baseline gap-3 mb-5">
-                <span
-                  className="font-black text-[#0F2C23]/18"
-                  style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
-                >
-                  01
-                </span>
-                <p
-                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
-                  style={{ fontFamily: PX }}
-                >
-                  Choose Report Type
-                </p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                {REPORT_TYPES.map(({ value, label, desc, icon: Icon }) => {
-                  const isActive = reportType === value;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setReportType(value)}
-                      className="text-left rounded-2xl p-5 border-none cursor-pointer transition-all duration-200 hover:scale-[1.02]"
-                      style={{ backgroundColor: isActive ? "#0F2C23" : "#E2FEA5" }}
-                    >
-                      <div className="flex items-start justify-between mb-5">
-                        <div
-                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: isActive ? "rgba(226,254,165,0.15)" : "rgba(15,44,35,0.1)" }}
-                        >
-                          <Icon size={16} style={{ color: isActive ? "#E2FEA5" : "#0F2C23" }} />
-                        </div>
-                        {isActive && (
-                          <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#E2FEA5" }}>
-                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#0F2C23" }} />
-                          </span>
-                        )}
-                      </div>
-                      <p
-                        className="font-black uppercase leading-tight mb-1.5"
-                        style={{ fontFamily: PX, fontSize: 13, letterSpacing: "-0.01em", color: isActive ? "#F8FFE8" : "#0F2C23" }}
-                      >
-                        {label}
-                      </p>
-                      <p
-                        className="text-xs leading-relaxed"
-                        style={{ fontFamily: FN, color: isActive ? "rgba(226,254,165,0.5)" : "rgba(15,44,35,0.55)" }}
-                      >
-                        {desc}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
+              <p
+                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-1"
+                style={{ fontFamily: PX }}
+              >
+                AI Analysis
+              </p>
+              <p className="text-sm text-[#0F2C23]/55" style={{ fontFamily: FN }}>
+                {canTriggerAI
+                  ? "Generate a one-time AI narrative before finalizing results."
+                  : stats.currentPhase === "completed" || stats.currentPhase === "archived"
+                    ? "AI analysis is no longer available after completion."
+                    : "AI analysis is available during the judging phase."}
+              </p>
             </div>
-
-            {/* Step 2 — Generate for selected hackathon */}
-            <div>
-              <div className="flex items-baseline gap-3 mb-5">
+            {canTriggerAI && !aiResult && (
+              <button
+                type="button"
+                onClick={() => aiMutation.mutate()}
+                disabled={aiMutation.isPending}
+                className="inline-flex items-center gap-0 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-md disabled:opacity-40 shrink-0"
+                style={{ backgroundColor: "#0F2C23" }}
+              >
                 <span
-                  className="font-black text-[#0F2C23]/18"
-                  style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
-                >
-                  02
-                </span>
-                <p
-                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+                  className="pl-4 pr-3 py-2.5 text-[9px] tracking-[0.15em] uppercase font-bold text-[#F8FFE8] flex items-center gap-2"
                   style={{ fontFamily: PX }}
                 >
-                  Generate
-                </p>
-              </div>
+                  {aiMutation.isPending ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={11} />
+                  )}
+                  {aiMutation.isPending ? "Analyzing…" : "Run Analysis"}
+                </span>
+                <span
+                  className="w-8 h-8 flex items-center justify-center rounded-full m-1"
+                  style={{ backgroundColor: "#E2FEA5" }}
+                >
+                  <ArrowUpRight size={13} className="text-[#0F2C23]" />
+                </span>
+              </button>
+            )}
+          </div>
 
-              <div className="rounded-3xl p-7 flex items-center justify-between gap-6" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
-                <div className="min-w-0">
-                  <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-2" style={{ fontFamily: PX }}>
-                    Selected hackathon
+          {/* Error */}
+          {aiMutation.isError && (
+            <div
+              className="rounded-2xl px-6 py-4 mb-6"
+              style={{
+                backgroundColor: "rgba(200,60,60,0.07)",
+                border: "1px solid rgba(200,60,60,0.15)",
+              }}
+            >
+              <p className="text-sm text-red-700" style={{ fontFamily: FN }}>
+                {aiMutation.error.message}
+              </p>
+            </div>
+          )}
+
+          {/* AI Result */}
+          {aiResult && (
+            <div className="flex flex-col gap-5">
+              {aiResult.narrative && (
+                <div className="rounded-3xl p-8" style={{ backgroundColor: "#0F2C23" }}>
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
+                      <p
+                        className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#F8FFE8]/35 mb-1"
+                        style={{ fontFamily: PX }}
+                      >
+                        AI Narrative
+                      </p>
+                      <p className="text-[#F8FFE8]/55 text-sm" style={{ fontFamily: FN }}>
+                        {hackathon.name}
+                      </p>
+                    </div>
+                    <div
+                      className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: "rgba(226,254,165,0.1)" }}
+                    >
+                      <Sparkles size={16} style={{ color: "#E2FEA5" }} />
+                    </div>
+                  </div>
+                  <div className="border-t border-[#F8FFE8]/08 mb-6" />
+                  <p
+                    className="text-[#F8FFE8]/75 leading-relaxed whitespace-pre-wrap"
+                    style={{
+                      fontFamily: FN,
+                      fontSize: "clamp(14px, 1.4vw, 16px)",
+                      lineHeight: 1.9,
+                    }}
+                  >
+                    {aiResult.narrative}
                   </p>
-                  <p className="font-semibold text-[#0F2C23] leading-snug" style={{ fontFamily: PX, fontSize: 15 }}>
-                    {hackathon.name}
-                  </p>
-                  {hackathon.theme && (
-                    <p className="text-[#0F2C23]/55 text-sm mt-1" style={{ fontFamily: FN }}>
-                      {hackathon.theme}
+                  {aiResult.generated_at && (
+                    <p
+                      className="mt-6 text-[9px] tracking-[0.15em] uppercase text-[#F8FFE8]/22"
+                      style={{ fontFamily: PX }}
+                    >
+                      Generated {aiResult.generated_at}
                     </p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={handleGenerate}
-                  disabled={mutation.isPending}
-                  className="inline-flex items-center gap-0 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-md disabled:opacity-40 shrink-0"
-                  style={{ backgroundColor: "#0F2C23" }}
+              )}
+
+              {aiResult.highlights && aiResult.highlights.length > 0 && (
+                <div
+                  className="rounded-3xl p-8"
+                  style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
                 >
-                  <span
-                    className="pl-4 pr-3 py-2.5 text-[9px] tracking-[0.15em] uppercase font-bold text-[#F8FFE8] flex items-center gap-2"
-                    style={{ fontFamily: PX }}
-                  >
-                    {isRunning ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
-                    {isRunning ? "Running…" : "Generate"}
-                  </span>
-                  <span className="w-8 h-8 flex items-center justify-center rounded-full m-1" style={{ backgroundColor: "#E2FEA5" }}>
-                    <ArrowUpRight size={13} className="text-[#0F2C23]" />
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            {/* Error */}
-            {mutation.isError && (
-              <div className="rounded-2xl px-6 py-4" style={{ backgroundColor: "rgba(200,60,60,0.07)", border: "1px solid rgba(200,60,60,0.15)" }}>
-                <p className="text-sm text-red-700" style={{ fontFamily: FN }}>
-                  {mutation.error.message}
-                </p>
-              </div>
-            )}
-
-            {/* Step 3 — Results */}
-            {result && (
-              <div className="flex flex-col gap-5">
-                <div className="flex items-baseline gap-3">
-                  <span
-                    className="font-black text-[#0F2C23]/18"
-                    style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
-                  >
-                    03
-                  </span>
                   <p
-                    className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+                    className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-1"
                     style={{ fontFamily: PX }}
                   >
-                    Report — {hackathon.name}
+                    Key Highlights
                   </p>
-                </div>
-
-                {result.narrative && (
-                  <div className="rounded-3xl p-8" style={{ backgroundColor: "#0F2C23" }}>
-                    <div className="flex items-start justify-between mb-6">
-                      <div>
-                        <p
-                          className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#F8FFE8]/35 mb-1"
-                          style={{ fontFamily: PX }}
-                        >
-                          {REPORT_TYPES.find((r) => r.value === reportType)?.label} — AI Narrative
-                        </p>
-                        <p className="text-[#F8FFE8]/55 text-sm" style={{ fontFamily: FN }}>
-                          {hackathon.name}
-                        </p>
-                      </div>
+                  <h3
+                    className="font-black text-[#0F2C23] uppercase mb-5"
+                    style={{
+                      fontFamily: PX,
+                      fontSize: "clamp(18px, 2vw, 24px)",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {aiResult.highlights.length} Takeaways.
+                  </h3>
+                  <div className="border-t border-[#0F2C23]/12">
+                    {aiResult.highlights.map((h, i) => (
                       <div
-                        className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: "rgba(226,254,165,0.1)" }}
+                        key={i}
+                        className="flex items-start gap-4 py-5 border-b border-[#0F2C23]/08"
                       >
-                        <Sparkles size={16} style={{ color: "#E2FEA5" }} />
+                        <span
+                          className="font-black text-[#0F2C23]/18 leading-none shrink-0 pt-0.5"
+                          style={{
+                            fontFamily: PX,
+                            fontSize: 13,
+                            letterSpacing: "-0.02em",
+                            width: 24,
+                          }}
+                        >
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <p
+                          className="text-[#0F2C23]/70 leading-relaxed text-sm flex-1"
+                          style={{ fontFamily: FN }}
+                        >
+                          {h}
+                        </p>
                       </div>
-                    </div>
-                    <div className="border-t border-[#F8FFE8]/08 mb-6" />
-                    <p
-                      className="text-[#F8FFE8]/75 leading-relaxed whitespace-pre-wrap"
-                      style={{ fontFamily: FN, fontSize: "clamp(14px, 1.4vw, 16px)", lineHeight: 1.9 }}
-                    >
-                      {result.narrative}
-                    </p>
-                    {result.generated_at && (
-                      <p
-                        className="mt-6 text-[9px] tracking-[0.15em] uppercase text-[#F8FFE8]/22"
-                        style={{ fontFamily: PX }}
-                      >
-                        Generated {result.generated_at}
-                      </p>
-                    )}
+                    ))}
                   </div>
-                )}
-
-                {result.highlights && result.highlights.length > 0 && (
-                  <div className="rounded-3xl p-8" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
-                    <p
-                      className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-1"
-                      style={{ fontFamily: PX }}
-                    >
-                      Key Highlights
-                    </p>
-                    <h3
-                      className="font-black text-[#0F2C23] uppercase mb-5"
-                      style={{ fontFamily: PX, fontSize: "clamp(18px, 2vw, 24px)", letterSpacing: "-0.02em" }}
-                    >
-                      {result.highlights.length} Takeaways.
-                    </h3>
-                    <div className="border-t border-[#0F2C23]/12">
-                      {result.highlights.map((h, i) => (
-                        <HighlightBar key={i} text={h} index={i} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* ═══ RIGHT sidebar ════════════════════════════════════════════ */}
-          <aside className="sticky top-[81px] flex flex-col gap-4">
-
-            <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
-              <p
-                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-4"
-                style={{ fontFamily: PX }}
-              >
-                How it works
-              </p>
-              <div className="border-t border-[#0F2C23]/12">
-                {[
-                  { step: "01", title: "Choose a type",    body: "Overview, Submissions, or Full — each surfaces different layers of insight." },
-                  { step: "02", title: "Select a hackathon", body: "Each hackathon has its own pool of submitted projects and event metadata." },
-                  { step: "03", title: "Read the report",  body: "AI reads your hackathon details and submissions, then writes a structured narrative with highlights." },
-                ].map(({ step, title, body }) => (
-                  <div key={step} className="flex items-start gap-4 py-5 border-b border-[#0F2C23]/08">
-                    <span
-                      className="font-black text-[#0F2C23]/18 leading-none shrink-0"
-                      style={{ fontFamily: PX, fontSize: 13, letterSpacing: "-0.02em", width: 24 }}
-                    >
-                      {step}
-                    </span>
-                    <div>
-                      <p className="font-semibold text-[#0F2C23] text-sm mb-1" style={{ fontFamily: PX }}>
-                        {title}
-                      </p>
-                      <p className="text-xs text-[#0F2C23]/50 leading-relaxed" style={{ fontFamily: FN }}>
-                        {body}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#0F2C23" }}>
-              <p
-                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#F8FFE8]/38 mb-3"
-                style={{ fontFamily: PX }}
-              >
-                Current Config
-              </p>
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p
-                    className="font-black text-[#F8FFE8] uppercase"
-                    style={{ fontFamily: PX, fontSize: 15, letterSpacing: "-0.01em" }}
-                  >
-                    {REPORT_TYPES.find((r) => r.value === reportType)?.label}
-                  </p>
-                  <p className="text-[#F8FFE8]/42 text-xs mt-1 leading-relaxed" style={{ fontFamily: FN }}>
-                    {REPORT_TYPES.find((r) => r.value === reportType)?.desc}
-                  </p>
                 </div>
-                {(() => {
-                  const Icon = REPORT_TYPES.find((r) => r.value === reportType)?.icon ?? BarChart3;
-                  return <Icon size={20} style={{ color: "rgba(226,254,165,0.35)", flexShrink: 0 }} />;
-                })()}
-              </div>
+              )}
             </div>
-
-            <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#E2FEA5" }}>
-              <p
-                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/38 mb-4"
-                style={{ fontFamily: PX }}
-              >
-                At a glance
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: "Hackathon", value: hackathon.name ?? "—" },
-                  { label: "Report Type", value: REPORT_TYPES.find((r) => r.value === reportType)?.label ?? "—" },
-                ].map(({ label, value }) => (
-                  <div key={label} className="rounded-xl p-4" style={{ backgroundColor: "rgba(15,44,35,0.08)" }}>
-                    <p
-                      className="font-black text-[#0F2C23] leading-none"
-                      style={{ fontFamily: PX, fontSize: value.length > 4 ? 14 : 22, letterSpacing: "-0.02em" }}
-                    >
-                      {value}
-                    </p>
-                    <p
-                      className="text-[9px] tracking-[0.12em] uppercase font-bold text-[#0F2C23]/42 mt-1.5"
-                      style={{ fontFamily: PX }}
-                    >
-                      {label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {mutation.isPending && (
-              <div
-                className="rounded-2xl px-6 py-5 flex items-center gap-3"
-                style={{ backgroundColor: "rgba(15,44,35,0.07)", border: "1px solid rgba(15,44,35,0.12)" }}
-              >
-                <Loader2 size={15} className="animate-spin shrink-0" style={{ color: "#0F2C23" }} />
-                <div>
-                  <p className="text-[11px] font-semibold text-[#0F2C23]" style={{ fontFamily: PX }}>
-                    Generating report…
-                  </p>
-                  <p className="text-[11px] text-[#0F2C23]/45 mt-0.5" style={{ fontFamily: FN }}>
-                    Analysing submissions and building narrative
-                  </p>
-                </div>
-              </div>
-            )}
-          </aside>
+          )}
         </div>
       </div>
 
-      {/* ── Ticker ───────────────────────────────────────────────────── */}
-      <div className="overflow-hidden border-t border-[#0F2C23]/10 py-3" style={{ backgroundColor: "#F8FFE8" }}>
-        <div className="flex gap-10 whitespace-nowrap" style={{ animation: "ticker 28s linear infinite" }}>
+      {/* ── Ticker ─────────────────────────────────────────────── */}
+      <div
+        className="overflow-hidden border-t border-[#0F2C23]/10 py-3"
+        style={{ backgroundColor: "#F8FFE8" }}
+      >
+        <div
+          className="flex gap-10 whitespace-nowrap"
+          style={{ animation: "ticker 28s linear infinite" }}
+        >
           {[...Array(3)].map((_, ri) =>
-            ["ANALYTICS REPORT", "★", "AI NARRATIVE", "★", "HOST DASHBOARD", "★"].map((t, i) => (
-              <span
-                key={`${ri}-${i}`}
-                className="text-[10px] tracking-[0.2em] uppercase font-bold shrink-0"
-                style={{ fontFamily: PX, color: t === "★" ? "#0F2C23" : "rgba(15,44,35,0.4)" }}
-              >
-                {t}
-              </span>
-            ))
+            ["ANALYTICS", "★", "REAL-TIME STATS", "★", "HOST DASHBOARD", "★"].map(
+              (t, i) => (
+                <span
+                  key={`${ri}-${i}`}
+                  className="text-[10px] tracking-[0.2em] uppercase font-bold shrink-0"
+                  style={{
+                    fontFamily: PX,
+                    color: t === "★" ? "#0F2C23" : "rgba(15,44,35,0.4)",
+                  }}
+                >
+                  {t}
+                </span>
+              ),
+            ),
           )}
         </div>
       </div>

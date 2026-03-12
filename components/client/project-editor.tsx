@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import {
   saveProjectAction,
-  addTeamMemberAction,
+  createInvitationAction,
   removeTeamMemberAction,
 } from "@/lib/actions";
 import { useEffect, useState, useTransition } from "react";
@@ -189,6 +189,7 @@ export function ProjectEditor({
     useState<TeamMemberInfo[]>(initialTeamMembers);
   const [memberEmail, setMemberEmail] = useState("");
   const [memberError, setMemberError] = useState<string | null>(null);
+  const [memberSuccess, setMemberSuccess] = useState<string | null>(null);
   const isOwner = currentUserId === teamOwnerId;
   const [kbActiveTab, setKbActiveTab] = useState<string | null>(null);
   const [socialLoading, setSocialLoading] = useState(false);
@@ -267,25 +268,19 @@ export function ProjectEditor({
   };
 
   const handleAddMember = () => {
-    if (!project?.team_id || !memberEmail.trim()) return;
+    if (!project?.project_id || !memberEmail.trim()) return;
     setMemberError(null);
+    setMemberSuccess(null);
     startTransition(async () => {
-      const result = await addTeamMemberAction(
-        project.team_id!,
-        memberEmail.trim(),
-      );
+      const result = await createInvitationAction({
+        type: "project_member",
+        email: memberEmail.trim(),
+        project_id: project.project_id,
+      });
       if (result.success) {
-        setTeamMembers((prev) => [
-          ...prev,
-          {
-            user_id: result.data.user_id,
-            role: "member",
-            email: result.data.email,
-            display_name: result.data.display_name,
-            avatar_url: null,
-          },
-        ]);
+        setMemberSuccess(`Invitation sent to ${memberEmail.trim()}`);
         setMemberEmail("");
+        setMemberError(null);
         router.refresh();
       } else {
         setMemberError(result.error);
@@ -1527,6 +1522,7 @@ export function ProjectEditor({
                         onChange={(e) => {
                           setMemberEmail(e.target.value);
                           setMemberError(null);
+                          setMemberSuccess(null);
                         }}
                         placeholder="user@email.com"
                         className="flex-1 rounded-xl px-3 py-2 text-[13px] border-none outline-none placeholder-[#0F2C23]/30"
@@ -1563,6 +1559,14 @@ export function ProjectEditor({
                         style={{ fontFamily: FN }}
                       >
                         {memberError}
+                      </p>
+                    )}
+                    {memberSuccess && (
+                      <p
+                        className="text-[11px] mt-2 text-green-700/80"
+                        style={{ fontFamily: FN }}
+                      >
+                        {memberSuccess}
                       </p>
                     )}
                   </div>

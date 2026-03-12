@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Loader2, Check, X, Minus, ChevronDown, ArrowUpRight } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useTeams, useHackathons, useSaveProject } from "@/lib/queries";
+import { useTeams, useSaveProject } from "@/lib/queries";
 import { useAuth } from "@/app/providers";
 import { createProfileSchema, type CreateProfileSchema } from "@/lib/validations/schemas";
 import { saveTeamAction } from "@/lib/actions";
@@ -200,11 +200,9 @@ function NewProfileContent() {
   const [screenshotFiles, setScreenshotFiles] = useState<string[]>([]);
 
   const { data: teams = [] } = useTeams(user?.id);
-  const { data: hackathons = [] } = useHackathons();
   const saveProjectMutation = useSaveProject();
 
   const teamIdFromUrl = searchParams.get("team_id");
-  const hackathonIdFromUrl = searchParams.get("hackathon_id");
 
   const {
     register, handleSubmit, reset, trigger, control,
@@ -215,22 +213,20 @@ function NewProfileContent() {
     mode: "onChange",
     defaultValues: {
       team_id: "", name: "", description: "", github_url: "", youtube_url: "",
-      logo_url: "", website_url: "", screenshot_urls: "", social_links: "", hackathon_id: "",
+      logo_url: "", website_url: "", screenshot_urls: "", social_links: "",
     },
   });
 
   useEffect(() => {
     if (hasAppliedDefaults.current) return;
     const validUrlTeam = teamIdFromUrl && teams.some((t) => t.id === teamIdFromUrl) ? teamIdFromUrl : null;
-    const validUrlHackathon = hackathonIdFromUrl && hackathons.some((b) => b.id === hackathonIdFromUrl) ? hackathonIdFromUrl : null;
-    if (!validUrlTeam && !validUrlHackathon) return;
+    if (!validUrlTeam) return;
     reset((prev) => ({
       ...prev,
-      ...(validUrlTeam ? { team_id: validUrlTeam } : {}),
-      ...(validUrlHackathon ? { hackathon_id: validUrlHackathon } : {}),
+      team_id: validUrlTeam,
     }));
     hasAppliedDefaults.current = true;
-  }, [teamIdFromUrl, hackathonIdFromUrl, teams, hackathons, reset]);
+  }, [teamIdFromUrl, teams, reset]);
 
   const FORM_STEPS: {
     key: keyof CreateProfileSchema;
@@ -251,7 +247,10 @@ function NewProfileContent() {
     { key: "website_url",     label: "Where can people find it?",  sub: "Your live project URL.",                   optional: true,   placeholder: "https://myproject.com",                    type: "url" },
     { key: "social_links",    label: "Social links to share?",     sub: "Format: Label, URL — one per line.",       optional: true,   placeholder: "Twitter, https://twitter.com/…",            multiline: true },
     ...(teams.length > 0 ? [{ key: "team_id" as keyof CreateProfileSchema, label: "Assign to an existing team?", sub: "Or we\u2019ll auto-create one for you.", optional: true }] : []),
-    ...(hackathons.length > 0 ? [{ key: "hackathon_id" as keyof CreateProfileSchema, label: "Link a hackathon.", sub: "Connect this profile to a hackathon.", optional: true }] : []),
+    // TODO: Hackathon linking removed — submissions handle hackathon association now.
+    // Future: add policy to prevent >1 submission per user per hackathon.
+    // Tracking algorithm: get all user teams → get team projects → check if any
+    // team→project already has a submission for that hackathon before allowing a new one.
   ];
 
   const totalSteps = FORM_STEPS.length;
@@ -472,21 +471,7 @@ function NewProfileContent() {
                 />
               )}
 
-              {/* hackathon_id */}
-              {activeStep?.key === "hackathon_id" && hackathons.length > 0 && (
-                <Controller
-                  name="hackathon_id"
-                  control={control}
-                  render={({ field }) => (
-                    <CustomDropdown
-                      options={[{ value: "", label: "None" }, ...hackathons.map((b) => ({ value: b.id, label: b.name }))]}
-                      value={field.value ?? ""}
-                      onChange={field.onChange}
-                      placeholder="None"
-                    />
-                  )}
-                />
-              )}
+              {/* hackathon_id step removed — linking happens via submissions now */}
 
               {/* Upload inputs */}
               {activeStep?.upload === "logo" && (
@@ -513,7 +498,7 @@ function NewProfileContent() {
               )}
 
               {/* Text / URL inputs */}
-              {activeStep?.key !== "team_id" && activeStep?.key !== "hackathon_id" && !activeStep?.upload && (
+              {activeStep?.key !== "team_id" && !activeStep?.upload && (
                 activeStep?.multiline ? (
                   <textarea
                     rows={4}

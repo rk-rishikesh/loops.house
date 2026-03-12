@@ -34,7 +34,7 @@ export default async function HostBoosterPage({
   params: Promise<{ hackathon_id: string }>;
 }) {
   const auth = await getServerAuth();
-  if (!auth || !["host", "admin", "judge"].includes(auth.role)) {
+  if (!auth || !(auth.capabilities.isAdmin || auth.capabilities.isEventCreator || auth.capabilities.isJudge)) {
     redirect("/login");
   }
 
@@ -333,7 +333,7 @@ export default async function HostBoosterPage({
                   </div>
                   <div className="flex justify-end">
                     <Link
-                      href={`/host/${hackathon.id}/judging/${sub.project_id}`}
+                      href={`/judge/${hackathon.id}/${sub.project_id}`}
                       className="group inline-flex items-center gap-0 rounded-full overflow-hidden no-underline transition-all duration-200 hover:shadow-md"
                       style={{ backgroundColor: "#2d4a3e" }}
                     >

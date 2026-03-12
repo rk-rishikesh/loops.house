@@ -1,15 +1,12 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
-import type { AppRole } from "@/lib/supabase/types";
 
-const ROLE_DASHBOARDS: Record<AppRole, string> = {
-  builder: "/builder",
-  host: "/host",
-  viewer: "/hackathons",
-  judge: "/host/judging",
-  admin: "/admin",
-};
+function getDashboardUrl(user: { is_admin: boolean; is_event_creator: boolean }): string {
+  if (user.is_admin) return "/admin";
+  if (user.is_event_creator) return "/host";
+  return "/builder";
+}
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -30,13 +27,13 @@ export async function GET(request: Request) {
       if (user) {
         const { data } = await supabaseAdmin
           .from("users")
-          .select("role")
+          .select("is_admin, is_event_creator")
           .eq("id", user.id)
           .single();
-        const role = (data?.role as AppRole) ?? "builder";
-        return NextResponse.redirect(
-          new URL(ROLE_DASHBOARDS[role], origin),
-        );
+        const dashboard = data
+          ? getDashboardUrl(data as { is_admin: boolean; is_event_creator: boolean })
+          : "/builder";
+        return NextResponse.redirect(new URL(dashboard, origin));
       }
 
       return NextResponse.redirect(new URL("/builder", origin));
