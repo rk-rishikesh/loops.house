@@ -5,12 +5,12 @@ import { streamContent } from "../../lib/gemini-client";
 interface IdeatorInput {
   message: string;
   conversation_history: { role: "user" | "assistant"; content: string }[];
-  booster_context?: {
+  hackathon_context?: {
     problem_statements: string[];
     sponsor_tracks?: { sponsor: string; track_description: string }[];
     theme?: string;
   };
-  hackathon_context?: IdeatorInput["booster_context"];
+  booster_context?: IdeatorInput["hackathon_context"];
   project_snapshot?: {
     name?: string;
     description?: string;
@@ -18,7 +18,7 @@ interface IdeatorInput {
   };
 }
 
-const SYSTEM_PROMPT = `You are a product-focused booster mentor. Your job is to help the builder discover and refine a project idea that fits the booster's problem statements and their own interests.
+const SYSTEM_PROMPT = `You are a product-focused hackathon mentor. Your job is to help the builder discover and refine a project idea that fits the hackathon's problem statements and their own interests.
 
 RULES:
 - Ask clarifying questions about the builder's skills, interests, and what problem they personally want to solve.
@@ -43,7 +43,7 @@ function summarizeHistory(history: { role: string; content: string }[]): { role:
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAuth(["builder", "host", "admin"]);
+  const auth = await requireAuth();
   if (!auth) return unauthorized();
 
   try {
@@ -56,15 +56,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const ctx = input.booster_context ?? input.hackathon_context;
+    const ctx = input.hackathon_context ?? input.booster_context;
     if (!ctx) {
-      return new Response(JSON.stringify({ error: "booster_context is required" }), {
+      return new Response(JSON.stringify({ error: "hackathon_context is required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
     const contextBlock = [
-      `BOOSTER CONTEXT:`,
+      `HACKATHON CONTEXT:`,
       ctx.theme ? `Theme: ${ctx.theme}` : "",
       `Problem Statements:\n${ctx.problem_statements.map((p, i) => `${i + 1}. ${p}`).join("\n")}`,
       ctx.sponsor_tracks?.length

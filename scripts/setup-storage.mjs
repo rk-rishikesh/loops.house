@@ -20,7 +20,7 @@ const client = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_R
 
 const buckets = [
   { id: 'project-assets', name: 'project-assets', public: true },
-  { id: 'booster-assets', name: 'booster-assets', public: true },
+  { id: 'hackathon-assets', name: 'hackathon-assets', public: true },
   { id: 'user-avatars', name: 'user-avatars', public: true },
 ];
 

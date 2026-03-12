@@ -1,8 +1,8 @@
-import { getBoostersServer } from "@/lib/server-data";
+import { getHackathonsServer } from "@/lib/server-data";
 import { BuilderDashboard } from "@/components/client/builder-dashboard";
 
 export default async function ProjectHubPage() {
-  const boosters = await getBoostersServer();
+  const hackathons = await getHackathonsServer();
 
-  return <BuilderDashboard allBoosters={boosters} />;
+  return <BuilderDashboard allHackathons={hackathons} />;
 }

@@ -1,21 +1,22 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getServerAuth } from "@/lib/server-auth";
 import { redirect } from "next/navigation";
-import { ApplicationReviewActions } from "@/components/client/application-review-actions";
-import type { HostAppWithUser } from "@/lib/data-mappers";
 
 export default async function AdminApplicationsPage() {
   const auth = await getServerAuth();
-  if (!auth || auth.role !== "admin") {
+  if (!auth || !auth.capabilities.isAdmin) {
     redirect("/login");
   }
 
-  const { data } = await supabaseAdmin
-    .from("host_applications")
-    .select("*, users!host_applications_user_id_fkey(email, display_name)")
-    .order("created_at", { ascending: false });
-
-  const apps = (data ?? []) as unknown as HostAppWithUser[];
-
-  return <ApplicationReviewActions apps={apps} />;
+  return (
+    <div className="max-w-2xl mx-auto py-12">
+      <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
+        Host Applications
+      </h1>
+      <p className="text-zinc-600 dark:text-zinc-400">
+        Host applications have been replaced by the invitation system. Users can
+        now be invited as cohosts or judges directly from the hackathon
+        management page.
+      </p>
+    </div>
+  );
 }

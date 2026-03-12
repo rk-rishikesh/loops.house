@@ -6,10 +6,11 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Loader2, Check, X, Minus, ChevronDown, ArrowUpRight } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useTeams, useBoosters, useSaveProject } from "@/lib/queries";
+import { useTeams, useSaveProject } from "@/lib/queries";
 import { useAuth } from "@/app/providers";
 import { createProfileSchema, type CreateProfileSchema } from "@/lib/validations/schemas";
 import { saveTeamAction } from "@/lib/actions";
+import { ImageUpload, MultiImageUpload } from "@/components/client/image-upload";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 const STEPS = ["code-reader", "demo-reader", "theme-reader", "knowledge-base"] as const;
@@ -196,13 +197,12 @@ function NewProfileContent() {
   const [animDir, setAnimDir] = useState<1 | -1>(1);
   const [animKey, setAnimKey] = useState(0);
   const hasAppliedDefaults = useRef(false);
+  const [screenshotFiles, setScreenshotFiles] = useState<string[]>([]);
 
   const { data: teams = [] } = useTeams(user?.id);
-  const { data: boosters = [] } = useBoosters();
   const saveProjectMutation = useSaveProject();
 
   const teamIdFromUrl = searchParams.get("team_id");
-  const boosterIdFromUrl = searchParams.get("booster_id");
 
   const {
     register, handleSubmit, reset, trigger, control,
@@ -213,22 +213,20 @@ function NewProfileContent() {
     mode: "onChange",
     defaultValues: {
       team_id: "", name: "", description: "", github_url: "", youtube_url: "",
-      logo_url: "", website_url: "", screenshot_urls: "", social_links: "", booster_id: "",
+      logo_url: "", website_url: "", screenshot_urls: "", social_links: "",
     },
   });
 
   useEffect(() => {
     if (hasAppliedDefaults.current) return;
     const validUrlTeam = teamIdFromUrl && teams.some((t) => t.id === teamIdFromUrl) ? teamIdFromUrl : null;
-    const validUrlBooster = boosterIdFromUrl && boosters.some((b) => b.id === boosterIdFromUrl) ? boosterIdFromUrl : null;
-    if (!validUrlTeam && !validUrlBooster) return;
+    if (!validUrlTeam) return;
     reset((prev) => ({
       ...prev,
-      ...(validUrlTeam ? { team_id: validUrlTeam } : {}),
-      ...(validUrlBooster ? { booster_id: validUrlBooster } : {}),
+      team_id: validUrlTeam,
     }));
     hasAppliedDefaults.current = true;
-  }, [teamIdFromUrl, boosterIdFromUrl, teams, boosters, reset]);
+  }, [teamIdFromUrl, teams, reset]);
 
   const FORM_STEPS: {
     key: keyof CreateProfileSchema;
@@ -238,17 +236,21 @@ function NewProfileContent() {
     placeholder?: string;
     type?: string;
     multiline?: boolean;
+    upload?: "logo" | "screenshots";
   }[] = [
     { key: "name",            label: "Name your project.",         sub: "A great name is memorable and clear.",                        placeholder: "My awesome project…" },
     { key: "description",     label: "Describe what it does.",     sub: "A few sentences about what makes it special.",               placeholder: "A platform that helps teams…",             multiline: true },
     { key: "github_url",      label: "Where's the code?",          sub: "Link your GitHub repository.",             optional: true,   placeholder: "https://github.com/user/repo",             type: "url" },
     { key: "youtube_url",     label: "Got a demo video?",          sub: "Paste your YouTube demo link.",            optional: true,   placeholder: "https://youtube.com/watch?v=…",            type: "url" },
-    { key: "logo_url",        label: "Add a logo URL.",            sub: "Show off your brand identity.",            optional: true,   placeholder: "https://example.com/logo.png",             type: "url" },
-    { key: "screenshot_urls", label: "Any screenshots?",           sub: "One URL per line — show what you built.",  optional: true,   placeholder: "https://example.com/screen.png",           multiline: true },
+    { key: "logo_url",        label: "Upload a logo.",             sub: "Show off your brand identity.",            optional: true,   upload: "logo" },
+    { key: "screenshot_urls", label: "Any screenshots?",           sub: "Upload images that show what you built.",  optional: true,   upload: "screenshots" },
     { key: "website_url",     label: "Where can people find it?",  sub: "Your live project URL.",                   optional: true,   placeholder: "https://myproject.com",                    type: "url" },
     { key: "social_links",    label: "Social links to share?",     sub: "Format: Label, URL — one per line.",       optional: true,   placeholder: "Twitter, https://twitter.com/…",            multiline: true },
     ...(teams.length > 0 ? [{ key: "team_id" as keyof CreateProfileSchema, label: "Assign to an existing team?", sub: "Or we\u2019ll auto-create one for you.", optional: true }] : []),
-    ...(boosters.length > 0 ? [{ key: "booster_id" as keyof CreateProfileSchema, label: "Link a booster.", sub: "Connect this profile to a booster.", optional: true }] : []),
+    // TODO: Hackathon linking removed — submissions handle hackathon association now.
+    // Future: add policy to prevent >1 submission per user per hackathon.
+    // Tracking algorithm: get all user teams → get team projects → check if any
+    // team→project already has a submission for that hackathon before allowing a new one.
   ];
 
   const totalSteps = FORM_STEPS.length;
@@ -292,9 +294,7 @@ function NewProfileContent() {
       resolvedTeamId = result.data.id;
     }
 
-    const screenshotUrls = data.screenshot_urls
-      ? data.screenshot_urls.split("\n").map((u) => u.trim()).filter(Boolean)
-      : undefined;
+    const screenshotUrls = screenshotFiles.length > 0 ? screenshotFiles : undefined;
     const socialLinks = data.social_links
       ? data.social_links.split("\n").map((line) => {
           const trimmed = line.trim();
@@ -471,24 +471,34 @@ function NewProfileContent() {
                 />
               )}
 
-              {/* booster_id */}
-              {activeStep?.key === "booster_id" && boosters.length > 0 && (
+              {/* hackathon_id step removed — linking happens via submissions now */}
+
+              {/* Upload inputs */}
+              {activeStep?.upload === "logo" && (
                 <Controller
-                  name="booster_id"
+                  name="logo_url"
                   control={control}
                   render={({ field }) => (
-                    <CustomDropdown
-                      options={[{ value: "", label: "None" }, ...boosters.map((b) => ({ value: b.id, label: b.name }))]}
-                      value={field.value ?? ""}
+                    <ImageUpload
+                      value={field.value}
                       onChange={field.onChange}
-                      placeholder="None"
+                      placeholder="Upload logo"
                     />
                   )}
                 />
               )}
 
+              {activeStep?.upload === "screenshots" && (
+                <MultiImageUpload
+                  value={screenshotFiles}
+                  onChange={(urls) => setScreenshotFiles(urls)}
+                  max={10}
+                  placeholder="Upload screenshots"
+                />
+              )}
+
               {/* Text / URL inputs */}
-              {activeStep?.key !== "team_id" && activeStep?.key !== "booster_id" && (
+              {activeStep?.key !== "team_id" && !activeStep?.upload && (
                 activeStep?.multiline ? (
                   <textarea
                     rows={4}

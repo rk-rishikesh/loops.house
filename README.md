@@ -27,13 +27,13 @@ cp .env.example .env
 
 Required variables:
 
-| Variable | Description |
-|----------|-------------|
-| `GEMINI_API_KEY` | Google Gemini API key |
-| `GITHUB_TOKEN` | GitHub personal access token (for code flattening) |
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
+| Variable                        | Description                                        |
+| ------------------------------- | -------------------------------------------------- |
+| `GEMINI_API_KEY`                | Google Gemini API key                              |
+| `GITHUB_TOKEN`                  | GitHub personal access token (for code flattening) |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL                          |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key                           |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service role key (server-side only)       |
 
 ### 3. Set up the database
 
@@ -80,15 +80,15 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### NPM Scripts
 
-| Script | Description |
-|--------|-------------|
-| `npm run db:status` | Check database health (tables, functions, buckets) |
-| `npm run db:push` | Push local migrations to remote Supabase |
-| `npm run db:reset` | Drop all tables and re-run migrations (**dev only!**) |
-| `npm run db:gen-types` | Auto-generate TypeScript types from live schema |
-| `npm run db:new-migration -- "name"` | Create a new timestamped migration file |
-| `npm run db:seed` | Seed database with test data |
-| `npm run db:setup-storage` | Create storage buckets and policies |
+| Script                               | Description                                           |
+| ------------------------------------ | ----------------------------------------------------- |
+| `npm run db:status`                  | Check database health (tables, functions, buckets)    |
+| `npm run db:push`                    | Push local migrations to remote Supabase              |
+| `npm run db:reset`                   | Drop all tables and re-run migrations (**dev only!**) |
+| `npm run db:gen-types`               | Auto-generate TypeScript types from live schema       |
+| `npm run db:new-migration -- "name"` | Create a new timestamped migration file               |
+| `npm run db:seed`                    | Seed database with test data                          |
+| `npm run db:setup-storage`           | Create storage buckets and policies                   |
 
 ### Auto-Generating TypeScript Types
 
@@ -155,7 +155,7 @@ npm run db:gen-types   # Regenerate types
 app/
   api/                      19 API routes (12 AI agents + 4 sub-agents + 3 REST)
     builder-agents/         Profile creator, project ideator, social amplifier
-    host-agents/            Booster generator, metric analyst, evaluator, resource provisioner, save-evaluation
+    host-agents/            Hackathon generator, metric analyst, evaluator, resource provisioner, save-evaluation
     viewer-agents/          Code query, project chat
     devrel-agents/          Tech buddy (RAG-powered)
     agents/                 YouTube direct-source agent
@@ -166,7 +166,7 @@ app/
   builder/                  Builder role pages
   host/                     Host role pages
   viewer/                   Viewer role pages
-  boosters/                 Public booster pages
+  boosters/                 Public hackathon pages
   residency/                Residency program pages
   login/                    Auth page (OAuth + email/password)
   layout.tsx                Root layout with SupabaseProvider
@@ -185,8 +185,8 @@ lib/
   agents/
     youtube.ts              YouTube analysis with transcript fallback
   db/                       Data-access layer (10 modules)
-    boosters.ts             Booster CRUD
-    booster-tracks.ts       Booster track operations
+    boosters.ts             Hackathon CRUD
+    hackathon-tracks.ts       Hackathon track operations
     host-applications.ts    Host application CRUD
     judge-invites.ts        Judge invite CRUD
     knowledge-base.ts       pgvector KB chunk operations
@@ -225,6 +225,7 @@ AGENTS.md                   AI agent architecture documentation
 ## Authentication
 
 Supabase Auth with three providers:
+
 - **Google OAuth**
 - **GitHub OAuth**
 - **Email/Password**
@@ -237,21 +238,21 @@ Edge middleware (`middleware.ts`) protects all routes except `/login` and `/auth
 
 All 19 API routes use `requireAuth()` from `lib/supabase/middleware.ts`:
 
-| Route Group | Required Roles |
-|-------------|---------------|
-| `builder-agents/*` | builder, host, admin |
-| `host-agents/booster-generator` | host, admin |
-| `host-agents/metric-analyst` | host, admin |
-| `host-agents/project-evaluator` | host, judge, admin |
-| `host-agents/resource-provisioner` | host, admin |
-| `host-agents/save-evaluation` | host, judge, admin |
-| `devrel-agents/tech-buddy` | any authenticated |
-| `viewer-agents/*` | any authenticated |
-| `sub-agents/*` | any authenticated |
-| `agents/youtube` | any authenticated |
-| `admin` | admin |
-| `host-applications` | any authenticated (POST/GET), admin (PATCH) |
-| `judge-invites` | host/admin (POST), any authenticated (GET/PATCH) |
+| Route Group                        | Required Roles                                   |
+| ---------------------------------- | ------------------------------------------------ |
+| `builder-agents/*`                 | builder, host, admin                             |
+| `host-agents/hackathon-generator`  | host, admin                                      |
+| `host-agents/metric-analyst`       | host, admin                                      |
+| `host-agents/project-evaluator`    | host, judge, admin                               |
+| `host-agents/resource-provisioner` | host, admin                                      |
+| `host-agents/save-evaluation`      | host, judge, admin                               |
+| `devrel-agents/tech-buddy`         | any authenticated                                |
+| `viewer-agents/*`                  | any authenticated                                |
+| `sub-agents/*`                     | any authenticated                                |
+| `agents/youtube`                   | any authenticated                                |
+| `admin`                            | admin                                            |
+| `host-applications`                | any authenticated (POST/GET), admin (PATCH)      |
+| `judge-invites`                    | host/admin (POST), any authenticated (GET/PATCH) |
 
 ## Contributing Guide
 
@@ -294,8 +295,10 @@ All writes go through **Server Actions** in `lib/actions.ts` — never call Supa
 ```typescript
 // lib/actions.ts
 "use server";
-export async function saveProjectAction(project: StoredProject): Promise<ActionResult<string>> {
-  const user = await getAuthUser();          // 1. Authenticate
+export async function saveProjectAction(
+  project: StoredProject,
+): Promise<ActionResult<string>> {
+  const user = await getAuthUser(); // 1. Authenticate
   if (!user) return { success: false, error: "Not authenticated" };
 
   const parsed = projectSchema.safeParse(project); // 2. Validate with Zod
@@ -305,7 +308,7 @@ export async function saveProjectAction(project: StoredProject): Promise<ActionR
   const { error } = await supabase.from("loops_profiles").upsert(row);
   if (error) return { success: false, error: error.message };
 
-  revalidatePath("/builder/projects");       // 4. Invalidate SSR cache
+  revalidatePath("/builder/projects"); // 4. Invalidate SSR cache
   return { success: true, data: project.project_id };
 }
 ```
@@ -324,7 +327,12 @@ export function SomeForm({ data }: { data: ServerData }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
     resolver: zodResolver(someSchema),
   });
 
@@ -333,7 +341,7 @@ export function SomeForm({ data }: { data: ServerData }) {
       const result = await someAction(values);
       if (result.success) {
         reset();
-        router.refresh();  // Re-runs server component with fresh data
+        router.refresh(); // Re-runs server component with fresh data
       }
     });
   });
@@ -343,13 +351,13 @@ export function SomeForm({ data }: { data: ServerData }) {
 
 ### Supabase Client Selection
 
-| Context | Client | Import |
-|---------|--------|--------|
-| Server components / `page.tsx` | `createServerSupabase()` | `lib/supabase/server.ts` |
-| Server Actions | `createServerSupabase()` | `lib/supabase/server.ts` |
-| API routes | `requireAuth()` | `lib/supabase/middleware.ts` |
-| Data-access layer (`lib/db/*`) | `supabaseAdmin` | `lib/supabase/admin.ts` |
-| Browser client components | `sb()` via `lib/storage.ts` | `lib/supabase/client.ts` |
+| Context                        | Client                      | Import                       |
+| ------------------------------ | --------------------------- | ---------------------------- |
+| Server components / `page.tsx` | `createServerSupabase()`    | `lib/supabase/server.ts`     |
+| Server Actions                 | `createServerSupabase()`    | `lib/supabase/server.ts`     |
+| API routes                     | `requireAuth()`             | `lib/supabase/middleware.ts` |
+| Data-access layer (`lib/db/*`) | `supabaseAdmin`             | `lib/supabase/admin.ts`      |
+| Browser client components      | `sb()` via `lib/storage.ts` | `lib/supabase/client.ts`     |
 
 ### Rules
 
@@ -379,5 +387,6 @@ export function SomeForm({ data }: { data: ServerData }) {
 ### Supabase Auth Providers
 
 In your Supabase dashboard under Authentication > Providers:
+
 - **Google:** Add your Google OAuth client ID and secret
 - **GitHub:** Add your GitHub OAuth app client ID and secret

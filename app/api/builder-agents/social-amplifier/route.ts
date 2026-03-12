@@ -12,7 +12,7 @@ interface SocialInput {
     key_features: string[];
     loops_profile_url: string;
   };
-  booster?: {
+  hackathon?: {
     name: string;
     result?: "winner" | "runner-up" | "finalist" | "participant";
   };
@@ -26,7 +26,7 @@ interface SocialOutput {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAuth(["builder", "host", "admin"]);
+  const auth = await requireAuth();
   if (!auth) return unauthorized();
 
   try {
@@ -40,11 +40,11 @@ export async function POST(request: NextRequest) {
     }
 
     const tone = input.tone || "excited";
-    const booster = input.booster;
-    const resultLine = booster?.result
-      ? `The builder achieved: ${booster.result} at ${booster.name}.`
-      : booster
-        ? `This was built at ${booster.name}.`
+    const hackathon = input.hackathon;
+    const resultLine = hackathon?.result
+      ? `The builder achieved: ${hackathon.result} at ${hackathon.name}.`
+      : hackathon
+        ? `This was built at ${hackathon.name}.`
         : "";
 
     const prompt = `Generate social media posts for a project. Output ONLY plain text (no markdown formatting in the post content).

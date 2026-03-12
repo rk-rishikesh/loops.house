@@ -14,7 +14,7 @@ import type { Database, Json } from "@/lib/supabase/types";
 import {
   profileToStored,
   storedToProfileInsert,
-  boosterToStored,
+  hackathonToStored,
   teamToStored,
   submissionToStored,
 } from "@/lib/data-mappers";
@@ -23,18 +23,15 @@ import type { TeamRow, SubmissionStatus } from "@/lib/data-mappers";
 // Re-export all types and interfaces for backward compatibility
 export type {
   StoredProject,
-  StoredBooster,
+  StoredHackathon,
   StoredTeam,
   StoredSubmission,
-  BoosterType,
-  BoosterStatus,
+  HackathonStatus,
   ProfileRow,
-  BoosterRow,
+  HackathonRow,
   TeamRow,
   SubmissionRow,
-  HostAppWithUser,
   UserListItem,
-  JudgeInviteWithUser,
   EvaluationScore,
 } from "@/lib/data-mappers";
 
@@ -99,50 +96,53 @@ export async function removeProject(projectId: string) {
   if (error) console.error("[storage] removeProject:", error.message);
 }
 
-// --- Boosters ---
+// --- Hackathons ---
 
-export async function getBoosters() {
+export async function getHackathons() {
   await ensureAuthReady();
   const { data, error } = await sb()
-    .from("boosters")
+    .from("hackathons")
     .select("*")
     .order("created_at", { ascending: false });
-  if (error) console.error("[storage] getBoosters:", error.message);
-  return (data ?? []).map(boosterToStored);
+  if (error) console.error("[storage] getHackathons:", error.message);
+  return (data ?? []).map(hackathonToStored);
 }
 
-export async function getBooster(id: string) {
+export async function getHackathon(id: string) {
   await ensureAuthReady();
   const { data, error } = await sb()
-    .from("boosters")
+    .from("hackathons")
     .select("*")
     .eq("id", id)
     .single();
-  if (error) console.error("[storage] getBooster:", error.message);
-  return data ? boosterToStored(data) : null;
+  if (error) console.error("[storage] getHackathon:", error.message);
+  return data ? hackathonToStored(data) : null;
 }
 
-export async function saveBooster(booster: import("@/lib/data-mappers").StoredBooster) {
+export async function saveHackathon(hackathon: import("@/lib/data-mappers").StoredHackathon) {
   await ensureAuthReady();
   const { error } = await sb()
-    .from("boosters")
+    .from("hackathons")
     .upsert({
-      id: booster.id,
-      host_id: booster.host_id!,
-      name: booster.name,
-      problem_statements: booster.problem_statements,
-      theme: booster.theme ?? null,
-      booster_type: booster.booster_type ?? "idea",
-      website_url: booster.website_url ?? null,
-      technical_resources: (booster.technical_resources ?? []) as unknown as Json,
-      technical_docs: booster.technical_docs ?? null,
-      bounty_pool_summary: booster.bounty_pool_summary ?? null,
-      program_goal: booster.program_goal ?? null,
-      timeline: booster.timeline ?? null,
-      organizer_notes: booster.organizer_notes ?? null,
+      id: hackathon.id,
+      host_id: hackathon.host_id!,
+      name: hackathon.name,
+      problem_statements: hackathon.problem_statements,
+      theme: hackathon.theme ?? null,
+      is_exclusive: hackathon.is_exclusive ?? false,
+      website_url: hackathon.website_url ?? null,
+      technical_resources: (hackathon.technical_resources ?? []) as unknown as Json,
+      technical_docs: hackathon.technical_docs ?? null,
+      bounty_pool_summary: hackathon.bounty_pool_summary ?? null,
+      program_goal: hackathon.program_goal ?? null,
+      start_date: hackathon.start_date ?? null,
+      submission_deadline: hackathon.submission_deadline ?? null,
+      judging_deadline: hackathon.judging_deadline ?? null,
+      results_date: hackathon.results_date ?? null,
+      organizer_notes: hackathon.organizer_notes ?? null,
     })
     .select();
-  if (error) throw new Error(`[storage] saveBooster: ${error.message}`);
+  if (error) throw new Error(`[storage] saveHackathon: ${error.message}`);
 }
 
 // --- Teams ---
@@ -203,8 +203,8 @@ export async function saveTeam(team: { id?: string; name: string; owner_id: stri
 
 // --- Submissions ---
 
-export async function submitProjectToBooster(
-  boosterId: string,
+export async function submitProjectToHackathon(
+  hackathonId: string,
   teamId: string,
   projectId: string,
 ) {
@@ -213,16 +213,16 @@ export async function submitProjectToBooster(
     .from("submissions")
     .upsert(
       {
-        booster_id: boosterId,
+        hackathon_id: hackathonId,
         team_id: teamId,
         project_id: projectId,
         status: "submitted" as SubmissionStatus,
       },
-      { onConflict: "booster_id,project_id" },
+      { onConflict: "hackathon_id,project_id" },
     )
     .select()
     .single();
-  if (error) console.error("[storage] submitProjectToBooster:", error.message);
+  if (error) console.error("[storage] submitProjectToHackathon:", error.message);
   return data ? submissionToStored(data) : null;
 }
 
@@ -237,62 +237,62 @@ export async function getProjectSubmissions(projectId: string) {
   return (data ?? []).map(submissionToStored);
 }
 
-export async function getBoosterSubmissions(boosterId: string) {
+export async function getHackathonSubmissions(hackathonId: string) {
   await ensureAuthReady();
   const { data, error } = await sb()
     .from("submissions")
     .select("*")
-    .eq("booster_id", boosterId)
+    .eq("hackathon_id", hackathonId)
     .order("created_at", { ascending: false });
-  if (error) console.error("[storage] getBoosterSubmissions:", error.message);
+  if (error) console.error("[storage] getHackathonSubmissions:", error.message);
   return (data ?? []).map(submissionToStored);
 }
 
-/** Fetch multiple boosters by IDs in a single query. */
-export async function getBoostersByIds(ids: string[]) {
+/** Fetch multiple hackathons by IDs in a single query. */
+export async function getHackathonsByIds(ids: string[]) {
   await ensureAuthReady();
   if (ids.length === 0) return {};
   const { data, error } = await sb()
-    .from("boosters")
+    .from("hackathons")
     .select("*")
     .in("id", ids);
-  if (error) console.error("[storage] getBoostersByIds:", error.message);
-  const map: Record<string, import("@/lib/data-mappers").StoredBooster> = {};
-  (data ?? []).forEach((b) => { map[b.id] = boosterToStored(b); });
+  if (error) console.error("[storage] getHackathonsByIds:", error.message);
+  const map: Record<string, import("@/lib/data-mappers").StoredHackathon> = {};
+  (data ?? []).forEach((b) => { map[b.id] = hackathonToStored(b); });
   return map;
 }
 
-/** Fetch all submissions across multiple boosters in a single query. */
-export async function getSubmissionsForBoosters(boosterIds: string[]) {
+/** Fetch all submissions across multiple hackathons in a single query. */
+export async function getSubmissionsForHackathons(hackathonIds: string[]) {
   await ensureAuthReady();
-  if (boosterIds.length === 0) return [];
+  if (hackathonIds.length === 0) return [];
   const { data, error } = await sb()
     .from("submissions")
     .select("*")
-    .in("booster_id", boosterIds)
+    .in("hackathon_id", hackathonIds)
     .order("created_at", { ascending: false });
-  if (error) console.error("[storage] getSubmissionsForBoosters:", error.message);
+  if (error) console.error("[storage] getSubmissionsForHackathons:", error.message);
   return (data ?? []).map(submissionToStored);
 }
 
-/** Fetch booster with its sponsor tracks from the booster_tracks table. */
-export async function getBoosterWithTracks(id: string) {
+/** Fetch hackathon with its sponsor tracks from the hackathon_tracks table. */
+export async function getHackathonWithTracks(id: string) {
   await ensureAuthReady();
-  const { data: booster, error } = await sb()
-    .from("boosters")
+  const { data: hackathon, error } = await sb()
+    .from("hackathons")
     .select("*")
     .eq("id", id)
     .single();
-  if (error) console.error("[storage] getBoosterWithTracks:", error.message);
-  if (!booster) return null;
+  if (error) console.error("[storage] getHackathonWithTracks:", error.message);
+  if (!hackathon) return null;
 
   const { data: tracks, error: tracksError } = await sb()
-    .from("booster_tracks")
+    .from("hackathon_tracks")
     .select("sponsor_name, track_description")
-    .eq("booster_id", id);
-  if (tracksError) console.error("[storage] getBoosterWithTracks tracks:", tracksError.message);
+    .eq("hackathon_id", id);
+  if (tracksError) console.error("[storage] getHackathonWithTracks tracks:", tracksError.message);
 
-  const stored = boosterToStored(booster);
+  const stored = hackathonToStored(hackathon);
   stored.sponsor_tracks = (tracks ?? []).map((t) => ({
     sponsor: t.sponsor_name,
     track_description: t.track_description ?? "",

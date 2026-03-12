@@ -6,7 +6,7 @@ import { embedText, embedBatch, cosineSimilarity } from "../../lib/embeddings";
 interface TechBuddyInput {
   message: string;
   conversation_history: { role: "user" | "assistant"; content: string }[];
-  booster_id: string;
+  hackathon_id: string;
 }
 
 interface ResourceBundle {
@@ -28,17 +28,17 @@ interface ResourceChunk {
   source: string;
 }
 
-const MAX_CACHED_BOOSTERS = 50;
-const boosterResources = new Map<string, ResourceChunk[]>();
+const MAX_CACHED_HACKATHONS = 50;
+const hackathonResources = new Map<string, ResourceChunk[]>();
 
 function evictIfNeeded() {
-  if (boosterResources.size <= MAX_CACHED_BOOSTERS) return;
+  if (hackathonResources.size <= MAX_CACHED_HACKATHONS) return;
   // Evict oldest entries (first inserted) until under limit
-  const excess = boosterResources.size - MAX_CACHED_BOOSTERS;
-  const keys = boosterResources.keys();
+  const excess = hackathonResources.size - MAX_CACHED_HACKATHONS;
+  const keys = hackathonResources.keys();
   for (let i = 0; i < excess; i++) {
     const { value } = keys.next();
-    if (value) boosterResources.delete(value);
+    if (value) hackathonResources.delete(value);
   }
 }
 
@@ -47,7 +47,7 @@ const MAX_HISTORY = 20;
 const NO_INFO_RESPONSE =
   "I don't have that information in the available resources. Please check with the organizers or the sponsor directly.";
 
-const SYSTEM_PROMPT = `You are Tech Buddy, a resource assistant for this booster. You answer questions ONLY based on the sponsor documentation and technical cheatsheet provided to you.
+const SYSTEM_PROMPT = `You are Tech Buddy, a resource assistant for this hackathon. You answer questions ONLY based on the sponsor documentation and technical cheatsheet provided to you.
 
 RULES:
 - If the answer is in the documentation, give it clearly and cite which sponsor/track it came from.
@@ -57,15 +57,18 @@ RULES:
 - You CAN explain what a sponsor API does based on its docs. You CAN show example usage IF it appears in the docs.`;
 
 export async function loadResources(
-  boosterId: string,
-  bundle: ResourceBundle
+  hackathonId: string,
+  bundle: ResourceBundle,
 ): Promise<void> {
   const chunks: { text: string; source: string }[] = [];
 
   for (const track of bundle.sponsor_tracks) {
     const trackChunks = splitIntoChunks(track.docs_text, 800);
     for (const chunk of trackChunks) {
-      chunks.push({ text: chunk, source: `${track.sponsor_name} - ${track.track_name}` });
+      chunks.push({
+        text: chunk,
+        source: `${track.sponsor_name} - ${track.track_name}`,
+      });
     }
     if (track.api_endpoints?.length) {
       chunks.push({
@@ -102,7 +105,7 @@ export async function loadResources(
     source: c.source,
   }));
 
-  boosterResources.set(boosterId, resourceChunks);
+  hackathonResources.set(hackathonId, resourceChunks);
   evictIfNeeded();
 }
 
@@ -116,11 +119,11 @@ function splitIntoChunks(text: string, maxWords: number): string[] {
 }
 
 async function retrieveChunks(
-  boosterId: string,
+  hackathonId: string,
   query: string,
-  topK: number = 5
+  topK: number = 5,
 ): Promise<{ text: string; source: string; score: number }[]> {
-  const resources = boosterResources.get(boosterId);
+  const resources = hackathonResources.get(hackathonId);
   if (!resources || resources.length === 0) return [];
 
   const queryEmb = await embedText(query);
@@ -144,23 +147,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     if (body.action === "load_resources") {
-      const { booster_id, resources } = body as {
+      const { hackathon_id, resources } = body as {
         action: string;
-        booster_id: string;
+        hackathon_id: string;
         resources: ResourceBundle;
       };
-      await loadResources(booster_id, resources);
+      await loadResources(hackathon_id, resources);
       return new Response(JSON.stringify({ success: true }), {
         headers: { "Content-Type": "application/json" },
       });
     }
 
     const input: TechBuddyInput = body;
-    const bid = input.booster_id ?? (input as { hackathon_id?: string }).hackathon_id;
+    const bid =
+      input.hackathon_id ?? (input as { hackathon_id?: string }).hackathon_id;
     if (!input.message || !bid) {
       return new Response(
-        JSON.stringify({ error: "message and booster_id are required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ error: "message and hackathon_id are required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -169,7 +173,7 @@ export async function POST(request: NextRequest) {
     if (retrieved.length === 0) {
       return new Response(
         JSON.stringify({ response: NO_INFO_RESPONSE, sources: [] }),
-        { headers: { "Content-Type": "application/json" } }
+        { headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -205,13 +209,15 @@ export async function POST(request: NextRequest) {
           for await (const chunk of response) {
             const text = chunk.text;
             if (text) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ text })}\n\n`),
+              );
             }
           }
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ sources: retrieved.map((r) => r.source) })}\n\n`
-            )
+              `data: ${JSON.stringify({ sources: retrieved.map((r) => r.source) })}\n\n`,
+            ),
           );
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
@@ -229,7 +235,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "An unexpected error occurred";
+    const message =
+      error instanceof Error ? error.message : "An unexpected error occurred";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

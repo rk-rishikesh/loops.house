@@ -26,39 +26,30 @@ export type {
   EvaluationScore,
 };
 
-// Re-export BoosterType from the DB types
-export type BoosterType = Database["public"]["Enums"]["booster_type"];
-export type BoosterStatus = Database["public"]["Enums"]["booster_status"];
+// Re-export enum types from the DB types
+export type HackathonStatus = Database["public"]["Enums"]["hackathon_status"];
 export type SubmissionStatus = Database["public"]["Enums"]["submission_status"];
-export type HostApplicationStatus = Database["public"]["Enums"]["host_application_status"];
+export type InvitationType = Database["public"]["Enums"]["invitation_type"];
+export type InvitationStatus = Database["public"]["Enums"]["invitation_status"];
 
 // --- Row type aliases ---
 
 export type ProfileRow = Database["public"]["Tables"]["loops_profiles"]["Row"];
-export type BoosterRow = Database["public"]["Tables"]["boosters"]["Row"];
+export type HackathonRow = Database["public"]["Tables"]["hackathons"]["Row"];
 export type TeamRow = Database["public"]["Tables"]["teams"]["Row"];
 export type SubmissionRow = Database["public"]["Tables"]["submissions"]["Row"];
-export type HostApplicationRow = Database["public"]["Tables"]["host_applications"]["Row"];
 export type UserRow = Database["public"]["Tables"]["users"]["Row"];
-export type JudgeInviteRow = Database["public"]["Tables"]["judge_invites"]["Row"];
+export type InvitationRow = Database["public"]["Tables"]["invitations"]["Row"];
+export type HackathonCohostRow = Database["public"]["Tables"]["hackathon_cohosts"]["Row"];
+export type HackathonJudgeRow = Database["public"]["Tables"]["hackathon_judges"]["Row"];
 
 // --- Shared types for admin/host views ---
-
-/** Host application with joined user data (for admin reviews) */
-export type HostAppWithUser = HostApplicationRow & {
-  users: Pick<UserRow, "email" | "display_name"> | null;
-};
 
 /** Subset of user columns for the admin user list */
 export type UserListItem = Pick<
   UserRow,
-  "id" | "email" | "display_name" | "role" | "oauth_provider" | "created_at"
+  "id" | "email" | "display_name" | "is_admin" | "is_event_creator" | "oauth_provider" | "created_at"
 >;
-
-/** Judge invite with joined user data */
-export type JudgeInviteWithUser = JudgeInviteRow & {
-  users?: Pick<UserRow, "email" | "display_name"> | null;
-};
 
 // --- StoredXxx interfaces ---
 
@@ -89,20 +80,23 @@ export interface StoredProject {
   flattened_codebase?: string;
 }
 
-export interface StoredBooster {
+export interface StoredHackathon {
   id: string;
   name: string;
   host_id?: string;
-  status?: BoosterStatus;
+  status?: HackathonStatus;
   problem_statements: string[];
   theme?: string;
-  booster_type?: BoosterType;
+  is_exclusive?: boolean;
   website_url?: string;
   technical_resources?: TechnicalResourceItem[];
   technical_docs?: string;
   bounty_pool_summary?: string;
   program_goal?: string;
-  timeline?: string;
+  start_date?: string;
+  submission_deadline?: string;
+  judging_deadline?: string;
+  results_date?: string;
   organizer_notes?: string;
   sponsor_tracks?: { sponsor: string; track_description: string }[];
   judging_criteria?: JudgingCriterionItem[];
@@ -117,15 +111,17 @@ export interface StoredTeam {
 
 export interface StoredSubmission {
   id: string;
-  booster_id: string;
+  hackathon_id: string;
   team_id: string;
   project_id: string;
   status: SubmissionStatus;
   ai_score: EvaluationScore;
-  human_score: EvaluationScore;
+  ai_evaluated_at: string | null;
   momentum_score: number;
   created_at: string;
 }
+
+export type HumanEvaluationRow = Database["public"]["Tables"]["human_evaluations"]["Row"];
 
 // --- Mapper functions ---
 
@@ -191,7 +187,7 @@ export function storedToProfileInsert(s: StoredProject) {
   };
 }
 
-export function boosterToStored(b: BoosterRow): StoredBooster {
+export function hackathonToStored(b: HackathonRow): StoredHackathon {
   return {
     id: b.id,
     name: b.name,
@@ -199,13 +195,16 @@ export function boosterToStored(b: BoosterRow): StoredBooster {
     status: b.status,
     problem_statements: b.problem_statements ?? [],
     theme: b.theme ?? undefined,
-    booster_type: b.booster_type,
+    is_exclusive: b.is_exclusive ?? undefined,
     website_url: b.website_url ?? undefined,
     technical_resources: asJsonArray<TechnicalResourceItem>(b.technical_resources) || undefined,
     technical_docs: b.technical_docs ?? undefined,
     bounty_pool_summary: b.bounty_pool_summary ?? undefined,
     program_goal: b.program_goal ?? undefined,
-    timeline: b.timeline ?? undefined,
+    start_date: b.start_date ?? undefined,
+    submission_deadline: b.submission_deadline ?? undefined,
+    judging_deadline: b.judging_deadline ?? undefined,
+    results_date: b.results_date ?? undefined,
     organizer_notes: b.organizer_notes ?? undefined,
     judging_criteria: asJsonArray<JudgingCriterionItem>(b.judging_criteria) || undefined,
     created_at: b.created_at,
@@ -219,12 +218,12 @@ export function teamToStored(t: TeamRow): StoredTeam {
 export function submissionToStored(s: SubmissionRow): StoredSubmission {
   return {
     id: s.id,
-    booster_id: s.booster_id,
+    hackathon_id: s.hackathon_id,
     team_id: s.team_id,
     project_id: s.project_id,
     status: s.status,
     ai_score: asJsonObject<EvaluationScore>(s.ai_score, {}),
-    human_score: asJsonObject<EvaluationScore>(s.human_score, {}),
+    ai_evaluated_at: s.ai_evaluated_at ?? null,
     momentum_score: Number(s.momentum_score ?? 0),
     created_at: s.created_at,
   };

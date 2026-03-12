@@ -5,30 +5,39 @@ import { createClient } from "@/lib/supabase/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CACHE_CONFIG } from "@/lib/cache-config";
 import type { User, Session } from "@supabase/supabase-js";
-import type { AppRole } from "@/lib/supabase/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-const VALID_ROLES = new Set<string>(["builder", "host", "viewer", "judge", "admin"]);
+export interface ClientCapabilities {
+  isAdmin: boolean;
+  isEventCreator: boolean;
+  isCohost: boolean;
+  isJudge: boolean;
+}
 
-/** Read the JS-readable role hint cookie set by middleware. Avoids a DB round-trip. */
-function getRoleHint(): AppRole | null {
+function getCapsHint(): ClientCapabilities | null {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(/(?:^|;\s*)x-user-role-hint=(\w+)/);
-  const val = match?.[1];
-  return val && VALID_ROLES.has(val) ? (val as AppRole) : null;
+  const match = document.cookie.match(/(?:^|;\s*)x-user-caps-hint=([^;]+)/);
+  if (!match?.[1]) return null;
+  const [admin, ec, cohost, judge] = match[1].split(",");
+  return {
+    isAdmin: admin === "1",
+    isEventCreator: ec === "1",
+    isCohost: cohost === "1",
+    isJudge: judge === "1",
+  };
 }
 
 type AuthState = {
   user: User | null;
   session: Session | null;
-  role: AppRole | null;
+  capabilities: ClientCapabilities | null;
   loading: boolean;
 };
 
 const AuthContext = createContext<AuthState>({
   user: null,
   session: null,
-  role: null,
+  capabilities: null,
   loading: true,
 });
 
@@ -36,23 +45,39 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-async function fetchRole(
+async function fetchCaps(
   supabase: SupabaseClient,
   userId: string,
-): Promise<AppRole | null> {
-  const { data } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", userId)
-    .single();
-  return (data?.role as AppRole) ?? null;
+): Promise<ClientCapabilities | null> {
+  const [userResult, cohostResult, judgeResult] = await Promise.all([
+    supabase
+      .from("users")
+      .select("is_admin, is_event_creator")
+      .eq("id", userId)
+      .single(),
+    supabase
+      .from("hackathon_cohosts")
+      .select("hackathon_id", { count: "exact", head: true })
+      .eq("user_id", userId),
+    supabase
+      .from("hackathon_judges")
+      .select("hackathon_id", { count: "exact", head: true })
+      .eq("user_id", userId),
+  ]);
+  if (!userResult.data) return null;
+  return {
+    isAdmin: userResult.data.is_admin,
+    isEventCreator: userResult.data.is_event_creator,
+    isCohost: (cohostResult.count ?? 0) > 0,
+    isJudge: (judgeResult.count ?? 0) > 0,
+  };
 }
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
     session: null,
-    role: null,
+    capabilities: null,
     loading: true,
   });
 
@@ -60,14 +85,10 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
     let lastUserId: string | null = null;
 
-    // onAuthStateChange fires INITIAL_SESSION on setup, so no separate
-    // loadSession() call is needed. This eliminates a duplicate getSession +
-    // fetchRole cycle that was doubling network calls on every page load.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const user = session?.user ?? null;
-      // Skip redundant fetch if same user (e.g. token refresh)
       if (user?.id === lastUserId && lastUserId !== null) {
         setState((prev) => ({ ...prev, session, user, loading: false }));
         return;
@@ -75,24 +96,32 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
       lastUserId = user?.id ?? null;
 
       if (!user) {
-        setState({ user: null, session: null, role: null, loading: false });
+        setState({
+          user: null,
+          session: null,
+          capabilities: null,
+          loading: false,
+        });
         return;
       }
 
-      // Try the JS-readable role hint cookie first (set by middleware, ~0ms).
-      // Falls back to DB query only when the cookie is missing (first load, cookie expired).
-      const hint = getRoleHint();
+      const hint = getCapsHint();
       if (hint) {
-        setState({ user, session, role: hint, loading: false });
-        // Verify in background — if the DB role differs, update silently
-        fetchRole(supabase, user.id).then((dbRole) => {
-          if (dbRole && dbRole !== hint) {
-            setState((prev) => ({ ...prev, role: dbRole }));
+        setState({ user, session, capabilities: hint, loading: false });
+        fetchCaps(supabase, user.id).then((dbCaps) => {
+          if (
+            dbCaps &&
+            (dbCaps.isAdmin !== hint.isAdmin ||
+              dbCaps.isEventCreator !== hint.isEventCreator ||
+              dbCaps.isCohost !== hint.isCohost ||
+              dbCaps.isJudge !== hint.isJudge)
+          ) {
+            setState((prev) => ({ ...prev, capabilities: dbCaps }));
           }
         });
       } else {
-        const role = await fetchRole(supabase, user.id);
-        setState({ user, session, role, loading: false });
+        const caps = await fetchCaps(supabase, user.id);
+        setState({ user, session, capabilities: caps, loading: false });
       }
     });
 
