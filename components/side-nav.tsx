@@ -202,9 +202,9 @@ function resolveNavContext(pathname: string): NavContext {
     };
   }
 
-  // Host hackathon context: /host/[hackathon_id] (and nested), excluding /host/application
+  // Host hackathon context: /host/[hackathon_id] (and nested), excluding /host/new
   const hostMatch = pathname.match(/^\/host\/([^/]+)(?:\/.*)?$/);
-  if (hostMatch && hostMatch[1] !== "application") {
+  if (hostMatch && hostMatch[1] !== "new") {
     return {
       kind: "hostHackathon",
       backHref: "/host",

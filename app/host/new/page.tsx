@@ -5,7 +5,7 @@ import { getServerAuth } from "@/lib/server-auth";
 export default async function HostApplicationPage() {
   const auth = await getServerAuth();
   if (!auth) {
-    redirect("/login?redirect=/host/application");
+    redirect("/login?redirect=/host/new");
   }
 
   return <HostApplicationForm userId={auth.userId} />;
