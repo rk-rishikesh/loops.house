@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -23,12 +22,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { StoredProject, StoredSubmission } from "@/lib/data-mappers";
-import {
-  type ChatInputSchema,
-  type CodeQuerySchema,
-  chatInputSchema,
-  codeQuerySchema,
-} from "@/lib/validations/schemas";
+import { type ChatInputSchema, chatInputSchema } from "@/lib/validations/schemas";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -36,7 +30,6 @@ const FN = "var(--font-funnel-sans), sans-serif";
 /* ─── Types ─────────────────────────────────────────────────────── */
 type ChatMessage = { role: "user" | "assistant"; content: string };
 type ChatState = "bubble" | "open" | "expanded";
-type ChatTab = "chat" | "code";
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
 function kbSnap(p: StoredProject) {

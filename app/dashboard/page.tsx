@@ -17,9 +17,9 @@ export default function DashboardPage() {
               letterSpacing: "-0.04em",
             }}
           >
-            Builder
+            Loops
             <br />
-            Hub.
+            House.
           </h1>
 
           <p

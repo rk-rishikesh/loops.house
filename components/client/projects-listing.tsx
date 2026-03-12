@@ -147,14 +147,6 @@ export default function ProjectsListing({ projects }: { projects: StoredProject[
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
 
-  const categories = useMemo(() => {
-    const cats = new Set<string>();
-    projects.forEach((p) => {
-      if (p.category) cats.add(p.category);
-    });
-    return Array.from(cats).sort();
-  }, [projects]);
-
   const filtered = useMemo(() => {
     let result = projects;
     if (search.trim()) {

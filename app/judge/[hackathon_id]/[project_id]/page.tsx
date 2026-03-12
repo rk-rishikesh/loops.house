@@ -10,6 +10,9 @@ import {
   getSubmissionServer,
 } from "@/lib/server-data";
 
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
+
 export default async function JudgeProjectPage({
   params,
 }: {
@@ -36,9 +39,12 @@ export default async function JudgeProjectPage({
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: "#f0ebe0" }}
+        style={{ backgroundColor: "#F8FFE8" }}
       >
-        <p className="text-[#2d4a3e]/60" style={{ fontFamily: "Georgia, serif" }}>
+        <p
+          className="leading-relaxed"
+          style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}
+        >
           Project, hackathon, or submission not found.
         </p>
       </div>
@@ -53,19 +59,32 @@ export default async function JudgeProjectPage({
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: "#f0ebe0" }}
+        style={{ backgroundColor: "#F8FFE8" }}
       >
         <div className="text-center space-y-3">
-          <p className="text-[#2d4a3e] text-lg font-semibold" style={{ fontFamily: "Georgia, serif" }}>
+          <p
+            className="text-lg font-semibold"
+            style={{ fontFamily: PX, color: "#0F2C23" }}
+          >
             Judging is not open yet
           </p>
-          <p className="text-[#2d4a3e]/60 text-sm" style={{ fontFamily: "Georgia, serif" }}>
+          <p
+            className="text-sm"
+            style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}
+          >
             This hackathon is currently in the <strong>{phase}</strong> phase. Judging opens after the submission deadline.
           </p>
           <a
             href={`/judge/${hackathon_id}`}
-            className="inline-block mt-4 px-5 py-2 rounded-full text-sm text-[#f0ebe0] no-underline"
-            style={{ backgroundColor: "#2d4a3e", fontFamily: "'Inter', sans-serif" }}
+            className="inline-block mt-4 px-5 py-2 rounded-full text-sm no-underline"
+            style={{
+              backgroundColor: "#0F2C23",
+              color: "#F8FFE8",
+              fontFamily: PX,
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              fontWeight: 700,
+            }}
           >
             Back to submissions
           </a>
