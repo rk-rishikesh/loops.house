@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED = ["/builder", "/host", "/admin"];
-const PUBLIC = ["/hackathons", "/residency", "/events"];
+const PUBLIC = ["/hackathons", "/residency", "/events", "/projects"];
 
 // Which roles can access which route prefixes
 const ROLE_ROUTES: Record<string, string[]> = {
@@ -14,8 +14,8 @@ const ROLE_ROUTES: Record<string, string[]> = {
 const ROLE_DASHBOARDS: Record<string, string> = {
   builder: "/builder",
   host: "/host",
-  viewer: "/hackathons",
-  judge: "/host/judging",
+  viewer: "/projects",
+  judge: "/host",
   admin: "/admin",
 };
 
@@ -159,5 +159,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/(builder|host|admin|login|hackathons|residency|events)(.*)"],
+  matcher: ["/(builder|host|admin|login|hackathons|residency|events|projects)(.*)"],
 };

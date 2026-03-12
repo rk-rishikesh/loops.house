@@ -12,14 +12,24 @@ interface HackathonPayload {
 
 interface MetricsPayload {
   total_submissions: number;
-  submissions: { name: string; category?: string; tech_stack_tags?: string[]; created_at?: string }[];
+  submissions: {
+    name: string;
+    category?: string;
+    tech_stack_tags?: string[];
+    created_at?: string;
+  }[];
   top_categories: { category: string; count: number }[];
   top_tech_stacks: { tech: string; count: number }[];
 }
 
 interface MetricInput {
   hackathon_id: string;
-  report_type: "overview" | "submissions" | "builder-graph" | "momentum-leaderboard" | "full";
+  report_type:
+    | "overview"
+    | "submissions"
+    | "builder-graph"
+    | "momentum-leaderboard"
+    | "full";
   as_of?: string;
   hackathon?: HackathonPayload;
   metrics?: MetricsPayload;
@@ -47,7 +57,7 @@ interface AnalystOutput {
 }
 
 async function fetchMetrics(_hackathonId: string): Promise<HackathonMetrics> {
-  // MVP: Return placeholder structure. In production, this queries the DB.
+  // (TODO) MVP: Return placeholder structure. In production, this queries the DB.
   // This function is the integration point for your database layer.
   return {
     total_registrations: 0,
@@ -70,17 +80,26 @@ export async function POST(request: NextRequest) {
   try {
     const input: MetricInput = await request.json();
 
-    const hackathonId = input.hackathon_id ?? (input as { booster_id?: string }).booster_id;
+    const hackathonId =
+      input.hackathon_id ?? (input as { hackathon_id?: string }).hackathon_id;
     if (!hackathonId) {
-      return NextResponse.json({ error: "hackathon_id is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "hackathon_id is required" },
+        { status: 400 },
+      );
     }
 
     const reportType = input.report_type || "full";
     const asOf = input.as_of || new Date().toISOString();
-    const hackathon = input.hackathon ?? (input as { booster?: HackathonPayload }).booster ?? null;
+    const hackathon =
+      input.hackathon ??
+      (input as { hackathon?: HackathonPayload }).hackathon ??
+      null;
     const clientMetrics = input.metrics ?? null;
 
-    const totalSubmissions = clientMetrics ? clientMetrics.total_submissions : (await fetchMetrics(hackathonId)).total_submissions;
+    const totalSubmissions = clientMetrics
+      ? clientMetrics.total_submissions
+      : (await fetchMetrics(hackathonId)).total_submissions;
 
     if (totalSubmissions === 0) {
       const narrative =
@@ -89,11 +108,18 @@ export async function POST(request: NextRequest) {
           : "No submissions have been received yet for this hackathon. Once builders start submitting their projects, this report will include participation health, submission quality distribution, popular tech stacks, and notable patterns.";
       return NextResponse.json({
         narrative,
-        raw_metrics: clientMetrics ?? { total_submissions: 0, submissions: [], top_categories: [], top_tech_stacks: [] },
+        raw_metrics: clientMetrics ?? {
+          total_submissions: 0,
+          submissions: [],
+          top_categories: [],
+          top_tech_stacks: [],
+        },
         generated_at: asOf,
         highlights: [
           "No submissions received yet",
-          hackathon?.name ? `Hackathon: ${hackathon.name}` : "Hackathon selected",
+          hackathon?.name
+            ? `Hackathon: ${hackathon.name}`
+            : "Hackathon selected",
         ],
       });
     }
@@ -107,7 +133,7 @@ export async function POST(request: NextRequest) {
             sponsor_tracks: hackathon.sponsor_tracks,
           },
           null,
-          2
+          2,
         )
       : "";
     const metricsBlock = clientMetrics
@@ -123,7 +149,7 @@ export async function POST(request: NextRequest) {
             top_tech_stacks: clientMetrics.top_tech_stacks,
           },
           null,
-          2
+          2,
         )
       : JSON.stringify(await fetchMetrics(hackathonId), null, 2);
 
@@ -155,7 +181,8 @@ Return JSON:
       highlights: result.highlights || [],
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "An unexpected error occurred";
+    const message =
+      error instanceof Error ? error.message : "An unexpected error occurred";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

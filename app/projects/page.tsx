@@ -62,7 +62,7 @@ function ArrowCircle({ size = 44 }: { size?: number }) {
 function ProjectRow({ project: p, index }: { project: StoredProject; index: number }) {
   return (
     <Link
-      href={`/viewer/projects/${p.project_id}`}
+      href={`/projects/${p.project_id}`}
       className="no-underline group"
     >
       <div

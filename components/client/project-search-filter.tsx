@@ -60,7 +60,7 @@ function ArrowCircle({ size = 44 }: { size?: number }) {
 // ─── Table row ────────────────────────────────────────────────────────────────
 function ProjectRow({ project: p, index }: { project: StoredProject; index: number }) {
   return (
-    <Link href={`/viewer/projects/${p.project_id}`} className="no-underline group">
+    <Link href={`/projects/${p.project_id}`} className="no-underline group">
       <div
         className="grid items-start py-7 border-b border-[#0F2C23]/12 transition-all duration-150 group-hover:bg-[#0F2C23]/[0.03] rounded-sm"
         style={{ gridTemplateColumns: "80px 1fr 1.6fr 56px", gap: "0 24px" }}

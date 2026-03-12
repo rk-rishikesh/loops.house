@@ -6,6 +6,11 @@
       "sourceType": "github",
       "computedHash": "1c40cac8fc7b0f3e4187881b256525ffc6b19fa4859f5f7847c9a87448ccf56a"
     },
+    "implement-design": {
+      "source": "figma/mcp-server-guide",
+      "sourceType": "github",
+      "computedHash": "2e87927b93592fbc1cf48a58d6359d2894ad5e7611f7e824233bf4f6bb84db61"
+    },
     "supabase-nextjs": {
       "source": "alinaqi/claude-bootstrap",
       "sourceType": "github",

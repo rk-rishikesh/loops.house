@@ -136,7 +136,7 @@ export default async function EventsPage() {
             description="View and manage the hackathons you are hosting, including submissions and judges."
           />
           <EventCard
-            href="/viewer"
+            href="/projects"
             label="Judge & Viewer"
             roleLabel="Judge"
             description="Browse and review projects you are judging or following."

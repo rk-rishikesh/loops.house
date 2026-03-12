@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Press_Start_2P, DM_Mono, Pixelify_Sans, Funnel_Sans } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  Press_Start_2P,
+  DM_Mono,
+  Pixelify_Sans,
+  Funnel_Sans,
+} from "next/font/google";
 import { SupabaseProvider } from "./providers";
-import { SideNav } from "@/components/side-nav";
+import { LayoutShell } from "@/components/layout-shell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -53,7 +60,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} ${dmMono.variable} ${pixelifySans.variable} ${funnelSans.variable}`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} ${dmMono.variable} ${pixelifySans.variable} ${funnelSans.variable}`}
+    >
       <body className="antialiased">
         {/* Mobile / small-screen blocker */}
         <div
@@ -74,17 +84,18 @@ export default function RootLayout({
             </p>
             <p
               className="text-sm leading-relaxed max-w-[320px] mx-auto"
-              style={{ fontFamily: "var(--font-funnel-sans), sans-serif", color: "rgba(15,44,35,0.7)" }}
+              style={{
+                fontFamily: "var(--font-funnel-sans), sans-serif",
+                color: "rgba(15,44,35,0.7)",
+              }}
             >
-              This experience is designed for desktop screens. Please switch to a laptop or desktop to continue.
+              This experience is designed for desktop screens. Please switch to
+              a laptop or desktop to continue.
             </p>
           </div>
         </div>
         <SupabaseProvider>
-          <div className="hidden md:block min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
-            <SideNav />
-            <div style={{ marginLeft: 96 }}>{children}</div>
-          </div>
+          <LayoutShell>{children}</LayoutShell>
         </SupabaseProvider>
       </body>
     </html>

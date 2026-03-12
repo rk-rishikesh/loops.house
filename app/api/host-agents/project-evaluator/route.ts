@@ -61,19 +61,19 @@ const DEFAULT_CRITERIA: JudgingCriterion[] = [
   {
     name: "Ideation & Problem Definition",
     description: "Is there a clear problem? Is the solution well-reasoned?",
-    weight: 0.20,
+    weight: 0.2,
     max_score: 100,
   },
   {
     name: "Uniqueness & Innovation",
     description: "Is this differentiated? Does it bring a fresh angle?",
-    weight: 0.20,
+    weight: 0.2,
     max_score: 100,
   },
   {
     name: "Product Readiness",
     description: "Does the demo work? Is there a UI? Is it documented?",
-    weight: 0.20,
+    weight: 0.2,
     max_score: 100,
   },
   {
@@ -91,11 +91,12 @@ export async function POST(request: NextRequest) {
   try {
     const input: EvaluatorInput = await request.json();
 
-    const hackathonId = input.hackathon_id ?? (input as { booster_id?: string }).booster_id;
+    const hackathonId =
+      input.hackathon_id ?? (input as { hackathon_id?: string }).hackathon_id;
     if (!input.project_id || !hackathonId) {
       return NextResponse.json(
         { error: "project_id and hackathon_id are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -108,11 +109,19 @@ export async function POST(request: NextRequest) {
       const parts = [
         `Project: ${p.name}`,
         p.tagline ? `Tagline: ${p.tagline}` : "",
-        p.refined_description || p.description ? `Description:\n${p.refined_description || p.description}` : "",
-        p.key_features?.length ? `Key features:\n${p.key_features.map((f) => `- ${f}`).join("\n")}` : "",
-        p.tech_stack_tags?.length ? `Tech stack: ${p.tech_stack_tags.join(", ")}` : "",
+        p.refined_description || p.description
+          ? `Description:\n${p.refined_description || p.description}`
+          : "",
+        p.key_features?.length
+          ? `Key features:\n${p.key_features.map((f) => `- ${f}`).join("\n")}`
+          : "",
+        p.tech_stack_tags?.length
+          ? `Tech stack: ${p.tech_stack_tags.join(", ")}`
+          : "",
         p.category ? `Category: ${p.category}` : "",
-        p.flattened_codebase ? `\n--- Code (excerpt) ---\n${p.flattened_codebase.slice(0, 50000)}` : "",
+        p.flattened_codebase
+          ? `\n--- Code (excerpt) ---\n${p.flattened_codebase.slice(0, 50000)}`
+          : "",
       ].filter(Boolean);
       kbSummary = parts.join("\n\n");
       kbSize = kbSummary.length;
@@ -121,8 +130,11 @@ export async function POST(request: NextRequest) {
       const chunks = await getChunks(input.project_id);
       if (!chunks || chunks.length === 0) {
         return NextResponse.json(
-          { error: "No knowledge base found for this project. Send project data from the Host Judging page or run profile-creator first." },
-          { status: 404 }
+          {
+            error:
+              "No knowledge base found for this project. Send project data from the Host Judging page or run profile-creator first.",
+          },
+          { status: 404 },
         );
       }
       kbSummary = chunks.map((c) => c.text).join("\n\n---\n\n");
@@ -135,7 +147,8 @@ export async function POST(request: NextRequest) {
 
     const criteriaScores: CriterionScore[] = [];
 
-    const hackathon = input.hackathon ?? (input as { booster?: HackathonPayload }).booster;
+    const hackathon =
+      input.hackathon ?? (input as { hackathon?: HackathonPayload }).hackathon;
     const hackathonBlock = hackathon
       ? `\nHACKATHON CONTEXT (use for Track/Sponsor Fit):\nName: ${hackathon.name}\nTheme: ${hackathon.theme ?? "N/A"}\nProblem statements: ${(hackathon.problem_statements ?? []).join("; ")}\nSponsor tracks: ${(hackathon.sponsor_tracks ?? []).map((t) => `${t.sponsor}: ${t.track_description}`).join("; ") || "N/A"}`
       : "";
@@ -177,11 +190,12 @@ Return JSON:
           criterion_name: criterion.name,
           score: Math.min(Math.max(result.score || 40, 0), criterion.max_score),
           max_score: criterion.max_score,
-          justification: result.justification || "Insufficient data for evaluation.",
+          justification:
+            result.justification || "Insufficient data for evaluation.",
           strength: result.strength || "N/A",
           improvement: result.improvement || "N/A",
         } satisfies CriterionScore;
-      })
+      }),
     );
     criteriaScores.push(...criteriaResults);
 
@@ -199,7 +213,10 @@ Overall: ${Math.round(overallScore)}/100
 
 Return JSON: { "summary": "the paragraph" }`;
 
-    const summaryResult = await generateJSON<{ summary: string }>("pro", summaryPrompt);
+    const summaryResult = await generateJSON<{ summary: string }>(
+      "pro",
+      summaryPrompt,
+    );
 
     const evalResult = {
       project_id: input.project_id,
@@ -227,7 +244,10 @@ Return JSON: { "summary": "the paragraph" }`;
       .maybeSingle();
 
     if (saveError) {
-      console.error("[project-evaluator] Failed to save ai_score:", saveError.message);
+      console.error(
+        "[project-evaluator] Failed to save ai_score:",
+        saveError.message,
+      );
     } else if (!updated) {
       // No submission row exists — create one via upsert
       const { data: profile } = await supabaseAdmin
@@ -250,12 +270,17 @@ Return JSON: { "summary": "the paragraph" }`;
             { onConflict: "hackathon_id,project_id" },
           );
         if (upsertError) {
-          console.error("[project-evaluator] Upsert fallback failed:", upsertError.message);
+          console.error(
+            "[project-evaluator] Upsert fallback failed:",
+            upsertError.message,
+          );
         } else {
           saved = true;
         }
       } else {
-        console.error("[project-evaluator] Cannot create submission — project has no team_id");
+        console.error(
+          "[project-evaluator] Cannot create submission — project has no team_id",
+        );
       }
     } else {
       saved = true;
@@ -263,7 +288,8 @@ Return JSON: { "summary": "the paragraph" }`;
 
     return NextResponse.json({ ...evalResult, saved });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "An unexpected error occurred";
+    const message =
+      error instanceof Error ? error.message : "An unexpected error occurred";
     console.error("project-evaluator error:", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }

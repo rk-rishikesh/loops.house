@@ -49,7 +49,7 @@ LoopsFlow is an AI-native developer platform ("permanent home for developer proj
 
 1. **Supabase clients** (`lib/supabase/`): Three client variants — `client.ts` (browser singleton), `server.ts` (SSR with cookies), `admin.ts` (service-role, bypasses RLS). Pick the right one based on context.
 
-2. **Data-access layer** (`lib/db/`): 10 CRUD modules — `teams`, `profiles`, `boosters`, `submissions`, `knowledge-base`, `booster-tracks`, `storage`, `rate-limiter`, `host-applications`, `judge-invites`. All use the admin client.
+2. **Data-access layer** (`lib/db/`): 10 CRUD modules — `teams`, `profiles`, `boosters`, `submissions`, `knowledge-base`, `hackathon-tracks`, `storage`, `rate-limiter`, `host-applications`, `judge-invites`. All use the admin client.
 
 3. **`lib/storage.ts`**: Async facade over `lib/db/*` modules that maps legacy `StoredProject`/`StoredBooster`/`StoredTeam` interfaces to DB rows. Client components import from here.
 
@@ -62,7 +62,7 @@ LoopsFlow is an AI-native developer platform ("permanent home for developer proj
 
 ### Form & Cache Layer
 
-- **`lib/validations/schemas.ts`**: Zod schemas for all forms and API validation (project, booster, team, admin, host-application, judge-invite).
+- **`lib/validations/schemas.ts`**: Zod schemas for all forms and API validation (project, hackathon, team, admin, host-application, judge-invite).
 - **`lib/types/json-schemas.ts`**: Typed schemas for JSON columns (`ColorsJson`, `LinkItem`, `SocialLinks`, etc.).
 - **`lib/queries.ts`**: TanStack Query hooks (`useProjects`, `useBoosters`, `useTeams`, etc.) with stale-while-revalidate caching.
 - **`lib/cache-config.ts`**: TanStack Query cache timing constants and default options.
@@ -80,9 +80,9 @@ LoopsFlow is an AI-native developer platform ("permanent home for developer proj
 app/
   admin/        Admin dashboard (users, applications)
   builder/      Builder role pages (projects, boosters, submissions)
-  host/         Host role pages (booster management, judging)
+  host/         Host role pages (hackathon management, judging)
   viewer/       Viewer role pages (project browsing)
-  boosters/     Public booster listings
+  boosters/     Public hackathon listings
   residency/    Residency program pages
   login/        Auth page (OAuth + email/password)
   auth/callback OAuth callback handler
@@ -110,25 +110,25 @@ Agent categories: `builder-agents/`, `host-agents/`, `viewer-agents/`, `devrel-a
 
 #### Gemini Client (`app/api/lib/gemini-client.ts`)
 
-| Export | Description |
-|--------|-------------|
-| `ai` | `GoogleGenAI` instance |
-| `MODELS` | `{ pro: "gemini-2.5-pro", flash: "gemini-2.0-flash", embedding: "gemini-embedding-001" }` |
-| `generateContent(model, contents, config?)` | Single-turn generation |
-| `generateJSON<T>(model, prompt, systemInstruction?)` | Structured JSON output (temperature 0.2) |
-| `streamContent(model, contents, config?)` | Streaming generation |
+| Export                                               | Description                                                                               |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `ai`                                                 | `GoogleGenAI` instance                                                                    |
+| `MODELS`                                             | `{ pro: "gemini-2.5-pro", flash: "gemini-2.0-flash", embedding: "gemini-embedding-001" }` |
+| `generateContent(model, contents, config?)`          | Single-turn generation                                                                    |
+| `generateJSON<T>(model, prompt, systemInstruction?)` | Structured JSON output (temperature 0.2)                                                  |
+| `streamContent(model, contents, config?)`            | Streaming generation                                                                      |
 
 Model tier is always passed explicitly: `"pro"`, `"flash"`, or `"embedding"`. Can be overridden via env vars.
 
 #### Shared Infrastructure (`app/api/lib/`)
 
-| File | Purpose |
-|------|---------|
-| `sse.ts` | `createSSEStream()` + `sseResponse()` for event-stream responses |
-| `rate-limiter.ts` | `checkRateLimit(key, max, windowMs)` — delegates to DB |
-| `embeddings.ts` | `embedText()`, `embedBatch()`, `cosineSimilarity()` — 768-dim |
+| File                | Purpose                                                                         |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `sse.ts`            | `createSSEStream()` + `sseResponse()` for event-stream responses                |
+| `rate-limiter.ts`   | `checkRateLimit(key, max, windowMs)` — delegates to DB                          |
+| `embeddings.ts`     | `embedText()`, `embedBatch()`, `cosineSimilarity()` — 768-dim                   |
 | `knowledge-base.ts` | `buildKnowledgeBase()`, `chunkText()` — chunks text, embeds, stores in pgvector |
-| `vector-store.ts` | `upsertChunks()`, `getChunks()`, `queryTopK()`, `hasProject()` |
+| `vector-store.ts`   | `upsertChunks()`, `getChunks()`, `queryTopK()`, `hasProject()`                  |
 
 #### Builder Agents (`app/api/builder-agents/`)
 
@@ -138,8 +138,8 @@ Model tier is always passed explicitly: `"pro"`, `"flash"`, or `"embedding"`. Ca
 
 #### Host Agents (`app/api/host-agents/`)
 
-- **booster-generator** — Generate a full booster program draft. Model: `"flash"`. JSON. Rate limit: 5/day.
-- **metric-analyst** — Analytics reports for booster submissions. Model: `"flash"`. JSON.
+- **hackathon-generator** — Generate a full hackathon program draft. Model: `"flash"`. JSON. Rate limit: 5/day.
+- **metric-analyst** — Analytics reports for hackathon submissions. Model: `"flash"`. JSON.
 - **project-evaluator** — AI judging against rubric criteria. Model: `"pro"`. JSON. Persists `ai_score` to submissions.
 - **resource-provisioner** — Technical resource plan for builders. Model: `"flash"`. JSON. Rate limit: 5/day.
 - **save-evaluation** — Persist evaluation scores (no AI, pure CRUD). JSON.
@@ -223,18 +223,21 @@ Page request
 ### Rules
 
 **Data fetching — always server-side for page loads:**
+
 - Fetch in `page.tsx` using `lib/server-data.ts` functions (`getProjectsServer()`, `getBoostersServer()`, etc.)
 - Use `Promise.all()` for parallel queries — never sequential awaits when data is independent
 - Pre-join/map data on the server before passing as props (e.g., build a `projectMap` Record for O(1) lookups)
 - Never use `useQuery()` for initial page data — TanStack Query is for secondary/interactive data only
 
 **Mutations — always Server Actions, never client-side:**
+
 - All writes go through `lib/actions.ts` Server Actions (e.g., `saveProjectAction`, `saveTeamAction`)
 - Server Actions authenticate with `getAuthUser()`, validate with Zod, mutate, then call `revalidatePath()`
 - Return `ActionResult<T>` (`{ success: true, data } | { success: false, error }`) — never throw
 - Client calls `router.refresh()` after a successful action to get fresh SSR data
 
 **Forms — react-hook-form + Zod + Server Action:**
+
 - Use `useForm({ resolver: zodResolver(schema) })` from `lib/validations/schemas.ts`
 - Wrap Server Action call in `useTransition()` for pending state — no extra `useState` for loading
 - On success: `reset()` form + `router.refresh()` or navigate
@@ -242,15 +245,16 @@ Page request
 
 **Supabase client selection:**
 
-| Context | Client | Import |
-|---------|--------|--------|
-| Server components / `page.tsx` | `createServerSupabase()` | `lib/supabase/server.ts` |
-| Server Actions (`lib/actions.ts`) | `createServerSupabase()` | `lib/supabase/server.ts` |
-| API routes | `requireAuth()` | `lib/supabase/middleware.ts` |
-| Data-access layer (`lib/db/*`) | `supabaseAdmin` | `lib/supabase/admin.ts` |
-| Browser client components | `sb()` via `lib/storage.ts` | `lib/supabase/client.ts` |
+| Context                           | Client                      | Import                       |
+| --------------------------------- | --------------------------- | ---------------------------- |
+| Server components / `page.tsx`    | `createServerSupabase()`    | `lib/supabase/server.ts`     |
+| Server Actions (`lib/actions.ts`) | `createServerSupabase()`    | `lib/supabase/server.ts`     |
+| API routes                        | `requireAuth()`             | `lib/supabase/middleware.ts` |
+| Data-access layer (`lib/db/*`)    | `supabaseAdmin`             | `lib/supabase/admin.ts`      |
+| Browser client components         | `sb()` via `lib/storage.ts` | `lib/supabase/client.ts`     |
 
 **Auth in server components:**
+
 - Use `getServerAuth()` from `lib/server-auth.ts` — reads the `x-user-role` cookie set by middleware (zero DB round-trip)
 - Falls back to DB query if cookie is missing
 - Returns `{ userId, role }` or `null`

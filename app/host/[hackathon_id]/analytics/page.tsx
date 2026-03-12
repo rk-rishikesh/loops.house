@@ -6,22 +6,26 @@ import { AnalyticsReportGenerator } from "@/components/client/analytics-report-g
 export default async function HostBoosterAnalyticsPage({
   params,
 }: {
-  params: Promise<{ booster_id: string }>;
+  params: Promise<{ hackathon_id: string }>;
 }) {
   const auth = await getServerAuth();
   if (!auth || !["host", "admin"].includes(auth.role)) {
     redirect("/login");
   }
 
-  const { booster_id } = await params;
-  if (!booster_id.includes("-")) {
+  const { hackathon_id } = await params;
+  if (!hackathon_id.includes("-")) {
     redirect("/host");
   }
-  const hackathon = await getHackathonServer(booster_id);
+  const hackathon = await getHackathonServer(hackathon_id);
   if (!hackathon) {
     redirect("/host");
   }
 
-  return <AnalyticsReportGenerator hackathon={hackathon} backHref={`/host/${hackathon.id}`} />;
+  return (
+    <AnalyticsReportGenerator
+      hackathon={hackathon}
+      backHref={`/host/${hackathon.id}`}
+    />
+  );
 }
-

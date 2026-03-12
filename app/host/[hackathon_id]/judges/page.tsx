@@ -6,19 +6,19 @@ import { JudgeInviteForm } from "@/components/client/judge-invite-form";
 export default async function HostBoosterJudgesPage({
   params,
 }: {
-  params: Promise<{ booster_id: string }>;
+  params: Promise<{ hackathon_id: string }>;
 }) {
   const auth = await getServerAuth();
   if (!auth || !["host", "admin"].includes(auth.role)) {
     redirect("/login");
   }
 
-  const { booster_id } = await params;
-  if (!booster_id.includes("-")) {
+  const { hackathon_id } = await params;
+  if (!hackathon_id.includes("-")) {
     redirect("/host");
   }
 
-  const hackathon = await getHackathonServer(booster_id);
+  const hackathon = await getHackathonServer(hackathon_id);
   if (!hackathon) {
     redirect("/host");
   }

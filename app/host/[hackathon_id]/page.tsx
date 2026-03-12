@@ -31,32 +31,27 @@ function ArrowCircle({
 export default async function HostBoosterPage({
   params,
 }: {
-  params: Promise<{ booster_id: string }>;
+  params: Promise<{ hackathon_id: string }>;
 }) {
   const auth = await getServerAuth();
-  if (!auth || !["host", "admin"].includes(auth.role)) {
+  if (!auth || !["host", "admin", "judge"].includes(auth.role)) {
     redirect("/login");
   }
 
-  const { booster_id } = await params;
+  const { hackathon_id } = await params;
   // Guard against malformed IDs (eg. "/host/boosters")
-  if (!booster_id.includes("-")) {
+  if (!hackathon_id.includes("-")) {
     redirect("/host");
   }
-  const [booster, projects, submissions] = await Promise.all([
-    getHackathonServer(booster_id),
+  const [hackathon, projects, submissions] = await Promise.all([
+    getHackathonServer(hackathon_id),
     getProjectsServer(),
-    getSubmissionsServer(booster_id),
+    getSubmissionsServer(hackathon_id),
   ]);
 
-  if (!booster) {
+  if (!hackathon) {
     redirect("/host");
   }
-
-  const projectMap: Record<string, (typeof projects)[0]> = {};
-  projects.forEach((p: (typeof projects)[0]) => {
-    projectMap[p.project_id] = p;
-  });
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
@@ -76,7 +71,7 @@ export default async function HostBoosterPage({
             </span>
           </Link>
           <div className="flex-1 min-w-0 py-8 flex items-center justify-end px-10 gap-4">
-            <span>{booster.name}</span>
+            <span>{hackathon.name}</span>
           </div>
         </div>
       </div>
@@ -92,7 +87,7 @@ export default async function HostBoosterPage({
               letterSpacing: "-0.025em",
             }}
           >
-            {booster.name}
+            {hackathon.name}
           </h1>
           <div className="flex justify-end mt-6">
             <p
@@ -102,7 +97,8 @@ export default async function HostBoosterPage({
                 fontSize: "clamp(14px, 1.5vw, 18px)",
               }}
             >
-              Hackathon-level view. See analytics and submissions for this specific hackathon.
+              Hackathon-level view. See analytics and submissions for this
+              specific hackathon.
             </p>
           </div>
         </div>
@@ -110,7 +106,7 @@ export default async function HostBoosterPage({
         {/* ── Quick actions ────────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
           <Link
-            href={`/host/${booster.id}/analytics`}
+            href={`/host/${hackathon.id}/analytics`}
             className="group no-underline"
           >
             <div
@@ -159,10 +155,7 @@ export default async function HostBoosterPage({
             </div>
           </Link>
 
-          <Link
-            href={`/host/application`}
-            className="group no-underline"
-          >
+          <Link href={`/host/application`} className="group no-underline">
             <div
               className="rounded-3xl p-7 flex flex-col justify-between transition-all duration-200 group-hover:scale-[1.01]"
               style={{ backgroundColor: "#2d4a3e", minHeight: 200 }}
@@ -198,7 +191,7 @@ export default async function HostBoosterPage({
           </Link>
 
           <Link
-            href={`/host/${booster.id}/judges`}
+            href={`/host/${hackathon.id}/judges`}
             className="group no-underline"
           >
             <div
@@ -243,7 +236,8 @@ export default async function HostBoosterPage({
                 className="text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/30"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
-                {submissions.length} submission{submissions.length !== 1 ? "s" : ""}
+                {submissions.length} submission
+                {submissions.length !== 1 ? "s" : ""}
               </span>
             )}
           </div>
@@ -288,12 +282,18 @@ export default async function HostBoosterPage({
                 className="text-[#2d4a3e]/50 leading-relaxed"
                 style={{ fontFamily: "Georgia, serif", fontSize: 15 }}
               >
-                Once builders submit to this hackathon, they&apos;ll appear here for grading.
+                Once builders submit to this hackathon, they&apos;ll appear here
+                for grading.
               </p>
             </div>
           ) : (
             submissions.map((sub, idx) => {
-              const project = projectMap[sub.project_id];
+              const project = projects.find(
+                (p) => p.project_id === sub.project_id,
+              );
+              if (!project) {
+                return null;
+              }
               return (
                 <div
                   key={sub.id}
@@ -333,7 +333,7 @@ export default async function HostBoosterPage({
                   </div>
                   <div className="flex justify-end">
                     <Link
-                      href={`/host/${booster.id}/judging/${sub.project_id}`}
+                      href={`/host/${hackathon.id}/judging/${sub.project_id}`}
                       className="group inline-flex items-center gap-0 rounded-full overflow-hidden no-underline transition-all duration-200 hover:shadow-md"
                       style={{ backgroundColor: "#2d4a3e" }}
                     >
@@ -361,4 +361,3 @@ export default async function HostBoosterPage({
     </div>
   );
 }
-

@@ -4,9 +4,24 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  LayoutGrid, Zap, FolderOpen, Users, Eye, Settings, LogOut, ArrowLeft,
-  Sparkles, GraduationCap, Info, Mic2, CalendarDays, Trophy, Send,
-  Pencil, Share2, Globe,
+  LayoutGrid,
+  Zap,
+  FolderOpen,
+  Users,
+  Eye,
+  Settings,
+  LogOut,
+  ArrowLeft,
+  Sparkles,
+  GraduationCap,
+  Info,
+  Mic2,
+  CalendarDays,
+  Trophy,
+  Send,
+  Pencil,
+  Share2,
+  Globe,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -18,34 +33,41 @@ import type { LucideIcon } from "lucide-react";
    Config — define nav items for each context
    ═══════════════════════════════════════════════════════════════════ */
 
-
-interface NavItem  { href: string; icon: LucideIcon; label: string }
-interface TabItem  { key: string;  icon: LucideIcon; label: string }
+interface NavItem {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+}
+interface TabItem {
+  key: string;
+  icon: LucideIcon;
+  label: string;
+}
 
 const GLOBAL_NAV: NavItem[] = [
-  { href: "/builder",          icon: LayoutGrid, label: "Dashboard" },
-  { href: "/hackathons",        icon: Zap,        label: "Hackathons" },
+  { href: "/builder", icon: LayoutGrid, label: "Dashboard" },
+  { href: "/hackathons", icon: Zap, label: "Hackathons" },
   { href: "/builder/projects", icon: FolderOpen, label: "Projects" },
-  { href: "/events",           icon: CalendarDays, label: "My Events" },
-  { href: "/host",             icon: Users,      label: "Host" },
-  { href: "/viewer",           icon: Eye,        label: "Viewer" },
-  { href: "/residency",        icon: Settings,   label: "Residency" },
+  { href: "/events", icon: CalendarDays, label: "My Events" },
+  { href: "/host", icon: Users, label: "Host" },
+  { href: "/projects", icon: Eye, label: "Projects" },
+  { href: "/residency", icon: Settings, label: "Residency" },
 ];
 
 const HACKATHON_TABS: TabItem[] = [
-  { key: "ideator",  icon: Sparkles,      label: "Ideator" },
-  { key: "mentor",   icon: GraduationCap, label: "Mentor" },
-  { key: "info",     icon: Info,          label: "Info" },
-  { key: "speakers", icon: Mic2,          label: "Speakers" },
-  { key: "schedule", icon: CalendarDays,  label: "Schedule" },
-  { key: "prizes",   icon: Trophy,        label: "Prizes" },
-  { key: "submit",   icon: Send,          label: "Submit" },
+  { key: "ideator", icon: Sparkles, label: "Ideator" },
+  { key: "mentor", icon: GraduationCap, label: "Mentor" },
+  { key: "info", icon: Info, label: "Info" },
+  { key: "speakers", icon: Mic2, label: "Speakers" },
+  { key: "schedule", icon: CalendarDays, label: "Schedule" },
+  { key: "prizes", icon: Trophy, label: "Prizes" },
+  { key: "submit", icon: Send, label: "Submit" },
 ];
 
 const PROJECT_TABS: TabItem[] = [
-  { key: "edit",   icon: Pencil, label: "Edit" },
-  { key: "share",  icon: Share2, label: "Share" },
-  { key: "public", icon: Globe,  label: "Public URL" },
+  { key: "edit", icon: Pencil, label: "Edit" },
+  { key: "share", icon: Share2, label: "Share" },
+  { key: "public", icon: Globe, label: "Public URL" },
 ];
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -56,7 +78,12 @@ type NavContext =
   | { kind: "global" }
   | { kind: "hackathon"; backHref: string; tabs: TabItem[]; defaultTab: string }
   | { kind: "project"; backHref: string; tabs: TabItem[]; defaultTab: string }
-  | { kind: "hostBooster"; backHref: string; tabs: TabItem[]; defaultTab: string };
+  | {
+      kind: "hostHackathon";
+      backHref: string;
+      tabs: TabItem[];
+      defaultTab: string;
+    };
 
 function resolveNavContext(pathname: string): NavContext {
   // Hackathon-scoped project editor: /hackathons/[id]/project/[projectId]
@@ -97,11 +124,11 @@ function resolveNavContext(pathname: string): NavContext {
     };
   }
 
-  // Host booster context: /host/[booster_id] (and nested), excluding /host/application
+  // Host hackathon context: /host/[hackathon_id] (and nested), excluding /host/application
   const hostMatch = pathname.match(/^\/host\/([^/]+)(?:\/.*)?$/);
   if (hostMatch && hostMatch[1] !== "application") {
     return {
-      kind: "hostBooster",
+      kind: "hostHackathon",
       backHref: "/host",
       tabs: [{ key: "applications", icon: Users, label: "Applications" }],
       defaultTab: "applications",
@@ -120,15 +147,19 @@ function isGlobalActive(href: string, pathname: string) {
    Shared style helpers
    ═══════════════════════════════════════════════════════════════════ */
 
-const ACTIVE_BG   = "rgba(226,254,165,0.12)";
-const HOVER_BG    = "rgba(226,254,165,0.08)";
-const COLOR_ON    = "#E2FEA5";
-const COLOR_OFF   = "rgba(226,254,165,0.35)";
+const ACTIVE_BG = "rgba(226,254,165,0.12)";
+const HOVER_BG = "rgba(226,254,165,0.08)";
+const COLOR_ON = "#E2FEA5";
+const COLOR_OFF = "rgba(226,254,165,0.35)";
 
 function hoverHandlers(hoverBg = HOVER_BG) {
   return {
-    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.backgroundColor = hoverBg; },
-    onMouseLeave: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.backgroundColor = "transparent"; },
+    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
+      e.currentTarget.style.backgroundColor = hoverBg;
+    },
+    onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
+      e.currentTarget.style.backgroundColor = "transparent";
+    },
   };
 }
 
@@ -147,7 +178,11 @@ function ActiveBar() {
 
 function LogoButton() {
   return (
-    <Link href="/" className="w-10 h-10 flex items-center justify-center rounded-xl no-underline mb-4" title="Home">
+    <Link
+      href="/"
+      className="w-10 h-10 flex items-center justify-center rounded-xl no-underline mb-4"
+      title="Home"
+    >
       <Image src="/logo.svg" alt="Loops" width={20} height={20} />
     </Link>
   );
@@ -180,7 +215,10 @@ function GlobalNavItems({ pathname }: { pathname: string }) {
             style={{ backgroundColor: active ? ACTIVE_BG : "transparent" }}
             title={item.label}
           >
-            <item.icon size={18} style={{ color: active ? COLOR_ON : COLOR_OFF }} />
+            <item.icon
+              size={18}
+              style={{ color: active ? COLOR_ON : COLOR_OFF }}
+            />
             {active && <ActiveBar />}
           </Link>
         );
@@ -189,7 +227,13 @@ function GlobalNavItems({ pathname }: { pathname: string }) {
   );
 }
 
-function HashTabItems({ tabs, activeHash }: { tabs: TabItem[]; activeHash: string }) {
+function HashTabItems({
+  tabs,
+  activeHash,
+}: {
+  tabs: TabItem[];
+  activeHash: string;
+}) {
   return (
     <>
       {tabs.map((tab) => {
@@ -202,7 +246,10 @@ function HashTabItems({ tabs, activeHash }: { tabs: TabItem[]; activeHash: strin
             style={{ backgroundColor: active ? ACTIVE_BG : "transparent" }}
             title={tab.label}
           >
-            <tab.icon size={18} style={{ color: active ? COLOR_ON : COLOR_OFF }} />
+            <tab.icon
+              size={18}
+              style={{ color: active ? COLOR_ON : COLOR_OFF }}
+            />
             {active && <ActiveBar />}
           </a>
         );
@@ -220,12 +267,15 @@ export function SideNav() {
   const ctx = resolveNavContext(pathname);
 
   const [loggingOut, setLoggingOut] = useState(false);
-  const [activeHash, setActiveHash] = useState(ctx.kind !== "global" ? ctx.defaultTab : "");
+  const [activeHash, setActiveHash] = useState(
+    ctx.kind !== "global" ? ctx.defaultTab : "",
+  );
   const lockRef = useRef(false);
 
   useEffect(() => {
     if (ctx.kind === "global") return;
-    const read = () => setActiveHash(window.location.hash.replace("#", "") || ctx.defaultTab);
+    const read = () =>
+      setActiveHash(window.location.hash.replace("#", "") || ctx.defaultTab);
     read();
     window.addEventListener("hashchange", read);
     return () => window.removeEventListener("hashchange", read);
@@ -235,7 +285,11 @@ export function SideNav() {
     if (lockRef.current) return;
     lockRef.current = true;
     setLoggingOut(true);
-    try { await signOut(); } catch { /* non-fatal */ }
+    try {
+      await signOut();
+    } catch {
+      /* non-fatal */
+    }
     clearAuthCookies();
     window.location.href = "/login";
   }
@@ -243,7 +297,14 @@ export function SideNav() {
   return (
     <nav
       className="fixed left-0 top-0 hidden md:flex flex-col items-center justify-between py-5 px-2 z-50"
-      style={{ width: 64, height: "calc(100vh - 32px)", top: 16, left: 16, backgroundColor: "#0F2C23", borderRadius: 15 }}
+      style={{
+        width: 64,
+        height: "calc(100vh - 32px)",
+        top: 16,
+        left: 16,
+        backgroundColor: "#0F2C23",
+        borderRadius: 15,
+      }}
     >
       {/* Top section */}
       <div className="flex flex-col items-center gap-1">
@@ -254,8 +315,8 @@ export function SideNav() {
               ctx.kind === "hackathon"
                 ? "Back to list"
                 : ctx.kind === "project"
-                ? "Back to projects"
-                : "Back to host"
+                  ? "Back to projects"
+                  : "Back to host"
             }
           />
         ) : (
@@ -263,10 +324,11 @@ export function SideNav() {
         )}
 
         <div className="flex flex-col items-center gap-5">
-          {ctx.kind !== "global"
-            ? <HashTabItems tabs={ctx.tabs} activeHash={activeHash} />
-            : <GlobalNavItems pathname={pathname} />
-          }
+          {ctx.kind !== "global" ? (
+            <HashTabItems tabs={ctx.tabs} activeHash={activeHash} />
+          ) : (
+            <GlobalNavItems pathname={pathname} />
+          )}
         </div>
       </div>
 

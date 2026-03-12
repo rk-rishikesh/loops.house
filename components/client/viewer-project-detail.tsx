@@ -747,7 +747,7 @@ export function ViewerProjectDetail({
 
   if (!project) return (
     <div className="min-h-screen px-10 py-12" style={{ backgroundColor: "#F8FFE8" }}>
-      <Link href="/viewer" className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#0F2C23]/50 hover:text-[#0F2C23] transition-colors no-underline" style={{ fontFamily: PX }}>
+      <Link href="/projects" className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#0F2C23]/50 hover:text-[#0F2C23] transition-colors no-underline" style={{ fontFamily: PX }}>
         <ArrowLeft size={12} /> Explore
       </Link>
       <p className="mt-10 text-[#0F2C23]/50" style={{ fontFamily: FN }}>Project not found.</p>

@@ -73,7 +73,7 @@ function SocialGeneratorContent({
           tech_stack_tags: project.tech_stack_tags ?? [],
           category: project.category ?? "Other",
           key_features: project.key_features ?? [],
-          loops_profile_url: `${origin}/viewer/projects/${data.project_id}`,
+          loops_profile_url: `${origin}/projects/${data.project_id}`,
         },
         tone: data.tone,
       };

@@ -73,7 +73,7 @@ export async function saveProjectAction(
   }
 
   revalidatePath("/builder/projects");
-  revalidatePath("/viewer");
+  revalidatePath("/projects");
   return { success: true, data: undefined };
 }
 

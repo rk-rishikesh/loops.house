@@ -37,7 +37,7 @@ export async function analyzeYoutube(
     ? `6. Compare the project against this problem statement and assess alignment (high/medium/low with reason): "${problemStatement}"`
     : "";
 
-  const extractionPrompt = `You are a YouTube Demo Analyst for booster project submissions.
+  const extractionPrompt = `You are a YouTube Demo Analyst for hackathon project submissions.
 Analyze the provided YouTube video and extract structured information.
 
 TASKS:

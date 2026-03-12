@@ -247,7 +247,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
 
     startGenerating(async () => {
       try {
-        const res = await fetch("/api/host-agents/booster-generator", {
+        const res = await fetch("/api/host-agents/hackathon-generator", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ hackathon: hackathonPayload }),

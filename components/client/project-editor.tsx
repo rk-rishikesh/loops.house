@@ -309,7 +309,7 @@ export function ProjectEditor({
             tech_stack_tags: project.tech_stack_tags || [],
             category: project.category || "",
             key_features: project.key_features || [],
-            loops_profile_url: `/viewer/projects/${projectId}`,
+            loops_profile_url: `/projects/${projectId}`,
           },
           tone: "excited",
         }),
@@ -332,7 +332,7 @@ export function ProjectEditor({
       const h = window.location.hash.replace("#", "");
       if (!h) return;
       if (h === "public") {
-        window.open(`/viewer/projects/${projectId}`, "_blank");
+        window.open(`/projects/${projectId}`, "_blank");
         history.replaceState(null, "", window.location.pathname);
         return;
       }

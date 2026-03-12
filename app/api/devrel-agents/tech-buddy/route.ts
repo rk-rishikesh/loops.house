@@ -58,14 +58,17 @@ RULES:
 
 export async function loadResources(
   hackathonId: string,
-  bundle: ResourceBundle
+  bundle: ResourceBundle,
 ): Promise<void> {
   const chunks: { text: string; source: string }[] = [];
 
   for (const track of bundle.sponsor_tracks) {
     const trackChunks = splitIntoChunks(track.docs_text, 800);
     for (const chunk of trackChunks) {
-      chunks.push({ text: chunk, source: `${track.sponsor_name} - ${track.track_name}` });
+      chunks.push({
+        text: chunk,
+        source: `${track.sponsor_name} - ${track.track_name}`,
+      });
     }
     if (track.api_endpoints?.length) {
       chunks.push({
@@ -118,7 +121,7 @@ function splitIntoChunks(text: string, maxWords: number): string[] {
 async function retrieveChunks(
   hackathonId: string,
   query: string,
-  topK: number = 5
+  topK: number = 5,
 ): Promise<{ text: string; source: string; score: number }[]> {
   const resources = hackathonResources.get(hackathonId);
   if (!resources || resources.length === 0) return [];
@@ -156,11 +159,12 @@ export async function POST(request: NextRequest) {
     }
 
     const input: TechBuddyInput = body;
-    const bid = input.hackathon_id ?? (input as { booster_id?: string }).booster_id;
+    const bid =
+      input.hackathon_id ?? (input as { hackathon_id?: string }).hackathon_id;
     if (!input.message || !bid) {
       return new Response(
         JSON.stringify({ error: "message and hackathon_id are required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -169,7 +173,7 @@ export async function POST(request: NextRequest) {
     if (retrieved.length === 0) {
       return new Response(
         JSON.stringify({ response: NO_INFO_RESPONSE, sources: [] }),
-        { headers: { "Content-Type": "application/json" } }
+        { headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -205,13 +209,15 @@ export async function POST(request: NextRequest) {
           for await (const chunk of response) {
             const text = chunk.text;
             if (text) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ text })}\n\n`),
+              );
             }
           }
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ sources: retrieved.map((r) => r.source) })}\n\n`
-            )
+              `data: ${JSON.stringify({ sources: retrieved.map((r) => r.source) })}\n\n`,
+            ),
           );
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
@@ -229,7 +235,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "An unexpected error occurred";
+    const message =
+      error instanceof Error ? error.message : "An unexpected error occurred";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -19,7 +18,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { getProject, getHackathon } from "@/lib/storage";
-import type { StoredProject, StoredHackathon, StoredSubmission } from "@/lib/data-mappers";
+import type {
+  StoredProject,
+  StoredHackathon,
+  StoredSubmission,
+} from "@/lib/data-mappers";
 import {
   judgingEvalSchema,
   type JudgingEvalSchema,
@@ -355,10 +358,19 @@ function CriteriaCard({
 
 /* ─── Default criteria (stable reference, avoids re-creation) ──── */
 const DEFAULT_CRITERIA: { name: string; description: string }[] = [
-  { name: "Innovation", description: "Novelty and originality of the solution" },
-  { name: "Technical Execution", description: "Code quality, architecture, and implementation" },
+  {
+    name: "Innovation",
+    description: "Novelty and originality of the solution",
+  },
+  {
+    name: "Technical Execution",
+    description: "Code quality, architecture, and implementation",
+  },
   { name: "Impact", description: "Potential real-world impact and usefulness" },
-  { name: "Presentation", description: "Quality of demo, documentation, and communication" },
+  {
+    name: "Presentation",
+    description: "Quality of demo, documentation, and communication",
+  },
 ];
 
 /* ─── Empty stable references (avoid Object.is false on every render) */
@@ -366,11 +378,21 @@ const EMPTY_SCORES: Record<string, number> = {};
 const EMPTY_REMARKS: Record<string, string> = {};
 
 /* ─── Parse submission JSONB into component state ─────────────── */
-type HumanCriterion = { name: string; description: string; score: number; remark: string };
+type HumanCriterion = {
+  name: string;
+  description: string;
+  score: number;
+  remark: string;
+};
 
-function parseAiScore(raw: Record<string, unknown> | null | undefined): EvalResult | null {
-  if (!raw || typeof raw !== "object" || typeof raw.overall_score !== "number") return null;
-  const rawCriteria = raw.criteria_scores as Array<Record<string, unknown>> | undefined;
+function parseAiScore(
+  raw: Record<string, unknown> | null | undefined,
+): EvalResult | null {
+  if (!raw || typeof raw !== "object" || typeof raw.overall_score !== "number")
+    return null;
+  const rawCriteria = raw.criteria_scores as
+    | Array<Record<string, unknown>>
+    | undefined;
   return {
     overall_score: raw.overall_score as number,
     overall_summary: (raw.overall_summary as string) ?? undefined,
@@ -391,10 +413,16 @@ function parseHumanScore(raw: Record<string, unknown> | null | undefined): {
   criteria: HumanCriterion[];
   notes: string;
 } {
-  if (!raw || typeof raw !== "object" || typeof raw.overall_score !== "number") {
+  if (
+    !raw ||
+    typeof raw !== "object" ||
+    typeof raw.overall_score !== "number"
+  ) {
     return { saved: false, criteria: [], notes: "" };
   }
-  const savedCriteria = raw.criteria as Array<Record<string, unknown>> | undefined;
+  const savedCriteria = raw.criteria as
+    | Array<Record<string, unknown>>
+    | undefined;
   return {
     saved: true,
     criteria: (savedCriteria ?? []).map((c) => ({
@@ -409,13 +437,13 @@ function parseHumanScore(raw: Record<string, unknown> | null | undefined): {
 
 /* ─── Page wrapper ───────────────────────────────────────────────── */
 export function JudgingForm({
-  projects,
-  hackathons,
-  initialSubmission,
+  project,
+  hackathon,
+  submission,
 }: {
-  projects: StoredProject[];
-  hackathons: StoredHackathon[];
-  initialSubmission?: StoredSubmission | null;
+  project: StoredProject;
+  hackathon: StoredHackathon;
+  submission: StoredSubmission;
 }) {
   return (
     <Suspense
@@ -432,47 +460,40 @@ export function JudgingForm({
         </div>
       }
     >
-      <JudgingFormContent projects={projects} hackathons={hackathons} initialSubmission={initialSubmission} />
+      <JudgingFormContent
+        project={project}
+        hackathon={hackathon}
+        submission={submission}
+      />
     </Suspense>
   );
 }
 
 /* ─── Page content ───────────────────────────────────────────────── */
 function JudgingFormContent({
-  projects,
-  hackathons,
-  initialSubmission,
+  project,
+  hackathon,
+  submission,
 }: {
-  projects: StoredProject[];
-  hackathons: StoredHackathon[];
-  initialSubmission?: StoredSubmission | null;
+  project: StoredProject;
+  hackathon: StoredHackathon;
+  submission: StoredSubmission;
 }) {
-  const searchParams = useSearchParams();
-
-  // Parse server-provided initial submission data
-  const initialAi = initialSubmission ? parseAiScore(initialSubmission.ai_score) : null;
-  const initialHuman = initialSubmission ? parseHumanScore(initialSubmission.human_score) : null;
-
-  const [humanScores, setHumanScores] = useState<Record<string, number>>(EMPTY_SCORES);
-  const [humanRemarks, setHumanRemarks] = useState<Record<string, string>>(EMPTY_REMARKS);
+  const [humanScores, setHumanScores] =
+    useState<Record<string, number>>(EMPTY_SCORES);
+  const [humanRemarks, setHumanRemarks] =
+    useState<Record<string, string>>(EMPTY_REMARKS);
   const [humanSaved, setHumanSaved] = useState(false);
 
   /* ── Persisted evaluation data loaded from DB ────────────────── */
-  const [savedAiResult, setSavedAiResult] = useState<EvalResult | null>(initialAi);
+  const [savedAiResult, setSavedAiResult] = useState<EvalResult | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   /* ── Human evaluation (standalone) state ─────────────────────── */
   const [humanEvalOpen, setHumanEvalOpen] = useState(false);
-  const [humanEvalSaved, setHumanEvalSaved] = useState(initialHuman?.saved ?? false);
-  const [humanCriteria, setHumanCriteria] = useState<HumanCriterion[]>(initialHuman?.criteria ?? []);
-  const [humanOverallNotes, setHumanOverallNotes] = useState(initialHuman?.notes ?? "");
-
-  // Controlled state for selection — avoids react-hook-form watch() reactivity
-  // issues that can cascade into infinite re-render loops.
-  const initialProjectId = searchParams.get("project_id") ?? "";
-  const initialHackathonId = searchParams.get("hackathon_id") ?? "";
-  const [projectId, setProjectId] = useState(initialProjectId);
-  const [hackathonId, setHackathonId] = useState(initialHackathonId);
+  const [humanEvalSaved, setHumanEvalSaved] = useState(false);
+  const [humanCriteria, setHumanCriteria] = useState<HumanCriterion[]>([]);
+  const [humanOverallNotes, setHumanOverallNotes] = useState("");
 
   const {
     register,
@@ -482,30 +503,11 @@ function JudgingFormContent({
   } = useForm<JudgingEvalSchema>({
     resolver: zodResolver(judgingEvalSchema),
     defaultValues: {
-      project_id: initialProjectId,
-      hackathon_id: initialHackathonId,
+      project_id: project.project_id,
+      hackathon_id: hackathon.id,
       mode: "official",
     },
   });
-
-  // Fallback initialization — only runs when no URL params and data loads
-  const firstProjectId = projects[0]?.project_id ?? "";
-  const firstHackathonId = hackathons[0]?.id ?? "";
-
-  useEffect(() => {
-    if (projectId || !firstProjectId) return;
-    setProjectId(firstProjectId);
-    setValue("project_id", firstProjectId);
-  }, [projectId, firstProjectId, setValue]);
-
-  useEffect(() => {
-    if (hackathonId || !firstHackathonId) return;
-    setHackathonId(firstHackathonId);
-    setValue("hackathon_id", firstHackathonId);
-  }, [hackathonId, firstHackathonId, setValue]);
-
-  const selectedProject = projects.find((p) => p.project_id === projectId);
-  const selectedHackathon = hackathons.find((b) => b.id === hackathonId);
 
   const evalMutation = useMutation({
     mutationFn: async (data: JudgingEvalSchema): Promise<EvalResult> => {
@@ -550,7 +552,11 @@ function JudgingFormContent({
       setHumanRemarks(EMPTY_REMARKS);
       setHumanSaved(false);
       setSavedAiResult(data);
-      setSaveError(data.saved === false ? "AI evaluation completed but failed to save to database." : null);
+      setSaveError(
+        data.saved === false
+          ? "AI evaluation completed but failed to save to database."
+          : null,
+      );
     },
   });
 
@@ -572,8 +578,8 @@ function JudgingFormContent({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          project_id: projectId,
-          hackathon_id: hackathonId,
+          project_id: project.project_id,
+          hackathon_id: hackathon.id,
           human_score: payload,
         }),
       });
@@ -615,8 +621,8 @@ function JudgingFormContent({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          project_id: projectId,
-          hackathon_id: hackathonId,
+          project_id: project.project_id,
+          hackathon_id: hackathon.id,
           human_score: payload,
           status: "scored",
         }),
@@ -633,7 +639,7 @@ function JudgingFormContent({
 
   /* ── Load saved evaluations when selection changes ────────────── */
   useEffect(() => {
-    if (!projectId || !hackathonId) return;
+    if (!project.project_id || !hackathon.id) return;
 
     // Reset transient state (React 18+ batches these into one re-render)
     setHumanEvalOpen(false);
@@ -653,46 +659,59 @@ function JudgingFormContent({
       const { data, error: queryError } = await supabase
         .from("submissions")
         .select("ai_score, human_score")
-        .eq("project_id", projectId)
-        .eq("hackathon_id", hackathonId)
+        .eq("project_id", project.project_id)
+        .eq("hackathon_id", hackathon.id)
         .maybeSingle();
 
       if (queryError) {
-        console.error("[judging-form] Failed to load evaluations:", queryError.message);
+        console.error(
+          "[judging-form] Failed to load evaluations:",
+          queryError.message,
+        );
       }
       if (cancelled || !data) return;
 
       const ai = parseAiScore(data.ai_score as Record<string, unknown> | null);
       if (ai) setSavedAiResult(ai);
 
-      const human = parseHumanScore(data.human_score as Record<string, unknown> | null);
+      const human = parseHumanScore(
+        data.human_score as Record<string, unknown> | null,
+      );
       if (human.saved) {
         setHumanEvalSaved(true);
         setHumanCriteria(human.criteria);
         setHumanOverallNotes(human.notes);
       }
     })();
-    return () => { cancelled = true; };
-  }, [projectId, hackathonId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [project.project_id, hackathon.id]);
 
   /* ── Initialize human criteria from hackathon ─────────────────── */
   const initHumanCriteria = useCallback(() => {
     const source =
-      selectedHackathon?.judging_criteria && selectedHackathon.judging_criteria.length > 0
-        ? selectedHackathon.judging_criteria
+      hackathon?.judging_criteria && hackathon.judging_criteria.length > 0
+        ? hackathon.judging_criteria
         : DEFAULT_CRITERIA;
     setHumanCriteria(
-      source.map((c) => ({ name: c.name, description: c.description, score: 0, remark: "" })),
+      source.map((c) => ({
+        name: c.name,
+        description: c.description,
+        score: 0,
+        remark: "",
+      })),
     );
     setHumanOverallNotes("");
     setHumanEvalSaved(false);
     setHumanEvalOpen(true);
-  }, [selectedHackathon]);
+  }, [hackathon]);
 
   const humanEvalOverallScore =
     humanCriteria.length > 0
       ? Math.round(
-          humanCriteria.reduce((sum, c) => sum + c.score, 0) / humanCriteria.length,
+          humanCriteria.reduce((sum, c) => sum + c.score, 0) /
+            humanCriteria.length,
         )
       : 0;
 
@@ -761,8 +780,8 @@ function JudgingFormContent({
                 fontSize: "clamp(14px, 1.5vw, 18px)",
               }}
             >
-              Evaluate a project against the hackathon rubric. Override individual
-              criteria with your own scores.
+              Evaluate a project against the hackathon rubric. Override
+              individual criteria with your own scores.
             </p>
           </div>
         </div>
@@ -807,7 +826,7 @@ function JudgingFormContent({
                   >
                     Project
                   </p>
-                  {selectedProject ? (
+                  {project ? (
                     <>
                       <p
                         className="font-black text-[#2d4a3e] uppercase leading-tight mb-1"
@@ -817,17 +836,17 @@ function JudgingFormContent({
                           letterSpacing: "-0.02em",
                         }}
                       >
-                        {selectedProject.name}
+                        {project.name}
                       </p>
-                      {selectedProject.tagline && (
+                      {project.tagline && (
                         <p
                           className="text-[#2d4a3e]/55 text-sm leading-relaxed"
                           style={{ fontFamily: "Georgia, serif" }}
                         >
-                          {selectedProject.tagline}
+                          {project.tagline}
                         </p>
                       )}
-                      {selectedProject.category && (
+                      {project.category && (
                         <span
                           className="inline-block mt-3 text-[8px] tracking-[0.14em] uppercase font-bold px-2.5 py-1 rounded-sm"
                           style={{
@@ -836,7 +855,7 @@ function JudgingFormContent({
                             fontFamily: "'Inter', sans-serif",
                           }}
                         >
-                          {selectedProject.category}
+                          {project.category}
                         </span>
                       )}
                     </>
@@ -864,35 +883,26 @@ function JudgingFormContent({
                   >
                     Hackathon
                   </p>
-                  {selectedHackathon ? (
-                    <>
-                      <p
-                        className="font-black text-[#f0ebe0] uppercase leading-tight mb-1"
-                        style={{
-                          fontFamily: "'Inter', sans-serif",
-                          fontSize: "clamp(15px, 1.8vw, 20px)",
-                          letterSpacing: "-0.02em",
-                        }}
-                      >
-                        {selectedHackathon.name}
-                      </p>
-                      {selectedHackathon.theme && (
-                        <p
-                          className="text-[#f0ebe0]/50 text-sm leading-relaxed"
-                          style={{ fontFamily: "Georgia, serif" }}
-                        >
-                          {selectedHackathon.theme}
-                        </p>
-                      )}
-                    </>
-                  ) : (
+
+                  <p
+                    className="font-black text-[#f0ebe0] uppercase leading-tight mb-1"
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: "clamp(15px, 1.8vw, 20px)",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    {hackathon.name}
+                  </p>
+                  {hackathon.theme && (
                     <p
-                      className="text-[#f0ebe0]/38 text-sm"
+                      className="text-[#f0ebe0]/50 text-sm leading-relaxed"
                       style={{ fontFamily: "Georgia, serif" }}
                     >
-                      No hackathon selected
+                      {hackathon.theme}
                     </p>
                   )}
+
                   {/* Hidden hackathon field */}
                   <input type="hidden" {...register("hackathon_id")} />
                 </div>
@@ -935,11 +945,7 @@ function JudgingFormContent({
               >
                 <button
                   type="submit"
-                  disabled={
-                    evalMutation.isPending ||
-                    !selectedProject ||
-                    !selectedHackathon
-                  }
+                  disabled={evalMutation.isPending}
                   className="inline-flex items-center gap-0 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-lg disabled:opacity-40"
                   style={{ backgroundColor: "#2d4a3e" }}
                 >
@@ -1052,7 +1058,8 @@ function JudgingFormContent({
                         className="text-[#f0ebe0]/45 text-xs mt-0.5"
                         style={{ fontFamily: "Georgia, serif" }}
                       >
-                        {humanCriteria.filter((c) => c.score > 0).length} criteria scored — overall {humanEvalOverallScore}/100
+                        {humanCriteria.filter((c) => c.score > 0).length}{" "}
+                        criteria scored — overall {humanEvalOverallScore}/100
                       </p>
                     </div>
                   </div>
@@ -1077,7 +1084,6 @@ function JudgingFormContent({
                 <button
                   type="button"
                   onClick={initHumanCriteria}
-                  disabled={!selectedProject || !selectedHackathon}
                   className="inline-flex items-center gap-0 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-lg disabled:opacity-40"
                   style={{ backgroundColor: "#d6cfc0" }}
                 >
@@ -1143,7 +1149,9 @@ function JudgingFormContent({
                             className="w-12 h-12 rounded-full flex items-center justify-center font-black text-sm"
                             style={{
                               backgroundColor:
-                                criterion.score > 0 ? "#2d4a3e" : "rgba(45,74,62,0.1)",
+                                criterion.score > 0
+                                  ? "#2d4a3e"
+                                  : "rgba(45,74,62,0.1)",
                               color:
                                 criterion.score > 0 ? "#f0ebe0" : "#2d4a3e",
                               fontFamily: "'Inter', sans-serif",
@@ -1219,13 +1227,9 @@ function JudgingFormContent({
                                 className="w-20 rounded-xl px-3 py-2.5 text-sm outline-none font-semibold text-center transition-colors"
                                 style={{
                                   backgroundColor:
-                                    criterion.score > 0
-                                      ? "#2d4a3e"
-                                      : "#d6cfc0",
+                                    criterion.score > 0 ? "#2d4a3e" : "#d6cfc0",
                                   color:
-                                    criterion.score > 0
-                                      ? "#f0ebe0"
-                                      : "#2d4a3e",
+                                    criterion.score > 0 ? "#f0ebe0" : "#2d4a3e",
                                   border: "none",
                                   fontFamily: "'Inter', sans-serif",
                                 }}
@@ -1553,13 +1557,13 @@ function JudgingFormContent({
                 {[
                   {
                     label: "Project",
-                    value: selectedProject?.name ?? "Not selected",
-                    done: !!selectedProject,
+                    value: project.name ?? "Not selected",
+                    done: !!project,
                   },
                   {
                     label: "Hackathon",
-                    value: selectedHackathon?.name ?? "Not selected",
-                    done: !!selectedHackathon,
+                    value: hackathon.name ?? "Not selected",
+                    done: !!hackathon,
                   },
                   {
                     label: "AI Evaluation",
