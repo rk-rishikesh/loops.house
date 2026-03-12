@@ -9,15 +9,24 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import type { z } from "zod";
+import { canManageHackathon, getFullCapabilities } from "@/lib/capabilities";
 import type { StoredProject } from "@/lib/data-mappers";
 import { storedToProfileInsert } from "@/lib/data-mappers";
+import { saveResults } from "@/lib/db/hackathon-results";
+import { addSpeaker, removeSpeaker, updateSpeaker } from "@/lib/db/hackathon-speakers";
+import { computePhase } from "@/lib/hackathon-phase";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createServerSupabase } from "@/lib/supabase/server";
 import type { Database, Json, SubmissionStatus } from "@/lib/supabase/types";
 import {
+  addSpeakerSchema,
   createInvitationSchema,
   createTeamSchema,
+  editHackathonSchema,
+  finalizeHackathonSchema,
   respondInvitationSchema,
+  updateSpeakerSchema,
 } from "@/lib/validations/schemas";
 
 // --- Result type ---
@@ -689,5 +698,187 @@ export async function adminToggleAdminAction(
   if (error) return { success: false, error: error.message };
 
   revalidatePath("/admin/users");
+  return { success: true, data: undefined };
+}
+
+// --- Speaker actions ---
+
+async function getHackathon(id: string) {
+  const { data } = await supabaseAdmin.from("hackathons").select("*").eq("id", id).single();
+  return data;
+}
+
+export async function addSpeakerAction(
+  data: z.infer<typeof addSpeakerSchema>,
+): Promise<ActionResult<{ id: string }>> {
+  const parsed = addSpeakerSchema.safeParse(data);
+  if (!parsed.success) return { success: false, error: parsed.error.message };
+
+  const auth = await getAuthUser();
+  if (!auth) return { success: false, error: "Not authenticated" };
+
+  const hackathon = await getHackathon(parsed.data.hackathon_id);
+  if (!hackathon) return { success: false, error: "Hackathon not found" };
+
+  const caps = await getFullCapabilities(supabaseAdmin, auth.id);
+  if (!caps || !canManageHackathon(caps, hackathon.host_id, auth.id, hackathon.id)) {
+    return { success: false, error: "Not authorized" };
+  }
+
+  const phase = computePhase(hackathon);
+  if (phase === "finalized") {
+    return { success: false, error: "Hackathon is finalized" };
+  }
+
+  const speaker = await addSpeaker({
+    hackathon_id: parsed.data.hackathon_id,
+    name: parsed.data.name,
+    image_url: parsed.data.image_url || null,
+  });
+  if (!speaker) return { success: false, error: "Failed to add speaker" };
+
+  revalidatePath(`/host/${parsed.data.hackathon_id}`);
+  revalidatePath(`/hackathons/${parsed.data.hackathon_id}`);
+  return { success: true, data: { id: speaker.id } };
+}
+
+export async function updateSpeakerAction(
+  data: z.infer<typeof updateSpeakerSchema>,
+): Promise<ActionResult> {
+  const parsed = updateSpeakerSchema.safeParse(data);
+  if (!parsed.success) return { success: false, error: parsed.error.message };
+
+  const auth = await getAuthUser();
+  if (!auth) return { success: false, error: "Not authenticated" };
+
+  const result = await updateSpeaker(parsed.data.id, {
+    name: parsed.data.name,
+    image_url: parsed.data.image_url,
+  });
+  if (!result) return { success: false, error: "Failed to update speaker" };
+
+  revalidatePath("/host");
+  return { success: true, data: undefined };
+}
+
+export async function removeSpeakerAction(
+  speakerId: string,
+  hackathonId: string,
+): Promise<ActionResult> {
+  const auth = await getAuthUser();
+  if (!auth) return { success: false, error: "Not authenticated" };
+
+  const hackathon = await getHackathon(hackathonId);
+  if (!hackathon) return { success: false, error: "Hackathon not found" };
+
+  const caps = await getFullCapabilities(supabaseAdmin, auth.id);
+  if (!caps || !canManageHackathon(caps, hackathon.host_id, auth.id, hackathon.id)) {
+    return { success: false, error: "Not authorized" };
+  }
+
+  const phase = computePhase(hackathon);
+  if (phase === "finalized") {
+    return { success: false, error: "Hackathon is finalized" };
+  }
+
+  await removeSpeaker(speakerId);
+  revalidatePath(`/host/${hackathonId}`);
+  revalidatePath(`/hackathons/${hackathonId}`);
+  return { success: true, data: undefined };
+}
+
+// --- Edit hackathon action ---
+
+export async function editHackathonAction(
+  data: z.infer<typeof editHackathonSchema>,
+): Promise<ActionResult> {
+  const parsed = editHackathonSchema.safeParse(data);
+  if (!parsed.success) return { success: false, error: parsed.error.message };
+
+  const auth = await getAuthUser();
+  if (!auth) return { success: false, error: "Not authenticated" };
+
+  const hackathon = await getHackathon(parsed.data.id);
+  if (!hackathon) return { success: false, error: "Hackathon not found" };
+
+  const caps = await getFullCapabilities(supabaseAdmin, auth.id);
+  if (!caps || !canManageHackathon(caps, hackathon.host_id, auth.id, hackathon.id)) {
+    return { success: false, error: "Not authorized" };
+  }
+
+  const phase = computePhase(hackathon);
+  if (phase === "finalized") {
+    return { success: false, error: "Hackathon is finalized" };
+  }
+
+  const { id, ...updates } = parsed.data;
+  const updatePayload: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(updates)) {
+    if (value !== undefined) {
+      updatePayload[key] = value;
+    }
+  }
+
+  if (Object.keys(updatePayload).length === 0) {
+    return { success: false, error: "No fields to update" };
+  }
+
+  const { error } = await supabaseAdmin.from("hackathons").update(updatePayload).eq("id", id);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath(`/host/${id}`);
+  revalidatePath(`/hackathons/${id}`);
+  return { success: true, data: undefined };
+}
+
+// --- Finalize hackathon action ---
+
+export async function finalizeHackathonAction(
+  data: z.infer<typeof finalizeHackathonSchema>,
+): Promise<ActionResult> {
+  const parsed = finalizeHackathonSchema.safeParse(data);
+  if (!parsed.success) return { success: false, error: parsed.error.message };
+
+  const auth = await getAuthUser();
+  if (!auth) return { success: false, error: "Not authenticated" };
+
+  const hackathon = await getHackathon(parsed.data.hackathon_id);
+  if (!hackathon) return { success: false, error: "Hackathon not found" };
+
+  const caps = await getFullCapabilities(supabaseAdmin, auth.id);
+  if (!caps || !canManageHackathon(caps, hackathon.host_id, auth.id, hackathon.id)) {
+    return { success: false, error: "Not authorized" };
+  }
+
+  const phase = computePhase(hackathon);
+  if (phase !== "completed") {
+    return { success: false, error: `Cannot finalize in ${phase} phase` };
+  }
+
+  // 1. Store ai_weight and finalized_at on hackathon
+  await supabaseAdmin
+    .from("hackathons")
+    .update({
+      ai_weight: parsed.data.ai_weight,
+      finalized_at: new Date().toISOString(),
+    })
+    .eq("id", parsed.data.hackathon_id);
+
+  // 2. Store frozen leaderboard results
+  const resultRows = parsed.data.results.map((r) => ({
+    hackathon_id: parsed.data.hackathon_id,
+    submission_id: r.submission_id,
+    project_id: r.project_id,
+    rank: r.rank,
+    final_score: r.final_score,
+    ai_score_weighted: r.ai_score_weighted,
+    judge_score_weighted: r.judge_score_weighted,
+    raw_ai_score: r.raw_ai_score,
+    raw_judge_avg_score: r.raw_judge_avg_score,
+  }));
+  await saveResults(resultRows);
+
+  revalidatePath(`/host/${parsed.data.hackathon_id}`);
+  revalidatePath(`/hackathons/${parsed.data.hackathon_id}`);
   return { success: true, data: undefined };
 }

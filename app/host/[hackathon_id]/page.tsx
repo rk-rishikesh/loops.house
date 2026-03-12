@@ -1,6 +1,8 @@
-import { ArrowLeft, ArrowUpRight, BarChart3, Gavel } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, BarChart3, Gavel, Settings, Trophy } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
+import { computePhase, getPhasePermissions } from "@/lib/hackathon-phase";
 import { getServerAuth } from "@/lib/server-auth";
 import { getHackathonServer, getProjectsServer, getSubmissionsServer } from "@/lib/server-data";
 
@@ -46,6 +48,9 @@ export default async function HostBoosterPage({
     redirect("/host");
   }
 
+  const phase = computePhase(hackathon);
+  const permissions = getPhasePermissions(phase);
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
       {/* ── Nav strip ─────────────────────────────────────────────────────── */}
@@ -72,16 +77,21 @@ export default async function HostBoosterPage({
       <div className="px-10 pt-10 pb-24">
         {/* ── Hero heading ────────────────────────────────────────── */}
         <div className="mb-16">
-          <h1
-            className="font-black text-[#2d4a3e] leading-[0.88] uppercase"
-            style={{
-              fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
-              fontSize: "clamp(46px, 8vw, 120px)",
-              letterSpacing: "-0.025em",
-            }}
-          >
-            {hackathon.name}
-          </h1>
+          <div className="flex items-start gap-4">
+            <h1
+              className="font-black text-[#2d4a3e] leading-[0.88] uppercase"
+              style={{
+                fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+                fontSize: "clamp(46px, 8vw, 120px)",
+                letterSpacing: "-0.025em",
+              }}
+            >
+              {hackathon.name}
+            </h1>
+            <div className="mt-4">
+              <HackathonPhaseBadge hackathon={hackathon} size="md" />
+            </div>
+          </div>
           <div className="flex justify-end mt-6">
             <p
               className="text-[#2d4a3e]/55 max-w-[420px] text-right leading-relaxed"
@@ -144,7 +154,7 @@ export default async function HostBoosterPage({
             </div>
           </Link>
 
-          <Link href={`/host/application`} className="group no-underline">
+          <Link href={`/host/${hackathon.id}/manage`} className="group no-underline">
             <div
               className="rounded-3xl p-7 flex flex-col justify-between transition-all duration-200 group-hover:scale-[1.01]"
               style={{ backgroundColor: "#2d4a3e", minHeight: 200 }}
@@ -154,7 +164,7 @@ export default async function HostBoosterPage({
                   className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
                   style={{ backgroundColor: "rgba(214,207,192,0.15)" }}
                 >
-                  <ArrowLeft size={22} style={{ color: "#d6cfc0" }} />
+                  <Settings size={22} style={{ color: "#d6cfc0" }} />
                 </div>
                 <ArrowCircle size={44} inverted />
               </div>
@@ -167,19 +177,19 @@ export default async function HostBoosterPage({
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  Edit Hackathon
+                  Manage
                 </h3>
                 <p
                   className="text-[#f0ebe0]/50 text-sm leading-relaxed"
                   style={{ fontFamily: "Georgia, serif" }}
                 >
-                  Update the hackathon details, theme and resources.
+                  Edit details, speakers, judges, and timeline.
                 </p>
               </div>
             </div>
           </Link>
 
-          <Link href={`/host/${hackathon.id}/judges`} className="group no-underline">
+          <Link href={`/host/${hackathon.id}/manage/judges`} className="group no-underline">
             <div
               className="rounded-3xl p-7 flex flex-col justify-between transition-all duration-200 group-hover:scale-[1.01]"
               style={{ backgroundColor: "#2d4a3e", minHeight: 200 }}
@@ -214,6 +224,47 @@ export default async function HostBoosterPage({
             </div>
           </Link>
         </div>
+
+        {/* ── Finalize CTA (only when completed phase) ──────────────── */}
+        {permissions.canFinalize && (
+          <div className="mb-12">
+            <Link href={`/host/${hackathon.id}/finalize`} className="group no-underline block">
+              <div
+                className="rounded-3xl p-7 flex items-center justify-between transition-all duration-200 group-hover:scale-[1.005]"
+                style={{ backgroundColor: "#d6a84a", minHeight: 100 }}
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: "rgba(45,74,62,0.15)" }}
+                  >
+                    <Trophy size={22} style={{ color: "#2d4a3e" }} />
+                  </div>
+                  <div>
+                    <h3
+                      className="font-black text-[#2d4a3e] uppercase leading-tight"
+                      style={{
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: "clamp(18px, 2vw, 24px)",
+                        letterSpacing: "-0.02em",
+                      }}
+                    >
+                      Finalize Hackathon
+                    </h3>
+                    <p
+                      className="text-[#2d4a3e]/60 text-sm"
+                      style={{ fontFamily: "Georgia, serif" }}
+                    >
+                      Set AI vs Judge weighting and lock the leaderboard results.
+                    </p>
+                  </div>
+                </div>
+                <ArrowCircle size={44} />
+              </div>
+            </Link>
+          </div>
+        )}
+
         {/* ── Submissions table ────────────────────────────────────── */}
         <div>
           <div className="flex items-baseline justify-between mb-6">

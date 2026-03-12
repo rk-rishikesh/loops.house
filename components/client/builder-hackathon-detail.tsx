@@ -16,10 +16,18 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { HackathonLeaderboard } from "@/components/client/hackathon-leaderboard";
 import { ProjectEditor } from "@/components/client/project-editor";
+import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { submitProjectAction } from "@/lib/actions";
-import type { StoredHackathon, StoredProject, StoredSubmission } from "@/lib/data-mappers";
+import type {
+  StoredHackathon,
+  StoredProject,
+  StoredResult,
+  StoredSpeaker,
+  StoredSubmission,
+} from "@/lib/data-mappers";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -32,6 +40,8 @@ interface BuilderHackathonDetailProps {
   hackathon: StoredHackathon | null;
   projects: StoredProject[];
   submissions: StoredSubmission[];
+  speakers?: StoredSpeaker[];
+  results?: StoredResult[];
   isAuthenticated: boolean;
 }
 
@@ -40,6 +50,8 @@ export function BuilderHackathonDetail({
   hackathon,
   projects,
   submissions,
+  speakers = [],
+  results = [],
   isAuthenticated,
 }: BuilderHackathonDetailProps) {
   const mounted = useIsMounted();
@@ -465,17 +477,22 @@ export function BuilderHackathonDetail({
             >
               About the hackathon
             </p>
-            <h1
-              className="font-black uppercase leading-[0.92]"
-              style={{
-                fontFamily: PX,
-                fontSize: "clamp(34px, 4.6vw, 64px)",
-                letterSpacing: "-0.03em",
-                color: "#E2FEA5",
-              }}
-            >
-              {h.name}
-            </h1>
+            <div className="flex items-start gap-3">
+              <h1
+                className="font-black uppercase leading-[0.92]"
+                style={{
+                  fontFamily: PX,
+                  fontSize: "clamp(34px, 4.6vw, 64px)",
+                  letterSpacing: "-0.03em",
+                  color: "#E2FEA5",
+                }}
+              >
+                {h.name}
+              </h1>
+              <div className="mt-2 shrink-0">
+                <HackathonPhaseBadge hackathon={h} size="md" />
+              </div>
+            </div>
             {h.theme && (
               <p
                 className="mt-4 text-sm leading-[1.85]"
@@ -527,40 +544,120 @@ export function BuilderHackathonDetail({
             </div>
           </div>
         </div>
+
+        {/* Leaderboard for finalized hackathons */}
+        {results.length > 0 && (
+          <div className="mt-8 px-2">
+            <p
+              className="text-[9px] tracking-[0.25em] uppercase font-bold mb-4"
+              style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}
+            >
+              Leaderboard
+            </p>
+            <div
+              className="rounded-2xl p-6"
+              style={{
+                backgroundColor: "rgba(226,254,165,0.04)",
+                border: "1px solid rgba(226,254,165,0.06)",
+              }}
+            >
+              <HackathonLeaderboard
+                entries={results.map((r) => ({
+                  rank: r.rank,
+                  project_id: r.project_id,
+                  project_name:
+                    projects.find((p) => p.project_id === r.project_id)?.name ??
+                    submissions.find((s) => s.project_id === r.project_id)?.project_id ??
+                    "Unknown",
+                  final_score: r.final_score,
+                  ai_score_weighted: r.ai_score_weighted,
+                  judge_score_weighted: r.judge_score_weighted,
+                  raw_ai_score: r.raw_ai_score,
+                  raw_judge_avg_score: r.raw_judge_avg_score,
+                }))}
+                aiWeight={hackathon?.ai_weight}
+                showWeightBreakdown
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   /* ─── Speakers view ─────────────────────────────────────────── */
   function renderSpeakers() {
-    return (
-      <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-10">
-        <p
-          className="font-black uppercase leading-none select-none text-center mb-5"
-          style={{
-            fontFamily: PX,
-            fontSize: "clamp(48px, 6vw, 80px)",
-            letterSpacing: "-0.04em",
-            opacity: 0.04,
-            lineHeight: 0.85,
-            color: "#E2FEA5",
-          }}
-        >
-          SPEAKERS
-        </p>
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
-          style={{ backgroundColor: "rgba(226,254,165,0.06)" }}
-        >
-          <Mic2 size={24} style={{ color: "rgba(226,254,165,0.3)" }} />
+    if (speakers.length === 0) {
+      return (
+        <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-10">
+          <p
+            className="font-black uppercase leading-none select-none text-center mb-5"
+            style={{
+              fontFamily: PX,
+              fontSize: "clamp(48px, 6vw, 80px)",
+              letterSpacing: "-0.04em",
+              opacity: 0.04,
+              lineHeight: 0.85,
+              color: "#E2FEA5",
+            }}
+          >
+            SPEAKERS
+          </p>
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+            style={{ backgroundColor: "rgba(226,254,165,0.06)" }}
+          >
+            <Mic2 size={24} style={{ color: "rgba(226,254,165,0.3)" }} />
+          </div>
+          <p
+            className="text-sm text-center max-w-[360px]"
+            style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}
+          >
+            Speaker lineup will be announced soon. Check back for updates on talks, workshops, and
+            panels.
+          </p>
         </div>
+      );
+    }
+
+    return (
+      <div className="flex-1 overflow-y-auto px-14 py-14">
         <p
-          className="text-sm text-center max-w-[360px]"
-          style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}
+          className="text-[9px] tracking-[0.25em] uppercase font-bold mb-8"
+          style={{ fontFamily: PX, color: "rgba(226,254,165,0.35)" }}
         >
-          Speaker lineup will be announced soon. Check back for updates on talks, workshops, and
-          panels.
+          Speakers
         </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {speakers.map((speaker) => (
+            <div
+              key={speaker.id}
+              className="rounded-2xl p-5 flex flex-col items-center text-center"
+              style={{
+                backgroundColor: "rgba(226,254,165,0.04)",
+                border: "1px solid rgba(226,254,165,0.06)",
+              }}
+            >
+              {speaker.image_url ? (
+                <img
+                  src={speaker.image_url}
+                  alt={speaker.name}
+                  className="w-16 h-16 rounded-full object-cover mb-3"
+                />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center mb-3"
+                  style={{ backgroundColor: "rgba(226,254,165,0.08)" }}
+                >
+                  <Users size={20} style={{ color: "rgba(226,254,165,0.3)" }} />
+                </div>
+              )}
+              <p className="font-bold text-sm" style={{ fontFamily: FN, color: "#E2FEA5" }}>
+                {speaker.name}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

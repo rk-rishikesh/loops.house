@@ -1,19 +1,10 @@
 import { ArrowUpRight, FolderOpen, Plus, Users, Zap } from "lucide-react";
 import Link from "next/link";
+import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
 import { getHackathonsServer, getSubmissionsForHackathonsServer } from "@/lib/server-data";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
-
-/* ─── Status helpers ──────────────────────────────────────────────── */
-
-function getHackathonStatus(status?: string | null): "Ongoing" | "Upcoming" | "Past" {
-  if (!status) return "Ongoing";
-  if (status === "completed" || status === "archived") return "Past";
-  if (status === "draft") return "Upcoming";
-  // "active" or "judging"
-  return "Ongoing";
-}
 
 /* ─── Page ────────────────────────────────────────────────────────── */
 export default async function HostDashboardPage() {
@@ -230,7 +221,6 @@ export default async function HostDashboardPage() {
                     projects: 0,
                     teams: 0,
                   };
-                  const status = getHackathonStatus(b.status);
                   return (
                     <Link key={b.id} href={`/host/${b.id}`} className="no-underline group">
                       <div
@@ -285,26 +275,7 @@ export default async function HostDashboardPage() {
                         </div>
 
                         {/* Status */}
-                        <span
-                          className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[8px] tracking-[0.12em] uppercase font-bold"
-                          style={{
-                            fontFamily: PX,
-                            backgroundColor:
-                              status === "Ongoing"
-                                ? "rgba(76,175,125,0.12)"
-                                : status === "Upcoming"
-                                  ? "rgba(214,168,74,0.12)"
-                                  : "rgba(15,44,35,0.06)",
-                            color:
-                              status === "Ongoing"
-                                ? "#2d7a50"
-                                : status === "Upcoming"
-                                  ? "#8a6a1a"
-                                  : "rgba(15,44,35,0.55)",
-                          }}
-                        >
-                          {status}
-                        </span>
+                        <HackathonPhaseBadge hackathon={b} />
 
                         {/* Arrow */}
                         <span

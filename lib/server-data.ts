@@ -9,6 +9,8 @@ import type {
   HumanEvaluationRow,
   StoredHackathon,
   StoredProject,
+  StoredResult,
+  StoredSpeaker,
   StoredSubmission,
   StoredTeam,
   TeamRow,
@@ -16,13 +18,25 @@ import type {
 import {
   hackathonToStored,
   profileToStored,
+  resultToStored,
+  speakerToStored,
   submissionToStored,
   teamToStored,
 } from "@/lib/data-mappers";
+import { getResults } from "@/lib/db/hackathon-results";
+import { getSpeakers } from "@/lib/db/hackathon-speakers";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 // Re-export types for convenience
-export type { StoredProject, StoredHackathon, StoredTeam, StoredSubmission, HumanEvaluationRow };
+export type {
+  StoredProject,
+  StoredHackathon,
+  StoredTeam,
+  StoredSubmission,
+  StoredSpeaker,
+  StoredResult,
+  HumanEvaluationRow,
+};
 
 // --- Projects ---
 
@@ -371,4 +385,39 @@ export async function getHackathonInvitationsServer(
     .order("created_at", { ascending: false });
   if (error) console.error("[server-data] getHackathonInvitationsServer:", error.message);
   return (data as InvitationRow[]) ?? [];
+}
+
+// --- Speakers ---
+
+export async function getHackathonSpeakersServer(hackathonId: string): Promise<StoredSpeaker[]> {
+  const rows = await getSpeakers(hackathonId);
+  return rows.map(speakerToStored);
+}
+
+// --- Results ---
+
+export async function getHackathonResultsServer(hackathonId: string): Promise<StoredResult[]> {
+  const rows = await getResults(hackathonId);
+  return rows.map(resultToStored);
+}
+
+// --- All evaluations for a hackathon (grouped by submission) ---
+
+export async function getAllSubmissionEvaluationsServer(
+  hackathonId: string,
+): Promise<Record<string, HumanEvaluationRow[]>> {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from("human_evaluations")
+    .select("*")
+    .eq("hackathon_id", hackathonId);
+  if (error) console.error("[server-data] getAllSubmissionEvaluationsServer:", error.message);
+  const rows = data ?? [];
+  const grouped: Record<string, HumanEvaluationRow[]> = {};
+  for (const row of rows) {
+    const key = row.submission_id;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(row);
+  }
+  return grouped;
 }

@@ -109,3 +109,57 @@ export const adminToggleAdminSchema = z.object({
   user_id: z.string().min(1),
   is_admin: z.boolean(),
 });
+
+// --- Hackathon management schemas ---
+
+export const addSpeakerSchema = z.object({
+  hackathon_id: z.string().min(1, "Please select a hackathon"),
+  name: z.string().min(1, "Speaker name is required").max(100),
+  image_url: z.string().url().optional().or(z.literal("")),
+});
+export type AddSpeakerSchema = z.infer<typeof addSpeakerSchema>;
+
+export const updateSpeakerSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(100).optional(),
+  image_url: z.string().url().optional().or(z.literal("")).or(z.null()),
+});
+export type UpdateSpeakerSchema = z.infer<typeof updateSpeakerSchema>;
+
+export const editHackathonSchema = z.object({
+  id: z.string().min(1),
+  // Info
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(5000).optional(),
+  theme: z.string().max(500).optional(),
+  program_goal: z.string().max(2000).optional(),
+  website_url: z.string().url().optional().or(z.literal("")),
+  // Schedule
+  start_date: z.string().optional(),
+  submission_deadline: z.string().optional(),
+  judging_deadline: z.string().optional(),
+  results_date: z.string().optional(),
+  // Prizes
+  bounty_pool_summary: z.string().max(2000).optional(),
+  problem_statements: z.array(z.string()).optional(),
+  judging_criteria: z.array(z.object({ name: z.string(), description: z.string() })).optional(),
+});
+export type EditHackathonSchema = z.infer<typeof editHackathonSchema>;
+
+export const finalizeHackathonSchema = z.object({
+  hackathon_id: z.string().min(1),
+  ai_weight: z.number().min(0).max(1),
+  results: z.array(
+    z.object({
+      submission_id: z.string().min(1),
+      project_id: z.string().min(1),
+      rank: z.number().int().positive(),
+      final_score: z.number(),
+      ai_score_weighted: z.number(),
+      judge_score_weighted: z.number(),
+      raw_ai_score: z.number(),
+      raw_judge_avg_score: z.number(),
+    }),
+  ),
+});
+export type FinalizeHackathonSchema = z.infer<typeof finalizeHackathonSchema>;
