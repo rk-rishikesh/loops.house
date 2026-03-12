@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 
-type Bucket = "project-assets" | "booster-assets" | "user-avatars";
+type Bucket = "project-assets" | "hackathon-assets" | "user-avatars";
 
 function sb() {
   return createClient();
@@ -58,10 +58,7 @@ export async function uploadScreenshot(
 }
 
 /** Upload user avatar */
-export async function uploadAvatar(
-  userId: string,
-  file: File | Blob,
-): Promise<string> {
+export async function uploadAvatar(userId: string, file: File | Blob): Promise<string> {
   const path = `${userId}/avatar`;
   return uploadFile("user-avatars", path, file);
 }
@@ -73,9 +70,6 @@ export function getPublicUrl(bucket: Bucket, path: string): string {
 }
 
 /** Delete a file from storage */
-export async function deleteFile(
-  bucket: Bucket,
-  path: string,
-): Promise<void> {
+export async function deleteFile(bucket: Bucket, path: string): Promise<void> {
   await sb().storage.from(bucket).remove([path]);
 }

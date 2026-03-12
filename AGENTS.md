@@ -26,25 +26,25 @@ export const dynamic = "force-dynamic";
 
 ## Gemini Client (`app/api/lib/gemini-client.ts`)
 
-| Export | Description |
-|--------|-------------|
-| `ai` | `GoogleGenAI` instance |
-| `MODELS` | `{ pro: "gemini-2.5-pro", flash: "gemini-2.0-flash", embedding: "gemini-embedding-001" }` |
-| `generateContent(model, contents, config?)` | Single-turn generation |
-| `generateJSON<T>(model, prompt, systemInstruction?)` | Structured JSON output (temperature 0.2) |
-| `streamContent(model, contents, config?)` | Streaming generation |
+| Export                                               | Description                                                                               |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `ai`                                                 | `GoogleGenAI` instance                                                                    |
+| `MODELS`                                             | `{ pro: "gemini-2.5-pro", flash: "gemini-2.0-flash", embedding: "gemini-embedding-001" }` |
+| `generateContent(model, contents, config?)`          | Single-turn generation                                                                    |
+| `generateJSON<T>(model, prompt, systemInstruction?)` | Structured JSON output (temperature 0.2)                                                  |
+| `streamContent(model, contents, config?)`            | Streaming generation                                                                      |
 
 Model tier is always passed explicitly: `"pro"`, `"flash"`, or `"embedding"`. Can be overridden via env vars `GEMINI_PRO_MODEL`, `GEMINI_FLASH_MODEL`, `GEMINI_EMBEDDING_MODEL`.
 
 ## Shared Infrastructure (`app/api/lib/`)
 
-| File | Purpose |
-|------|---------|
-| `sse.ts` | `createSSEStream()` + `sseResponse()` for event-stream responses |
-| `rate-limiter.ts` | `checkRateLimit(key, max, windowMs)` — delegates to DB via `lib/db/rate-limiter.ts` |
-| `embeddings.ts` | `embedText()`, `embedBatch()`, `cosineSimilarity()` — 768-dim via gemini-embedding-001 |
-| `knowledge-base.ts` | `buildKnowledgeBase()`, `chunkText()` — chunks text, embeds, stores in pgvector |
-| `vector-store.ts` | `upsertChunks()`, `getChunks()`, `queryTopK()`, `hasProject()` — facade over `lib/db/knowledge-base.ts` |
+| File                | Purpose                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------- |
+| `sse.ts`            | `createSSEStream()` + `sseResponse()` for event-stream responses                                        |
+| `rate-limiter.ts`   | `checkRateLimit(key, max, windowMs)` — delegates to DB via `lib/db/rate-limiter.ts`                     |
+| `embeddings.ts`     | `embedText()`, `embedBatch()`, `cosineSimilarity()` — 768-dim via gemini-embedding-001                  |
+| `knowledge-base.ts` | `buildKnowledgeBase()`, `chunkText()` — chunks text, embeds, stores in pgvector                         |
+| `vector-store.ts`   | `upsertChunks()`, `getChunks()`, `queryTopK()`, `hasProject()` — facade over `lib/db/knowledge-base.ts` |
 
 ---
 
@@ -56,14 +56,14 @@ Model tier is always passed explicitly: `"pro"`, `"flash"`, or `"embedding"`. Ca
 - **Roles:** builder, host, admin
 - **Model:** `"pro"` (tagline/category consolidation)
 - **Response:** SSE stream (progress events + complete event)
-- **Input:** `team_id`, `name`, `description`, optional: `github_url`, `youtube_url`, `logo_url`, `website_url`, `screenshot_urls`, `additional_links`, `social_links`, `booster_id`
+- **Input:** `team_id`, `name`, `description`, optional: `github_url`, `youtube_url`, `logo_url`, `website_url`, `screenshot_urls`, `additional_links`, `social_links`, `hackathon_id`
 - **Sub-agents used:** `code-reader` (GitHub), `demo-reader` (YouTube), `theme-reader` (screenshots/logo)
 - **Side effects:** Inserts `loops_profiles` row, builds knowledge base (pgvector), updates profile with enriched data
 - **Output events:** `progress` (per sub-agent), `complete` (full profile response), `flattened_codebase` (if GitHub analyzed)
 
 ### project-ideator
 
-- **Purpose:** Conversational brainstorming mentor for project ideas within a booster context
+- **Purpose:** Conversational brainstorming mentor for project ideas within a hackathon context
 - **Roles:** builder, host, admin
 - **Model:** `"flash"` (streaming)
 - **Response:** SSE text stream (token-by-token)
@@ -77,30 +77,30 @@ Model tier is always passed explicitly: `"pro"`, `"flash"`, or `"embedding"`. Ca
 - **Model:** `"flash"`
 - **maxDuration:** 10s
 - **Response:** JSON
-- **Input:** `project` (name, tagline, description, tech, category, features, URL), optional `booster` (name, result), optional `tone` (professional/casual/excited)
+- **Input:** `project` (name, tagline, description, tech, category, features, URL), optional `hackathon` (name, result), optional `tone` (professional/casual/excited)
 - **Output:** `{ linkedin_post, twitter_post, suggested_hashtags }`
 
 ---
 
 ## Host Agents (`app/api/host-agents/`)
 
-### booster-generator
+### hackathon-generator
 
-- **Purpose:** Generate a full booster program draft from host input
+- **Purpose:** Generate a full hackathon program draft from host input
 - **Roles:** host, admin
 - **Model:** `"flash"`
 - **Rate limit:** 5 per day per user
 - **Response:** JSON
-- **Input:** `{ booster: BoosterInput }` — id, name, theme, booster_type, problem_statements, and optional fields
-- **Output:** `{ booster_id, draft: ProgramDraft, generated_at }`
+- **Input:** `{ hackathon: BoosterInput }` — id, name, theme, booster_type, problem_statements, and optional fields
+- **Output:** `{ hackathon_id, draft: ProgramDraft, generated_at }`
 
 ### metric-analyst
 
-- **Purpose:** Generate analytics reports for booster submissions
+- **Purpose:** Generate analytics reports for hackathon submissions
 - **Roles:** host, admin
 - **Model:** `"flash"`
 - **Response:** JSON
-- **Input:** `booster_id`, `report_type` (overview/submissions/builder-graph/momentum-leaderboard/full), optional `booster`, `metrics`
+- **Input:** `hackathon_id`, `report_type` (overview/submissions/builder-graph/momentum-leaderboard/full), optional `hackathon`, `metrics`
 - **Output:** `{ narrative, raw_metrics, generated_at, highlights }`
 
 ### project-evaluator
@@ -109,20 +109,20 @@ Model tier is always passed explicitly: `"pro"`, `"flash"`, or `"embedding"`. Ca
 - **Roles:** host, judge, admin
 - **Model:** `"pro"` (all criterion evaluations and summary)
 - **Response:** JSON
-- **Input:** `project_id`, `booster_id`, `judge_mode` (preview/official), optional `judging_rubric`, optional inline `project`/`booster`
+- **Input:** `project_id`, `hackathon_id`, `judge_mode` (preview/official), optional `judging_rubric`, optional inline `project`/`hackathon`
 - **Behavior:** Evaluates each criterion in parallel. 5 default criteria (Code Integration, Ideation, Uniqueness, Product Readiness, Track/Sponsor Fit). Falls back to pgvector knowledge base if no inline project data.
 - **Side effects:** Persists `ai_score` to `submissions` table
-- **Output:** `{ project_id, booster_id, overall_score, overall_summary, criteria_scores[], judge_mode, generated_at, model_version, saved }`
+- **Output:** `{ project_id, hackathon_id, overall_score, overall_summary, criteria_scores[], judge_mode, generated_at, model_version, saved }`
 
 ### resource-provisioner
 
-- **Purpose:** Generate technical resource plan for builders in a booster
+- **Purpose:** Generate technical resource plan for builders in a hackathon
 - **Roles:** host, admin
 - **Model:** `"flash"`
 - **Rate limit:** 5 per day per user
 - **Response:** JSON
-- **Input:** `{ booster: BoosterInput }` — same shape as booster-generator
-- **Output:** `{ booster_id, resources: { technical_cheatsheet, tracks[], challenge_resource_map[] }, generated_at }`
+- **Input:** `{ hackathon: BoosterInput }` — same shape as hackathon-generator
+- **Output:** `{ hackathon_id, resources: { technical_cheatsheet, tracks[], challenge_resource_map[] }, generated_at }`
 
 ### save-evaluation
 
@@ -130,7 +130,7 @@ Model tier is always passed explicitly: `"pro"`, `"flash"`, or `"embedding"`. Ca
 - **Roles:** host, judge, admin
 - **Model:** None (pure CRUD, no AI)
 - **Response:** JSON
-- **Input:** `{ project_id, booster_id, ai_score?, human_score?, status? }`
+- **Input:** `{ project_id, hackathon_id, ai_score?, human_score?, status? }`
 - **Output:** `{ success, submission }`
 - **Note:** Not an AI agent — data persistence endpoint grouped with host-agents for routing convenience
 
@@ -144,8 +144,8 @@ Model tier is always passed explicitly: `"pro"`, `"flash"`, or `"embedding"`. Ca
 - **Roles:** any authenticated
 - **Model:** `"pro"` (streaming, temperature 0.1)
 - **Response:** SSE text stream
-- **Input:** `message`, `conversation_history`, `booster_id`
-- **Special action:** `{ action: "load_resources", booster_id, resources: ResourceBundle }` — pre-loads sponsor docs as in-memory embeddings
+- **Input:** `message`, `conversation_history`, `hackathon_id`
+- **Special action:** `{ action: "load_resources", hackathon_id, resources: ResourceBundle }` — pre-loads sponsor docs as in-memory embeddings
 - **Behavior:** Retrieves relevant chunks via cosine similarity (threshold 0.75), cites sources. Refuses general programming questions. In-memory cache of 50 boosters' resources.
 
 ---

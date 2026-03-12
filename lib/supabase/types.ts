@@ -8,15 +8,23 @@
  * so the rest of the codebase can import named enums directly.
  */
 
-export type { Database, Json, Tables, TablesInsert, TablesUpdate, Enums } from "./database.types";
+export type { Database, Enums, Json, Tables, TablesInsert, TablesUpdate } from "./database.types";
 
 import type { Database } from "./database.types";
 
 // ---------------------------------------------------------------------------
-// Convenience enum aliases — import { AppRole } from "@/lib/supabase/types"
+// Convenience enum aliases
 // ---------------------------------------------------------------------------
-export type AppRole = Database["public"]["Enums"]["app_role"];
-export type BoosterType = Database["public"]["Enums"]["booster_type"];
-export type BoosterStatus = Database["public"]["Enums"]["booster_status"];
+export type HackathonStatus = Database["public"]["Enums"]["hackathon_status"];
 export type SubmissionStatus = Database["public"]["Enums"]["submission_status"];
-export type HostApplicationStatus = Database["public"]["Enums"]["host_application_status"];
+export type InvitationType = Database["public"]["Enums"]["invitation_type"];
+export type InvitationStatus = Database["public"]["Enums"]["invitation_status"];
+
+// ---------------------------------------------------------------------------
+// Table row / insert aliases for new hackathon management tables
+// ---------------------------------------------------------------------------
+type DB = Database;
+export type HackathonSpeakerRow = DB["public"]["Tables"]["hackathon_speakers"]["Row"];
+export type HackathonSpeakerInsert = DB["public"]["Tables"]["hackathon_speakers"]["Insert"];
+export type HackathonResultRow = DB["public"]["Tables"]["hackathon_results"]["Row"];
+export type HackathonResultInsert = DB["public"]["Tables"]["hackathon_results"]["Insert"];

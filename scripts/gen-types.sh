@@ -9,7 +9,7 @@
 
 set -e
 
-PROJECT_REF="flfxbhlmqjvquisqewjw"
+PROJECT_REF="xhcflmioqsoncfeoxpiy"
 OUTPUT_FILE="lib/supabase/database.types.ts"
 
 echo "Generating TypeScript types from live Supabase schema..."

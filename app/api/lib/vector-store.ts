@@ -4,14 +4,14 @@
  * Keeps the same exports so existing API routes continue to work.
  */
 
-import { embedText } from "./embeddings";
 import {
-  upsertChunks as dbUpsert,
   getChunks as dbGetChunks,
-  queryTopK as dbQueryTopK,
   hasProject as dbHasProject,
+  queryTopK as dbQueryTopK,
+  upsertChunks as dbUpsert,
   deleteProjectKB,
 } from "@/lib/db/knowledge-base";
+import { embedText } from "./embeddings";
 
 export interface VectorChunk {
   id: string;
@@ -20,10 +20,7 @@ export interface VectorChunk {
   metadata?: Record<string, unknown>;
 }
 
-export async function upsertChunks(
-  projectId: string,
-  chunks: VectorChunk[],
-): Promise<void> {
+export async function upsertChunks(projectId: string, chunks: VectorChunk[]): Promise<void> {
   await dbUpsert(
     projectId,
     chunks.map((c) => ({
@@ -34,9 +31,7 @@ export async function upsertChunks(
   );
 }
 
-export async function getChunks(
-  projectId: string,
-): Promise<VectorChunk[] | null> {
+export async function getChunks(projectId: string): Promise<VectorChunk[] | null> {
   const chunks = await dbGetChunks(projectId);
   if (chunks.length === 0) return null;
   return chunks.map((c, i) => ({

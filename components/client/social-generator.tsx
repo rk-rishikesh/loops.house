@@ -1,15 +1,15 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Share2, Loader2, Copy, Check } from "lucide-react";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { getProject, getBooster } from "@/lib/storage";
-import { socialAmplifierSchema, type SocialAmplifierSchema } from "@/lib/validations/schemas";
-import type { StoredProject, StoredBooster } from "@/lib/data-mappers";
+import { ArrowLeft, Check, Copy, Loader2, Share2 } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useForm } from "react-hook-form";
+import type { StoredHackathon, StoredProject } from "@/lib/data-mappers";
+import { getHackathon, getProject } from "@/lib/storage";
+import { type SocialAmplifierSchema, socialAmplifierSchema } from "@/lib/validations/schemas";
 
 type SocialAmplifierResult = {
   linkedin_post?: string;
@@ -19,24 +19,24 @@ type SocialAmplifierResult = {
 
 export function SocialGenerator({
   projects,
-  boosters,
+  hackathons,
 }: {
   projects: StoredProject[];
-  boosters: StoredBooster[];
+  hackathons: StoredHackathon[];
 }) {
   return (
     <Suspense fallback={<div className="p-8 text-zinc-500">Loading...</div>}>
-      <SocialGeneratorContent projects={projects} boosters={boosters} />
+      <SocialGeneratorContent projects={projects} hackathons={hackathons} />
     </Suspense>
   );
 }
 
 function SocialGeneratorContent({
   projects,
-  boosters,
+  hackathons,
 }: {
   projects: StoredProject[];
-  boosters: StoredBooster[];
+  hackathons: StoredHackathon[];
 }) {
   const searchParams = useSearchParams();
   const projectIdFromUrl = searchParams.get("project_id") ?? "";
@@ -51,13 +51,13 @@ function SocialGeneratorContent({
     resolver: zodResolver(socialAmplifierSchema),
     defaultValues: {
       project_id: projectIdFromUrl || (projects[0]?.project_id ?? ""),
-      booster_id: "",
-      booster_result: "",
+      hackathon_id: "",
+      hackathon_result: "",
       tone: "excited",
     },
   });
 
-  const boosterId = watch("booster_id");
+  const hackathonId = watch("hackathon_id");
 
   const mutation = useMutation({
     mutationFn: async (data: SocialAmplifierSchema): Promise<SocialAmplifierResult> => {
@@ -73,17 +73,17 @@ function SocialGeneratorContent({
           tech_stack_tags: project.tech_stack_tags ?? [],
           category: project.category ?? "Other",
           key_features: project.key_features ?? [],
-          loops_profile_url: `${origin}/viewer/projects/${data.project_id}`,
+          loops_profile_url: `${origin}/projects/${data.project_id}`,
         },
         tone: data.tone,
       };
 
-      if (data.booster_id) {
-        const booster = await getBooster(data.booster_id);
-        if (booster) {
-          payload.booster = {
-            name: booster.name,
-            ...(data.booster_result ? { result: data.booster_result } : {}),
+      if (data.hackathon_id) {
+        const hackathon = await getHackathon(data.hackathon_id);
+        if (hackathon) {
+          payload.hackathon = {
+            name: hackathon.name,
+            ...(data.hackathon_result ? { result: data.hackathon_result } : {}),
           };
         }
       }
@@ -121,7 +121,8 @@ function SocialGeneratorContent({
       </Link>
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Social amplifier</h1>
       <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-        Generate LinkedIn and Twitter posts for your project. Pick a project and optional booster context.
+        Generate LinkedIn and Twitter posts for your project. Pick a project and optional hackathon
+        context.
       </p>
 
       <form
@@ -129,39 +130,51 @@ function SocialGeneratorContent({
         className="mt-6 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 max-w-2xl space-y-4"
       >
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Project *</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            Project *
+          </label>
           <select
             {...register("project_id")}
             className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           >
             <option value="">Select project</option>
             {projects.map((p) => (
-              <option key={p.project_id} value={p.project_id}>{p.name}</option>
+              <option key={p.project_id} value={p.project_id}>
+                {p.name}
+              </option>
             ))}
           </select>
           {errors.project_id && (
-            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.project_id.message}</p>
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+              {errors.project_id.message}
+            </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Booster (optional)</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            Hackathon (optional)
+          </label>
           <select
-            {...register("booster_id")}
+            {...register("hackathon_id")}
             className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
           >
             <option value="">None</option>
-            {boosters.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+            {hackathons.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
             ))}
           </select>
         </div>
 
-        {boosterId && (
+        {hackathonId && (
           <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Booster result (optional)</label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+              Hackathon result (optional)
+            </label>
             <select
-              {...register("booster_result")}
+              {...register("hackathon_result")}
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
             >
               <option value="">Participant</option>
@@ -174,7 +187,9 @@ function SocialGeneratorContent({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Tone</label>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            Tone
+          </label>
           <select
             {...register("tone")}
             className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-900 dark:text-white"
@@ -190,15 +205,17 @@ function SocialGeneratorContent({
           disabled={mutation.isPending}
           className="flex items-center gap-2 rounded-lg bg-violet-600 text-white px-4 py-2 font-medium hover:bg-violet-700 disabled:opacity-50"
         >
-          {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+          {mutation.isPending ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Share2 className="w-4 h-4" />
+          )}
           Generate posts
         </button>
       </form>
 
       {mutation.error && (
-        <p className="mt-4 text-sm text-red-600 dark:text-red-400">
-          {mutation.error.message}
-        </p>
+        <p className="mt-4 text-sm text-red-600 dark:text-red-400">{mutation.error.message}</p>
       )}
 
       {result && (
@@ -207,29 +224,43 @@ function SocialGeneratorContent({
           {result.linkedin_post && (
             <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">LinkedIn</span>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  LinkedIn
+                </span>
                 <button
                   type="button"
                   onClick={() => copyToClipboard(result.linkedin_post!, "linkedin")}
                   className="flex items-center gap-1 text-xs text-violet-600 dark:text-violet-400 hover:underline"
                 >
-                  {copied === "linkedin" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied === "linkedin" ? (
+                    <Check className="w-3.5 h-3.5" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
                   {copied === "linkedin" ? "Copied" : "Copy"}
                 </button>
               </div>
-              <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">{result.linkedin_post}</p>
+              <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
+                {result.linkedin_post}
+              </p>
             </div>
           )}
           {result.twitter_post && (
             <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Twitter / X</span>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                  Twitter / X
+                </span>
                 <button
                   type="button"
                   onClick={() => copyToClipboard(result.twitter_post!, "twitter")}
                   className="flex items-center gap-1 text-xs text-violet-600 dark:text-violet-400 hover:underline"
                 >
-                  {copied === "twitter" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied === "twitter" ? (
+                    <Check className="w-3.5 h-3.5" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
                   {copied === "twitter" ? "Copied" : "Copy"}
                 </button>
               </div>
@@ -239,14 +270,22 @@ function SocialGeneratorContent({
           )}
           {result.suggested_hashtags && result.suggested_hashtags.length > 0 && (
             <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Suggested hashtags</span>
-              <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{result.suggested_hashtags.join(" ")}</p>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                Suggested hashtags
+              </span>
+              <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">
+                {result.suggested_hashtags.join(" ")}
+              </p>
               <button
                 type="button"
                 onClick={() => copyToClipboard(result.suggested_hashtags!.join(" "), "hashtags")}
                 className="mt-2 flex items-center gap-1 text-xs text-violet-600 dark:text-violet-400 hover:underline"
               >
-                {copied === "hashtags" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied === "hashtags" ? (
+                  <Check className="w-3.5 h-3.5" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
                 {copied === "hashtags" ? "Copied" : "Copy"}
               </button>
             </div>
@@ -256,7 +295,14 @@ function SocialGeneratorContent({
 
       {projects.length === 0 && (
         <p className="mt-6 text-sm text-zinc-500">
-          No projects yet. <Link href="/builder/new" className="text-violet-600 dark:text-violet-400 hover:underline">Create a profile</Link> first.
+          No projects yet.{" "}
+          <Link
+            href="/builder/new"
+            className="text-violet-600 dark:text-violet-400 hover:underline"
+          >
+            Create a profile
+          </Link>{" "}
+          first.
         </p>
       )}
     </div>

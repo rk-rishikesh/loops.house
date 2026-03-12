@@ -1,12 +1,12 @@
-import { NextRequest } from "next/server";
-import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
+import type { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
+import { generateJSON } from "../../lib/gemini-client";
+import { buildKnowledgeBase } from "../../lib/knowledge-base";
+import { createSSEStream, sseResponse } from "../../lib/sse";
 import { flattenAndIndex } from "../../sub-agents/code-reader/route";
 import { analyzeYoutube } from "../../sub-agents/demo-reader/route";
 import { analyzeTheme } from "../../sub-agents/theme-reader/route";
-import { buildKnowledgeBase } from "../../lib/knowledge-base";
-import { createSSEStream, sseResponse } from "../../lib/sse";
-import { generateJSON } from "../../lib/gemini-client";
 
 interface ProfileInput {
   project_id?: string;
@@ -20,13 +20,10 @@ interface ProfileInput {
   screenshot_urls?: string[];
   additional_links?: { label: string; url: string }[];
   social_links?: { label: string; url: string }[];
-  booster_id?: string;
+  hackathon_id?: string;
 }
 
-function mergeTechStack(
-  fromCode: string[],
-  fromDemo: string[] | undefined
-): string[] {
+function mergeTechStack(fromCode: string[], fromDemo: string[] | undefined): string[] {
   const set = new Set<string>();
   fromCode.forEach((t) => set.add(t.trim()));
   fromDemo?.forEach((t) => set.add(t.trim()));
@@ -34,36 +31,36 @@ function mergeTechStack(
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAuth(["builder", "host", "admin"]);
+  const auth = await requireAuth();
   if (!auth) return unauthorized();
 
   const input: ProfileInput = await request.json();
 
   if (!input.team_id || !input.name || !input.description) {
-    return new Response(
-      JSON.stringify({ error: "team_id, name, and description are required" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "team_id, name, and description are required" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   // Input size validation
   if (input.name.length > 500) {
-    return new Response(
-      JSON.stringify({ error: "name must be 500 characters or fewer" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "name must be 500 characters or fewer" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
   if (input.description.length > 50_000) {
     return new Response(
       JSON.stringify({ error: "description must be 50,000 characters or fewer" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
   if (input.screenshot_urls && input.screenshot_urls.length > 10) {
-    return new Response(
-      JSON.stringify({ error: "screenshot_urls must have 10 items or fewer" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "screenshot_urls must have 10 items or fewer" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const { stream, send, close } = createSSEStream();
@@ -73,13 +70,25 @@ export async function POST(request: NextRequest) {
       send("progress", { step: "started", message: "Profile generation started" });
 
       if (!input.github_url) {
-        send("progress", { step: "code-reader", status: "skipped", message: "No GitHub URL provided" });
+        send("progress", {
+          step: "code-reader",
+          status: "skipped",
+          message: "No GitHub URL provided",
+        });
       }
       if (!input.youtube_url) {
-        send("progress", { step: "demo-reader", status: "skipped", message: "No YouTube URL provided" });
+        send("progress", {
+          step: "demo-reader",
+          status: "skipped",
+          message: "No YouTube URL provided",
+        });
       }
       if (!input.screenshot_urls?.length && !input.logo_url) {
-        send("progress", { step: "theme-reader", status: "skipped", message: "No logo or screenshots provided" });
+        send("progress", {
+          step: "theme-reader",
+          status: "skipped",
+          message: "No logo or screenshots provided",
+        });
       }
 
       const codePromise = input.github_url
@@ -110,19 +119,20 @@ export async function POST(request: NextRequest) {
           })()
         : Promise.resolve(null);
 
-      const themePromise = (input.screenshot_urls?.length || input.logo_url)
-        ? (async () => {
-            send("progress", { step: "theme-reader", status: "started" });
-            try {
-              const result = await analyzeTheme(input.screenshot_urls || [], input.logo_url);
-              send("progress", { step: "theme-reader", status: "done" });
-              return result;
-            } catch (e) {
-              send("progress", { step: "theme-reader", status: "failed", error: String(e) });
-              return null;
-            }
-          })()
-        : Promise.resolve(null);
+      const themePromise =
+        input.screenshot_urls?.length || input.logo_url
+          ? (async () => {
+              send("progress", { step: "theme-reader", status: "started" });
+              try {
+                const result = await analyzeTheme(input.screenshot_urls || [], input.logo_url);
+                send("progress", { step: "theme-reader", status: "done" });
+                return result;
+              } catch (e) {
+                send("progress", { step: "theme-reader", status: "failed", error: String(e) });
+                return null;
+              }
+            })()
+          : Promise.resolve(null);
 
       const [codeResult, demoResult, themeResult] = await Promise.all([
         codePromise,
@@ -147,8 +157,10 @@ export async function POST(request: NextRequest) {
             logo_url: input.logo_url ?? null,
             website_url: input.website_url ?? null,
             screenshot_urls: input.screenshot_urls ?? [],
-            additional_links: (input.additional_links ?? []) as unknown as import("@/lib/supabase/types").Json,
-            social_links: (input.social_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+            additional_links: (input.additional_links ??
+              []) as unknown as import("@/lib/supabase/types").Json,
+            social_links: (input.social_links ??
+              []) as unknown as import("@/lib/supabase/types").Json,
           })
           .eq("id", projectId);
         if (baseUpdateError) {
@@ -166,8 +178,10 @@ export async function POST(request: NextRequest) {
             logo_url: input.logo_url ?? null,
             website_url: input.website_url ?? null,
             screenshot_urls: input.screenshot_urls ?? [],
-            additional_links: (input.additional_links ?? []) as unknown as import("@/lib/supabase/types").Json,
-            social_links: (input.social_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+            additional_links: (input.additional_links ??
+              []) as unknown as import("@/lib/supabase/types").Json,
+            social_links: (input.social_links ??
+              []) as unknown as import("@/lib/supabase/types").Json,
           })
           .select("id")
           .single();
@@ -192,7 +206,9 @@ export async function POST(request: NextRequest) {
             `Summary: ${demoResult.summary}`,
             `Problem addressed: ${demoResult.problem_addressed}`,
             `Key features:\n${demoResult.key_features.map((f) => `- ${f}`).join("\n")}`,
-            demoResult.tech_mentioned.length ? `Tech mentioned: ${demoResult.tech_mentioned.join(", ")}` : "",
+            demoResult.tech_mentioned.length
+              ? `Tech mentioned: ${demoResult.tech_mentioned.join(", ")}`
+              : "",
             demoResult.timestamps.length
               ? `Key moments:\n${demoResult.timestamps.map((t) => `[${t.time_seconds}s] ${t.label}`).join("\n")}`
               : "",
@@ -218,21 +234,35 @@ export async function POST(request: NextRequest) {
 
       const techStackTags = mergeTechStack(
         codeResult?.tech_stack || [],
-        demoResult?.tech_mentioned
+        demoResult?.tech_mentioned,
       );
 
-      send("progress", { step: "enrichment", status: "started", message: "Synthesizing enriched profile" });
+      send("progress", {
+        step: "enrichment",
+        status: "started",
+        message: "Synthesizing enriched profile",
+      });
 
       const allContext = [
         `Project name: ${input.name}`,
         `User-provided description:\n${input.description.slice(0, 3000)}`,
         techStackTags.length ? `Detected tech stack: ${techStackTags.join(", ")}` : "",
         demoResult?.summary ? `Demo video summary: ${demoResult.summary}` : "",
-        demoResult?.problem_addressed ? `Problem addressed (from demo): ${demoResult.problem_addressed}` : "",
-        demoResult?.key_features?.length ? `Demo key points: ${demoResult.key_features.join("; ")}` : "",
-        codeResult?.flattened_codebase ? `Codebase context (first 4000 chars):\n${codeResult.flattened_codebase.slice(0, 4000)}` : "",
-        themeResult ? `Visual theme: ${themeResult.theme_label}, primary ${themeResult.primary_color}` : "",
-      ].filter(Boolean).join("\n\n");
+        demoResult?.problem_addressed
+          ? `Problem addressed (from demo): ${demoResult.problem_addressed}`
+          : "",
+        demoResult?.key_features?.length
+          ? `Demo key points: ${demoResult.key_features.join("; ")}`
+          : "",
+        codeResult?.flattened_codebase
+          ? `Codebase context (first 4000 chars):\n${codeResult.flattened_codebase.slice(0, 4000)}`
+          : "",
+        themeResult
+          ? `Visual theme: ${themeResult.theme_label}, primary ${themeResult.primary_color}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
 
       interface EnrichmentResult {
         refined_description: string;
@@ -264,28 +294,36 @@ Generate the following fields as JSON:
    - "heading": A short label (1-4 words, e.g. "Real-time Sync", "AI Orchestration")
    - "detail": A 1-2 sentence explanation of the feature
 
-Return JSON only. No markdown.`
+Return JSON only. No markdown.`,
         );
       } catch (e) {
         console.error("[profile-creator] Enrichment failed:", e);
       }
 
       const refinedDescription = enrichment?.refined_description || input.description;
-      const tagline = enrichment?.tagline?.trim().slice(0, 120)
-        || input.description.replace(/\n.*/s, "").trim().slice(0, 137) || input.name;
+      const tagline =
+        enrichment?.tagline?.trim().slice(0, 120) ||
+        input.description.replace(/\n.*/s, "").trim().slice(0, 137) ||
+        input.name;
       const category = enrichment?.category?.trim() || "Other";
       const problemStatement = enrichment?.problem_statement || "";
-      const keyFeatures: { heading: string; detail: string }[] =
-        enrichment?.key_features?.length
-          ? enrichment.key_features
-          : (demoResult?.key_features ?? []).map((f) => ({ heading: f.split(/[:.–—]/)[0].trim().slice(0, 40), detail: f }));
+      const keyFeatures: { heading: string; detail: string }[] = enrichment?.key_features?.length
+        ? enrichment.key_features
+        : (demoResult?.key_features ?? []).map((f) => ({
+            heading: f
+              .split(/[:.–—]/)[0]
+              .trim()
+              .slice(0, 40),
+            detail: f,
+          }));
 
       send("progress", { step: "enrichment", status: "done" });
 
       const MAX_FLATTENED_DISPLAY = 80_000;
       const flattened_codebase = codeResult?.flattened_codebase
         ? codeResult.flattened_codebase.length > MAX_FLATTENED_DISPLAY
-          ? codeResult.flattened_codebase.slice(0, MAX_FLATTENED_DISPLAY) + "\n\n... (truncated for storage)"
+          ? codeResult.flattened_codebase.slice(0, MAX_FLATTENED_DISPLAY) +
+            "\n\n... (truncated for storage)"
           : codeResult.flattened_codebase
         : undefined;
 
@@ -314,7 +352,7 @@ Return JSON only. No markdown.`
         screenshot_urls: input.screenshot_urls,
         additional_links: input.additional_links,
         social_links: input.social_links,
-        booster_id: input.booster_id,
+        hackathon_id: input.hackathon_id,
       };
 
       // Persist all enriched data server-side (bypasses RLS via admin client)
@@ -337,8 +375,10 @@ Return JSON only. No markdown.`
           github_url: input.github_url ?? null,
           youtube_url: input.youtube_url ?? null,
           screenshot_urls: input.screenshot_urls ?? [],
-          additional_links: (input.additional_links ?? []) as unknown as import("@/lib/supabase/types").Json,
-          social_links: (input.social_links ?? []) as unknown as import("@/lib/supabase/types").Json,
+          additional_links: (input.additional_links ??
+            []) as unknown as import("@/lib/supabase/types").Json,
+          social_links: (input.social_links ??
+            []) as unknown as import("@/lib/supabase/types").Json,
           flattened_codebase: flattened_codebase ?? null,
           knowledge_base_id: projectId,
           knowledge_base_chunks: chunkCount,
@@ -355,7 +395,9 @@ Return JSON only. No markdown.`
         send("flattened_codebase", { project_id: projectId, flattened_codebase });
       }
     } catch (error) {
-      send("error", { message: error instanceof Error ? error.message : "Profile generation failed" });
+      send("error", {
+        message: error instanceof Error ? error.message : "Profile generation failed",
+      });
     } finally {
       close();
     }

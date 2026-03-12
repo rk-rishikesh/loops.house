@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-export const boosterTypeSchema = z.enum(["idea", "momentum", "capital"]);
-export const appRoleSchema = z.enum(["builder", "host", "viewer", "admin", "judge"]);
-
 // --- Client-side form schemas ---
 
 export const loginSchema = z.object({
@@ -22,31 +19,31 @@ export const createProfileSchema = z.object({
   description: z.string().min(1, "Description is required"),
   github_url: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
   youtube_url: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
-  logo_url: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
+  logo_url: z.string().or(z.literal("")).optional(),
   website_url: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
   screenshot_urls: z.string().optional(),
   social_links: z.string().optional(),
-  booster_id: z.string().optional(),
+  hackathon_id: z.string().optional(),
 });
 export type CreateProfileSchema = z.infer<typeof createProfileSchema>;
 
 export const socialAmplifierSchema = z.object({
   project_id: z.string().min(1, "Please select a project"),
-  booster_id: z.string().optional(),
-  booster_result: z.enum(["winner", "runner-up", "finalist", "participant", ""]).optional(),
+  hackathon_id: z.string().optional(),
+  hackathon_result: z.enum(["winner", "runner-up", "finalist", "participant", ""]).optional(),
   tone: z.enum(["professional", "casual", "excited"]),
 });
 export type SocialAmplifierSchema = z.infer<typeof socialAmplifierSchema>;
 
 export const analyticsFilterSchema = z.object({
-  booster_id: z.string().min(1, "Please select a booster"),
+  hackathon_id: z.string().min(1, "Please select a hackathon"),
   report_type: z.enum(["overview", "submissions", "full"]),
 });
 export type AnalyticsFilterSchema = z.infer<typeof analyticsFilterSchema>;
 
 export const judgingEvalSchema = z.object({
   project_id: z.string().min(1, "Please select a project"),
-  booster_id: z.string().min(1, "Please select a booster"),
+  hackathon_id: z.string().min(1, "Please select a hackathon"),
   mode: z.enum(["preview", "official"]),
 });
 export type JudgingEvalSchema = z.infer<typeof judgingEvalSchema>;
@@ -71,33 +68,98 @@ export const ideateInputSchema = z.object({
 });
 export type IdeateInputSchema = z.infer<typeof ideateInputSchema>;
 
-// Judge invites
-export const judgeInviteCreateSchema = z.object({
-  booster_id: z.string().min(1, "Booster ID is required"),
-  judge_email: z.string().email(),
-  assigned_tracks: z.array(z.string()).optional(),
+// --- Invitations ---
+
+export const invitationTypeSchema = z.enum(["event_host", "cohost", "judge", "project_member"]);
+
+export const createInvitationSchema = z
+  .object({
+    type: invitationTypeSchema,
+    email: z.string().email("Valid email required"),
+    hackathon_id: z.string().min(1).optional(),
+    project_id: z.string().min(1).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.type === "event_host") return !data.hackathon_id && !data.project_id;
+      if (data.type === "cohost" || data.type === "judge")
+        return !!data.hackathon_id && !data.project_id;
+      if (data.type === "project_member") return !!data.project_id;
+      return false;
+    },
+    { message: "Invalid invitation parameters for type" },
+  );
+
+export type CreateInvitationSchema = z.infer<typeof createInvitationSchema>;
+
+export const respondInvitationSchema = z.object({
+  invitation_id: z.string().min(1),
+  accept: z.boolean(),
+});
+export type RespondInvitationSchema = z.infer<typeof respondInvitationSchema>;
+
+// --- Admin ---
+
+export const adminToggleEventCreatorSchema = z.object({
+  user_id: z.string().min(1),
+  is_event_creator: z.boolean(),
 });
 
-export const judgeInviteAcceptSchema = z.object({
-  id: z.string().min(1, "Invite ID is required"),
+export const adminToggleAdminSchema = z.object({
+  user_id: z.string().min(1),
+  is_admin: z.boolean(),
 });
 
-// Host applications
-export const hostApplicationCreateSchema = z.object({
-  booster_type: boosterTypeSchema,
-  event_name: z.string().min(1).max(200),
-  expected_participants: z.number().int().positive().optional(),
-  contact: z.string().max(500).optional(),
-  description: z.string().max(2000).optional(),
-});
+// --- Hackathon management schemas ---
 
-export const hostApplicationReviewSchema = z.object({
-  id: z.string().min(1, "Application ID is required"),
-  status: z.enum(["approved", "rejected"]),
+export const addSpeakerSchema = z.object({
+  hackathon_id: z.string().min(1, "Please select a hackathon"),
+  name: z.string().min(1, "Speaker name is required").max(100),
+  image_url: z.string().url().optional().or(z.literal("")),
 });
+export type AddSpeakerSchema = z.infer<typeof addSpeakerSchema>;
 
-// Admin
-export const adminRoleUpdateSchema = z.object({
-  user_id: z.string().min(1, "User ID is required"),
-  role: appRoleSchema,
+export const updateSpeakerSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(100).optional(),
+  image_url: z.string().url().optional().or(z.literal("")).or(z.null()),
 });
+export type UpdateSpeakerSchema = z.infer<typeof updateSpeakerSchema>;
+
+export const editHackathonSchema = z.object({
+  id: z.string().min(1),
+  // Info
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(5000).optional(),
+  theme: z.string().max(500).optional(),
+  program_goal: z.string().max(2000).optional(),
+  website_url: z.string().url().optional().or(z.literal("")),
+  // Schedule
+  start_date: z.string().optional(),
+  submission_deadline: z.string().optional(),
+  judging_deadline: z.string().optional(),
+  results_date: z.string().optional(),
+  // Prizes
+  bounty_pool_summary: z.string().max(2000).optional(),
+  problem_statements: z.array(z.string()).optional(),
+  judging_criteria: z.array(z.object({ name: z.string(), description: z.string() })).optional(),
+});
+export type EditHackathonSchema = z.infer<typeof editHackathonSchema>;
+
+export const finalizeHackathonSchema = z.object({
+  hackathon_id: z.string().min(1),
+  ai_weight: z.number().min(0).max(1),
+  results: z.array(
+    z.object({
+      submission_id: z.string().min(1),
+      project_id: z.string().min(1),
+      rank: z.number().int().positive(),
+      final_score: z.number(),
+      ai_score_weighted: z.number(),
+      judge_score_weighted: z.number(),
+      raw_ai_score: z.number(),
+      raw_judge_avg_score: z.number(),
+    }),
+  ),
+});
+export type FinalizeHackathonSchema = z.infer<typeof finalizeHackathonSchema>;

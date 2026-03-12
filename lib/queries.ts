@@ -1,23 +1,19 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getProjects,
-  getBoosters,
-  getTeams,
-  getProject,
-  getBooster,
-  getBoosterSubmissions,
-  getSubmissionsForBoosters,
-  saveTeam,
-  saveProject,
-  saveBooster,
-  submitProjectToBooster,
-} from "@/lib/storage";
-import type { StoredProject, StoredBooster, StoredTeam, StoredSubmission, BoosterType } from "@/lib/storage";
-import { getRole } from "@/lib/auth";
-import type { AppRole } from "@/lib/auth";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
+import type { StoredHackathon, StoredProject, StoredTeam } from "@/lib/storage";
+import {
+  getHackathon,
+  getHackathons,
+  getProject,
+  getProjects,
+  getTeams,
+  saveHackathon,
+  saveProject,
+  saveTeam,
+  submitProjectToHackathon,
+} from "@/lib/storage";
 
 // --- Query key factory ---
 
@@ -27,20 +23,18 @@ export const queryKeys = {
     list: (teamId?: string) => ["projects", "list", teamId] as const,
     detail: (id: string) => ["projects", "detail", id] as const,
   },
-  boosters: {
-    all: ["boosters"] as const,
-    list: (type?: BoosterType) => ["boosters", "list", type] as const,
-    detail: (id: string) => ["boosters", "detail", id] as const,
+  hackathons: {
+    all: ["hackathons"] as const,
+    list: () => ["hackathons", "list"] as const,
+    detail: (id: string) => ["hackathons", "detail", id] as const,
   },
   teams: {
     all: ["teams"] as const,
     list: (userId?: string) => ["teams", "list", userId] as const,
   },
   submissions: {
-    forBooster: (boosterId: string) => ["submissions", "booster", boosterId] as const,
-    forBoosters: (boosterIds: string[]) => ["submissions", "boosters", boosterIds] as const,
+    forHackathon: (hackathonId: string) => ["submissions", "hackathon", hackathonId] as const,
   },
-  role: ["role"] as const,
 };
 
 // --- Hooks ---
@@ -54,15 +48,11 @@ export function useProjects(teamId?: string) {
   });
 }
 
-export function useBoosters(type?: BoosterType) {
+export function useHackathons() {
   const { loading } = useAuth();
-  return useQuery<StoredBooster[]>({
-    queryKey: queryKeys.boosters.list(type),
-    queryFn: async () => {
-      const all = await getBoosters();
-      if (!type) return all;
-      return all.filter((b) => (b.booster_type ?? "idea") === type);
-    },
+  return useQuery<StoredHackathon[]>({
+    queryKey: queryKeys.hackathons.list(),
+    queryFn: () => getHackathons(),
     enabled: !loading,
   });
 }
@@ -85,39 +75,12 @@ export function useProject(id: string) {
   });
 }
 
-export function useBooster(id: string) {
+export function useHackathon(id: string) {
   const { loading } = useAuth();
-  return useQuery<StoredBooster | null>({
-    queryKey: queryKeys.boosters.detail(id),
-    queryFn: () => getBooster(id),
+  return useQuery<StoredHackathon | null>({
+    queryKey: queryKeys.hackathons.detail(id),
+    queryFn: () => getHackathon(id),
     enabled: !loading && !!id,
-  });
-}
-
-export function useSubmissions(boosterId?: string) {
-  const { loading } = useAuth();
-  return useQuery<StoredSubmission[]>({
-    queryKey: queryKeys.submissions.forBooster(boosterId ?? ""),
-    queryFn: () => getBoosterSubmissions(boosterId!),
-    enabled: !loading && !!boosterId,
-  });
-}
-
-export function useSubmissionsForBoosters(boosterIds: string[]) {
-  const { loading } = useAuth();
-  return useQuery<StoredSubmission[]>({
-    queryKey: queryKeys.submissions.forBoosters(boosterIds),
-    queryFn: () => getSubmissionsForBoosters(boosterIds),
-    enabled: !loading && boosterIds.length > 0,
-  });
-}
-
-export function useRole() {
-  const { user, loading } = useAuth();
-  return useQuery<AppRole | null>({
-    queryKey: queryKeys.role,
-    queryFn: () => getRole(user!.id),
-    enabled: !loading && !!user,
   });
 }
 
@@ -134,13 +97,13 @@ export function useSaveTeam(userId: string | undefined) {
   });
 }
 
-export function useSubmitProject(boosterId: string) {
+export function useSubmitProject(hackathonId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ teamId, projectId }: { teamId: string; projectId: string }) =>
-      submitProjectToBooster(boosterId, teamId, projectId),
+      submitProjectToHackathon(hackathonId, teamId, projectId),
     onSuccess: () => {
-      queryClient.refetchQueries({ queryKey: queryKeys.submissions.forBooster(boosterId) });
+      queryClient.refetchQueries({ queryKey: queryKeys.submissions.forHackathon(hackathonId) });
       queryClient.refetchQueries({ queryKey: queryKeys.projects.all });
     },
   });
@@ -161,12 +124,12 @@ export function useSaveProject() {
   });
 }
 
-export function useSaveBooster() {
+export function useSaveHackathon() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (booster: Parameters<typeof saveBooster>[0]) => saveBooster(booster),
+    mutationFn: (hackathon: Parameters<typeof saveHackathon>[0]) => saveHackathon(hackathon),
     onSuccess: () => {
-      queryClient.refetchQueries({ predicate: (q) => q.queryKey[0] === "boosters" });
+      queryClient.refetchQueries({ predicate: (q) => q.queryKey[0] === "hackathons" });
       queryClient.refetchQueries({ predicate: (q) => q.queryKey[0] === "submissions" });
     },
   });

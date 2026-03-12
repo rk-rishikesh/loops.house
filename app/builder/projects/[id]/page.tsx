@@ -1,7 +1,13 @@
-import { getServerAuth } from "@/lib/server-auth";
-import { getProjectServer, getProjectSubmissionsServer, getBoostersByIdsServer, getTeamMembersServer, getTeamOwnerServer } from "@/lib/server-data";
 import { redirect } from "next/navigation";
 import { ProjectEditor } from "@/components/client/project-editor";
+import { getServerAuth } from "@/lib/server-auth";
+import {
+  getHackathonsByIdsServer,
+  getProjectServer,
+  getProjectSubmissionsServer,
+  getTeamMembersServer,
+  getTeamOwnerServer,
+} from "@/lib/server-data";
 
 export default async function BuilderProjectDetailPage({
   params,
@@ -20,14 +26,12 @@ export default async function BuilderProjectDetailPage({
     getProjectSubmissionsServer(projectId),
   ]);
 
-  // Build booster name/type maps
-  const boosterIds = [...new Set(submissions.map((s) => s.booster_id))];
-  const boosterMap = boosterIds.length > 0 ? await getBoostersByIdsServer(boosterIds) : {};
-  const boosterNames: Record<string, string> = {};
-  const boosterTypes: Record<string, string> = {};
-  for (const [id, b] of Object.entries(boosterMap)) {
-    boosterNames[id] = b.name;
-    boosterTypes[id] = b.booster_type ?? "idea";
+  // Build hackathon name map
+  const hackathonIds = [...new Set(submissions.map((s) => s.hackathon_id))];
+  const hackathonMap = hackathonIds.length > 0 ? await getHackathonsByIdsServer(hackathonIds) : {};
+  const hackathonNames: Record<string, string> = {};
+  for (const [id, h] of Object.entries(hackathonMap)) {
+    hackathonNames[id] = h.name;
   }
 
   // Fetch team members if project exists
@@ -40,8 +44,7 @@ export default async function BuilderProjectDetailPage({
     <ProjectEditor
       initialProject={project}
       initialSubmissions={submissions}
-      initialBoosterNames={boosterNames}
-      initialBoosterTypes={boosterTypes}
+      initialHackathonNames={hackathonNames}
       projectId={projectId}
       initialTeamMembers={teamMembers}
       teamOwnerId={teamOwnerId}

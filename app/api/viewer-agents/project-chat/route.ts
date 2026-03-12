@@ -1,8 +1,8 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { streamContent } from "../../lib/gemini-client";
-import { queryTopK } from "../../lib/vector-store";
 import { checkRateLimit } from "../../lib/rate-limiter";
+import { queryTopK } from "../../lib/vector-store";
 
 interface ProjectContext {
   name?: string;
@@ -27,8 +27,12 @@ function buildKbContext(project: ProjectContext): string {
   const parts = [
     p.name ? `Project: ${p.name}` : "",
     p.tagline ? `Tagline: ${p.tagline}` : "",
-    p.refined_description || p.description ? `Description:\n${p.refined_description || p.description}` : "",
-    p.key_features?.length ? `Key features:\n${p.key_features.map((f) => `- ${f}`).join("\n")}` : "",
+    p.refined_description || p.description
+      ? `Description:\n${p.refined_description || p.description}`
+      : "",
+    p.key_features?.length
+      ? `Key features:\n${p.key_features.map((f) => `- ${f}`).join("\n")}`
+      : "",
     p.tech_stack_tags?.length ? `Tech stack: ${p.tech_stack_tags.join(", ")}` : "",
     p.category ? `Category: ${p.category}` : "",
     p.flattened_codebase ? `\n--- Code (excerpt) ---\n${p.flattened_codebase.slice(0, 50000)}` : "",
@@ -36,7 +40,7 @@ function buildKbContext(project: ProjectContext): string {
   return parts.join("\n\n");
 }
 
-const SIMILARITY_THRESHOLD = 0.70;
+const SIMILARITY_THRESHOLD = 0.7;
 const MAX_HISTORY = 10;
 const RATE_LIMIT = parseInt(process.env.RATE_LIMIT_PROJECT_CHAT || "10", 10);
 
@@ -52,7 +56,7 @@ export async function POST(request: NextRequest) {
   if (!allowed) {
     return new Response(
       JSON.stringify({ error: "Session rate limit reached. Please try again later." }),
-      { status: 429, headers: { "Content-Type": "application/json" } }
+      { status: 429, headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -60,15 +64,18 @@ export async function POST(request: NextRequest) {
     const input: ProjectChatInput = await request.json();
 
     if (!input.project_id || !input.message) {
-      return new Response(
-        JSON.stringify({ error: "project_id and message are required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "project_id and message are required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     let context: string;
 
-    if (input.project && (input.project.name || input.project.refined_description || input.project.flattened_codebase)) {
+    if (
+      input.project &&
+      (input.project.name || input.project.refined_description || input.project.flattened_codebase)
+    ) {
       context = buildKbContext(input.project);
     } else {
       const results = await queryTopK(input.project_id, input.message, 5, 0);

@@ -1,24 +1,39 @@
 "use client";
 
-import { Suspense, useState, useCallback, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, ArrowRight, Loader2, Check, X, Minus, ChevronDown, ArrowUpRight } from "lucide-react";
-import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useTeams, useBoosters, useSaveProject } from "@/lib/queries";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  Check,
+  ChevronDown,
+  Loader2,
+  Minus,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { useAuth } from "@/app/providers";
-import { createProfileSchema, type CreateProfileSchema } from "@/lib/validations/schemas";
+import { useHackathons, useSaveProject, useTeams } from "@/lib/queries";
+import { type CreateProfileSchema, createProfileSchema } from "@/lib/validations/schemas";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 const STEPS = ["code-reader", "demo-reader", "theme-reader", "knowledge-base"] as const;
 type StepStatus = "pending" | "started" | "done" | "failed" | "skipped";
 
 // ─── Dropdown ─────────────────────────────────────────────────────────────────
-interface DropdownOption { value: string; label: string }
+interface DropdownOption {
+  value: string;
+  label: string;
+}
 
 function CustomDropdown({
-  options, value, onChange, placeholder = "Select…",
+  options,
+  value,
+  onChange,
+  placeholder = "Select…",
 }: {
   options: DropdownOption[];
   value: string;
@@ -45,7 +60,7 @@ function CustomDropdown({
         className="w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all duration-200 border-none cursor-pointer"
         style={{
           backgroundColor: open ? "#2d4a3e" : "#d6cfc0",
-          color: open ? "#f0ebe0" : (selected ? "#2d4a3e" : "rgba(45,74,62,0.45)"),
+          color: open ? "#f0ebe0" : selected ? "#2d4a3e" : "rgba(45,74,62,0.45)",
         }}
       >
         <span
@@ -75,17 +90,28 @@ function CustomDropdown({
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => { onChange(opt.value); setOpen(false); }}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
                 className="w-full flex items-center justify-between px-5 py-3.5 text-left cursor-pointer border-none transition-colors duration-100"
                 style={{
                   fontFamily: "'Inter', sans-serif",
                   fontSize: 14,
                   color: isSel ? "#f0ebe0" : "rgba(240,235,224,0.6)",
                   backgroundColor: isSel ? "rgba(240,235,224,0.12)" : "transparent",
-                  borderBottom: i < options.length - 1 ? "1px solid rgba(240,235,224,0.07)" : "none",
+                  borderBottom:
+                    i < options.length - 1 ? "1px solid rgba(240,235,224,0.07)" : "none",
                 }}
-                onMouseEnter={(e) => { if (!isSel) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(240,235,224,0.07)"; }}
-                onMouseLeave={(e) => { if (!isSel) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; }}
+                onMouseEnter={(e) => {
+                  if (!isSel)
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                      "rgba(240,235,224,0.07)";
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSel)
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
+                }}
               >
                 {opt.label}
                 {isSel && <Check size={13} style={{ color: "#f0ebe0" }} />}
@@ -109,11 +135,12 @@ function StepDots({ total, current }: { total: number; current: number }) {
           style={{
             width: i === current ? 24 : 6,
             height: 6,
-            backgroundColor: i === current
-              ? "#2d4a3e"
-              : i < current
-              ? "rgba(45,74,62,0.4)"
-              : "rgba(45,74,62,0.15)",
+            backgroundColor:
+              i === current
+                ? "#2d4a3e"
+                : i < current
+                  ? "rgba(45,74,62,0.4)"
+                  : "rgba(45,74,62,0.15)",
           }}
         />
       ))}
@@ -123,7 +150,9 @@ function StepDots({ total, current }: { total: number; current: number }) {
 
 // ─── Progress panel ───────────────────────────────────────────────────────────
 function ProgressPanel({
-  steps, progress, errors,
+  steps,
+  progress,
+  errors,
 }: {
   steps: readonly string[];
   progress: Record<string, StepStatus>;
@@ -145,19 +174,31 @@ function ProgressPanel({
           return (
             <div key={s} className="flex items-center gap-3">
               <span className="shrink-0">
-                {status === "done"    && <Check size={14} style={{ color: "#d6cfc0" }} />}
-                {status === "failed"  && <X size={14} style={{ color: "#ff8080" }} />}
-                {status === "skipped" && <Minus size={14} style={{ color: "rgba(240,235,224,0.3)" }} />}
-                {status === "started" && <Loader2 size={14} className="animate-spin" style={{ color: "#d6cfc0" }} />}
+                {status === "done" && <Check size={14} style={{ color: "#d6cfc0" }} />}
+                {status === "failed" && <X size={14} style={{ color: "#ff8080" }} />}
+                {status === "skipped" && (
+                  <Minus size={14} style={{ color: "rgba(240,235,224,0.3)" }} />
+                )}
+                {status === "started" && (
+                  <Loader2 size={14} className="animate-spin" style={{ color: "#d6cfc0" }} />
+                )}
                 {status === "pending" && (
-                  <span className="block w-3.5 h-3.5 rounded-full" style={{ backgroundColor: "rgba(240,235,224,0.15)" }} />
+                  <span
+                    className="block w-3.5 h-3.5 rounded-full"
+                    style={{ backgroundColor: "rgba(240,235,224,0.15)" }}
+                  />
                 )}
               </span>
               <span
                 className="text-[13px] flex-1"
                 style={{
                   fontFamily: "Georgia, serif",
-                  color: status === "done" ? "#f0ebe0" : status === "failed" ? "#ff8080" : "rgba(240,235,224,0.45)",
+                  color:
+                    status === "done"
+                      ? "#f0ebe0"
+                      : status === "failed"
+                        ? "#ff8080"
+                        : "rgba(240,235,224,0.45)",
                 }}
               >
                 {s.replace(/-/g, " ")}
@@ -178,11 +219,16 @@ function ProgressPanel({
 // ─── Main export ──────────────────────────────────────────────────────────────
 export default function NewProfilePage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#f0ebe0" }}>
-        <Loader2 size={20} className="animate-spin text-[#2d4a3e]" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div
+          className="min-h-screen flex items-center justify-center"
+          style={{ backgroundColor: "#f0ebe0" }}
+        >
+          <Loader2 size={20} className="animate-spin text-[#2d4a3e]" />
+        </div>
+      }
+    >
       <NewProfileContent />
     </Suspense>
   );
@@ -202,38 +248,54 @@ function NewProfileContent() {
   const hasAppliedDefaults = useRef(false);
 
   const { data: teams = [] } = useTeams(user?.id);
-  const { data: boosters = [] } = useBoosters();
+  const { data: hackathons = [] } = useHackathons();
   const saveProjectMutation = useSaveProject();
 
   const teamIdFromUrl = searchParams.get("team_id");
-  const boosterIdFromUrl = searchParams.get("booster_id");
+  const hackathonIdFromUrl = searchParams.get("hackathon_id");
 
   const {
-    register, handleSubmit, reset, trigger, control,
+    register,
+    handleSubmit,
+    reset,
+    trigger,
+    control,
     formState: { errors, isValid },
     watch,
   } = useForm<CreateProfileSchema>({
     resolver: zodResolver(createProfileSchema),
     mode: "onChange",
     defaultValues: {
-      team_id: "", name: "", description: "", github_url: "", youtube_url: "",
-      logo_url: "", website_url: "", screenshot_urls: "", social_links: "", booster_id: "",
+      team_id: "",
+      name: "",
+      description: "",
+      github_url: "",
+      youtube_url: "",
+      logo_url: "",
+      website_url: "",
+      screenshot_urls: "",
+      social_links: "",
+      hackathon_id: "",
     },
   });
 
   useEffect(() => {
     if (hasAppliedDefaults.current) return;
-    const validUrlTeam = teamIdFromUrl && teams.some((t) => t.id === teamIdFromUrl) ? teamIdFromUrl : null;
+    const validUrlTeam =
+      teamIdFromUrl && teams.some((t) => t.id === teamIdFromUrl) ? teamIdFromUrl : null;
     const fallbackTeamId = teams[0]?.id ?? "";
-    const validUrlBooster = boosterIdFromUrl && boosters.some((b) => b.id === boosterIdFromUrl) ? boosterIdFromUrl : null;
-    if (!validUrlTeam && !fallbackTeamId && !validUrlBooster) return;
+    const validUrlHackathon =
+      hackathonIdFromUrl && hackathons.some((b) => b.id === hackathonIdFromUrl)
+        ? hackathonIdFromUrl
+        : null;
+    if (!validUrlTeam && !fallbackTeamId && !validUrlHackathon) return;
     reset((prev) => ({
       ...prev,
       team_id: validUrlTeam ?? (prev.team_id || fallbackTeamId),
-      booster_id: validUrlBooster ?? prev.booster_id,
+      hackathon_id: validUrlHackathon ?? prev.hackathon_id,
     }));
     hasAppliedDefaults.current = true;
-  }, [teamIdFromUrl, boosterIdFromUrl, teams, boosters, reset]);
+  }, [teamIdFromUrl, hackathonIdFromUrl, teams, hackathons, reset]);
 
   const FORM_STEPS: {
     key: keyof CreateProfileSchema;
@@ -244,21 +306,82 @@ function NewProfileContent() {
     type?: string;
     multiline?: boolean;
   }[] = [
-    { key: "team_id",          label: "Which team is this for?",     sub: "Select the team this profile belongs to." },
-    { key: "name",             label: "Name your project.",           sub: "A great name is memorable and clear.",                                          placeholder: "My awesome project…" },
-    { key: "description",      label: "Describe what it does.",       sub: "A few sentences about what makes it special.",                                  placeholder: "A platform that helps teams…", multiline: true },
-    { key: "github_url",       label: "Where's the code?",            sub: "Link your GitHub repository.",              optional: true,                      placeholder: "https://github.com/user/repo",   type: "url" },
-    { key: "youtube_url",      label: "Got a demo video?",            sub: "Paste your YouTube demo link.",             optional: true,                      placeholder: "https://youtube.com/watch?v=…",  type: "url" },
-    { key: "logo_url",         label: "Add a logo URL.",              sub: "Show off your brand identity.",             optional: true,                      placeholder: "https://example.com/logo.png",   type: "url" },
-    { key: "screenshot_urls",  label: "Any screenshots?",             sub: "One URL per line — show what you built.",   optional: true,                      placeholder: "https://example.com/screen.png", multiline: true },
-    { key: "website_url",      label: "Where can people find it?",    sub: "Your live project URL.",                    optional: true,                      placeholder: "https://myproject.com",          type: "url" },
-    { key: "social_links",     label: "Social links to share?",       sub: "Format: Label, URL — one per line.",        optional: true,                      placeholder: "Twitter, https://twitter.com/…",  multiline: true },
-    ...(boosters.length > 0 ? [{
-      key: "booster_id" as keyof CreateProfileSchema,
-      label: "Link a booster.",
-      sub: "Connect this profile to a booster.",
+    {
+      key: "team_id",
+      label: "Which team is this for?",
+      sub: "Select the team this profile belongs to.",
+    },
+    {
+      key: "name",
+      label: "Name your project.",
+      sub: "A great name is memorable and clear.",
+      placeholder: "My awesome project…",
+    },
+    {
+      key: "description",
+      label: "Describe what it does.",
+      sub: "A few sentences about what makes it special.",
+      placeholder: "A platform that helps teams…",
+      multiline: true,
+    },
+    {
+      key: "github_url",
+      label: "Where's the code?",
+      sub: "Link your GitHub repository.",
       optional: true,
-    }] : []),
+      placeholder: "https://github.com/user/repo",
+      type: "url",
+    },
+    {
+      key: "youtube_url",
+      label: "Got a demo video?",
+      sub: "Paste your YouTube demo link.",
+      optional: true,
+      placeholder: "https://youtube.com/watch?v=…",
+      type: "url",
+    },
+    {
+      key: "logo_url",
+      label: "Add a logo URL.",
+      sub: "Show off your brand identity.",
+      optional: true,
+      placeholder: "https://example.com/logo.png",
+      type: "url",
+    },
+    {
+      key: "screenshot_urls",
+      label: "Any screenshots?",
+      sub: "One URL per line — show what you built.",
+      optional: true,
+      placeholder: "https://example.com/screen.png",
+      multiline: true,
+    },
+    {
+      key: "website_url",
+      label: "Where can people find it?",
+      sub: "Your live project URL.",
+      optional: true,
+      placeholder: "https://myproject.com",
+      type: "url",
+    },
+    {
+      key: "social_links",
+      label: "Social links to share?",
+      sub: "Format: Label, URL — one per line.",
+      optional: true,
+      placeholder: "Twitter, https://twitter.com/…",
+      multiline: true,
+    },
+    ...(hackathons.length > 0
+      ? [
+          {
+            key: "hackathon_id" as keyof CreateProfileSchema,
+            label: "Link a hackathon.",
+            sub: "Connect this profile to a hackathon.",
+            optional: true,
+          },
+        ]
+      : []),
   ];
 
   const totalSteps = FORM_STEPS.length;
@@ -283,84 +406,123 @@ function NewProfileContent() {
     if (currentStep > 0) navigateTo(currentStep - 1, -1);
   };
 
-  const onSubmit = useCallback(async (data: CreateProfileSchema) => {
-    setError(null);
-    setProgressErrors({});
-    setLoading(true);
-    STEPS.forEach((s) => setProgress((p) => ({ ...p, [s]: "pending" })));
+  const onSubmit = useCallback(
+    async (data: CreateProfileSchema) => {
+      setError(null);
+      setProgressErrors({});
+      setLoading(true);
+      STEPS.forEach((s) => setProgress((p) => ({ ...p, [s]: "pending" })));
 
-    const screenshotUrls = data.screenshot_urls
-      ? data.screenshot_urls.split("\n").map((u) => u.trim()).filter(Boolean)
-      : undefined;
-    const socialLinks = data.social_links
-      ? data.social_links.split("\n").map((line) => {
-          const trimmed = line.trim();
-          if (!trimmed) return null;
-          const comma = trimmed.indexOf(",");
-          if (comma > 0) return { label: trimmed.slice(0, comma).trim(), url: trimmed.slice(comma + 1).trim() };
-          return { label: trimmed, url: trimmed };
-        }).filter((x): x is { label: string; url: string } => x !== null && Boolean(x.url))
-      : undefined;
+      const screenshotUrls = data.screenshot_urls
+        ? data.screenshot_urls
+            .split("\n")
+            .map((u) => u.trim())
+            .filter(Boolean)
+        : undefined;
+      const socialLinks = data.social_links
+        ? data.social_links
+            .split("\n")
+            .map((line) => {
+              const trimmed = line.trim();
+              if (!trimmed) return null;
+              const comma = trimmed.indexOf(",");
+              if (comma > 0)
+                return {
+                  label: trimmed.slice(0, comma).trim(),
+                  url: trimmed.slice(comma + 1).trim(),
+                };
+              return { label: trimmed, url: trimmed };
+            })
+            .filter((x): x is { label: string; url: string } => x !== null && Boolean(x.url))
+        : undefined;
 
-    try {
-      const res = await fetch("/api/builder-agents/profile-creator", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, screenshot_urls: screenshotUrls, social_links: socialLinks }),
-      });
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json.error || json.message || "Profile creation failed");
-      }
-      if (!res.body) throw new Error("No response body");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let lastComplete: Record<string, unknown> | null = null;
-      let serverError: string | null = null;
-      let currentEvent: string | null = null;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          if (line.startsWith("event: ")) { currentEvent = line.slice(7).trim(); continue; }
-          if (!line.startsWith("data: ")) continue;
-          const chunk = line.slice(6);
-          if (chunk === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(chunk) as Record<string, unknown>;
-            if (typeof parsed.message === "string") serverError = parsed.message;
-            if (typeof parsed.step === "string") {
-              const status = (["done","failed","skipped"].includes(parsed.status as string) ? parsed.status : "started") as StepStatus;
-              setProgress((p) => ({ ...p, [parsed.step as string]: status }));
-              if (parsed.status === "failed" && typeof parsed.error === "string")
-                setProgressErrors((e) => ({ ...e, [parsed.step as string]: parsed.error as string }));
-            }
-            if (currentEvent === "complete" && typeof parsed.project_id === "string") lastComplete = parsed;
-            if (currentEvent === "flattened_codebase" && lastComplete && parsed.project_id === lastComplete.project_id && typeof parsed.flattened_codebase === "string")
-              lastComplete = { ...lastComplete, flattened_codebase: parsed.flattened_codebase };
-          } catch { /* ignore */ }
+      try {
+        const res = await fetch("/api/builder-agents/profile-creator", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...data,
+            screenshot_urls: screenshotUrls,
+            social_links: socialLinks,
+          }),
+        });
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          throw new Error(json.error || json.message || "Profile creation failed");
         }
-      }
+        if (!res.body) throw new Error("No response body");
 
-      if (serverError && !lastComplete) throw new Error(serverError);
-      if (lastComplete && typeof lastComplete.project_id === "string") {
-        await saveProjectMutation.mutateAsync({ ...lastComplete, team_id: data.team_id, created_at: new Date().toISOString() } as import("@/lib/storage").StoredProject);
-        router.push(`/builder/projects/${lastComplete.project_id}`);
-        return;
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let lastComplete: Record<string, unknown> | null = null;
+        let serverError: string | null = null;
+        let currentEvent: string | null = null;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              currentEvent = line.slice(7).trim();
+              continue;
+            }
+            if (!line.startsWith("data: ")) continue;
+            const chunk = line.slice(6);
+            if (chunk === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(chunk) as Record<string, unknown>;
+              if (typeof parsed.message === "string") serverError = parsed.message;
+              if (typeof parsed.step === "string") {
+                const status = (
+                  ["done", "failed", "skipped"].includes(parsed.status as string)
+                    ? parsed.status
+                    : "started"
+                ) as StepStatus;
+                setProgress((p) => ({ ...p, [parsed.step as string]: status }));
+                if (parsed.status === "failed" && typeof parsed.error === "string")
+                  setProgressErrors((e) => ({
+                    ...e,
+                    [parsed.step as string]: parsed.error as string,
+                  }));
+              }
+              if (currentEvent === "complete" && typeof parsed.project_id === "string")
+                lastComplete = parsed;
+              if (
+                currentEvent === "flattened_codebase" &&
+                lastComplete &&
+                parsed.project_id === lastComplete.project_id &&
+                typeof parsed.flattened_codebase === "string"
+              )
+                lastComplete = { ...lastComplete, flattened_codebase: parsed.flattened_codebase };
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+
+        if (serverError && !lastComplete) throw new Error(serverError);
+        if (lastComplete && typeof lastComplete.project_id === "string") {
+          await saveProjectMutation.mutateAsync({
+            ...lastComplete,
+            team_id: data.team_id,
+            created_at: new Date().toISOString(),
+          } as import("@/lib/storage").StoredProject);
+          router.push(`/builder/projects/${lastComplete.project_id}`);
+          return;
+        }
+        throw new Error(serverError || "No profile data received.");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong");
+      } finally {
+        setLoading(false);
       }
-      throw new Error(serverError || "No profile data received.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  }, [router, saveProjectMutation]);
+    },
+    [router, saveProjectMutation],
+  );
 
   // Shared input style
   const inputBase: React.CSSProperties = {
@@ -379,7 +541,6 @@ function NewProfileContent() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#f0ebe0" }}>
-
       {/* ── Top nav ──────────────────────────────────────────────────────────── */}
       <header
         className="flex items-center justify-between px-10 py-5 border-b"
@@ -405,10 +566,8 @@ function NewProfileContent() {
 
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
       <div className="flex flex-1">
-
         {/* LEFT — form area */}
         <main className="flex-1 flex flex-col justify-center px-10 md:px-20 lg:px-32 py-16 max-w-3xl">
-
           <form onSubmit={handleSubmit(onSubmit)}>
             {/* Step header */}
             <div
@@ -472,10 +631,13 @@ function NewProfileContent() {
               }}
             >
               {/* team_id */}
-              {activeStep?.key === "team_id" && (
-                teams.length === 0 ? (
+              {activeStep?.key === "team_id" &&
+                (teams.length === 0 ? (
                   <div>
-                    <p className="text-sm text-[#2d4a3e]/50 mb-6" style={{ fontFamily: "Georgia, serif" }}>
+                    <p
+                      className="text-sm text-[#2d4a3e]/50 mb-6"
+                      style={{ fontFamily: "Georgia, serif" }}
+                    >
                       You don&apos;t have any teams yet.
                     </p>
                     <Link
@@ -499,17 +661,19 @@ function NewProfileContent() {
                       />
                     )}
                   />
-                )
-              )}
+                ))}
 
-              {/* booster_id */}
-              {activeStep?.key === "booster_id" && boosters.length > 0 && (
+              {/* hackathon_id */}
+              {activeStep?.key === "hackathon_id" && hackathons.length > 0 && (
                 <Controller
-                  name="booster_id"
+                  name="hackathon_id"
                   control={control}
                   render={({ field }) => (
                     <CustomDropdown
-                      options={[{ value: "", label: "None" }, ...boosters.map((b) => ({ value: b.id, label: b.name }))]}
+                      options={[
+                        { value: "", label: "None" },
+                        ...hackathons.map((b) => ({ value: b.id, label: b.name })),
+                      ]}
                       value={field.value ?? ""}
                       onChange={field.onChange}
                       placeholder="None"
@@ -519,8 +683,9 @@ function NewProfileContent() {
               )}
 
               {/* Text + URL inputs */}
-              {activeStep?.key !== "team_id" && activeStep?.key !== "booster_id" && (
-                activeStep?.multiline ? (
+              {activeStep?.key !== "team_id" &&
+                activeStep?.key !== "hackathon_id" &&
+                (activeStep?.multiline ? (
                   <textarea
                     rows={4}
                     placeholder={activeStep.placeholder}
@@ -544,8 +709,7 @@ function NewProfileContent() {
                     onFocus={(e) => (e.currentTarget.style.backgroundColor = "#cdc7b7")}
                     onBlur={(e) => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
                   />
-                )
-              )}
+                ))}
 
               {/* Field error */}
               {activeStep?.key && errors[activeStep.key] && (
@@ -608,7 +772,11 @@ function NewProfileContent() {
                   onClick={handleNext}
                   disabled={loading}
                   className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all duration-200 hover:opacity-90 text-[10px] tracking-widest uppercase font-bold px-7 py-3"
-                  style={{ backgroundColor: "#2d4a3e", color: "#f0ebe0", fontFamily: "'Inter', sans-serif" }}
+                  style={{
+                    backgroundColor: "#2d4a3e",
+                    color: "#f0ebe0",
+                    fontFamily: "'Inter', sans-serif",
+                  }}
                 >
                   Continue <ArrowRight size={12} />
                 </button>
@@ -617,7 +785,11 @@ function NewProfileContent() {
                   type="submit"
                   disabled={loading || !isValid || !teamId}
                   className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all duration-200 hover:opacity-90 disabled:opacity-40 text-[10px] tracking-widest uppercase font-bold px-7 py-3"
-                  style={{ backgroundColor: "#2d4a3e", color: "#f0ebe0", fontFamily: "'Inter', sans-serif" }}
+                  style={{
+                    backgroundColor: "#2d4a3e",
+                    color: "#f0ebe0",
+                    fontFamily: "'Inter', sans-serif",
+                  }}
                 >
                   {loading && <Loader2 size={12} className="animate-spin" />}
                   {loading ? "Creating…" : "Create Profile"}
@@ -648,7 +820,8 @@ function NewProfileContent() {
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              backgroundImage: "radial-gradient(circle, rgba(214,207,192,0.12) 1px, transparent 1px)",
+              backgroundImage:
+                "radial-gradient(circle, rgba(214,207,192,0.12) 1px, transparent 1px)",
               backgroundSize: "28px 28px",
             }}
           />

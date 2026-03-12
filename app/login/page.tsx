@@ -1,25 +1,25 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft, Github, Mail } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Mail, Github } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { signInWithOAuth, signInWithEmail, signUpWithEmail } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/client";
-import type { AppRole } from "@/lib/supabase/types";
-import { loginSchema, type LoginSchema } from "@/lib/validations/schemas";
 import { useAuth } from "@/app/providers";
+import { signInWithEmail, signInWithOAuth, signUpWithEmail } from "@/lib/auth";
+import { type LoginSchema, loginSchema } from "@/lib/validations/schemas";
 
-const ROLE_DASHBOARDS: Record<AppRole, string> = {
-  builder: "/builder",
-  host: "/host",
-  viewer: "/boosters",
-  judge: "/host/judging",
-  admin: "/admin",
-};
+function getDashboard(
+  caps: { isAdmin: boolean; isEventCreator: boolean; isCohost: boolean; isJudge: boolean } | null,
+): string {
+  if (!caps) return "/dashboard";
+  if (caps.isAdmin) return "/admin";
+  if (caps.isEventCreator || caps.isCohost) return "/host";
+  if (caps.isJudge) return "/judge";
+  return "/dashboard";
+}
 
 export default function LoginPage() {
   return (
@@ -33,23 +33,21 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const authError = searchParams.get("error");
-  const { user, role, loading: authLoading } = useAuth();
+  const { user, capabilities, loading: authLoading } = useAuth();
 
   const explicitRedirect = searchParams.get("redirect");
 
   // Redirect already-authenticated users to their dashboard
   useEffect(() => {
-    if (!authLoading && user && role) {
-      router.replace(explicitRedirect ?? ROLE_DASHBOARDS[role]);
+    if (!authLoading && user) {
+      router.replace(explicitRedirect ?? getDashboard(capabilities));
     }
-  }, [authLoading, user, role, router, explicitRedirect]);
+  }, [authLoading, user, capabilities, router, explicitRedirect]);
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [oauthLoading, setOauthLoading] = useState(false);
   const [serverError, setServerError] = useState(
-    authError === "auth_failed"
-      ? "Authentication failed. Please try again."
-      : "",
+    authError === "auth_failed" ? "Authentication failed. Please try again." : "",
   );
   const [message, setMessage] = useState("");
 
@@ -64,10 +62,7 @@ function LoginPageContent() {
   async function handleOAuth(provider: "google" | "github") {
     setServerError("");
     setOauthLoading(true);
-    const { error } = await signInWithOAuth(
-      provider,
-      explicitRedirect ?? undefined,
-    );
+    const { error } = await signInWithOAuth(provider, explicitRedirect ?? undefined);
     if (error) {
       setServerError(error.message);
       setOauthLoading(false);
@@ -88,42 +83,26 @@ function LoginPageContent() {
         setMessage("Check your email for a confirmation link.");
       }
     } else {
-      const { data: authData, error } = await signInWithEmail(
-        data.email,
-        data.password,
-      );
+      const { error } = await signInWithEmail(data.email, data.password);
       if (error) {
         setServerError(error.message);
       } else {
-        if (explicitRedirect) {
-          router.push(explicitRedirect);
-        } else {
-          const userId = authData.user?.id;
-          let role: AppRole | null = null;
-          if (userId) {
-            const supabase = createClient();
-            const { data: row } = await supabase
-              .from("users")
-              .select("role")
-              .eq("id", userId)
-              .single();
-            role = (row?.role as AppRole) ?? null;
-          }
-          router.push(role ? ROLE_DASHBOARDS[role] : "/builder");
-        }
+        // After sign-in, redirect. The middleware will set capabilities cookies
+        // on the next request. Use explicit redirect or default to builder.
+        router.push(explicitRedirect ?? "/dashboard");
       }
     }
   };
 
   // Don't render the form while the auth state is loading or a redirect is pending
-  if (authLoading || (!authLoading && user && role)) {
+  if (authLoading || (!authLoading && user)) {
     return <div className="min-h-screen bg-[#ECEEE5]" />;
   }
 
   return (
     <main className="min-h-screen bg-[#ECEEE5]">
       <div className="flex min-h-screen">
-        {/* Left side – mascot pattern */}
+        {/* Left side - mascot pattern */}
         <div className="hidden md:flex md:w-[70%] bg-[#20332b] items-center justify-center">
           <Image
             src="/login/logoPattern.png"
@@ -134,7 +113,7 @@ function LoginPageContent() {
           />
         </div>
 
-        {/* Right side – existing login form */}
+        {/* Right side - login form */}
         <div className="w-full md:w-[30%] bg-[#ECEEE5]">
           <div className="container mx-auto px-4 py-12 max-w-sm">
             <Link
@@ -199,9 +178,7 @@ function LoginPageContent() {
                 <div className="w-full border-t border-zinc-200" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-[#ECEEE5] px-2 text-zinc-500">
-                  or continue with email
-                </span>
+                <span className="bg-[#ECEEE5] px-2 text-zinc-500">or continue with email</span>
               </div>
             </div>
 
@@ -228,10 +205,7 @@ function LoginPageContent() {
                 )}
               </div>
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-zinc-700 mb-1"
-                >
+                <label htmlFor="password" className="block text-sm font-medium text-zinc-700 mb-1">
                   Password
                 </label>
                 <input
@@ -239,7 +213,7 @@ function LoginPageContent() {
                   type="password"
                   {...register("password")}
                   className="w-full px-3 py-2 rounded-xl border border-zinc-200 bg-white text-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#20332b]"
-                  placeholder="••••••••"
+                  placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                 />
                 {errors.password && (
                   <p className="mt-1 text-xs text-red-600 dark:text-red-400">
@@ -248,9 +222,7 @@ function LoginPageContent() {
                 )}
               </div>
 
-              {serverError && (
-                <p className="text-sm text-red-600">{serverError}</p>
-              )}
+              {serverError && <p className="text-sm text-red-600">{serverError}</p>}
               {message && <p className="text-sm text-emerald-700">{message}</p>}
 
               <button

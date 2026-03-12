@@ -3,8 +3,8 @@
 /**
  * LoopsFlow Database Seeder
  *
- * Clears all data and inserts test users (one per role), sample boosters,
- * teams, projects, submissions, and booster tracks.
+ * Clears all data and inserts test users (one per role), sample hackathons,
+ * teams, projects, submissions, and hackathon tracks.
  *
  * Uses the Supabase Admin API (service role key) to create auth users
  * and bypass RLS for all inserts.
@@ -16,11 +16,11 @@
  * Environment: reads from .env in project root
  */
 
-import { createClient } from "@supabase/supabase-js";
-import { readFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -58,9 +58,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  console.error(
-    "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env",
-  );
+  console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env");
   process.exit(1);
 }
 
@@ -89,12 +87,12 @@ const IDS = {
   project_nft: "c0000000-0000-0000-0000-000000000002",
   project_social: "c0000000-0000-0000-0000-000000000003",
 
-  // Boosters
-  booster_idea: "d0000000-0000-0000-0000-000000000001",
-  booster_momentum: "d0000000-0000-0000-0000-000000000002",
-  booster_capital: "d0000000-0000-0000-0000-000000000003",
+  // Hackathons
+  hackathon_idea: "d0000000-0000-0000-0000-000000000001",
+  hackathon_momentum: "d0000000-0000-0000-0000-000000000002",
+  hackathon_capital: "d0000000-0000-0000-0000-000000000003",
 
-  // Booster tracks
+  // Hackathon tracks
   track_eth: "e0000000-0000-0000-0000-000000000001",
   track_pol: "e0000000-0000-0000-0000-000000000002",
   track_arb: "e0000000-0000-0000-0000-000000000003",
@@ -117,7 +115,8 @@ const TEST_USERS = [
     id: IDS.builder_user,
     email: "builder@loopsflow.test",
     password: "Builder123!",
-    role: "builder",
+    is_admin: false,
+    is_event_creator: false,
     display_name: "Alice Builder",
     username: "alice_builder",
   },
@@ -125,7 +124,8 @@ const TEST_USERS = [
     id: IDS.builder2_user,
     email: "builder2@loopsflow.test",
     password: "Builder2123!",
-    role: "builder",
+    is_admin: false,
+    is_event_creator: false,
     display_name: "Dave Builder",
     username: "dave_builder",
   },
@@ -133,7 +133,8 @@ const TEST_USERS = [
     id: IDS.host_user,
     email: "host@loopsflow.test",
     password: "Host123!",
-    role: "host",
+    is_admin: false,
+    is_event_creator: true,
     display_name: "Bob Host",
     username: "bob_host",
   },
@@ -141,7 +142,8 @@ const TEST_USERS = [
     id: IDS.viewer_user,
     email: "viewer@loopsflow.test",
     password: "Viewer123!",
-    role: "viewer",
+    is_admin: false,
+    is_event_creator: false,
     display_name: "Carol Viewer",
     username: "carol_viewer",
   },
@@ -149,7 +151,8 @@ const TEST_USERS = [
     id: IDS.admin_user,
     email: "admin@loopsflow.test",
     password: "Admin123!",
-    role: "admin",
+    is_admin: true,
+    is_event_creator: true,
     display_name: "Eve Admin",
     username: "eve_admin",
   },
@@ -157,7 +160,8 @@ const TEST_USERS = [
     id: IDS.judge_user,
     email: "judge@loopsflow.test",
     password: "Judge123!",
-    role: "judge",
+    is_admin: false,
+    is_event_creator: false,
     display_name: "Frank Judge",
     username: "frank_judge",
   },
@@ -184,17 +188,19 @@ async function clearAll() {
   // Delete in dependency order (children first)
   const tables = [
     "rate_limits",
-    "booster_track_chunks",
+    "hackathon_track_chunks",
     "knowledge_base_chunks",
     "knowledge_bases",
+    "human_evaluations",
     "submissions",
-    "judge_invites",
-    "host_applications",
-    "booster_tracks",
+    "invitations",
+    "hackathon_judges",
+    "hackathon_cohosts",
+    "hackathon_tracks",
     "loops_profiles",
     "team_members",
     "teams",
-    "boosters",
+    "hackathons",
     "users",
   ];
 
@@ -207,10 +213,7 @@ async function clearAll() {
     if (error && !error.message.includes("0 rows")) {
       // rate_limits uses 'key' PK not 'id'
       if (table === "rate_limits") {
-        const { error: e2 } = await supabase
-          .from(table)
-          .delete()
-          .neq("key", "__nonexistent__");
+        const { error: e2 } = await supabase.from(table).delete().neq("key", "__nonexistent__");
         if (e2) console.error(`  [WARN] ${table}:`, e2.message);
         else console.log(`  [OK]   Cleared ${table}`);
         continue;
@@ -268,18 +271,22 @@ async function seedUsers() {
     const authId = data.user.id;
     console.log(`  [OK]   Auth user ${u.email} (${authId})`);
 
-    // The trigger handle_new_user() auto-creates public.users with role='builder'.
-    // We need to update the role and other fields.
+    // The trigger handle_new_user() auto-creates public.users.
+    // We need to update the flags and other fields.
     const updateResult = await supabase
       .from("users")
       .update({
-        role: u.role,
+        is_admin: u.is_admin,
+        is_event_creator: u.is_event_creator,
         display_name: u.display_name,
         username: u.username,
       })
       .eq("id", authId);
 
-    check(`  Updated role to '${u.role}' for ${u.email}`, updateResult);
+    check(
+      `  Updated flags for ${u.email} (admin=${u.is_admin}, event_creator=${u.is_event_creator})`,
+      updateResult,
+    );
 
     // Store the actual auth ID back so we can reference it
     u._authId = authId;
@@ -293,9 +300,7 @@ async function seedTeams() {
   console.log("\n--- Seeding teams ---");
 
   const builder = TEST_USERS.find((u) => u.email === "builder@loopsflow.test");
-  const builder2 = TEST_USERS.find(
-    (u) => u.email === "builder2@loopsflow.test",
-  );
+  const builder2 = TEST_USERS.find((u) => u.email === "builder2@loopsflow.test");
 
   // Team Alpha (owned by builder)
   check(
@@ -330,28 +335,24 @@ async function seedTeams() {
     "Team Beta members",
     await supabase
       .from("team_members")
-      .insert([
-        { team_id: IDS.team_beta, user_id: builder2._authId, role: "owner" },
-      ]),
+      .insert([{ team_id: IDS.team_beta, user_id: builder2._authId, role: "owner" }]),
   );
 }
 
 // ---------------------------------------------------------------------------
-// Step 4: Create boosters (one per type)
+// Step 4: Create hackathons
 // ---------------------------------------------------------------------------
-async function seedBoosters() {
-  console.log("\n--- Seeding boosters ---");
+async function seedHackathons() {
+  console.log("\n--- Seeding hackathons ---");
 
   const host = TEST_USERS.find((u) => u.email === "host@loopsflow.test");
 
-  const boosters = [
+  const hackathons = [
     {
-      id: IDS.booster_idea,
+      id: IDS.hackathon_idea,
       host_id: host._authId,
-      booster_type: "idea",
-      name: "ETH Denver 2026 Idea Booster",
-      description:
-        "48-hour hackathon to build the next generation of decentralized applications.",
+      name: "ETH Denver 2026 Hackathon",
+      description: "48-hour hackathon to build the next generation of decentralized applications.",
       theme: "Build the future of Web3",
       problem_statements: [
         "How can DeFi be made more accessible to mainstream users?",
@@ -359,24 +360,21 @@ async function seedBoosters() {
         "How can on-chain identity solutions preserve privacy?",
       ],
       website_url: "https://ethdenver.com",
-      technical_docs:
-        "Solidity best practices, Hardhat testing, ERC-20/721/1155 patterns.",
+      technical_docs: "Solidity best practices, Hardhat testing, ERC-20/721/1155 patterns.",
       bounty_pool_summary: "$50K in prizes across 3 sponsor tracks",
-      program_goal:
-        "Identify and support innovative DeFi, identity, and governance ideas.",
-      timeline: "Feb 28 - Mar 2, 2026",
+      program_goal: "Identify and support innovative DeFi, identity, and governance ideas.",
       organizer_notes: "Focus on usability and real-world adoption potential.",
       status: "active",
       start_date: "2026-02-28T00:00:00Z",
-      end_date: "2026-03-02T00:00:00Z",
+      submission_deadline: "2026-03-01T18:00:00Z",
+      judging_deadline: "2026-03-02T12:00:00Z",
+      results_date: "2026-03-02T18:00:00Z",
     },
     {
-      id: IDS.booster_momentum,
+      id: IDS.hackathon_momentum,
       host_id: host._authId,
-      booster_type: "momentum",
       name: "Loops Momentum Sprint",
-      description:
-        "4-week acceleration program for projects with initial traction.",
+      description: "4-week acceleration program for projects with initial traction.",
       theme: "From prototype to product",
       problem_statements: [
         "How do you get your first 100 users?",
@@ -384,57 +382,57 @@ async function seedBoosters() {
         "How to iterate on feedback without losing vision?",
       ],
       program_goal: "Help 10 projects ship their v1 and acquire initial users.",
-      timeline: "March 2026 (rolling admission)",
       status: "active",
+      start_date: "2026-03-01T00:00:00Z",
+      submission_deadline: "2026-03-21T23:59:00Z",
+      judging_deadline: "2026-03-28T23:59:00Z",
+      results_date: "2026-03-31T12:00:00Z",
     },
     {
-      id: IDS.booster_capital,
+      id: IDS.hackathon_capital,
       host_id: host._authId,
-      booster_type: "capital",
-      name: "Capital Raise Booster Q1",
-      description:
-        "Pitch day and fundraising bootcamp for seed-stage projects.",
+      name: "Capital Raise Hackathon Q1",
+      description: "Pitch day and fundraising bootcamp for seed-stage projects.",
       theme: "Fundraising fundamentals",
       problem_statements: [
         "How to craft a compelling pitch deck?",
         "What do investors look for in early-stage crypto projects?",
         "How to structure a token raise vs equity?",
       ],
-      bounty_pool_summary:
-        "$100K lead investment + $500K follow-on opportunity",
+      bounty_pool_summary: "$100K lead investment + $500K follow-on opportunity",
       program_goal: "Connect 5 projects with investors for seed funding.",
-      timeline: "April 2026",
       status: "draft",
+      start_date: "2026-04-01T00:00:00Z",
+      submission_deadline: "2026-04-14T23:59:00Z",
+      judging_deadline: "2026-04-21T23:59:00Z",
+      results_date: "2026-04-28T12:00:00Z",
     },
   ];
 
-  check("Boosters", await supabase.from("boosters").insert(boosters));
+  check("Hackathons", await supabase.from("hackathons").insert(hackathons));
 }
 
 // ---------------------------------------------------------------------------
-// Step 5: Create booster tracks (sponsors)
+// Step 5: Create hackathon tracks (sponsors)
 // ---------------------------------------------------------------------------
-async function seedBoosterTracks() {
-  console.log("\n--- Seeding booster tracks ---");
+async function seedHackathonTracks() {
+  console.log("\n--- Seeding hackathon tracks ---");
 
   const tracks = [
     {
       id: IDS.track_eth,
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       sponsor_name: "Ethereum Foundation",
       track_name: "Core Infrastructure",
       track_description:
         "Build tools, libraries, or protocols that improve Ethereum core infrastructure.",
       docs_text:
         "EIPs reference: https://eips.ethereum.org. Solidity docs: https://docs.soliditylang.org",
-      api_endpoints: [
-        "https://mainnet.infura.io/v3/",
-        "https://eth.llamarpc.com",
-      ],
+      api_endpoints: ["https://mainnet.infura.io/v3/", "https://eth.llamarpc.com"],
     },
     {
       id: IDS.track_pol,
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       sponsor_name: "Polygon Labs",
       track_name: "Scaling Solutions",
       track_description:
@@ -444,19 +442,16 @@ async function seedBoosterTracks() {
     },
     {
       id: IDS.track_arb,
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       sponsor_name: "Arbitrum DAO",
       track_name: "DeFi Innovation",
-      track_description:
-        "Create novel DeFi primitives on Arbitrum One or Arbitrum Nova.",
+      track_description: "Create novel DeFi primitives on Arbitrum One or Arbitrum Nova.",
       docs_text: "Arbitrum developer docs: https://docs.arbitrum.io",
-      sdk_examples: [
-        "const provider = new ethers.JsonRpcProvider('https://arb1.arbitrum.io/rpc')",
-      ],
+      sdk_examples: ["const provider = new ethers.JsonRpcProvider('https://arb1.arbitrum.io/rpc')"],
     },
   ];
 
-  check("Booster tracks", await supabase.from("booster_tracks").insert(tracks));
+  check("Hackathon tracks", await supabase.from("hackathon_tracks").insert(tracks));
 }
 
 // ---------------------------------------------------------------------------
@@ -476,14 +471,7 @@ async function seedProjects() {
       refined_description:
         "YieldFlow Protocol is an AI-powered yield optimization engine that automatically rebalances user deposits across multiple DeFi lending protocols (Aave, Compound, Morpho) to maximize risk-adjusted returns. It uses on-chain analytics and predictive models to anticipate rate changes and move funds proactively.",
       category: "DeFi",
-      tech_stack: [
-        "Solidity",
-        "Hardhat",
-        "React",
-        "TypeScript",
-        "ethers.js",
-        "The Graph",
-      ],
+      tech_stack: ["Solidity", "Hardhat", "React", "TypeScript", "ethers.js", "The Graph"],
       colors: {
         primary_color: "#6366f1",
         secondary_color: "#818cf8",
@@ -500,16 +488,9 @@ async function seedProjects() {
       logo_url: "https://placehold.co/200x200",
       github_url: "https://github.com/example/yieldflow",
       website_url: "https://yieldflow.example.com",
-      screenshot_urls: [
-        "https://placehold.co/800x450",
-        "https://placehold.co/800x450",
-      ],
-      additional_links: [
-        { label: "Docs", url: "https://docs.yieldflow.example.com" },
-      ],
-      social_links: [
-        { label: "Twitter", url: "https://twitter.com/yieldflow" },
-      ],
+      screenshot_urls: ["https://placehold.co/800x450", "https://placehold.co/800x450"],
+      additional_links: [{ label: "Docs", url: "https://docs.yieldflow.example.com" }],
+      social_links: [{ label: "Twitter", url: "https://twitter.com/yieldflow" }],
       flattened_codebase:
         "// contracts/YieldVault.sol\npragma solidity ^0.8.20;\n\nimport '@openzeppelin/contracts/token/ERC20/ERC20.sol';\n\ncontract YieldVault is ERC20 {\n    mapping(address => uint256) public deposits;\n    \n    function deposit(uint256 amount) external {\n        deposits[msg.sender] += amount;\n        _mint(msg.sender, amount);\n    }\n    \n    function rebalance() external {\n        // AI-driven rebalancing logic\n    }\n}\n",
       kb_sections: ["profile", "code", "theme"],
@@ -554,13 +535,7 @@ async function seedProjects() {
       refined_description:
         "DevConnect Hub is a professional networking platform designed exclusively for Web3 developers. It uses on-chain credentials and GitHub activity to verify skills, matches developers with project opportunities, and provides a reputation system based on contributions to open-source Web3 projects.",
       category: "Social / Developer Tools",
-      tech_stack: [
-        "Next.js",
-        "TypeScript",
-        "Supabase",
-        "Tailwind CSS",
-        "Prisma",
-      ],
+      tech_stack: ["Next.js", "TypeScript", "Supabase", "Tailwind CSS", "Prisma"],
       colors: {
         primary_color: "#10b981",
         secondary_color: "#34d399",
@@ -628,7 +603,7 @@ async function seedSubmissions() {
   const submissions = [
     {
       id: IDS.sub_defi_idea,
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       team_id: IDS.team_alpha,
       project_id: IDS.project_defi,
       status: "scored",
@@ -646,25 +621,21 @@ async function seedSubmissions() {
           { name: "Track/Sponsor Fit", score: 78, weight: 0.15 },
         ],
       },
-      human_score: {
-        overall_score: 79,
-        notes: "Strong technical foundation, needs better UX.",
-      },
+      ai_evaluated_at: new Date().toISOString(),
       momentum_score: 42,
     },
     {
       id: IDS.sub_nft_idea,
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       team_id: IDS.team_alpha,
       project_id: IDS.project_nft,
       status: "submitted",
       ai_score: {},
-      human_score: {},
       momentum_score: 0,
     },
     {
       id: IDS.sub_social_momentum,
-      booster_id: IDS.booster_momentum,
+      hackathon_id: IDS.hackathon_momentum,
       team_id: IDS.team_beta,
       project_id: IDS.project_social,
       status: "under_review",
@@ -682,7 +653,7 @@ async function seedSubmissions() {
           { name: "Track/Sponsor Fit", score: 72, weight: 0.15 },
         ],
       },
-      human_score: {},
+      ai_evaluated_at: new Date().toISOString(),
       momentum_score: 15,
     },
   ];
@@ -691,62 +662,43 @@ async function seedSubmissions() {
 }
 
 // ---------------------------------------------------------------------------
-// Step 9: Create judge invites
+// Step 9: Create hackathon judges and cohosts
 // ---------------------------------------------------------------------------
-async function seedJudgeInvites() {
-  console.log("\n--- Seeding judge invites ---");
+async function seedHackathonRoles() {
+  console.log("\n--- Seeding hackathon judges & cohosts ---");
 
-  const host = TEST_USERS.find((u) => u.email === "host@loopsflow.test");
+  const _host = TEST_USERS.find((u) => u.email === "host@loopsflow.test");
   const judge = TEST_USERS.find((u) => u.email === "judge@loopsflow.test");
-
-  check(
-    "Judge invite",
-    await supabase.from("judge_invites").insert({
-      booster_id: IDS.booster_idea,
-      judge_user_id: judge._authId,
-      assigned_tracks: [IDS.track_eth, IDS.track_pol],
-      invited_by: host._authId,
-      accepted: true,
-    }),
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Step 10: Create host applications
-// ---------------------------------------------------------------------------
-async function seedHostApplications() {
-  console.log("\n--- Seeding host applications ---");
-
-  const builder = TEST_USERS.find((u) => u.email === "builder@loopsflow.test");
   const admin = TEST_USERS.find((u) => u.email === "admin@loopsflow.test");
 
   check(
-    "Host application (pending)",
-    await supabase.from("host_applications").insert({
-      user_id: builder._authId,
-      booster_type: "idea",
-      event_name: "Community Hack Night",
-      expected_participants: 50,
-      contact: "alice@example.com",
-      description:
-        "A monthly community hackathon focused on local developer engagement.",
-      status: "pending",
+    "Hackathon judge (Frank → Idea Hackathon)",
+    await supabase.from("hackathon_judges").insert({
+      hackathon_id: IDS.hackathon_idea,
+      user_id: judge._authId,
     }),
   );
 
   check(
-    "Host application (approved)",
-    await supabase.from("host_applications").insert({
+    "Hackathon cohost (Eve Admin → Idea Hackathon)",
+    await supabase.from("hackathon_cohosts").insert({
+      hackathon_id: IDS.hackathon_idea,
       user_id: admin._authId,
-      booster_type: "momentum",
-      event_name: "Startup Accelerator Cohort 3",
-      expected_participants: 200,
-      contact: "eve@example.com",
-      description: "8-week acceleration program for pre-seed Web3 startups.",
-      status: "approved",
-      reviewed_by: admin._authId,
     }),
   );
+
+  // Seed human evaluations (per-judge, after judge role is created)
+  const { error: heErr } = await supabase.from("human_evaluations").insert({
+    submission_id: IDS.sub_defi_idea,
+    judge_id: judge._authId,
+    hackathon_id: IDS.hackathon_idea,
+    scores: { Innovation: 80, "Technical Execution": 85, Impact: 75, Presentation: 70 },
+    remarks: { Innovation: "Interesting DeFi approach", "Technical Execution": "Clean codebase" },
+    overall_notes: "Strong technical foundation, needs better UX.",
+    overall_score: 79,
+  });
+  if (heErr) console.warn("  [WARN] human_evaluations seed:", heErr.message);
+  else console.log("  [OK]   Human evaluation (Frank → DeFi submission)");
 }
 
 // ---------------------------------------------------------------------------
@@ -779,12 +731,7 @@ function parseCSV(text) {
         row.push(field);
       } else {
         let field = "";
-        while (
-          i < text.length &&
-          text[i] !== "," &&
-          text[i] !== "\n" &&
-          text[i] !== "\r"
-        ) {
+        while (i < text.length && text[i] !== "," && text[i] !== "\n" && text[i] !== "\r") {
           field += text[i];
           i++;
         }
@@ -848,9 +795,7 @@ async function seedCSVData() {
   const userMap = new Map(); // email → { authId, teamId }
   for (const [email, info] of submitterMap) {
     const displayName = `${info.firstName} ${info.lastName}`.trim();
-    const username = `${info.firstName}_${info.lastName}`
-      .toLowerCase()
-      .replace(/[^a-z0-9_]/g, "");
+    const username = `${info.firstName}_${info.lastName}`.toLowerCase().replace(/[^a-z0-9_]/g, "");
 
     const { data, error } = await supabase.auth.admin.createUser({
       email,
@@ -867,10 +812,7 @@ async function seedCSVData() {
     const authId = data.user.id;
     console.log(`  [OK]   User ${displayName} (${email})`);
 
-    await supabase
-      .from("users")
-      .update({ role: "builder", display_name: displayName, username })
-      .eq("id", authId);
+    await supabase.from("users").update({ display_name: displayName, username }).eq("id", authId);
 
     const teamId = randomUUID();
     await supabase.from("teams").insert({
@@ -905,20 +847,16 @@ async function seedCSVData() {
     const projectDesc = row[col("Project Description")]?.trim() || "";
     const githubUrl = row[col("Project Source Code")]?.trim() || "";
     const demoUrl =
-      row[col("Project Live Demo")]?.trim() ||
-      row[col("Project Live Demo ")]?.trim() ||
-      "";
+      row[col("Project Live Demo")]?.trim() || row[col("Project Live Demo ")]?.trim() || "";
     const presentationUrl = row[col("Project Presentation")]?.trim() || "";
     const videoUrl = row[col("Project Video Demo")]?.trim() || "";
     const twitter = submitterMap.get(email)?.twitter || "";
 
     // Tagline = first sentence of problem statement (max 200 chars)
-    const tagline =
-      problemStatement.split(/[.\n]/)[0]?.trim().slice(0, 200) || projectName;
+    const tagline = problemStatement.split(/[.\n]/)[0]?.trim().slice(0, 200) || projectName;
 
     const additionalLinks = [];
-    if (presentationUrl)
-      additionalLinks.push({ label: "Presentation", url: presentationUrl });
+    if (presentationUrl) additionalLinks.push({ label: "Presentation", url: presentationUrl });
     if (videoUrl) additionalLinks.push({ label: "Video Demo", url: videoUrl });
 
     const socialLinks = [];
@@ -946,24 +884,21 @@ async function seedCSVData() {
     }
     projectCount++;
 
-    // Submit each project to ETH Denver Idea Booster
+    // Submit each project to ETH Denver Hackathon
     const subResult = await supabase.from("submissions").insert({
       id: randomUUID(),
-      booster_id: IDS.booster_idea,
+      hackathon_id: IDS.hackathon_idea,
       team_id: user.teamId,
       project_id: projectId,
       status: "submitted",
       ai_score: {},
-      human_score: {},
       momentum_score: 0,
     });
     if (!subResult.error) submissionCount++;
   }
 
   console.log(`  [OK]   ${projectCount} hackathon projects`);
-  console.log(
-    `  [OK]   ${submissionCount} submissions → ETH Denver Idea Booster`,
-  );
+  console.log(`  [OK]   ${submissionCount} submissions → ETH Denver Hackathon`);
   return { users: userMap.size, projects: projectCount };
 }
 
@@ -979,13 +914,12 @@ async function main() {
   await clearAll();
   await seedUsers();
   await seedTeams();
-  await seedBoosters();
-  await seedBoosterTracks();
+  await seedHackathons();
+  await seedHackathonTracks();
   await seedProjects();
   await seedKnowledgeBases();
   await seedSubmissions();
-  await seedJudgeInvites();
-  await seedHostApplications();
+  await seedHackathonRoles();
   const csv = await seedCSVData();
 
   // ---------------------------------------------------------------------------
@@ -997,10 +931,12 @@ async function main() {
 
   console.log("\n--- Test Credentials ---");
   console.log("");
-  console.log("  Email                       Password       Role");
-  console.log("  -------------------------------------------------------");
+  console.log("  Email                       Password       Admin  EventCreator");
+  console.log("  -----------------------------------------------------------------------");
   for (const u of TEST_USERS) {
-    console.log(`  ${u.email.padEnd(30)} ${u.password.padEnd(15)} ${u.role}`);
+    console.log(
+      `  ${u.email.padEnd(30)} ${u.password.padEnd(15)} ${String(u.is_admin).padEnd(7)} ${u.is_event_creator}`,
+    );
   }
   if (csv.users > 0) {
     console.log("");
@@ -1011,100 +947,58 @@ async function main() {
 
   console.log("\n  BUILDER (builder@loopsflow.test / Builder123!):");
   console.log("  1. Login at /login with email/password");
-  console.log(
-    "  2. Visit /builder → see project hub with 2 projects (YieldFlow, ArtChain)",
-  );
+  console.log("  2. Visit /builder → see project hub with 2 projects (YieldFlow, ArtChain)");
   console.log("  3. Visit /builder/projects → view project list");
-  console.log(
-    "  4. Visit /builder/projects/<id> → see full project details, colors, KB tabs",
-  );
-  console.log(
-    "  5. Click 'Share (generate posts)' → test Social Amplifier AI agent",
-  );
-  console.log(
-    "  6. Visit /builder/new → create a new project profile (needs GitHub URL)",
-  );
+  console.log("  4. Visit /builder/projects/<id> → see full project details, colors, KB tabs");
+  console.log("  5. Click 'Share (generate posts)' → test Social Amplifier AI agent");
+  console.log("  6. Visit /builder/new → create a new project profile (needs GitHub URL)");
   console.log("  7. Visit /builder/teams → see Team Alpha membership");
-  console.log(
-    "  8. Visit /builder/ideate → test AI ideation chat (select a booster)",
-  );
-  console.log("  9. Visit /boosters → browse available boosters");
-  console.log(
-    "  10. Visit /boosters/<type>/<id>/submit → submit project to booster",
-  );
+  console.log("  8. Visit /builder/ideate → test AI ideation chat (select a hackathon)");
+  console.log("  9. Visit /hackathons → browse available hackathons");
+  console.log("  10. Visit /hackathons/<id>/submit → submit project to hackathon");
 
   console.log("\n  HOST (host@loopsflow.test / Host123!):");
   console.log("  1. Login at /login with email/password");
   console.log("  2. Visit /host → see dashboard with submitted projects");
   console.log(
-    "  3. Click 'Grade project' → opens /host/judging with pre-selected project+booster",
+    "  3. Click 'Grade project' → opens /host/judging with pre-selected project+hackathon",
   );
-  console.log(
-    "  4. Visit /host/boosters → create/edit boosters, run AI generator",
-  );
-  console.log(
-    "  5. Visit /host/analytics → select booster, generate AI analytics report",
-  );
-  console.log(
-    "  6. Visit /host/judging → evaluate any project against any booster",
-  );
+  console.log("  4. Visit /host/hackathons → create/edit hackathons, run AI generator");
+  console.log("  5. Visit /host/analytics → select hackathon, generate AI analytics report");
+  console.log("  6. Visit /host/judging → evaluate any project against any hackathon");
 
   console.log("\n  VIEWER (viewer@loopsflow.test / Viewer123!):");
   console.log("  1. Login at /login with email/password");
   console.log("  2. Visit /viewer → see all projects gallery");
-  console.log(
-    "  3. Visit /viewer/projects/<id> → project detail + code query + chat",
-  );
-  console.log(
-    "  4. Test code query: ask 'How does the deposit function work?'",
-  );
-  console.log(
-    "  5. Test project chat: have multi-turn conversation about the project",
-  );
-  console.log(
-    "  6. Visit /boosters → browse boosters (public, no auth required)",
-  );
+  console.log("  3. Visit /viewer/projects/<id> → project detail + code query + chat");
+  console.log("  4. Test code query: ask 'How does the deposit function work?'");
+  console.log("  5. Test project chat: have multi-turn conversation about the project");
+  console.log("  6. Visit /hackathons → browse hackathons (public, no auth required)");
 
   console.log("\n  ADMIN (admin@loopsflow.test / Admin123!):");
   console.log("  1. Login at /login with email/password");
   console.log("  2. Admin can access all builder routes (/builder/*)");
   console.log("  3. Admin can access all host routes (/host/*)");
-  console.log(
-    "  4. Admin can use all AI agents (all API routes allow 'admin' role)",
-  );
+  console.log("  4. Admin can use all AI agents (all API routes allow 'admin' role)");
   console.log("  5. Admin can review host applications");
 
   console.log("\n  JUDGE (judge@loopsflow.test / Judge123!):");
   console.log("  1. Login at /login with email/password");
   console.log("  2. Judge can access /host/judging → evaluate projects");
-  console.log(
-    "  3. Judge has an invite for ETH Denver Idea Booster (tracks: Ethereum, Polygon)",
-  );
-  console.log(
-    "  4. Judge uses project-evaluator API (only agent allowing 'judge' role)",
-  );
+  console.log("  3. Judge has an invite for ETH Denver Hackathon (tracks: Ethereum, Polygon)");
+  console.log("  4. Judge uses project-evaluator API (only agent allowing 'judge' role)");
 
   console.log("\n--- Seeded Data Summary ---");
+  console.log(`  Users:          ${6 + csv.users} (6 test + ${csv.users} hackathon)`);
+  console.log(`  Teams:          ${2 + csv.users} (2 test + ${csv.users} hackathon)`);
+  console.log(`  Projects:       ${3 + csv.projects} (3 test + ${csv.projects} hackathon)`);
+  console.log("  Hackathons:     3 (idea active, momentum active, capital draft)");
+  console.log("  Hackathon Tracks: 3 (Ethereum, Polygon, Arbitrum on Idea Hackathon)");
   console.log(
-    `  Users:          ${6 + csv.users} (6 test + ${csv.users} hackathon)`,
+    `  Submissions:    ${3 + csv.projects} (3 test + ${csv.projects} hackathon → Idea Hackathon)`,
   );
-  console.log(
-    `  Teams:          ${2 + csv.users} (2 test + ${csv.users} hackathon)`,
-  );
-  console.log(
-    `  Projects:       ${3 + csv.projects} (3 test + ${csv.projects} hackathon)`,
-  );
-  console.log(
-    "  Boosters:       3 (idea active, momentum active, capital draft)",
-  );
-  console.log(
-    "  Booster Tracks: 3 (Ethereum, Polygon, Arbitrum on Idea Booster)",
-  );
-  console.log(
-    `  Submissions:    ${3 + csv.projects} (3 test + ${csv.projects} hackathon → Idea Booster)`,
-  );
-  console.log("  Judge Invites:  1 (Frank Judge → Idea Booster)");
-  console.log("  Host Apps:      2 (1 pending, 1 approved)");
+  console.log("  Hackathon Judges: 1 (Frank Judge → Idea Hackathon)");
+  console.log("  Hackathon Cohosts: 1 (Eve Admin → Idea Hackathon)");
   console.log("  Knowledge Bases:2 (YieldFlow, ArtChain)");
   console.log("");
 }

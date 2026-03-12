@@ -1,0 +1,9 @@
+export { AboutSection } from "./about-section";
+export { BuildPurposeSection } from "./build-purpose-section";
+export { FaqSection } from "./faq-section";
+export { FooterSection } from "./footer-section";
+export { HeroSection } from "./hero-section";
+export { HowItWorksSection } from "./how-it-works-section";
+export { NavBar } from "./nav-bar";
+export { PartnersSection } from "./partners-section";
+export { ResidencySection } from "./residency-section";

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { ai, MODELS } from "../../lib/gemini-client";
 
@@ -28,7 +28,7 @@ function extractVideoId(url: string): string | null {
 
 export async function analyzeYoutube(
   url: string,
-  problemStatement?: string
+  problemStatement?: string,
 ): Promise<DemoReaderOutput> {
   const videoId = extractVideoId(url);
   if (!videoId) throw new Error("Invalid YouTube URL");
@@ -37,7 +37,7 @@ export async function analyzeYoutube(
     ? `6. Compare the project against this problem statement and assess alignment (high/medium/low with reason): "${problemStatement}"`
     : "";
 
-  const extractionPrompt = `You are a YouTube Demo Analyst for booster project submissions.
+  const extractionPrompt = `You are a YouTube Demo Analyst for hackathon project submissions.
 Analyze the provided YouTube video and extract structured information.
 
 TASKS:
@@ -86,7 +86,9 @@ Return a STRICT JSON object:
     tech_mentioned: result.tech_mentioned || [],
     timestamps: result.timestamps || [],
     ...(result.problem_alignment ? { problem_alignment: result.problem_alignment } : {}),
-    ...(result.problem_alignment_reason ? { problem_alignment_reason: result.problem_alignment_reason } : {}),
+    ...(result.problem_alignment_reason
+      ? { problem_alignment_reason: result.problem_alignment_reason }
+      : {}),
     raw_transcript: result.raw_transcript || "",
   };
 }

@@ -13,7 +13,9 @@ export async function getTeams(userId?: string): Promise<TeamRow[]> {
       .from("team_members")
       .select("team_id, teams(*)")
       .eq("user_id", userId);
-    return (data?.map((d) => (d as Record<string, unknown>).teams as TeamRow) ?? []).filter(Boolean);
+    return (data?.map((d) => (d as Record<string, unknown>).teams as TeamRow) ?? []).filter(
+      Boolean,
+    );
   }
   const { data } = await supabase
     .from("teams")
@@ -32,7 +34,9 @@ export async function getTeamsList(
       .from("team_members")
       .select("team_id, teams(id, name, owner_id, created_at)")
       .eq("user_id", userId);
-    return (data?.map((d) => (d as Record<string, unknown>).teams as TeamRow) ?? []).filter(Boolean);
+    return (data?.map((d) => (d as Record<string, unknown>).teams as TeamRow) ?? []).filter(
+      Boolean,
+    );
   }
   const { data } = await supabase
     .from("teams")
@@ -43,11 +47,7 @@ export async function getTeamsList(
 }
 
 export async function getTeam(id: string): Promise<TeamRow | null> {
-  const { data } = await supabase
-    .from("teams")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const { data } = await supabase.from("teams").select("*").eq("id", id).single();
   return data;
 }
 
@@ -60,26 +60,22 @@ export async function saveTeam(team: TeamInsert): Promise<TeamRow | null> {
 
   // Auto-add owner as member
   if (data) {
-    await supabase.from("team_members").upsert(
-      { team_id: data.id, user_id: data.owner_id, role: "owner" },
-      { onConflict: "team_id,user_id" },
-    );
+    await supabase
+      .from("team_members")
+      .upsert(
+        { team_id: data.id, user_id: data.owner_id, role: "owner" },
+        { onConflict: "team_id,user_id" },
+      );
   }
   return data;
 }
 
 export async function addMember(teamId: string, userId: string): Promise<void> {
-  await supabase
-    .from("team_members")
-    .insert({ team_id: teamId, user_id: userId, role: "member" });
+  await supabase.from("team_members").insert({ team_id: teamId, user_id: userId, role: "member" });
 }
 
 export async function removeMember(teamId: string, userId: string): Promise<void> {
-  await supabase
-    .from("team_members")
-    .delete()
-    .eq("team_id", teamId)
-    .eq("user_id", userId);
+  await supabase.from("team_members").delete().eq("team_id", teamId).eq("user_id", userId);
 }
 
 export async function getTeamMembers(teamId: string) {

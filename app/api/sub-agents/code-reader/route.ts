@@ -1,21 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/supabase/middleware";
+import { randomUUID } from "node:crypto";
 import { Octokit } from "@octokit/rest";
-import type {
-  ErrorResponse,
-  FileData,
-} from "@/types/github-flattener";
+import { type NextRequest, NextResponse } from "next/server";
 import {
-  parseGitHubUrl,
-  shouldIgnore,
-  hasAllowedExtension,
   fetchFileContent,
   generateMarkdownOutput,
+  hasAllowedExtension,
+  parseGitHubUrl,
+  shouldIgnore,
 } from "@/lib/github-utils";
+import { requireAuth } from "@/lib/supabase/middleware";
+import type { ErrorResponse, FileData } from "@/types/github-flattener";
 import { DEFAULT_CONFIG } from "@/types/github-flattener";
-import { queryTopK } from "../../lib/vector-store";
 import { generateContent, generateJSON } from "../../lib/gemini-client";
-import { randomUUID } from "crypto";
+import { queryTopK } from "../../lib/vector-store";
 
 function extractDependencies(files: FileData[]): string[] {
   const deps: Set<string> = new Set();
@@ -27,11 +24,16 @@ function extractDependencies(files: FileData[]): string[] {
         for (const key of ["dependencies", "devDependencies", "peerDependencies"]) {
           if (pkg[key]) Object.keys(pkg[key]).forEach((d) => deps.add(d));
         }
-      } catch { /* skip malformed */ }
+      } catch {
+        /* skip malformed */
+      }
     }
     if (file.path === "requirements.txt" || file.path.endsWith("/requirements.txt")) {
       file.content.split("\n").forEach((line) => {
-        const name = line.trim().split(/[=<>!~]/)[0].trim();
+        const name = line
+          .trim()
+          .split(/[=<>!~]/)[0]
+          .trim();
         if (name && !name.startsWith("#")) deps.add(name);
       });
     }
@@ -77,7 +79,7 @@ Use common product names (e.g. React, Next.js, TypeScript, Python, FastAPI, Pris
 
 export async function flattenAndIndex(
   githubUrl: string,
-  githubToken?: string
+  githubToken?: string,
 ): Promise<{
   tech_stack: string[];
   flattened_codebase: string;
@@ -91,14 +93,17 @@ export async function flattenAndIndex(
   const token = githubToken || process.env.GITHUB_TOKEN;
   if (!token) {
     throw new Error(
-      "GitHub token is required to avoid API rate limits (60 req/hr unauthenticated). Set GITHUB_TOKEN in .env or pass github_token in the request."
+      "GitHub token is required to avoid API rate limits (60 req/hr unauthenticated). Set GITHUB_TOKEN in .env or pass github_token in the request.",
     );
   }
   const octokit = new Octokit({ auth: token });
   const { data: repoData } = await octokit.repos.get({ owner, repo });
   const targetBranch = repoData.default_branch;
   const { data: tree } = await octokit.git.getTree({
-    owner, repo, tree_sha: targetBranch, recursive: "1",
+    owner,
+    repo,
+    tree_sha: targetBranch,
+    recursive: "1",
   });
 
   const allowedExts = DEFAULT_CONFIG.allowedExtensions;
@@ -118,7 +123,7 @@ export async function flattenAndIndex(
         .then((content) => {
           if (content) files.push({ path: item.path!, content, size: item.size! });
         })
-        .catch(() => {})
+        .catch(() => {}),
     );
   }
 
@@ -141,10 +146,7 @@ export async function flattenAndIndex(
   };
 }
 
-export async function queryCode(
-  projectId: string,
-  question: string
-): Promise<string> {
+export async function queryCode(projectId: string, question: string): Promise<string> {
   const results = await queryTopK(projectId, question, 5, 0);
   if (results.length === 0) {
     return "No relevant code found for this project. The project may not have been indexed yet.";
@@ -166,7 +168,7 @@ export async function queryCode(
 }
 
 export async function POST(
-  request: NextRequest
+  request: NextRequest,
 ): Promise<NextResponse<Record<string, unknown> | ErrorResponse>> {
   const auth = await requireAuth();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -177,7 +179,10 @@ export async function POST(
 
     if (action === "query") {
       if (!project_id || !question) {
-        return NextResponse.json({ error: "project_id and question are required" }, { status: 400 });
+        return NextResponse.json(
+          { error: "project_id and question are required" },
+          { status: 400 },
+        );
       }
       const answer = await queryCode(project_id, question);
       return NextResponse.json({ answer });

@@ -1,9 +1,11 @@
+import { type BasicCapabilities, getBasicCapabilities } from "@/lib/capabilities";
 import { createServerSupabase } from "./server";
 
 export type AuthUser = {
   id: string;
   email: string;
-  role: string;
+  is_admin: boolean;
+  is_event_creator: boolean;
 };
 
 export type AuthResult = {
@@ -11,9 +13,15 @@ export type AuthResult = {
   supabase: Awaited<ReturnType<typeof createServerSupabase>>;
 };
 
-/** Validate session and optionally check role. Returns null if unauthorized. */
+/**
+ * Validate session and optionally check capabilities.
+ *
+ * @param check — optional predicate on BasicCapabilities.
+ *   Example: `requireAuth((caps) => caps.isAdmin)`
+ *   If omitted, any authenticated user passes.
+ */
 export async function requireAuth(
-  allowedRoles?: string[],
+  check?: (caps: BasicCapabilities) => boolean,
 ): Promise<AuthResult | null> {
   const supabase = await createServerSupabase();
   const {
@@ -23,17 +31,17 @@ export async function requireAuth(
 
   if (error || !user) return null;
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) return null;
-  if (allowedRoles && !allowedRoles.includes(profile.role)) return null;
+  const caps = await getBasicCapabilities(supabase, user.id);
+  if (!caps) return null;
+  if (check && !check(caps)) return null;
 
   return {
-    user: { id: user.id, email: user.email!, role: profile.role },
+    user: {
+      id: user.id,
+      email: user.email!,
+      is_admin: caps.isAdmin,
+      is_event_creator: caps.isEventCreator,
+    },
     supabase,
   };
 }

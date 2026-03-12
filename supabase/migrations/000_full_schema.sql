@@ -14,8 +14,7 @@ create extension if not exists "vector";
 -- ============================================================
 
 create type app_role as enum ('builder', 'host', 'viewer', 'admin', 'judge');
-create type booster_type as enum ('idea', 'momentum', 'capital');
-create type booster_status as enum ('draft', 'active', 'judging', 'completed', 'archived');
+create type hackathon_status as enum ('draft', 'active', 'judging', 'completed', 'archived');
 create type submission_status as enum ('draft', 'submitted', 'under_review', 'scored', 'withdrawn');
 create type host_application_status as enum ('pending', 'approved', 'rejected');
 
@@ -127,39 +126,40 @@ create index idx_kb_chunks_kb on public.knowledge_base_chunks(kb_id);
 create index idx_kb_chunks_embedding on public.knowledge_base_chunks
   using hnsw (embedding vector_cosine_ops);
 
--- BOOSTERS
-create table public.boosters (
-  id                  uuid primary key default gen_random_uuid(),
-  host_id             uuid not null references public.users(id) on delete cascade,
-  booster_type        booster_type not null default 'idea',
-  name                text not null,
-  description         text,
-  theme               text,
-  problem_statements  text[] default '{}',
-  website_url         text,
-  technical_docs      text,
-  technical_resources jsonb default '[]',
-  bounty_pool_summary text,
-  program_goal        text,
-  timeline            text,
-  organizer_notes     text,
-  judging_criteria    jsonb default '{}',
-  status              booster_status not null default 'draft',
-  leaderboard_enabled boolean default false,
-  start_date          timestamptz,
-  end_date            timestamptz,
-  created_at          timestamptz not null default now(),
-  updated_at          timestamptz not null default now()
+-- HACKATHONS
+create table public.hackathons (
+  id                    uuid primary key default gen_random_uuid(),
+  host_id               uuid not null references public.users(id) on delete cascade,
+  name                  text not null,
+  description           text,
+  theme                 text,
+  is_exclusive          boolean not null default false,
+  problem_statements    text[] default '{}',
+  website_url           text,
+  technical_docs        text,
+  technical_resources   jsonb default '[]',
+  bounty_pool_summary   text,
+  program_goal          text,
+  organizer_notes       text,
+  judging_criteria      jsonb default '{}',
+  status                hackathon_status not null default 'draft',
+  leaderboard_enabled   boolean default false,
+  start_date            timestamptz,
+  submission_deadline   timestamptz,
+  judging_deadline      timestamptz,
+  results_date          timestamptz,
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
 );
 
-create index idx_boosters_host on public.boosters(host_id);
-create index idx_boosters_type on public.boosters(booster_type);
-create index idx_boosters_status on public.boosters(status);
+create index idx_hackathons_host on public.hackathons(host_id);
+create index idx_hackathons_status on public.hackathons(status);
+create index idx_hackathons_exclusive on public.hackathons(is_exclusive);
 
--- BOOSTER_TRACKS (sponsor tracks)
-create table public.booster_tracks (
+-- HACKATHON_TRACKS (sponsor tracks)
+create table public.hackathon_tracks (
   id                uuid primary key default gen_random_uuid(),
-  booster_id        uuid not null references public.boosters(id) on delete cascade,
+  hackathon_id      uuid not null references public.hackathons(id) on delete cascade,
   sponsor_name      text not null,
   track_name        text,
   track_description text,
@@ -170,27 +170,27 @@ create table public.booster_tracks (
   created_at        timestamptz not null default now()
 );
 
-create index idx_booster_tracks_booster on public.booster_tracks(booster_id);
+create index idx_hackathon_tracks_hackathon on public.hackathon_tracks(hackathon_id);
 
--- BOOSTER_TRACK_CHUNKS (pgvector for Tech Buddy RAG)
-create table public.booster_track_chunks (
-  id         uuid primary key default gen_random_uuid(),
-  booster_id uuid not null references public.boosters(id) on delete cascade,
-  track_id   uuid references public.booster_tracks(id) on delete cascade,
-  content    text not null,
-  source     text not null,
-  embedding  vector(768) not null,
-  created_at timestamptz not null default now()
+-- HACKATHON_TRACK_CHUNKS (pgvector for Tech Buddy RAG)
+create table public.hackathon_track_chunks (
+  id            uuid primary key default gen_random_uuid(),
+  hackathon_id  uuid not null references public.hackathons(id) on delete cascade,
+  track_id      uuid references public.hackathon_tracks(id) on delete cascade,
+  content       text not null,
+  source        text not null,
+  embedding     vector(768) not null,
+  created_at    timestamptz not null default now()
 );
 
-create index idx_btc_booster on public.booster_track_chunks(booster_id);
-create index idx_btc_embedding on public.booster_track_chunks
+create index idx_htc_hackathon on public.hackathon_track_chunks(hackathon_id);
+create index idx_htc_embedding on public.hackathon_track_chunks
   using hnsw (embedding vector_cosine_ops);
 
 -- SUBMISSIONS
 create table public.submissions (
   id              uuid primary key default gen_random_uuid(),
-  booster_id      uuid not null references public.boosters(id) on delete cascade,
+  hackathon_id    uuid not null references public.hackathons(id) on delete cascade,
   team_id         uuid not null references public.teams(id) on delete cascade,
   project_id      uuid not null references public.loops_profiles(id) on delete cascade,
   ai_score        jsonb default '{}',
@@ -199,10 +199,10 @@ create table public.submissions (
   status          submission_status not null default 'draft',
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now(),
-  unique (booster_id, project_id)
+  unique (hackathon_id, project_id)
 );
 
-create index idx_submissions_booster on public.submissions(booster_id);
+create index idx_submissions_hackathon on public.submissions(hackathon_id);
 create index idx_submissions_team on public.submissions(team_id);
 create index idx_submissions_project on public.submissions(project_id);
 
@@ -210,7 +210,6 @@ create index idx_submissions_project on public.submissions(project_id);
 create table public.host_applications (
   id                    uuid primary key default gen_random_uuid(),
   user_id               uuid not null references public.users(id) on delete cascade,
-  booster_type          booster_type not null,
   event_name            text not null,
   expected_participants integer,
   contact               text,
@@ -227,16 +226,16 @@ create index idx_host_apps_status on public.host_applications(status);
 -- JUDGE_INVITES
 create table public.judge_invites (
   id              uuid primary key default gen_random_uuid(),
-  booster_id      uuid not null references public.boosters(id) on delete cascade,
+  hackathon_id    uuid not null references public.hackathons(id) on delete cascade,
   judge_user_id   uuid not null references public.users(id) on delete cascade,
   assigned_tracks uuid[] default '{}',
   invited_by      uuid not null references public.users(id),
   accepted        boolean default false,
   created_at      timestamptz not null default now(),
-  unique (booster_id, judge_user_id)
+  unique (hackathon_id, judge_user_id)
 );
 
-create index idx_judge_invites_booster on public.judge_invites(booster_id);
+create index idx_judge_invites_hackathon on public.judge_invites(hackathon_id);
 create index idx_judge_invites_judge on public.judge_invites(judge_user_id);
 
 -- RATE_LIMITS (DB-backed rate limiter)
@@ -258,9 +257,9 @@ alter table public.team_members enable row level security;
 alter table public.loops_profiles enable row level security;
 alter table public.knowledge_bases enable row level security;
 alter table public.knowledge_base_chunks enable row level security;
-alter table public.boosters enable row level security;
-alter table public.booster_tracks enable row level security;
-alter table public.booster_track_chunks enable row level security;
+alter table public.hackathons enable row level security;
+alter table public.hackathon_tracks enable row level security;
+alter table public.hackathon_track_chunks enable row level security;
 alter table public.submissions enable row level security;
 alter table public.host_applications enable row level security;
 alter table public.judge_invites enable row level security;
@@ -374,53 +373,53 @@ create policy "kb_chunks_delete_team_member"
     )
   );
 
--- BOOSTERS
-create policy "boosters_select_public"
-  on public.boosters for select using (true);
+-- HACKATHONS
+create policy "hackathons_select_public"
+  on public.hackathons for select using (true);
 
-create policy "boosters_insert_host"
-  on public.boosters for insert with check (
+create policy "hackathons_insert_host"
+  on public.hackathons for insert with check (
     auth.uid() = host_id
     and (select role from public.users where id = auth.uid()) in ('host', 'admin')
   );
 
-create policy "boosters_update_host"
-  on public.boosters for update using (auth.uid() = host_id);
+create policy "hackathons_update_host"
+  on public.hackathons for update using (auth.uid() = host_id);
 
-create policy "boosters_delete_host"
-  on public.boosters for delete using (auth.uid() = host_id);
+create policy "hackathons_delete_host"
+  on public.hackathons for delete using (auth.uid() = host_id);
 
--- BOOSTER_TRACKS
-create policy "booster_tracks_select_public"
-  on public.booster_tracks for select using (true);
+-- HACKATHON_TRACKS
+create policy "hackathon_tracks_select_public"
+  on public.hackathon_tracks for select using (true);
 
-create policy "booster_tracks_insert_host"
-  on public.booster_tracks for insert with check (
-    auth.uid() in (select host_id from public.boosters where id = booster_tracks.booster_id)
+create policy "hackathon_tracks_insert_host"
+  on public.hackathon_tracks for insert with check (
+    auth.uid() in (select host_id from public.hackathons where id = hackathon_tracks.hackathon_id)
   );
 
-create policy "booster_tracks_update_host"
-  on public.booster_tracks for update using (
-    auth.uid() in (select host_id from public.boosters where id = booster_tracks.booster_id)
+create policy "hackathon_tracks_update_host"
+  on public.hackathon_tracks for update using (
+    auth.uid() in (select host_id from public.hackathons where id = hackathon_tracks.hackathon_id)
   );
 
-create policy "booster_tracks_delete_host"
-  on public.booster_tracks for delete using (
-    auth.uid() in (select host_id from public.boosters where id = booster_tracks.booster_id)
+create policy "hackathon_tracks_delete_host"
+  on public.hackathon_tracks for delete using (
+    auth.uid() in (select host_id from public.hackathons where id = hackathon_tracks.hackathon_id)
   );
 
--- BOOSTER_TRACK_CHUNKS
-create policy "btc_select_public"
-  on public.booster_track_chunks for select using (true);
+-- HACKATHON_TRACK_CHUNKS
+create policy "htc_select_public"
+  on public.hackathon_track_chunks for select using (true);
 
-create policy "btc_insert_host"
-  on public.booster_track_chunks for insert with check (
-    auth.uid() in (select host_id from public.boosters where id = booster_track_chunks.booster_id)
+create policy "htc_insert_host"
+  on public.hackathon_track_chunks for insert with check (
+    auth.uid() in (select host_id from public.hackathons where id = hackathon_track_chunks.hackathon_id)
   );
 
-create policy "btc_delete_host"
-  on public.booster_track_chunks for delete using (
-    auth.uid() in (select host_id from public.boosters where id = booster_track_chunks.booster_id)
+create policy "htc_delete_host"
+  on public.hackathon_track_chunks for delete using (
+    auth.uid() in (select host_id from public.hackathons where id = hackathon_track_chunks.hackathon_id)
   );
 
 -- SUBMISSIONS
@@ -435,7 +434,7 @@ create policy "submissions_insert_team_member"
 create policy "submissions_update_team_or_host"
   on public.submissions for update using (
     auth.uid() in (select user_id from public.team_members where team_id = submissions.team_id)
-    or auth.uid() in (select host_id from public.boosters where id = submissions.booster_id)
+    or auth.uid() in (select host_id from public.hackathons where id = submissions.hackathon_id)
   );
 
 -- HOST_APPLICATIONS
@@ -457,12 +456,12 @@ create policy "host_apps_update_admin"
 create policy "judge_invites_select_relevant"
   on public.judge_invites for select using (
     auth.uid() = judge_user_id
-    or auth.uid() in (select host_id from public.boosters where id = judge_invites.booster_id)
+    or auth.uid() in (select host_id from public.hackathons where id = judge_invites.hackathon_id)
   );
 
 create policy "judge_invites_insert_host"
   on public.judge_invites for insert with check (
-    auth.uid() in (select host_id from public.boosters where id = judge_invites.booster_id)
+    auth.uid() in (select host_id from public.hackathons where id = judge_invites.hackathon_id)
   );
 
 create policy "judge_invites_update_judge"
@@ -515,7 +514,7 @@ create trigger trg_users_updated_at before update on public.users for each row e
 create trigger trg_teams_updated_at before update on public.teams for each row execute function update_updated_at();
 create trigger trg_loops_profiles_updated_at before update on public.loops_profiles for each row execute function update_updated_at();
 create trigger trg_knowledge_bases_updated_at before update on public.knowledge_bases for each row execute function update_updated_at();
-create trigger trg_boosters_updated_at before update on public.boosters for each row execute function update_updated_at();
+create trigger trg_hackathons_updated_at before update on public.hackathons for each row execute function update_updated_at();
 create trigger trg_submissions_updated_at before update on public.submissions for each row execute function update_updated_at();
 create trigger trg_host_applications_updated_at before update on public.host_applications for each row execute function update_updated_at();
 
@@ -549,10 +548,10 @@ begin
 end;
 $$;
 
--- Vector similarity search: Booster Track chunks (Tech Buddy)
-create or replace function match_booster_chunks(
+-- Vector similarity search: Hackathon Track chunks (Tech Buddy)
+create or replace function match_hackathon_track_chunks(
   query_embedding vector(768),
-  match_booster_id uuid,
+  match_hackathon_id uuid,
   match_count int default 5,
   match_threshold float default 0.75
 )
@@ -567,14 +566,14 @@ as $$
 begin
   return query
   select
-    btc.id,
-    btc.content,
-    btc.source,
-    1 - (btc.embedding <=> query_embedding) as similarity
-  from public.booster_track_chunks btc
-  where btc.booster_id = match_booster_id
-    and 1 - (btc.embedding <=> query_embedding) > match_threshold
-  order by btc.embedding <=> query_embedding
+    htc.id,
+    htc.content,
+    htc.source,
+    1 - (htc.embedding <=> query_embedding) as similarity
+  from public.hackathon_track_chunks htc
+  where htc.hackathon_id = match_hackathon_id
+    and 1 - (htc.embedding <=> query_embedding) > match_threshold
+  order by htc.embedding <=> query_embedding
   limit match_count;
 end;
 $$;
@@ -628,7 +627,7 @@ values ('project-assets', 'project-assets', true)
 on conflict (id) do nothing;
 
 insert into storage.buckets (id, name, public)
-values ('booster-assets', 'booster-assets', true)
+values ('hackathon-assets', 'hackathon-assets', true)
 on conflict (id) do nothing;
 
 insert into storage.buckets (id, name, public)
@@ -648,13 +647,13 @@ create policy "project_assets_delete"
   on storage.objects for delete
   using (bucket_id = 'project-assets' and auth.role() = 'authenticated');
 
-create policy "booster_assets_select"
+create policy "hackathon_assets_select"
   on storage.objects for select
-  using (bucket_id = 'booster-assets');
+  using (bucket_id = 'hackathon-assets');
 
-create policy "booster_assets_insert"
+create policy "hackathon_assets_insert"
   on storage.objects for insert
-  with check (bucket_id = 'booster-assets' and auth.role() = 'authenticated');
+  with check (bucket_id = 'hackathon-assets' and auth.role() = 'authenticated');
 
 create policy "user_avatars_select"
   on storage.objects for select
@@ -668,9 +667,9 @@ create policy "user_avatars_insert"
 -- 7. PERFORMANCE INDEXES (composite indexes for common queries)
 -- ============================================================
 
--- Submissions: filter by booster + status (analytics, host dashboard)
-create index if not exists idx_submissions_booster_status
-  on submissions (booster_id, status);
+-- Submissions: filter by hackathon + status (analytics, host dashboard)
+create index if not exists idx_submissions_hackathon_status
+  on submissions (hackathon_id, status);
 
 -- Submissions: filter by project (builder project detail)
 create index if not exists idx_submissions_project
@@ -689,6 +688,6 @@ create index if not exists idx_kb_chunks_project_index
 create index if not exists idx_team_members_user
   on team_members (user_id);
 
--- Boosters: filter by type (booster listing)
-create index if not exists idx_boosters_type_created
-  on boosters (booster_type, created_at desc);
+-- Hackathons: filter by status + date (hackathon listing)
+create index if not exists idx_hackathons_status_created
+  on hackathons (status, created_at desc);

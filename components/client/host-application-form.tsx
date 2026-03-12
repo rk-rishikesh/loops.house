@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef } from "react";
+import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, ArrowRight, Loader2, Sparkles, Check } from "lucide-react";
-import { useSaveBooster } from "@/lib/queries";
-import type { StoredBooster } from "@/lib/data-mappers";
+import { useEffect, useRef, useState, useTransition } from "react";
+import type { StoredHackathon } from "@/lib/data-mappers";
+import { useSaveHackathon } from "@/lib/queries";
 
-type BoosterType = "idea" | "momentum" | "capital";
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
 
 interface ProgramDraft {
-  booster_name: string;
-  booster_id_suggestion: string;
+  hackathon_name: string;
+  hackathon_id_suggestion: string;
   overview: string;
   target_audience: string;
   goals: string[];
@@ -28,8 +28,8 @@ interface ProgramDraft {
   organizer_notes: string[];
 }
 
-interface BoosterProgramResponse {
-  booster_id: string;
+interface HackathonProgramResponse {
+  hackathon_id: string;
   draft: ProgramDraft;
   generated_at: string;
 }
@@ -40,23 +40,9 @@ interface HostApplicationFormProps {
 
 const STEPS = [
   {
-    id: "booster_type",
-    number: "01",
-    question: "What kind of booster are you running?",
-    hint: "Each type shapes how the program is structured.",
-    type: "choice" as const,
-    choices: [
-      { value: "idea", label: "Idea", desc: "Spark early-stage concepts" },
-      { value: "momentum", label: "Momentum", desc: "Accelerate existing projects" },
-      { value: "capital", label: "Capital", desc: "Fund the best submissions" },
-    ],
-    field: "booster_type" as const,
-    required: false,
-  },
-  {
     id: "name",
-    number: "02",
-    question: "Give your booster a working title.",
+    number: "01",
+    question: "Give your hackathon a working title.",
     hint: "You can always change this later.",
     type: "text" as const,
     placeholder: "e.g. AI Builders Sprint 2026",
@@ -65,7 +51,7 @@ const STEPS = [
   },
   {
     id: "theme",
-    number: "03",
+    number: "02",
     question: "What's the theme or focus area?",
     hint: "Optional — helps the AI narrow challenge statements.",
     type: "text" as const,
@@ -75,17 +61,17 @@ const STEPS = [
   },
   {
     id: "program_goal",
-    number: "04",
-    question: "What should this booster achieve?",
+    number: "03",
+    question: "What should this hackathon achieve?",
     hint: "Describe the outcome for builders, sponsors, and your community.",
     type: "textarea" as const,
-    placeholder: "What do you want this booster to achieve for builders and sponsors?",
+    placeholder: "What do you want this hackathon to achieve for builders and sponsors?",
     field: "program_goal" as const,
     required: false,
   },
   {
     id: "problem_statements",
-    number: "05",
+    number: "04",
     question: "What problems should builders solve?",
     hint: "One problem per line. The AI will expand each into a full challenge.",
     type: "textarea" as const,
@@ -95,7 +81,7 @@ const STEPS = [
   },
   {
     id: "bounty_pool_summary",
-    number: "06",
+    number: "05",
     question: "Any prizes or rewards?",
     hint: "Optional — helps attract builders.",
     type: "text" as const,
@@ -104,29 +90,19 @@ const STEPS = [
     required: false,
   },
   {
-    id: "timeline",
-    number: "07",
-    question: "What's the rough timeline?",
-    hint: "Launch date, key milestones, submission deadline.",
-    type: "text" as const,
-    placeholder: "Launch April 1 → submissions May 15 → demo day June 1",
-    field: "timeline" as const,
-    required: false,
-  },
-  {
     id: "organizer_notes",
-    number: "08",
+    number: "06",
     question: "Anything else the AI should know?",
     hint: "Partners, constraints, tone, or what success looks like to you.",
     type: "textarea" as const,
-    placeholder: "Anything you'd tell a human co-host about constraints, partners, or success criteria.",
+    placeholder:
+      "Anything you'd tell a human co-host about constraints, partners, or success criteria.",
     field: "organizer_notes" as const,
     required: false,
   },
 ];
 
 type FormField = keyof {
-  booster_type: BoosterType;
   name: string;
   theme: string;
   program_goal: string;
@@ -134,19 +110,11 @@ type FormField = keyof {
   website_url: string;
   technical_docs: string;
   bounty_pool_summary: string;
-  timeline: string;
   organizer_notes: string;
 };
 
 /* ── Right-panel filler content per step ──────────────────────────── */
 const STEP_FILLER = [
-  {
-    label: "Program type",
-    headline: "The shape of your booster",
-    body: "Idea boosters spark new concepts from scratch. Momentum boosters accelerate builders already mid-build. Capital boosters fund the most promising submissions with real prizes.",
-    stat: "3 types",
-    statLabel: "of builder programs",
-  },
   {
     label: "Identity",
     headline: "A name sets the tone",
@@ -164,7 +132,7 @@ const STEP_FILLER = [
   {
     label: "Purpose",
     headline: "Goals drive everything",
-    body: "The clearest boosters have a single sentence that explains why they exist. The AI uses your goal to calibrate judging criteria, challenge difficulty, and the overall arc.",
+    body: "The clearest hackathons have a single sentence that explains why they exist. The AI uses your goal to calibrate judging criteria, challenge difficulty, and the overall arc.",
     stat: "1 sentence",
     statLabel: "is all you need to start",
   },
@@ -183,13 +151,6 @@ const STEP_FILLER = [
     statLabel: "of builders check prizes first",
   },
   {
-    label: "Cadence",
-    headline: "Timelines create urgency",
-    body: "The best boosters have visible checkpoints — not just a start and end date. Intermediate milestones keep builders engaged and give you feedback loops.",
-    stat: "4–6 weeks",
-    statLabel: "is the optimal booster length",
-  },
-  {
     label: "Context",
     headline: "The AI reads everything",
     body: "These notes are fed directly to the AI agent. The more context you provide about your sponsors, community expectations, or technical constraints, the better the output.",
@@ -200,13 +161,12 @@ const STEP_FILLER = [
 
 export function HostApplicationForm({ userId }: HostApplicationFormProps) {
   const router = useRouter();
-  const saveBoosterMutation = useSaveBooster();
+  const saveHackathonMutation = useSaveHackathon();
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(true);
   const [form, setForm] = useState({
-    booster_type: "idea" as BoosterType,
     name: "",
     theme: "",
     program_goal: "",
@@ -214,11 +174,10 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
     website_url: "",
     technical_docs: "",
     bounty_pool_summary: "",
-    timeline: "",
     organizer_notes: "",
   });
 
-  const [draft, setDraft] = useState<BoosterProgramResponse | null>(null);
+  const [draft, setDraft] = useState<HackathonProgramResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isGenerating, startGenerating] = useTransition();
@@ -227,13 +186,10 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
 
   const currentStep = STEPS[step];
   const filler = STEP_FILLER[step];
-  const progress = ((step + 1) / STEPS.length) * 100;
 
   // Auto-focus text inputs when step changes
   useEffect(() => {
-    if (currentStep.type !== "choice") {
-      setTimeout(() => inputRef.current?.focus(), 320);
-    }
+    setTimeout(() => inputRef.current?.focus(), 320);
   }, [step]);
 
   function animateStep(toStep: number) {
@@ -262,18 +218,13 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
     if (step > 0) animateStep(step - 1);
   }
 
-  function handleChoice(value: string) {
-    setForm((prev) => ({ ...prev, booster_type: value as BoosterType }));
-    setTimeout(() => animateStep(step + 1), 180);
-  }
-
   const handleGenerate = () => {
     setError(null);
     setSuccessMessage(null);
     setDraft(null);
 
     if (!form.name.trim()) {
-      setError("Please provide a working title for your booster.");
+      setError("Please provide a working title for your hackathon.");
       return;
     }
 
@@ -283,33 +234,31 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
       .filter(Boolean);
 
     const id = crypto.randomUUID();
-    const boosterPayload = {
+    const hackathonPayload = {
       id,
-      name: form.name || "Untitled booster",
+      name: form.name || "Untitled hackathon",
       theme: form.theme || undefined,
-      booster_type: form.booster_type,
       problem_statements: problemStatements,
       website_url: form.website_url || undefined,
       technical_docs: form.technical_docs || undefined,
       bounty_pool_summary: form.bounty_pool_summary || undefined,
       program_goal: form.program_goal || undefined,
-      timeline: form.timeline || undefined,
       organizer_notes: form.organizer_notes ? [form.organizer_notes] : undefined,
     };
 
     startGenerating(async () => {
       try {
-        const res = await fetch("/api/host-agents/booster-generator", {
+        const res = await fetch("/api/host-agents/hackathon-generator", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ booster: boosterPayload }),
+          body: JSON.stringify({ hackathon: hackathonPayload }),
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Failed to generate program draft.");
-        setDraft(json as BoosterProgramResponse);
-        setSuccessMessage("AI draft generated. Review below, then save your booster.");
+        setDraft(json as HackathonProgramResponse);
+        setSuccessMessage("AI draft generated. Review below, then save your hackathon.");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to run booster agent.");
+        setError(err instanceof Error ? err.message : "Failed to run hackathon agent.");
       }
     });
   };
@@ -325,29 +274,27 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
         .map((s) => s.trim())
         .filter(Boolean);
 
-      const boosterId = draft.booster_id || crypto.randomUUID();
-      const booster: StoredBooster = {
-        id: boosterId,
-        name: draft.draft.booster_name || form.name || "Untitled booster",
+      const hackathonId = draft.hackathon_id || crypto.randomUUID();
+      const hackathon: StoredHackathon = {
+        id: hackathonId,
+        name: draft.draft.hackathon_name || form.name || "Untitled hackathon",
         host_id: userId,
         problem_statements: problemStatements,
         theme: form.theme || undefined,
-        booster_type: form.booster_type,
         website_url: form.website_url || undefined,
         technical_docs: form.technical_docs || undefined,
         bounty_pool_summary: form.bounty_pool_summary || undefined,
         program_goal: form.program_goal || undefined,
-        timeline: form.timeline || undefined,
         organizer_notes: form.organizer_notes || undefined,
         sponsor_tracks: [],
         judging_criteria: draft.draft.judging_criteria ?? [],
         created_at: new Date().toISOString(),
       };
 
-      await saveBoosterMutation.mutateAsync(booster);
+      await saveHackathonMutation.mutateAsync(hackathon);
       router.push("/host");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save booster.");
+      setError(err instanceof Error ? err.message : "Failed to save hackathon.");
     } finally {
       setIsSaving(false);
     }
@@ -362,58 +309,14 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ backgroundColor: "#f0ebe0", fontFamily: "Georgia, serif" }}
+      style={{ backgroundColor: "#F8FFE8", fontFamily: FN }}
     >
-      {/* ── Top nav bar ─ strip style ───────────────────────────── */}
-      <div className="sticky top-0 z-50" style={{ backgroundColor: "#f0ebe0" }}>
-        <div
-          className="flex w-full items-stretch border-t border-b border-[#1a1a1a] text-[10px] tracking-[0.18em] uppercase font-bold text-[#1a1a1a]"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          {/* Left: back to host */}
-          <Link
-            href="/host"
-            className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#1a1a1a] no-underline hover:bg-[#e1dbcf]"
-          >
-            <span className="flex items-center gap-2">
-              <ArrowLeft size={11} />
-              <span>Host</span>
-            </span>
-          </Link>
-
-          {/* Right: New Booster + progress */}
-          <div className="flex-1 min-w-0 py-8 flex items-center justify-between px-10">
-            <span>New Booster</span>
-            {!done && (
-              <div className="flex items-center gap-4">
-                <div
-                  className="h-1 rounded-full overflow-hidden"
-                  style={{ width: 140, backgroundColor: "rgba(45,74,62,0.12)" }}
-                >
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${progress}%`, backgroundColor: "#2d4a3e" }}
-                  />
-                </div>
-                <span
-                  className="text-[9px] tracking-[0.15em] uppercase font-bold"
-                  style={{ color: "rgba(45,74,62,0.55)" }}
-                >
-                  {step + 1} / {STEPS.length}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* ── Main split ──────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
-
         {/* ══ LEFT — question ═══════════════════════════════════════ */}
         <div
           className="flex flex-col justify-center px-12 py-12"
-          style={{ width: "75%", borderRight: "1px solid rgba(45,74,62,0.1)" }}
+          style={{ width: "75%", borderRight: "1px solid rgba(15,44,35,0.1)" }}
         >
           {!done ? (
             <div
@@ -426,11 +329,11 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               {/* Step number */}
               <p
                 style={{
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: PX,
                   fontSize: "clamp(60px, 8vw, 100px)",
                   fontWeight: 900,
                   letterSpacing: "-0.04em",
-                  color: "rgba(45,74,62,0.07)",
+                  color: "rgba(15,44,35,0.07)",
                   lineHeight: 1,
                   marginBottom: -16,
                   userSelect: "none",
@@ -442,11 +345,11 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               {/* Question */}
               <h1
                 style={{
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: PX,
                   fontWeight: 900,
                   fontSize: "clamp(22px, 3vw, 32px)",
                   letterSpacing: "-0.025em",
-                  color: "#2d4a3e",
+                  color: "#0F2C23",
                   lineHeight: 1.15,
                   marginBottom: 10,
                 }}
@@ -458,7 +361,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               <p
                 style={{
                   fontSize: 14,
-                  color: "rgba(45,74,62,0.5)",
+                  color: "rgba(15,44,35,0.5)",
                   lineHeight: 1.6,
                   marginBottom: 32,
                 }}
@@ -467,12 +370,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 {!currentStep.required && (
                   <span
                     style={{
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 9,
                       letterSpacing: "0.15em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "rgba(45,74,62,0.3)",
+                      color: "rgba(15,44,35,0.3)",
                       marginLeft: 10,
                     }}
                   >
@@ -482,68 +385,6 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               </p>
 
               {/* ── Input ── */}
-              {currentStep.type === "choice" && (
-                <div className="flex flex-col gap-3" style={{ maxWidth: 460 }}>
-                  {currentStep.choices?.map((ch) => {
-                    const active = form.booster_type === ch.value;
-                    return (
-                      <button
-                        key={ch.value}
-                        type="button"
-                        onClick={() => handleChoice(ch.value)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "18px 22px",
-                          borderRadius: 16,
-                          border: `2px solid ${active ? "#2d4a3e" : "rgba(45,74,62,0.12)"}`,
-                          backgroundColor: active ? "#2d4a3e" : "#f5f2ea",
-                          cursor: "pointer",
-                          transition: "all 0.15s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!active) {
-                            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(45,74,62,0.35)";
-                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#ede8de";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!active) {
-                            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(45,74,62,0.12)";
-                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#f5f2ea";
-                          }
-                        }}
-                      >
-                        <div>
-                          <div
-                            style={{
-                              fontFamily: "'Inter', sans-serif",
-                              fontWeight: 800,
-                              fontSize: 14,
-                              letterSpacing: "-0.01em",
-                              color: active ? "#f0ebe0" : "#2d4a3e",
-                              marginBottom: 2,
-                            }}
-                          >
-                            {ch.label}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: active ? "rgba(240,235,224,0.6)" : "rgba(45,74,62,0.45)",
-                            }}
-                          >
-                            {ch.desc}
-                          </div>
-                        </div>
-                        {active && <Check size={16} style={{ color: "#d6cfc0", flexShrink: 0 }} />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
               {currentStep.type === "text" && (
                 <input
                   ref={inputRef as React.RefObject<HTMLInputElement>}
@@ -557,17 +398,17 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   style={{
                     width: "100%",
                     fontSize: 18,
-                    fontFamily: "Georgia, serif",
-                    color: "#2d4a3e",
+                    fontFamily: FN,
+                    color: "#0F2C23",
                     backgroundColor: "transparent",
                     border: "none",
-                    borderBottom: "2px solid rgba(45,74,62,0.2)",
+                    borderBottom: "2px solid rgba(15,44,35,0.2)",
                     outline: "none",
                     padding: "12px 0",
                     transition: "border-color 0.2s",
                   }}
-                  onFocus={(e) => (e.currentTarget.style.borderBottomColor = "#2d4a3e")}
-                  onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(45,74,62,0.2)")}
+                  onFocus={(e) => (e.currentTarget.style.borderBottomColor = "#0F2C23")}
+                  onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(15,44,35,0.2)")}
                 />
               )}
 
@@ -583,10 +424,10 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   style={{
                     width: "100%",
                     fontSize: 15,
-                    fontFamily: "Georgia, serif",
-                    color: "#2d4a3e",
-                    backgroundColor: "#f5f2ea",
-                    border: "2px solid rgba(45,74,62,0.12)",
+                    fontFamily: FN,
+                    color: "#0F2C23",
+                    backgroundColor: "rgba(15,44,35,0.04)",
+                    border: "2px solid rgba(15,44,35,0.12)",
                     borderRadius: 14,
                     outline: "none",
                     padding: "16px 18px",
@@ -594,8 +435,8 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                     lineHeight: 1.7,
                     transition: "border-color 0.2s",
                   }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#2d4a3e")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(45,74,62,0.12)")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "#0F2C23")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(15,44,35,0.12)")}
                 />
               )}
 
@@ -605,7 +446,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                     fontSize: 12,
                     color: "#8b1c1c",
                     marginTop: 8,
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                   }}
                 >
                   {error}
@@ -613,92 +454,90 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               )}
 
               {/* ── Nav buttons ── */}
-              {currentStep.type !== "choice" && (
-                <div className="flex items-center gap-3 mt-8">
-                  {step > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleBack}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        padding: "10px 18px",
-                        borderRadius: 100,
-                        border: "1.5px solid rgba(45,74,62,0.2)",
-                        backgroundColor: "transparent",
-                        cursor: "pointer",
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: 10,
-                        letterSpacing: "0.14em",
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        color: "rgba(45,74,62,0.5)",
-                      }}
-                    >
-                      <ArrowLeft size={11} />
-                      Back
-                    </button>
-                  )}
-
+              <div className="flex items-center gap-3 mt-8">
+                {step > 0 && (
                   <button
                     type="button"
-                    onClick={handleNext}
+                    onClick={handleBack}
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 8,
-                      padding: "12px 24px",
+                      gap: 6,
+                      padding: "10px 18px",
                       borderRadius: 100,
-                      border: "none",
-                      backgroundColor: "#2d4a3e",
+                      border: "1.5px solid rgba(15,44,35,0.2)",
+                      backgroundColor: "transparent",
                       cursor: "pointer",
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 10,
-                      letterSpacing: "0.18em",
+                      letterSpacing: "0.14em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "#f0ebe0",
+                      color: "rgba(15,44,35,0.5)",
                     }}
                   >
-                    {step === STEPS.length - 1 ? "Finish brief" : "Continue"}
-                    <ArrowRight size={12} />
+                    <ArrowLeft size={11} />
+                    Back
                   </button>
+                )}
 
-                  {!currentStep.required && step < STEPS.length - 1 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setForm((prev) => ({ ...prev, [currentStep.field]: "" }));
-                        animateStep(step + 1);
-                      }}
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        cursor: "pointer",
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: 10,
-                        letterSpacing: "0.14em",
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        color: "rgba(45,74,62,0.3)",
-                      }}
-                    >
-                      Skip
-                    </button>
-                  )}
-                </div>
-              )}
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "12px 24px",
+                    borderRadius: 100,
+                    border: "none",
+                    backgroundColor: "#0F2C23",
+                    cursor: "pointer",
+                    fontFamily: PX,
+                    fontSize: 10,
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                    color: "#F8FFE8",
+                  }}
+                >
+                  {step === STEPS.length - 1 ? "Finish brief" : "Continue"}
+                  <ArrowRight size={12} />
+                </button>
+
+                {!currentStep.required && step < STEPS.length - 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm((prev) => ({ ...prev, [currentStep.field]: "" }));
+                      animateStep(step + 1);
+                    }}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: PX,
+                      fontSize: 10,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      fontWeight: 700,
+                      color: "rgba(15,44,35,0.3)",
+                    }}
+                  >
+                    Skip
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             /* ── Done state ── */
             <div>
               <p
                 style={{
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: PX,
                   fontSize: 80,
                   fontWeight: 900,
-                  color: "rgba(45,74,62,0.07)",
+                  color: "rgba(15,44,35,0.07)",
                   lineHeight: 1,
                   marginBottom: -10,
                   userSelect: "none",
@@ -709,11 +548,11 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               </p>
               <h1
                 style={{
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: PX,
                   fontWeight: 900,
                   fontSize: "clamp(22px, 3vw, 30px)",
                   letterSpacing: "-0.025em",
-                  color: "#2d4a3e",
+                  color: "#0F2C23",
                   lineHeight: 1.15,
                   marginBottom: 10,
                 }}
@@ -723,13 +562,14 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               <p
                 style={{
                   fontSize: 14,
-                  color: "rgba(45,74,62,0.5)",
+                  color: "rgba(15,44,35,0.5)",
                   lineHeight: 1.7,
                   marginBottom: 32,
                   maxWidth: 380,
                 }}
               >
-                Your answers are ready to hand off to the AI agent. It will turn your brief into a full program outline — challenges, judging criteria, schedule, and more.
+                Your answers are ready to hand off to the AI agent. It will turn your brief into a
+                full program outline — challenges, judging criteria, schedule, and more.
               </p>
 
               {successMessage && (
@@ -737,10 +577,10 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   style={{
                     padding: "12px 16px",
                     borderRadius: 12,
-                    backgroundColor: "rgba(45,74,62,0.06)",
-                    border: "1px solid rgba(45,74,62,0.15)",
+                    backgroundColor: "rgba(15,44,35,0.06)",
+                    border: "1px solid rgba(15,44,35,0.15)",
                     fontSize: 13,
-                    color: "#2d4a3e",
+                    color: "#0F2C23",
                     marginBottom: 20,
                   }}
                 >
@@ -776,18 +616,22 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                       padding: "14px 28px",
                       borderRadius: 100,
                       border: "none",
-                      backgroundColor: "#2d4a3e",
+                      backgroundColor: "#0F2C23",
                       cursor: isGenerating ? "wait" : "pointer",
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 10,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "#f0ebe0",
+                      color: "#F8FFE8",
                       opacity: isGenerating ? 0.7 : 1,
                     }}
                   >
-                    {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    {isGenerating ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <Sparkles size={12} />
+                    )}
                     {isGenerating ? "Generating…" : "Generate program draft"}
                   </button>
                 ) : (
@@ -802,19 +646,23 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                       padding: "14px 28px",
                       borderRadius: 100,
                       border: "none",
-                      backgroundColor: "#2d4a3e",
+                      backgroundColor: "#0F2C23",
                       cursor: isSaving ? "wait" : "pointer",
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 10,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "#f0ebe0",
+                      color: "#F8FFE8",
                       opacity: isSaving ? 0.7 : 1,
                     }}
                   >
-                    {isSaving ? <Loader2 size={12} className="animate-spin" /> : <ArrowRight size={12} />}
-                    {isSaving ? "Saving…" : "Save booster"}
+                    {isSaving ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <ArrowRight size={12} />
+                    )}
+                    {isSaving ? "Saving…" : "Save hackathon"}
                   </button>
                 )}
 
@@ -825,12 +673,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                     background: "transparent",
                     border: "none",
                     cursor: "pointer",
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                     fontSize: 10,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
                     fontWeight: 700,
-                    color: "rgba(45,74,62,0.3)",
+                    color: "rgba(15,44,35,0.3)",
                   }}
                 >
                   Edit answers
@@ -843,7 +691,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
         {/* ══ RIGHT — filler / brief preview ═══════════════════════ */}
         <div
           className="flex flex-col"
-          style={{ width: "42%", backgroundColor: "#2d4a3e", overflow: "hidden" }}
+          style={{ width: "42%", backgroundColor: "#0F2C23", overflow: "hidden" }}
         >
           {!done ? (
             <div
@@ -858,12 +706,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 {/* Label */}
                 <p
                   style={{
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                     fontSize: 9,
                     letterSpacing: "0.22em",
                     textTransform: "uppercase",
                     fontWeight: 700,
-                    color: "rgba(240,235,224,0.3)",
+                    color: "rgba(226,254,165,0.3)",
                     marginBottom: 16,
                   }}
                 >
@@ -873,11 +721,11 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 {/* Headline */}
                 <h2
                   style={{
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                     fontWeight: 900,
                     fontSize: "clamp(20px, 2.4vw, 28px)",
                     letterSpacing: "-0.025em",
-                    color: "#f0ebe0",
+                    color: "#F8FFE8",
                     lineHeight: 1.1,
                     marginBottom: 14,
                   }}
@@ -889,7 +737,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 <p
                   style={{
                     fontSize: 13,
-                    color: "rgba(240,235,224,0.55)",
+                    color: "rgba(226,254,165,0.55)",
                     lineHeight: 1.7,
                     marginBottom: 28,
                   }}
@@ -904,18 +752,18 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                     flexDirection: "column",
                     padding: "18px 24px",
                     borderRadius: 18,
-                    backgroundColor: "rgba(240,235,224,0.06)",
-                    border: "1px solid rgba(240,235,224,0.1)",
+                    backgroundColor: "rgba(226,254,165,0.06)",
+                    border: "1px solid rgba(226,254,165,0.1)",
                     alignSelf: "flex-start",
                   }}
                 >
                   <span
                     style={{
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontWeight: 900,
                       fontSize: 26,
                       letterSpacing: "-0.03em",
-                      color: "#d6cfc0",
+                      color: "#E2FEA5",
                       lineHeight: 1,
                       marginBottom: 4,
                     }}
@@ -924,12 +772,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   </span>
                   <span
                     style={{
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 9,
                       letterSpacing: "0.14em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "rgba(240,235,224,0.3)",
+                      color: "rgba(226,254,165,0.3)",
                     }}
                   >
                     {filler.statLabel}
@@ -941,7 +789,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               {summary.length > 0 && (
                 <div
                   style={{
-                    borderTop: "1px solid rgba(240,235,224,0.08)",
+                    borderTop: "1px solid rgba(226,254,165,0.08)",
                     padding: "16px 20px",
                     display: "flex",
                     flexDirection: "column",
@@ -950,12 +798,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 >
                   <p
                     style={{
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 9,
                       letterSpacing: "0.2em",
                       textTransform: "uppercase",
                       fontWeight: 700,
-                      color: "rgba(240,235,224,0.22)",
+                      color: "rgba(226,254,165,0.22)",
                       marginBottom: 4,
                     }}
                   >
@@ -963,15 +811,15 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   </p>
                   {summary.slice(-4).map((s) => {
                     const val = form[s.field as FormField]?.toString().trim();
-                    const truncated = val && val.length > 60 ? val.slice(0, 60) + "…" : val;
+                    const truncated = val && val.length > 60 ? `${val.slice(0, 60)}…` : val;
                     return (
                       <div key={s.id} className="flex items-start gap-3">
                         <span
                           style={{
-                            fontFamily: "'Inter', sans-serif",
+                            fontFamily: PX,
                             fontSize: 9,
                             fontWeight: 900,
-                            color: "rgba(240,235,224,0.2)",
+                            color: "rgba(226,254,165,0.2)",
                             letterSpacing: "0.05em",
                             marginTop: 2,
                             flexShrink: 0,
@@ -983,7 +831,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                         <span
                           style={{
                             fontSize: 12,
-                            color: "rgba(240,235,224,0.5)",
+                            color: "rgba(226,254,165,0.5)",
                             lineHeight: 1.5,
                           }}
                         >
@@ -1000,12 +848,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
             <div className="flex flex-col h-full overflow-y-auto px-10 py-10">
               <p
                 style={{
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: PX,
                   fontSize: 9,
                   letterSpacing: "0.22em",
                   textTransform: "uppercase",
                   fontWeight: 700,
-                  color: "rgba(240,235,224,0.3)",
+                  color: "rgba(226,254,165,0.3)",
                   marginBottom: 20,
                 }}
               >
@@ -1022,19 +870,21 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                       <div key={s.id}>
                         <p
                           style={{
-                            fontFamily: "'Inter', sans-serif",
+                            fontFamily: PX,
                             fontSize: 9,
                             letterSpacing: "0.16em",
                             textTransform: "uppercase",
                             fontWeight: 700,
-                            color: "rgba(240,235,224,0.28)",
+                            color: "rgba(226,254,165,0.28)",
                             marginBottom: 4,
                           }}
                         >
                           {s.number} — {s.id.replace(/_/g, " ")}
                         </p>
-                        <p style={{ fontSize: 13, color: "rgba(240,235,224,0.6)", lineHeight: 1.6 }}>
-                          {val.length > 120 ? val.slice(0, 120) + "…" : val}
+                        <p
+                          style={{ fontSize: 13, color: "rgba(226,254,165,0.6)", lineHeight: 1.6 }}
+                        >
+                          {val.length > 120 ? `${val.slice(0, 120)}…` : val}
                         </p>
                       </div>
                     );
@@ -1044,57 +894,89 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 /* AI draft content */
                 (() => {
                   const d: any = draft.draft;
-                  const boosterName = d.booster_name ?? form.name;
+                  const hackathonName = d.hackathon_name ?? form.name;
                   const overview = d.overview ?? "No overview generated.";
                   const goals: string[] = d.goals ?? [];
                   const challenges: any[] = d.challenge_statements ?? [];
                   const schedule: any[] = d.schedule ?? [];
-                  const slug = d.booster_id_suggestion;
+                  const slug = d.hackathon_id_suggestion;
 
                   return (
                     <div className="space-y-8">
                       <div>
                         <h2
                           style={{
-                            fontFamily: "'Inter', sans-serif",
+                            fontFamily: PX,
                             fontWeight: 900,
                             fontSize: 22,
                             letterSpacing: "-0.02em",
-                            color: "#f0ebe0",
+                            color: "#F8FFE8",
                             lineHeight: 1.1,
                             marginBottom: 8,
                           }}
                         >
-                          {boosterName}
+                          {hackathonName}
                         </h2>
                         {slug && (
                           <p
                             style={{
-                              fontFamily: "'Inter', sans-serif",
+                              fontFamily: PX,
                               fontSize: 9,
                               letterSpacing: "0.14em",
                               textTransform: "uppercase",
                               fontWeight: 700,
-                              color: "rgba(240,235,224,0.25)",
+                              color: "rgba(226,254,165,0.25)",
                               marginBottom: 12,
                             }}
                           >
                             /{slug}
                           </p>
                         )}
-                        <p style={{ fontSize: 13, color: "rgba(240,235,224,0.6)", lineHeight: 1.7 }}>
+                        <p
+                          style={{ fontSize: 13, color: "rgba(226,254,165,0.6)", lineHeight: 1.7 }}
+                        >
                           {overview}
                         </p>
                       </div>
 
                       {goals.length > 0 && (
                         <div>
-                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, color: "rgba(240,235,224,0.25)", marginBottom: 10 }}>Goals</p>
+                          <p
+                            style={{
+                              fontFamily: PX,
+                              fontSize: 9,
+                              letterSpacing: "0.18em",
+                              textTransform: "uppercase",
+                              fontWeight: 700,
+                              color: "rgba(226,254,165,0.25)",
+                              marginBottom: 10,
+                            }}
+                          >
+                            Goals
+                          </p>
                           <div className="space-y-2">
                             {goals.map((g, i) => (
                               <div key={i} className="flex items-start gap-3">
-                                <span style={{ color: "rgba(240,235,224,0.2)", fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 10, marginTop: 2 }}>→</span>
-                                <span style={{ fontSize: 13, color: "rgba(240,235,224,0.6)", lineHeight: 1.6 }}>{g}</span>
+                                <span
+                                  style={{
+                                    color: "rgba(226,254,165,0.2)",
+                                    fontFamily: PX,
+                                    fontWeight: 900,
+                                    fontSize: 10,
+                                    marginTop: 2,
+                                  }}
+                                >
+                                  →
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 13,
+                                    color: "rgba(226,254,165,0.6)",
+                                    lineHeight: 1.6,
+                                  }}
+                                >
+                                  {g}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -1103,16 +985,62 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
 
                       {challenges.length > 0 && (
                         <div>
-                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, color: "rgba(240,235,224,0.25)", marginBottom: 10 }}>Challenges</p>
+                          <p
+                            style={{
+                              fontFamily: PX,
+                              fontSize: 9,
+                              letterSpacing: "0.18em",
+                              textTransform: "uppercase",
+                              fontWeight: 700,
+                              color: "rgba(226,254,165,0.25)",
+                              marginBottom: 10,
+                            }}
+                          >
+                            Challenges
+                          </p>
                           <div className="space-y-3">
                             {challenges.slice(0, 3).map((c, i) => (
-                              <div key={i} style={{ padding: "12px 16px", borderRadius: 12, backgroundColor: "rgba(240,235,224,0.05)", border: "1px solid rgba(240,235,224,0.08)" }}>
-                                <p style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 12, color: "rgba(240,235,224,0.8)", marginBottom: 3 }}>{c.title}</p>
-                                <p style={{ fontSize: 12, color: "rgba(240,235,224,0.45)", lineHeight: 1.5 }}>{c.summary}</p>
+                              <div
+                                key={i}
+                                style={{
+                                  padding: "12px 16px",
+                                  borderRadius: 12,
+                                  backgroundColor: "rgba(226,254,165,0.05)",
+                                  border: "1px solid rgba(226,254,165,0.08)",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    fontFamily: PX,
+                                    fontWeight: 700,
+                                    fontSize: 12,
+                                    color: "rgba(226,254,165,0.8)",
+                                    marginBottom: 3,
+                                  }}
+                                >
+                                  {c.title}
+                                </p>
+                                <p
+                                  style={{
+                                    fontSize: 12,
+                                    color: "rgba(226,254,165,0.45)",
+                                    lineHeight: 1.5,
+                                  }}
+                                >
+                                  {c.summary}
+                                </p>
                               </div>
                             ))}
                             {challenges.length > 3 && (
-                              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 10, color: "rgba(240,235,224,0.25)" }}>+ {challenges.length - 3} more challenges</p>
+                              <p
+                                style={{
+                                  fontFamily: PX,
+                                  fontSize: 10,
+                                  color: "rgba(226,254,165,0.25)",
+                                }}
+                              >
+                                + {challenges.length - 3} more challenges
+                              </p>
                             )}
                           </div>
                         </div>
@@ -1120,14 +1048,55 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
 
                       {schedule.length > 0 && (
                         <div>
-                          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, color: "rgba(240,235,224,0.25)", marginBottom: 10 }}>Schedule</p>
+                          <p
+                            style={{
+                              fontFamily: PX,
+                              fontSize: 9,
+                              letterSpacing: "0.18em",
+                              textTransform: "uppercase",
+                              fontWeight: 700,
+                              color: "rgba(226,254,165,0.25)",
+                              marginBottom: 10,
+                            }}
+                          >
+                            Schedule
+                          </p>
                           <div className="space-y-2">
                             {schedule.slice(0, 4).map((s, i) => (
                               <div key={i} className="flex items-start gap-3">
-                                <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 9, color: "rgba(240,235,224,0.2)", width: 16, marginTop: 3, flexShrink: 0 }}>{String(i + 1).padStart(2, "0")}</span>
+                                <span
+                                  style={{
+                                    fontFamily: PX,
+                                    fontWeight: 900,
+                                    fontSize: 9,
+                                    color: "rgba(226,254,165,0.2)",
+                                    width: 16,
+                                    marginTop: 3,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {String(i + 1).padStart(2, "0")}
+                                </span>
                                 <div>
-                                  <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 11, color: "rgba(240,235,224,0.7)" }}>{s.phase}</span>
-                                  <span style={{ fontSize: 11, color: "rgba(240,235,224,0.4)", marginLeft: 8 }}>{s.description}</span>
+                                  <span
+                                    style={{
+                                      fontFamily: PX,
+                                      fontWeight: 700,
+                                      fontSize: 11,
+                                      color: "rgba(226,254,165,0.7)",
+                                    }}
+                                  >
+                                    {s.phase}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: 11,
+                                      color: "rgba(226,254,165,0.4)",
+                                      marginLeft: 8,
+                                    }}
+                                  >
+                                    {s.description}
+                                  </span>
                                 </div>
                               </div>
                             ))}

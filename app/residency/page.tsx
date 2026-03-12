@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { getServerAuth } from "@/lib/server-auth";
 
 export default async function ResidencyLandingPage() {
@@ -19,8 +19,8 @@ export default async function ResidencyLandingPage() {
               Apply to the Loops Residency
             </h1>
             <p className="mt-3 text-sm text-zinc-600">
-              Turn your hackathon project into a product with dedicated mentoring, boosters,
-              and a structured build loop.
+              Turn your hackathon project into a product with dedicated mentoring, hackathons, and a
+              structured build loop.
             </p>
           </div>
           <div className="sm:text-right">

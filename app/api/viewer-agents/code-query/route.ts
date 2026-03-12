@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
-import { queryCode } from "../../sub-agents/code-reader/route";
-import { checkRateLimit } from "../../lib/rate-limiter";
 import { generateContent } from "../../lib/gemini-client";
+import { checkRateLimit } from "../../lib/rate-limiter";
+import { queryCode } from "../../sub-agents/code-reader/route";
 
 const RATE_LIMIT = parseInt(process.env.RATE_LIMIT_CODE_QUERY || "20", 10);
 
@@ -22,8 +22,12 @@ function buildKbContext(project: ProjectContext): string {
   const parts = [
     p.name ? `Project: ${p.name}` : "",
     p.tagline ? `Tagline: ${p.tagline}` : "",
-    p.refined_description || p.description ? `Description:\n${p.refined_description || p.description}` : "",
-    p.key_features?.length ? `Key features:\n${p.key_features.map((f) => `- ${f}`).join("\n")}` : "",
+    p.refined_description || p.description
+      ? `Description:\n${p.refined_description || p.description}`
+      : "",
+    p.key_features?.length
+      ? `Key features:\n${p.key_features.map((f) => `- ${f}`).join("\n")}`
+      : "",
     p.tech_stack_tags?.length ? `Tech stack: ${p.tech_stack_tags.join(", ")}` : "",
     p.category ? `Category: ${p.category}` : "",
     p.flattened_codebase ? `\n--- Code (excerpt) ---\n${p.flattened_codebase.slice(0, 50000)}` : "",
@@ -35,7 +39,10 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth();
   if (!auth) return unauthorized();
 
-  const { allowed, remaining, resetAt } = await checkRateLimit(`code-query:${auth.user.id}`, RATE_LIMIT);
+  const { allowed, remaining, resetAt } = await checkRateLimit(
+    `code-query:${auth.user.id}`,
+    RATE_LIMIT,
+  );
 
   if (!allowed) {
     return NextResponse.json(
@@ -46,7 +53,7 @@ export async function POST(request: NextRequest) {
           "X-RateLimit-Remaining": "0",
           "X-RateLimit-Reset": new Date(resetAt).toISOString(),
         },
-      }
+      },
     );
   }
 
@@ -59,10 +66,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (!project_id || !question) {
-      return NextResponse.json(
-        { error: "project_id and question are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "project_id and question are required" }, { status: 400 });
     }
 
     let answer: string;
@@ -91,7 +95,7 @@ export async function POST(request: NextRequest) {
           "X-RateLimit-Remaining": String(remaining),
           "X-RateLimit-Reset": new Date(resetAt).toISOString(),
         },
-      }
+      },
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "An unexpected error occurred";
