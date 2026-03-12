@@ -143,23 +143,32 @@ export default async function HostDashboardPage() {
           <div className="rounded-3xl p-8" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
             {/* Section header */}
             <div className="flex items-center justify-between mb-7">
-              <div>
-                <p
-                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-1"
-                  style={{ fontFamily: PX }}
+              <div className="flex items-center justify-between w-full">
+                <div className="flex-1 items-center gap-2">
+                  <p
+                    className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-1"
+                    style={{ fontFamily: PX }}
+                  >
+                    Your Programs
+                  </p>
+                  <h2
+                    className="font-black text-[#0F2C23] uppercase"
+                    style={{
+                      fontFamily: PX,
+                      fontSize: "clamp(20px, 2.5vw, 28px)",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    Hosted Hackathons.
+                  </h2>
+                </div>
+                <Link
+                  href="/host/new"
+                  className="inline-flex items-center gap-2 no-underline rounded-full text-[#E2FEA5] text-[9px] tracking-widest uppercase font-bold px-5 py-2.5"
+                  style={{ backgroundColor: "#0F2C23", fontFamily: PX }}
                 >
-                  Your Programs
-                </p>
-                <h2
-                  className="font-black text-[#0F2C23] uppercase"
-                  style={{
-                    fontFamily: PX,
-                    fontSize: "clamp(20px, 2.5vw, 28px)",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  Hosted Hackathons.
-                </h2>
+                  <Plus size={10} /> Create Hackathon
+                </Link>
               </div>
             </div>
 
@@ -182,7 +191,7 @@ export default async function HostDashboardPage() {
                   Create your first program to start engaging builders.
                 </p>
                 <Link
-                  href="/host/hackathons"
+                  href="/host/new"
                   className="inline-flex items-center gap-2 no-underline rounded-full text-[#E2FEA5] text-[9px] tracking-widest uppercase font-bold px-5 py-2.5"
                   style={{ backgroundColor: "#0F2C23", fontFamily: PX }}
                 >

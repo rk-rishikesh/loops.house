@@ -1,14 +1,153 @@
 # AGENTS.md
 
-AI Agent Architecture for LoopsFlow.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Overview
+## Commands
 
-LoopsFlow has 19 API routes under `app/api/`:
+```bash
+npm run dev              # Start Next.js dev server
+npm run build            # Production build
+npm run lint             # ESLint
+npm run db:gen-types     # Regenerate database.types.ts from live Supabase schema
+npm run db:push          # Push migrations to remote Supabase
+npm run db:status        # Check database health
+npm run db:new-migration -- "name"  # Create new migration file
+npm run db:seed          # Seed database with test data
+npm run db:setup-storage # Create storage buckets and policies
+```
 
-- **12 AI agent routes** — use Gemini for generation/analysis
-- **4 sub-agent utility routes** — reusable building blocks called by other agents
-- **3 CRUD REST endpoints** — standard data operations, no AI
+## MCP TOOLS (USE FOR DEBUGGING AND DEVELOPMENT)
+
+Use `next-devtools` for browser automation. Run `next-devtools --help` for all commands.
+
+Use `supabase` for database management. Run `supabase --help` for all commands.
+
+## Browser Automation (IGNORE THIS FOR NOW ONLY IF REALLY NEEDED YOU ARE CONFIDENT THAT ONE INTEGRATION IS WORKING AND YOU NEED TO TEST IT BETTER ASK ME THROUGH CHAT TO VALIDATE THE INTEGRATION)
+
+Use `agent-browser` for web automation. Run `agent-browser --help` for all commands.
+
+Core workflow:
+
+Run development server:
+
+```bash
+npm run dev
+```
+
+Execute test out the pages recently modified or introduced updates improvements to validate them on localhost 3000.
+
+1. `agent-browser open <url>` - Navigate to page
+2. `agent-browser snapshot -i` - Get interactive elements with refs (@e1, @e2)
+3. `agent-browser click @e1` / `fill @e2 "text"` - Interact using refs
+4. Re-snapshot after page changes
+
+## Architecture
+
+Loops House is a hackathon management platform built on Next.js 16 App Router. It provides end-to-end hackathon lifecycle management: hosts create and configure hackathons, builders submit projects, judges evaluate submissions (human + AI), and the platform computes results and leaderboards.
+
+### Roles & Capabilities
+
+The platform uses a **capability-based authorization** system (`lib/capabilities.ts`) rather than a single role enum. Users can hold multiple roles simultaneously:
+
+| Capability       | Source                    | Grants access to                             |
+| ---------------- | ------------------------- | -------------------------------------------- |
+| `isAdmin`        | `users.is_admin` flag     | Everything — admin dashboard, all management |
+| `isEventCreator` | `users.is_event_creator`  | Create new hackathons                        |
+| Cohost           | `hackathon_cohosts` table | Manage specific hackathons (per-hackathon)   |
+| Judge            | `hackathon_judges` table  | Evaluate submissions (per-hackathon)         |
+| Builder          | Any authenticated user    | Submit projects, join teams                  |
+| Viewer           | Public                    | Browse hackathons and projects               |
+
+**BasicCapabilities** (fast-path via cookie): `isAdmin`, `isEventCreator`, `isCohost` (boolean), `isJudge` (boolean).
+
+**UserCapabilities** (full): extends Basic with `cohostOf: string[]` and `judgeOf: string[]` (hackathon IDs).
+
+Key authorization functions:
+- `canManageHackathon(caps, hostId, userId, hackathonId)` — admin OR hackathon owner OR cohost
+- `canJudgeHackathon(caps, hackathonId)` — admin OR assigned judge for that hackathon
+
+### Hackathon Phase System
+
+Phases are **computed from dates** (not stored) via `lib/hackathon-phase.ts`:
+
+| Phase       | Condition                                       |
+| ----------- | ----------------------------------------------- |
+| `upcoming`  | Before `start_date`                             |
+| `building`  | Between `start_date` and `submission_deadline`  |
+| `judging`   | Between `submission_deadline` and `results_date` |
+| `completed` | Past `results_date`, `finalized_at` not set     |
+| `finalized` | Past `results_date` AND `finalized_at` is set   |
+
+**PhasePermissions** control what actions are allowed per phase:
+- `canSubmit`, `canEditJudges`, `canEditSpeakers`, `canJudge`, `canRunAiEval`, `canEditDetails`, `canEditTimeline`, `canFinalize`
+
+### Three-Layer Backend
+
+1. **Supabase clients** (`lib/supabase/`): Three client variants — `client.ts` (browser singleton), `server.ts` (SSR with cookies), `admin.ts` (service-role, bypasses RLS). Pick the right one based on context.
+
+2. **Data-access layer** (`lib/db/`): CRUD modules — `teams`, `profiles`, `hackathons`, `submissions`, `knowledge-base`, `hackathon-tracks`, `hackathon-speakers`, `hackathon-results`, `storage`, `rate-limiter`. All use the admin client.
+
+3. **`lib/storage.ts`**: Async facade over `lib/db/*` modules that maps legacy `StoredProject`/`StoredBooster`/`StoredTeam` interfaces to DB rows. Client components import from here.
+
+### Server-Side Data Layer
+
+- **`lib/actions.ts`**: Server Actions for mutations — creates projects, teams, hackathons, submissions, evaluations. Uses Zod validation from `lib/validations/schemas.ts`.
+- **`lib/server-auth.ts`**: `getServerAuth()` — server component auth helper, returns `{ user, role }` or redirects. Uses capability cookies for zero-DB-round-trip auth.
+- **`lib/server-data.ts`**: Server-side data fetching — mirrors `storage.ts` functions for use in server components and page loaders.
+- **`lib/data-mappers.ts`**: Maps DB rows (`Tables<"loops_profiles">`) to frontend `StoredProject`/`StoredBooster`/`StoredTeam` interfaces.
+
+### Form & Cache Layer
+
+- **`lib/validations/schemas.ts`**: Zod schemas for all forms and API validation (project, hackathon, team, admin, host-new, judge-invite).
+- **`lib/types/json-schemas.ts`**: Typed schemas for JSON columns (`ColorsJson`, `LinkItem`, `SocialLinks`, etc.).
+- **`lib/queries.ts`**: TanStack Query hooks (`useProjects`, `useBoosters`, `useTeams`, etc.) with stale-while-revalidate caching.
+- **`lib/cache-config.ts`**: TanStack Query cache timing constants and default options.
+
+### Auth Flow
+
+- **`middleware.ts` (root, edge)**: Protects `/builder`, `/host`, `/judge`, and `/admin` routes. Refreshes Supabase session, encodes capabilities into cookies, redirects to `/login?redirect=`.
+- **`lib/supabase/middleware.ts`**: Exports `requireAuth(allowedRoles?)` for API routes — validates session + role, returns `{user, supabase}` or null.
+- **`app/providers.tsx`**: `AuthContext` with `useAuth()` hook providing `{user, session, role, loading}`.
+- Auth methods: Google OAuth, GitHub OAuth, email/password.
+
+### App Pages
+
+```
+app/
+  admin/                        Admin dashboard (users, applications)
+  builder/                      Builder role pages
+    projects/[id]/              Project editor
+    teams/                      Team management
+    new/                        New project wizard
+  dashboard/                    Unified dashboard (role-aware)
+  hackathons/                   Public hackathon listings
+    [id]/                       Hackathon detail (public)
+    [id]/submit/                Submit project to hackathon
+    [id]/project/[projectId]/   Project within hackathon context
+  host/                         Host management
+    [hackathon_id]/             Hackathon overview
+    [hackathon_id]/analytics/   Submission analytics dashboard
+    [hackathon_id]/judges/      Judge assignment view
+    [hackathon_id]/judging/[project_id]/  AI/human evaluation interface
+    [hackathon_id]/manage/      Edit hackathon details
+    [hackathon_id]/manage/judges/    Manage judge roster
+    [hackathon_id]/manage/speakers/  Manage speakers
+    [hackathon_id]/finalize/    Finalization & leaderboard
+    new/                        Create a new hackathon
+  judge/                        Judge role pages
+    [hackathon_id]/             Judge dashboard for a hackathon
+    [hackathon_id]/[project_id]/ Evaluate a specific project
+  notifications/                Notification center
+  projects/                     Public project browsing
+    [id]/                       Project detail (viewer)
+  residency/                    Residency program pages
+  login/                        Auth page (OAuth + email/password)
+  auth/callback/                OAuth callback handler
+```
+
+### AI Agent Routes (`app/api/`)
+
+19 API routes total: 12 AI agent routes, 4 sub-agent utility routes, and 3 CRUD REST endpoints.
 
 All AI routes follow a common pattern:
 
@@ -24,7 +163,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 ```
 
-## Gemini Client (`app/api/lib/gemini-client.ts`)
+Agent categories: `builder-agents/`, `host-agents/`, `viewer-agents/`, `devrel-agents/`, `sub-agents/`, `agents/`.
+
+#### Gemini Client (`app/api/lib/gemini-client.ts`)
 
 | Export                                               | Description                                                                               |
 | ---------------------------------------------------- | ----------------------------------------------------------------------------------------- |
@@ -34,237 +175,170 @@ export const dynamic = "force-dynamic";
 | `generateJSON<T>(model, prompt, systemInstruction?)` | Structured JSON output (temperature 0.2)                                                  |
 | `streamContent(model, contents, config?)`            | Streaming generation                                                                      |
 
-Model tier is always passed explicitly: `"pro"`, `"flash"`, or `"embedding"`. Can be overridden via env vars `GEMINI_PRO_MODEL`, `GEMINI_FLASH_MODEL`, `GEMINI_EMBEDDING_MODEL`.
+Model tier is always passed explicitly: `"pro"`, `"flash"`, or `"embedding"`. Can be overridden via env vars.
 
-## Shared Infrastructure (`app/api/lib/`)
+#### Shared Infrastructure (`app/api/lib/`)
 
-| File                | Purpose                                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------------------------- |
-| `sse.ts`            | `createSSEStream()` + `sseResponse()` for event-stream responses                                        |
-| `rate-limiter.ts`   | `checkRateLimit(key, max, windowMs)` — delegates to DB via `lib/db/rate-limiter.ts`                     |
-| `embeddings.ts`     | `embedText()`, `embedBatch()`, `cosineSimilarity()` — 768-dim via gemini-embedding-001                  |
-| `knowledge-base.ts` | `buildKnowledgeBase()`, `chunkText()` — chunks text, embeds, stores in pgvector                         |
-| `vector-store.ts`   | `upsertChunks()`, `getChunks()`, `queryTopK()`, `hasProject()` — facade over `lib/db/knowledge-base.ts` |
+| File                | Purpose                                                                         |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `sse.ts`            | `createSSEStream()` + `sseResponse()` for event-stream responses                |
+| `rate-limiter.ts`   | `checkRateLimit(key, max, windowMs)` — delegates to DB                          |
+| `embeddings.ts`     | `embedText()`, `embedBatch()`, `cosineSimilarity()` — 768-dim                   |
+| `knowledge-base.ts` | `buildKnowledgeBase()`, `chunkText()` — chunks text, embeds, stores in pgvector |
+| `vector-store.ts`   | `upsertChunks()`, `getChunks()`, `queryTopK()`, `hasProject()`                  |
 
----
+#### Builder Agents (`app/api/builder-agents/`)
 
-## Builder Agents (`app/api/builder-agents/`)
+- **profile-creator** — Create a full project profile with AI enrichment. Orchestrates `code-reader`, `demo-reader`, `theme-reader` in parallel. Model: `"pro"`. SSE stream.
+- **project-ideator** — Conversational brainstorming mentor for project ideas. Model: `"flash"` streaming. SSE stream.
+- **social-amplifier** — Generate LinkedIn/Twitter posts. Model: `"flash"`. JSON. maxDuration: 10s.
 
-### profile-creator
+#### Host Agents (`app/api/host-agents/`)
 
-- **Purpose:** Create a full project profile with AI enrichment
-- **Roles:** builder, host, admin
-- **Model:** `"pro"` (tagline/category consolidation)
-- **Response:** SSE stream (progress events + complete event)
-- **Input:** `team_id`, `name`, `description`, optional: `github_url`, `youtube_url`, `logo_url`, `website_url`, `screenshot_urls`, `additional_links`, `social_links`, `hackathon_id`
-- **Sub-agents used:** `code-reader` (GitHub), `demo-reader` (YouTube), `theme-reader` (screenshots/logo)
-- **Side effects:** Inserts `loops_profiles` row, builds knowledge base (pgvector), updates profile with enriched data
-- **Output events:** `progress` (per sub-agent), `complete` (full profile response), `flattened_codebase` (if GitHub analyzed)
+- **booster-generator** — Generate a full hackathon program draft. Model: `"flash"`. JSON. Rate limit: 5/day.
+- **metric-analyst** — Analytics reports for hackathon submissions. Model: `"flash"`. JSON.
+- **project-evaluator** — AI judging against rubric criteria. Model: `"pro"`. JSON. Persists `ai_score` to submissions.
+- **resource-provisioner** — Technical resource plan for builders. Model: `"flash"`. JSON. Rate limit: 5/day.
+- **save-evaluation** — Persist evaluation scores (AI or human, per-judge). No AI, pure CRUD. JSON.
 
-### project-ideator
+#### DevRel Agents (`app/api/devrel-agents/`)
 
-- **Purpose:** Conversational brainstorming mentor for project ideas within a hackathon context
-- **Roles:** builder, host, admin
-- **Model:** `"flash"` (streaming)
-- **Response:** SSE text stream (token-by-token)
-- **Input:** `message`, `conversation_history`, `booster_context` (problem statements, sponsor tracks, theme), optional `project_snapshot`
-- **Behavior:** Conversational chat with history summarization (15 message window), refuses code/debugging requests
+- **tech-buddy** — RAG-powered resource assistant from sponsor docs. Model: `"pro"` streaming. SSE stream. In-memory embedding cache.
 
-### social-amplifier
+#### Viewer Agents (`app/api/viewer-agents/`)
 
-- **Purpose:** Generate LinkedIn/Twitter posts for project promotion
-- **Roles:** builder, host, admin
-- **Model:** `"flash"`
-- **maxDuration:** 10s
-- **Response:** JSON
-- **Input:** `project` (name, tagline, description, tech, category, features, URL), optional `hackathon` (name, result), optional `tone` (professional/casual/excited)
-- **Output:** `{ linkedin_post, twitter_post, suggested_hashtags }`
+- **code-query** — Answer questions about a project's codebase. Model: `"pro"`. JSON. maxDuration: 30s. Rate limit: 20/hr.
+- **project-chat** — Conversational Q&A using project knowledge base. Model: `"pro"` streaming. SSE stream.
 
----
+#### Standalone Agents (`app/api/agents/`)
 
-## Host Agents (`app/api/host-agents/`)
+- **youtube** — YouTube video analysis (direct Gemini video input or transcript fallback). Uses `gemini-3-flash-preview` with `gemini-2.0-flash` fallback. JSON. maxDuration: 120s.
 
-### hackathon-generator
+#### Sub-Agents (`app/api/sub-agents/`)
 
-- **Purpose:** Generate a full hackathon program draft from host input
-- **Roles:** host, admin
-- **Model:** `"flash"`
-- **Rate limit:** 5 per day per user
-- **Response:** JSON
-- **Input:** `{ hackathon: BoosterInput }` — id, name, theme, booster_type, problem_statements, and optional fields
-- **Output:** `{ hackathon_id, draft: ProgramDraft, generated_at }`
+Reusable building blocks exposing both exported functions (in-process) and HTTP POST endpoints:
 
-### metric-analyst
+- **code-reader** — Flatten GitHub repo + extract tech stack. Models: `"flash"` (tech), `"pro"` (Q&A).
+- **demo-reader** — Analyze YouTube demo video. Model: `"pro"` (direct video).
+- **theme-reader** — Extract visual theme from screenshots/logo. Model: `"flash"` (multimodal).
+- **youtube** — YouTube transcript + analysis wrapper.
 
-- **Purpose:** Generate analytics reports for hackathon submissions
-- **Roles:** host, admin
-- **Model:** `"flash"`
-- **Response:** JSON
-- **Input:** `hackathon_id`, `report_type` (overview/submissions/builder-graph/momentum-leaderboard/full), optional `hackathon`, `metrics`
-- **Output:** `{ narrative, raw_metrics, generated_at, highlights }`
+Sub-agent orchestration: profile-creator runs code-reader, demo-reader, theme-reader in parallel via exported functions (not HTTP), merges results, builds knowledge base, generates tagline/category, persists to DB.
 
-### project-evaluator
+#### CRUD REST Endpoints
 
-- **Purpose:** AI judging of a project against rubric criteria
-- **Roles:** host, judge, admin
-- **Model:** `"pro"` (all criterion evaluations and summary)
-- **Response:** JSON
-- **Input:** `project_id`, `hackathon_id`, `judge_mode` (preview/official), optional `judging_rubric`, optional inline `project`/`hackathon`
-- **Behavior:** Evaluates each criterion in parallel. 5 default criteria (Code Integration, Ideation, Uniqueness, Product Readiness, Track/Sponsor Fit). Falls back to pgvector knowledge base if no inline project data.
-- **Side effects:** Persists `ai_score` to `submissions` table
-- **Output:** `{ project_id, hackathon_id, overall_score, overall_summary, criteria_scores[], judge_mode, generated_at, model_version, saved }`
+- **admin** (`app/api/admin/`) — GET (metrics/users), PATCH (update role). Admin only.
+- **host-new** (`app/api/host-new/`) — POST/GET (any auth), PATCH (admin). Approval promotes to host.
+- **judge-invites** (`app/api/judge-invites/`) — POST (host/admin), GET/PATCH (any auth). Acceptance promotes to judge.
 
-### resource-provisioner
+### Vector Search (pgvector)
 
-- **Purpose:** Generate technical resource plan for builders in a hackathon
-- **Roles:** host, admin
-- **Model:** `"flash"`
-- **Rate limit:** 5 per day per user
-- **Response:** JSON
-- **Input:** `{ hackathon: BoosterInput }` — same shape as hackathon-generator
-- **Output:** `{ hackathon_id, resources: { technical_cheatsheet, tracks[], challenge_resource_map[] }, generated_at }`
+- **Embeddings**: `app/api/lib/embeddings.ts` — calls `gemini-embedding-001` (768-dim)
+- **Knowledge base build**: `app/api/lib/knowledge-base.ts` → chunks text → embeds → stores via `lib/db/knowledge-base.ts`
+- **Semantic search**: Supabase RPC functions `match_kb_chunks` and `match_booster_track_chunks` using cosine similarity
+- **Vector store facade**: `app/api/lib/vector-store.ts` delegates to `lib/db/knowledge-base.ts`
 
-### save-evaluation
+### Database
 
-- **Purpose:** Persist evaluation scores (AI or human) to the submissions table
-- **Roles:** host, judge, admin
-- **Model:** None (pure CRUD, no AI)
-- **Response:** JSON
-- **Input:** `{ project_id, hackathon_id, ai_score?, human_score?, status? }`
-- **Output:** `{ success, submission }`
-- **Note:** Not an AI agent — data persistence endpoint grouped with host-agents for routing convenience
+Supabase Postgres with migrations in `supabase/migrations/`. Key migrations:
+- `000_full_schema.sql` — Base schema (tables, indexes, RLS, functions, storage buckets)
+- `20260312051700_roles_invitations_refactor.sql` — Capability-based roles, cohosts, judges tables
+- `20260312071348_evaluation_per_judge.sql` — Per-judge evaluation tracking
+- `20260312_hackathon_mgmt.sql` — Hackathon management (speakers, finalization, results)
 
----
+Key tables: users, teams, team_members, loops_profiles, boosters, booster_tracks, hackathon_cohosts, hackathon_judges, hackathon_speakers, knowledge_bases, knowledge_base_chunks, booster_track_chunks, submissions, host_new, judge_invites, rate_limits. RLS enabled on all tables.
 
-## DevRel Agents (`app/api/devrel-agents/`)
+Types: `lib/supabase/database.types.ts` (auto-generated, do not edit) re-exported through `lib/supabase/types.ts` with enum aliases.
 
-### tech-buddy
+### Gemini Models
 
-- **Purpose:** RAG-powered resource assistant that answers questions from sponsor docs
-- **Roles:** any authenticated
-- **Model:** `"pro"` (streaming, temperature 0.1)
-- **Response:** SSE text stream
-- **Input:** `message`, `conversation_history`, `hackathon_id`
-- **Special action:** `{ action: "load_resources", hackathon_id, resources: ResourceBundle }` — pre-loads sponsor docs as in-memory embeddings
-- **Behavior:** Retrieves relevant chunks via cosine similarity (threshold 0.75), cites sources. Refuses general programming questions. In-memory cache of 50 boosters' resources.
+- `gemini-2.5-pro` — complex reasoning tasks (project evaluation, code Q&A, RAG)
+- `gemini-2.0-flash` — fast responses (generation, streaming chat, tech stack detection)
+- `gemini-embedding-001` — 768-dim embeddings
+- `gemini-3-flash-preview` — YouTube direct video analysis (lib/agents/youtube.ts only)
 
----
+Client at `app/api/lib/gemini-client.ts` with `generateContent`, `generateJSON<T>`, and `streamContent`.
 
-## Viewer Agents (`app/api/viewer-agents/`)
+## Environment Variables
 
-### code-query
+See `.env.example`: `GEMINI_API_KEY`, `GITHUB_TOKEN`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
 
-- **Purpose:** Answer specific questions about a project's codebase
-- **Roles:** any authenticated
-- **Model:** `"pro"`
-- **maxDuration:** 30s
-- **Rate limit:** 20 per hour per user
-- **Response:** JSON
-- **Input:** `{ project_id, question, project? }`
-- **Behavior:** If inline `project` provided, uses that context. Otherwise falls back to pgvector knowledge base.
-- **Output:** `{ answer }`
+## SSR Rules & Data Flow
 
-### project-chat
+This app is **server-first**. Pages are async server components that fetch data and pass it as props to `"use client"` components. Mutations always go through Server Actions in `lib/actions.ts`, never direct client-side Supabase calls.
 
-- **Purpose:** Conversational Q&A about a project using its knowledge base
-- **Roles:** any authenticated
-- **Model:** `"pro"` (streaming, temperature 0.3)
-- **Response:** SSE text stream
-- **Input:** `project_id`, `message`, `conversation_history`, optional `project`
-- **Behavior:** Similarity threshold 0.70 for pgvector retrieval. 10-message conversation history window. Grounded in project context only.
-
----
-
-## Standalone Agents (`app/api/agents/`)
-
-### agents/youtube
-
-- **Purpose:** YouTube video analysis (direct Gemini video input or transcript fallback)
-- **Roles:** any authenticated
-- **maxDuration:** 120s
-- **Response:** JSON
-- **Input:** `{ url }`
-- **Implementation:** Delegates to `lib/agents/youtube.ts` which tries `gemini-3-flash-preview` direct video analysis first, falls back to `gemini-2.0-flash` with `YoutubeTranscript`
-- **Output:** `{ title, transcript, keyMoments[], insights, fullContent }`
-
----
-
-## Sub-Agents (`app/api/sub-agents/`)
-
-Sub-agents are reusable building blocks. They expose both exported functions (called in-process by parent agents) and HTTP POST endpoints.
-
-### code-reader
-
-- **Purpose:** Flatten a GitHub repo and extract tech stack
-- **Exported functions:** `flattenAndIndex(githubUrl, token?)`, `queryCode(projectId, question)`
-- **Model:** `"flash"` (tech stack detection), `"pro"` (code Q&A)
-- **maxDuration:** 60s
-- **Dependencies:** `@octokit/rest`, `lib/github-utils.ts`
-
-### demo-reader
-
-- **Purpose:** Analyze a YouTube demo video for structured project metadata
-- **Exported function:** `analyzeYoutube(url, problemStatement?)`
-- **Model:** `"pro"` (direct video analysis with `fileUri`)
-- **maxDuration:** 120s
-- **Output:** `{ summary, key_features, problem_addressed, tech_mentioned, timestamps, raw_transcript }`
-
-### theme-reader
-
-- **Purpose:** Extract visual design theme from screenshots/logo
-- **Exported function:** `analyzeTheme(screenshotUrls, logoUrl?)`
-- **Model:** `"flash"` (multimodal image analysis)
-- **maxDuration:** 30s
-- **Output:** `{ primary_color, accent_color, secondary_color, theme_label, design_description }`
-
-### youtube (sub-agent)
-
-- **Purpose:** Standalone YouTube transcript + analysis
-- **maxDuration:** 120s
-- **Note:** Wraps `lib/agents/youtube.ts` — distinct from `agents/youtube` top-level route
-
----
-
-## Sub-Agent Orchestration Pattern
-
-The **profile-creator** is the primary orchestrator. It runs three sub-agents in parallel:
+### Data Flow
 
 ```
-profile-creator (parent)
-  |-- code-reader    (GitHub -> flattened code + tech stack)
-  |-- demo-reader    (YouTube -> structured demo metadata)
-  |-- theme-reader   (Screenshots/Logo -> color palette + theme)
-  |
-  v
-  Merge results -> Build knowledge base (pgvector) -> Generate tagline/category -> Persist to DB -> SSE response
+Page request
+  → app/[role]/page.tsx (async server component)
+    → Promise.all([ getXxxServer(), ... ])           // lib/server-data.ts
+      → createServerSupabase() → Supabase query      // lib/supabase/server.ts
+      → map rows via data-mappers.ts                  // lib/data-mappers.ts
+    → <ClientComponent data={serverData} />           // props, no waterfall
+      → user interaction → form submit
+        → react-hook-form validates with Zod           // lib/validations/schemas.ts
+        → startTransition() → saveXxxAction()         // lib/actions.ts
+          → auth check → Zod revalidation → DB mutation → revalidatePath()
+        → router.refresh()                             // re-runs server component
 ```
 
-Each sub-agent:
+### Rules
 
-1. Is called via exported function (not HTTP), avoiding network overhead
-2. Reports progress back to the parent via SSE `send()` callbacks
-3. Fails gracefully — parent continues with other sub-agents if one fails
+**Data fetching — always server-side for page loads:**
 
----
+- Fetch in `page.tsx` using `lib/server-data.ts` functions (`getProjectsServer()`, `getBoostersServer()`, etc.)
+- Use `Promise.all()` for parallel queries — never sequential awaits when data is independent
+- Pre-join/map data on the server before passing as props (e.g., build a `projectMap` Record for O(1) lookups)
+- Never use `useQuery()` for initial page data — TanStack Query is for secondary/interactive data only
 
-## CRUD REST Endpoints
+**Mutations — always Server Actions, never client-side:**
 
-### admin (`app/api/admin/`)
+- All writes go through `lib/actions.ts` Server Actions (e.g., `saveProjectAction`, `saveTeamAction`)
+- Server Actions authenticate with `getAuthUser()`, validate with Zod, mutate, then call `revalidatePath()`
+- Return `ActionResult<T>` (`{ success: true, data } | { success: false, error }`) — never throw
+- Client calls `router.refresh()` after a successful action to get fresh SSR data
 
-- **Roles:** admin only
-- **Methods:** GET (metrics or user list), PATCH (update user role)
-- **Validation:** `adminRoleUpdateSchema` (Zod)
+**Forms — react-hook-form + Zod + Server Action:**
 
-### host-applications (`app/api/host-applications/`)
+- Use `useForm({ resolver: zodResolver(schema) })` from `lib/validations/schemas.ts`
+- Wrap Server Action call in `useTransition()` for pending state — no extra `useState` for loading
+- On success: `reset()` form + `router.refresh()` or navigate
+- On error: display `result.error` in the UI
 
-- **Roles:** any authenticated (POST/GET), admin (PATCH)
-- **Methods:** POST (submit application), GET (list applications), PATCH (approve/reject)
-- **Side effect:** Approved applications promote user to host role
-- **Validation:** `hostApplicationCreateSchema`, `hostApplicationReviewSchema` (Zod)
+**Supabase client selection:**
 
-### judge-invites (`app/api/judge-invites/`)
+| Context                           | Client                      | Import                       |
+| --------------------------------- | --------------------------- | ---------------------------- |
+| Server components / `page.tsx`    | `createServerSupabase()`    | `lib/supabase/server.ts`     |
+| Server Actions (`lib/actions.ts`) | `createServerSupabase()`    | `lib/supabase/server.ts`     |
+| API routes                        | `requireAuth()`             | `lib/supabase/middleware.ts` |
+| Data-access layer (`lib/db/*`)    | `supabaseAdmin`             | `lib/supabase/admin.ts`      |
+| Browser client components         | `sb()` via `lib/storage.ts` | `lib/supabase/client.ts`     |
 
-- **Roles:** host/admin (POST), any authenticated (GET/PATCH)
-- **Methods:** POST (invite judge by email), GET (list invites), PATCH (accept invite)
-- **Side effect:** Accepted invite promotes user to judge role
-- **Validation:** `judgeInviteCreateSchema`, `judgeInviteAcceptSchema` (Zod)
+**Auth in server components:**
+
+- Use `getServerAuth()` from `lib/server-auth.ts` — reads capability cookie set by middleware (zero DB round-trip)
+- Falls back to DB query if cookie is missing
+- Returns `{ userId, role }` or `null`
+
+### Anti-Patterns (do NOT do these)
+
+- Calling Supabase directly from a `"use client"` component to write data — use a Server Action
+- Using `lib/storage.ts` in server components — use `lib/server-data.ts` instead
+- Fetching data in `useEffect` on mount when the page could be a server component
+- Skipping Zod validation in Server Actions
+- Forgetting `revalidatePath()` after a mutation — the page will show stale data
+- N+1 queries in server components — use bulk functions like `getSubmissionsForBoostersServer(ids)`
+- Storing auth state in localStorage — use session cookies via `app/providers.tsx`
+- Using `useEffect` for mutations — always use Server Actions via `startTransition()`
+
+## Conventions
+
+- **TypeScript strict mode** with path aliases (`@/*`, `@/components/*`, `@/types/*`, `@/lib/*`)
+- **Tailwind CSS v4** (PostCSS-based, no tailwind.config)
+- **ESLint v9 flat config** (Next.js core web vitals + TypeScript)
+- **react-hook-form** + **@hookform/resolvers** + **Zod** for form validation
+- **TanStack Query** (`@tanstack/react-query`) for client-side data fetching and caching
+- API routes use SSE streaming for long-running AI operations
+- Rate limiting is DB-backed via `check_rate_limit` RPC (not in-memory)
