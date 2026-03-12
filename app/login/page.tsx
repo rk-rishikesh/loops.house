@@ -12,11 +12,11 @@ import { loginSchema, type LoginSchema } from "@/lib/validations/schemas";
 import { useAuth } from "@/app/providers";
 
 function getDashboard(caps: { isAdmin: boolean; isEventCreator: boolean; isCohost: boolean; isJudge: boolean } | null): string {
-  if (!caps) return "/builder";
+  if (!caps) return "/dashboard";
   if (caps.isAdmin) return "/admin";
   if (caps.isEventCreator || caps.isCohost) return "/host";
   if (caps.isJudge) return "/judge";
-  return "/builder";
+  return "/dashboard";
 }
 
 export default function LoginPage() {
@@ -95,7 +95,7 @@ function LoginPageContent() {
       } else {
         // After sign-in, redirect. The middleware will set capabilities cookies
         // on the next request. Use explicit redirect or default to builder.
-        router.push(explicitRedirect ?? "/builder");
+        router.push(explicitRedirect ?? "/dashboard");
       }
     }
   };

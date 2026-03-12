@@ -58,7 +58,7 @@ interface TabItem {
 }
 
 const GLOBAL_NAV: NavItem[] = [
-  { href: "/builder", icon: LayoutGrid, label: "Dashboard" },
+  { href: "/dashboard", icon: LayoutGrid, label: "Dashboard" },
   { href: "/hackathons", icon: Zap, label: "Hackathons" },
   { href: "/builder/projects", icon: FolderOpen, label: "Projects" },
   { href: "/projects", icon: Eye, label: "Explore" },
@@ -209,7 +209,7 @@ function resolveNavContext(pathname: string): NavContext {
 }
 
 function isGlobalActive(href: string, pathname: string) {
-  if (href === "/builder") return pathname === "/builder";
+  if (href === "/dashboard") return pathname === "/dashboard";
   return pathname.startsWith(href);
 }
 

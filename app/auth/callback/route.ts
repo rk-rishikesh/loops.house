@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 function getDashboardUrl(user: { is_admin: boolean; is_event_creator: boolean }): string {
   if (user.is_admin) return "/admin";
   if (user.is_event_creator) return "/host";
-  return "/builder";
+  return "/dashboard";
 }
 
 export async function GET(request: Request) {
@@ -32,11 +32,11 @@ export async function GET(request: Request) {
           .single();
         const dashboard = data
           ? getDashboardUrl(data as { is_admin: boolean; is_event_creator: boolean })
-          : "/builder";
+          : "/dashboard";
         return NextResponse.redirect(new URL(dashboard, origin));
       }
 
-      return NextResponse.redirect(new URL("/builder", origin));
+      return NextResponse.redirect(new URL("/dashboard", origin));
     }
   }
 
