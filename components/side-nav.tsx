@@ -72,8 +72,8 @@ interface TabItem {
 const GLOBAL_NAV: NavItem[] = [
   { href: "/dashboard", icon: LayoutGrid, label: "Dashboard" },
   { href: "/hackathons", icon: Zap, label: "Hackathons" },
-  { href: "/builder/projects", icon: FolderOpen, label: "Projects" },
-  { href: "/projects", icon: Eye, label: "Explore" },
+  { href: "/builder/projects", icon: FolderOpen, label: "My Projects" },
+  { href: "/projects", icon: Eye, label: "Project Gallery" },
   { href: "/notifications", icon: Bell, label: "Notifications" },
   {
     href: "/judge",
@@ -90,13 +90,13 @@ const GLOBAL_NAV: NavItem[] = [
 ];
 
 const HACKATHON_TABS: TabItem[] = [
-  { key: "info", icon: Info, label: "Info" },
+  { key: "info", icon: Info, label: "About" },
   { key: "speakers", icon: Mic2, label: "Speakers" },
   { key: "schedule", icon: CalendarDays, label: "Schedule" },
-  { key: "prizes", icon: Trophy, label: "Prizes" },
-  { key: "ideator", icon: Sparkles, label: "Ideator" },
-  { key: "mentor", icon: GraduationCap, label: "Mentor" },
-  { key: "submit", icon: Send, label: "Submit" },
+  { key: "prizes", icon: Trophy, label: "Tracks" },
+  { key: "ideator", icon: Sparkles, label: "Ideate With AI" },
+  { key: "mentor", icon: GraduationCap, label: "AI Mentor" },
+  { key: "submit", icon: Send, label: "Submit Project" },
 ];
 
 const PROJECT_TABS: TabItem[] = [

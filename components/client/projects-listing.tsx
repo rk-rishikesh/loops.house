@@ -9,41 +9,41 @@ const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
 // ─── Category strip (horizontal bar, all categories visible) ───────────────────
-function CategoryStrip({
-  categories,
-  value,
-  onChange,
-}: {
-  categories: string[];
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const options = [
-    { value: "", label: "All categories" },
-    ...categories.map((c) => ({ value: c, label: c })),
-  ];
+// function CategoryStrip({
+//   categories,
+//   value,
+//   onChange,
+// }: {
+//   categories: string[];
+//   value: string;
+//   onChange: (v: string) => void;
+// }) {
+//   const options = [
+//     { value: "", label: "All categories" },
+//     ...categories.map((c) => ({ value: c, label: c })),
+//   ];
 
-  return (
-    <div className="flex w-full border-t border-b border-[#0F2C23]" style={{ fontFamily: PX }}>
-      {options.map((opt) => {
-        const isSelected = opt.value === value;
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(opt.value)}
-            className="flex-1 min-w-0 py-3 text-[11px] tracking-[0.12em] uppercase font-bold text-[#0F2C23] cursor-pointer border-none border-r border-[#0F2C23] last:border-r-0 transition-colors"
-            style={{
-              backgroundColor: isSelected ? "rgba(15,44,35,0.1)" : "#F8FFE8",
-            }}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+//   return (
+//     <div className="flex w-full border-t border-b border-[#0F2C23]" style={{ fontFamily: PX }}>
+//       {options.map((opt) => {
+//         const isSelected = opt.value === value;
+//         return (
+//           <button
+//             key={opt.value}
+//             type="button"
+//             onClick={() => onChange(opt.value)}
+//             className="flex-1 min-w-0 py-3 text-[11px] tracking-[0.12em] uppercase font-bold text-[#0F2C23] cursor-pointer border-none border-r border-[#0F2C23] last:border-r-0 transition-colors"
+//             style={{
+//               backgroundColor: isSelected ? "rgba(15,44,35,0.1)" : "#F8FFE8",
+//             }}
+//           >
+//             {opt.label}
+//           </button>
+//         );
+//       })}
+//     </div>
+//   );
+// }
 
 // ─── Arrow circle ─────────────────────────────────────────────────────────────
 function ArrowCircle({ size = 44 }: { size?: number }) {
@@ -257,8 +257,7 @@ export default function ProjectsListing({ projects }: { projects: StoredProject[
         </div>
 
         {/* ── Filters: category strip + search bar (stacked) ─────────────────── */}
-        <div className="flex flex-col gap-4 mb-6">
-          {/* Category strip — full width horizontal bar */}
+        {/* <div className="flex flex-col gap-4 mb-6">
           {categories.length > 0 && (
             <CategoryStrip
               categories={categories}
@@ -266,7 +265,7 @@ export default function ProjectsListing({ projects }: { projects: StoredProject[
               onChange={setCategoryFilter}
             />
           )}
-        </div>
+        </div> */}
 
         {/* ── Table header ────────────────────────────────────────────────── */}
         <div
