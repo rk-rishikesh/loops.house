@@ -310,6 +310,18 @@ export async function submitProjectAction(
   const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
+  // Phase-gate: submissions only allowed during building phase
+  const { data: hackathon } = await supabaseAdmin
+    .from("hackathons")
+    .select("start_date, submission_deadline, results_date, finalized_at")
+    .eq("id", hackathonId)
+    .single();
+  if (!hackathon) return { success: false, error: "Hackathon not found" };
+  const phase = computePhase(hackathon);
+  if (phase !== "building") {
+    return { success: false, error: "Submissions are only accepted during the building phase" };
+  }
+
   const supabase = await createServerSupabase();
   const { error } = await supabase
     .from("submissions")
@@ -813,9 +825,11 @@ export async function editHackathonAction(
 
   const { id, ...updates } = parsed.data;
   const updatePayload: Record<string, unknown> = {};
+  const dateFields = new Set(["start_date", "submission_deadline", "judging_deadline", "results_date"]);
   for (const [key, value] of Object.entries(updates)) {
     if (value !== undefined) {
-      updatePayload[key] = value;
+      // Coerce empty date strings to null so Postgres doesn't choke on ""
+      updatePayload[key] = dateFields.has(key) && value === "" ? null : value;
     }
   }
 

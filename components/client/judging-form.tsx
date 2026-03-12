@@ -295,12 +295,16 @@ export function JudgingForm({
   submission,
   judgeId,
   existingEvaluation,
+  canJudge = true,
+  canRunAiEval = true,
 }: {
   project: StoredProject;
   hackathon: StoredHackathon;
   submission: StoredSubmission;
   judgeId: string;
   existingEvaluation: HumanEvaluationRow | null;
+  canJudge?: boolean;
+  canRunAiEval?: boolean;
 }) {
   return (
     <Suspense
@@ -319,6 +323,8 @@ export function JudgingForm({
         submission={submission}
         judgeId={judgeId}
         existingEvaluation={existingEvaluation}
+        canJudge={canJudge}
+        canRunAiEval={canRunAiEval}
       />
     </Suspense>
   );
@@ -331,12 +337,16 @@ function JudgingFormContent({
   submission,
   judgeId: _judgeId,
   existingEvaluation,
+  canJudge,
+  canRunAiEval,
 }: {
   project: StoredProject;
   hackathon: StoredHackathon;
   submission: StoredSubmission;
   judgeId: string;
   existingEvaluation: HumanEvaluationRow | null;
+  canJudge: boolean;
+  canRunAiEval: boolean;
 }) {
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -713,7 +723,7 @@ function JudgingFormContent({
                 <form onSubmit={handleSubmit((data) => evalMutation.mutate(data))}>
                   <button
                     type="submit"
-                    disabled={evalMutation.isPending}
+                    disabled={evalMutation.isPending || !canRunAiEval}
                     className="inline-flex items-center gap-0 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-lg disabled:opacity-40"
                     style={{ backgroundColor: "#2d4a3e" }}
                   >
@@ -1034,7 +1044,8 @@ function JudgingFormContent({
                         onClick={() => humanEvalMutation.mutate()}
                         disabled={
                           humanEvalMutation.isPending ||
-                          humanCriteria.filter((c) => c.score > 0).length === 0
+                          humanCriteria.filter((c) => c.score > 0).length === 0 ||
+                          !canJudge
                         }
                         className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all hover:opacity-90 disabled:opacity-35"
                         style={{
