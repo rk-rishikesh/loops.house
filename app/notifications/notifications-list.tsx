@@ -1,3 +1,6 @@
+
+
+
 "use client";
 
 import type { LucideIcon } from "lucide-react";
@@ -16,18 +19,21 @@ type Invitation = {
   users: { email: string; display_name: string | null } | null;
 };
 
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
+
 const TYPE_CONFIG: Record<string, { label: string; icon: LucideIcon; color: string }> = {
   event_host: {
     label: "Event Host Invitations",
     icon: Crown,
-    color: "#b8860b",
+    color: "#B58C2B",
   },
-  cohost: { label: "Co-host Invitations", icon: Users, color: "#2d6a9f" },
-  judge: { label: "Judge Invitations", icon: Gavel, color: "#7c3aed" },
+  cohost: { label: "Co-host Invitations", icon: Users, color: "#1D5E8C" },
+  judge: { label: "Judge Invitations", icon: Gavel, color: "#6D28D9" },
   project_member: {
     label: "Project Member Invitations",
     icon: FolderOpen,
-    color: "#2d4a3e",
+    color: "#0F2C23",
   },
 };
 
@@ -55,21 +61,21 @@ function InvitationCard({ invitation }: { invitation: Invitation }) {
   return (
     <div
       className="flex items-center justify-between rounded-2xl px-5 py-4"
-      style={{ backgroundColor: "rgba(45,74,62,0.06)" }}
+      style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
     >
       <div className="flex flex-col gap-0.5">
         <span
           className="text-sm font-medium"
-          style={{ color: "#2d4a3e", fontFamily: "'Inter', sans-serif" }}
+          style={{ color: "#0F2C23", fontFamily: FN }}
         >
           {inviterName} invited you
         </span>
         <span
           className="text-xs"
           style={{
-            color: "#2d4a3e",
+            color: "#0F2C23",
             opacity: 0.45,
-            fontFamily: "Georgia, serif",
+            fontFamily: FN,
           }}
         >
           {date}
@@ -81,7 +87,12 @@ function InvitationCard({ invitation }: { invitation: Invitation }) {
           disabled={pending}
           onClick={() => respond(true)}
           className="rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wide border-none cursor-pointer disabled:opacity-50 transition-colors"
-          style={{ backgroundColor: "#2d4a3e", color: "#f0ebe0" }}
+          style={{
+            backgroundColor: "#0F2C23",
+            color: "#F8FFE8",
+            fontFamily: PX,
+            letterSpacing: "0.12em",
+          }}
         >
           Accept
         </button>
@@ -92,8 +103,10 @@ function InvitationCard({ invitation }: { invitation: Invitation }) {
           className="rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wide border cursor-pointer disabled:opacity-50 transition-colors"
           style={{
             backgroundColor: "transparent",
-            borderColor: "rgba(45,74,62,0.2)",
-            color: "#2d4a3e",
+            borderColor: "rgba(15,44,35,0.2)",
+            color: "#0F2C23",
+            fontFamily: PX,
+            letterSpacing: "0.12em",
           }}
         >
           Decline
@@ -109,14 +122,14 @@ export function NotificationsList({ invitations }: { invitations: Invitation[] }
       <div className="flex flex-col items-center justify-center h-full py-20 gap-3">
         <div
           className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-2"
-          style={{ backgroundColor: "rgba(45,74,62,0.08)", color: "#2d4a3e" }}
+          style={{ backgroundColor: "rgba(15,44,35,0.06)", color: "#0F2C23" }}
         >
           <Bell size={24} />
         </div>
         <p
-          className="font-black text-[#2d4a3e] uppercase"
+          className="font-black text-[#0F2C23] uppercase"
           style={{
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: PX,
             fontSize: "clamp(18px, 2.5vw, 28px)",
             letterSpacing: "-0.02em",
           }}
@@ -124,8 +137,8 @@ export function NotificationsList({ invitations }: { invitations: Invitation[] }
           All caught up.
         </p>
         <p
-          className="text-[#2d4a3e]/50 leading-relaxed"
-          style={{ fontFamily: "Georgia, serif", fontSize: 15 }}
+          className="text-[#0F2C23]/50 leading-relaxed"
+          style={{ fontFamily: FN, fontSize: 15 }}
         >
           No pending invitations or notifications.
         </p>
@@ -149,7 +162,7 @@ export function NotificationsList({ invitations }: { invitations: Invitation[] }
           const config = TYPE_CONFIG[type] ?? {
             label: type,
             icon: Bell,
-            color: "#2d4a3e",
+            color: "#0F2C23",
           };
           const Icon = config.icon;
           return (
@@ -160,7 +173,7 @@ export function NotificationsList({ invitations }: { invitations: Invitation[] }
                   className="text-xs font-bold uppercase tracking-wider"
                   style={{
                     color: config.color,
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                   }}
                 >
                   {config.label}
@@ -175,3 +188,4 @@ export function NotificationsList({ invitations }: { invitations: Invitation[] }
     </div>
   );
 }
+

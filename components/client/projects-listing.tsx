@@ -34,7 +34,7 @@ function CategoryStrip({
             onClick={() => onChange(opt.value)}
             className="flex-1 min-w-0 py-3 text-[11px] tracking-[0.12em] uppercase font-bold text-[#0F2C23] cursor-pointer border-none border-r border-[#0F2C23] last:border-r-0 transition-colors"
             style={{
-              backgroundColor: isSelected ? "#E2FEA5" : "#F8FFE8",
+              backgroundColor: isSelected ? "rgba(15,44,35,0.1)" : "#F8FFE8",
             }}
           >
             {opt.label}
@@ -214,10 +214,11 @@ export default function ProjectsListing({ projects }: { projects: StoredProject[
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search projects…"
-                  className="w-full pl-9 pr-8 py-2.5 rounded-full text-[13px] outline-none transition-all border bg-[rgba(226,254,165,0.6)] focus:bg-[rgba(226,254,165,1)] border-[rgba(15,44,35,0.25)] focus:border-[rgba(15,44,35,0.45)] text-[#0F2C23] placeholder:text-[rgba(15,44,35,0.4)]"
+                  className="w-full pl-9 pr-8 py-2.5 rounded-full text-[13px] outline-none transition-all border border-[rgba(15,44,35,0.25)] focus:border-[rgba(15,44,35,0.45)] text-[#0F2C23] placeholder:text-[rgba(15,44,35,0.4)]"
                   style={{
                     fontFamily: PX,
                     letterSpacing: "0.02em",
+                    backgroundColor: "rgba(15,44,35,0.1)",
                   }}
                 />
                 {search && (

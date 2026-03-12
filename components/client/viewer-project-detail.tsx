@@ -1083,7 +1083,7 @@ export function ViewerProjectDetail({
         style={{ gridTemplateColumns: "300px 1fr 360px", minHeight: "calc(100vh - 65px)" }}
       >
         {/* ══ LEFT — profile sidebar ══════════════════════════════ */}
-        <aside className="sticky top-[81px] flex flex-col gap-5">
+        <aside className="sticky top-0 flex flex-col gap-5">
           {/* Logo square */}
           <div
             className="w-full rounded-3xl overflow-hidden flex items-center justify-center"
@@ -1251,7 +1251,7 @@ export function ViewerProjectDetail({
         </div>
 
         {/* ══ RIGHT — Why Choose + tech stack ═════════════════════ */}
-        <aside className="sticky top-[81px] flex flex-col gap-4">
+        <aside className="sticky top-0 flex flex-col gap-4">
           {/* Why Choose card */}
           <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
             {/* Header */}

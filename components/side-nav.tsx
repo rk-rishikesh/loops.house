@@ -90,12 +90,12 @@ const GLOBAL_NAV: NavItem[] = [
 ];
 
 const HACKATHON_TABS: TabItem[] = [
-  { key: "ideator", icon: Sparkles, label: "Ideator" },
-  { key: "mentor", icon: GraduationCap, label: "Mentor" },
   { key: "info", icon: Info, label: "Info" },
   { key: "speakers", icon: Mic2, label: "Speakers" },
   { key: "schedule", icon: CalendarDays, label: "Schedule" },
   { key: "prizes", icon: Trophy, label: "Prizes" },
+  { key: "ideator", icon: Sparkles, label: "Ideator" },
+  { key: "mentor", icon: GraduationCap, label: "Mentor" },
   { key: "submit", icon: Send, label: "Submit" },
 ];
 

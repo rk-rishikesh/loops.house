@@ -21,6 +21,9 @@ import type { StoredTeam } from "@/lib/data-mappers";
 import { useSaveProject } from "@/lib/queries";
 import { type CreateProfileSchema, createProfileSchema } from "@/lib/validations/schemas";
 
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 const STEPS = ["code-reader", "demo-reader", "theme-reader", "knowledge-base"] as const;
 type StepStatus = "pending" | "started" | "done" | "failed" | "skipped";
@@ -523,23 +526,23 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#f0ebe0" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F8FFE8" }}>
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
       <header
         className="flex items-center justify-between px-10 py-5 border-b"
-        style={{ borderColor: "rgba(45,74,62,0.12)", backgroundColor: "#f0ebe0" }}
+        style={{ borderColor: "rgba(15,44,35,0.12)", backgroundColor: "#F8FFE8" }}
       >
         <Link
           href="/builder"
-          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
-          style={{ fontFamily: "'Inter', sans-serif" }}
+          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold transition-colors no-underline"
+          style={{ fontFamily: PX, color: "rgba(15,44,35,0.6)" }}
         >
           <ArrowLeft size={12} /> Builder
         </Link>
 
         <p
-          className="absolute left-1/2 -translate-x-1/2 text-[10px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
-          style={{ fontFamily: "'Inter', sans-serif" }}
+          className="absolute left-1/2 -translate-x-1/2 text-[10px] tracking-[0.2em] uppercase font-bold"
+          style={{ fontFamily: PX, color: "rgba(15,44,35,0.4)" }}
         >
           Create Profile
         </p>
@@ -556,11 +559,12 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
             <div key={`hdr-${animKey}`} style={{ ...animStyle, marginBottom: 40 }}>
               <div className="flex items-center gap-3 mb-5">
                 <span
-                  className="font-black text-[#2d4a3e]/18 leading-none"
+                  className="font-black leading-none"
                   style={{
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                     fontSize: "clamp(40px, 6vw, 72px)",
                     letterSpacing: "-0.03em",
+                    color: "rgba(15,44,35,0.2)",
                   }}
                 >
                   {String(currentStep + 1).padStart(2, "0")}
@@ -569,9 +573,9 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                   <span
                     className="text-[8px] tracking-[0.15em] uppercase font-bold px-2.5 py-1 rounded-sm"
                     style={{
-                      backgroundColor: "rgba(45,74,62,0.08)",
-                      color: "#2d4a3e",
-                      fontFamily: "'Inter', sans-serif",
+                      backgroundColor: "rgba(15,44,35,0.06)",
+                      color: "#0F2C23",
+                      fontFamily: PX,
                     }}
                   >
                     optional
@@ -579,9 +583,9 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                 )}
               </div>
               <h1
-                className="font-black text-[#2d4a3e] leading-[0.9] uppercase mb-4"
+                className="font-black text-[#0F2C23] leading-[0.9] uppercase mb-4"
                 style={{
-                  fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+                  fontFamily: PX,
                   fontSize: "clamp(28px, 4.5vw, 56px)",
                   letterSpacing: "-0.02em",
                 }}
@@ -589,8 +593,12 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                 {activeStep?.label}
               </h1>
               <p
-                className="text-[#2d4a3e]/50 leading-relaxed"
-                style={{ fontFamily: "Georgia, serif", fontSize: "clamp(14px, 1.4vw, 16px)" }}
+                className="leading-relaxed"
+                style={{
+                  fontFamily: FN,
+                  fontSize: "clamp(14px, 1.4vw, 16px)",
+                  color: "rgba(15,44,35,0.6)",
+                }}
               >
                 {activeStep?.sub}
               </p>
@@ -652,9 +660,13 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                     placeholder={activeStep.placeholder}
                     {...register(activeStep.key)}
                     className="resize-none outline-none placeholder-[#2d4a3e]/30"
-                    style={{ ...inputBase, fontFamily: "Georgia, serif", lineHeight: 1.7 }}
-                    onFocus={(e) => (e.currentTarget.style.backgroundColor = "#cdc7b7")}
-                    onBlur={(e) => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
+                    style={{ ...inputBase, fontFamily: FN, lineHeight: 1.7 }}
+                    onFocus={(e) =>
+                      (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.1)")
+                    }
+                    onBlur={(e) =>
+                      (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.06)")
+                    }
                   />
                 ) : (
                   <input
@@ -663,8 +675,12 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                     {...register(activeStep!.key)}
                     className="outline-none placeholder-[#2d4a3e]/30"
                     style={inputBase}
-                    onFocus={(e) => (e.currentTarget.style.backgroundColor = "#cdc7b7")}
-                    onBlur={(e) => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
+                    onFocus={(e) =>
+                      (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.1)")
+                    }
+                    onBlur={(e) =>
+                      (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.06)")
+                    }
                   />
                 ))}
 
@@ -672,7 +688,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
               {activeStep?.key && errors[activeStep.key] && (
                 <p
                   className="mt-2 text-sm"
-                  style={{ fontFamily: "Georgia, serif", color: "#c0392b" }}
+                  style={{ fontFamily: FN, color: "#c0392b" }}
                 >
                   {errors[activeStep.key]?.message as string}
                 </p>
@@ -689,7 +705,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
               {error && !loading && (
                 <p
                   className="mt-4 text-sm"
-                  style={{ fontFamily: "Georgia, serif", color: "#c0392b" }}
+                  style={{ fontFamily: FN, color: "#c0392b" }}
                 >
                   {error}
                 </p>
@@ -710,9 +726,9 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                   className="inline-flex items-center gap-2 rounded-full cursor-pointer transition-all duration-200 hover:opacity-70 text-[10px] tracking-widest uppercase font-bold px-5 py-3"
                   style={{
                     backgroundColor: "transparent",
-                    color: "#2d4a3e",
-                    border: "1.5px solid rgba(45,74,62,0.25)",
-                    fontFamily: "'Inter', sans-serif",
+                    color: "#0F2C23",
+                    border: "1.5px solid rgba(15,44,35,0.25)",
+                    fontFamily: PX,
                   }}
                 >
                   <ArrowLeft size={11} /> Back
@@ -726,9 +742,9 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                   disabled={loading}
                   className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all duration-200 hover:opacity-90 text-[10px] tracking-widest uppercase font-bold px-7 py-3"
                   style={{
-                    backgroundColor: "#2d4a3e",
-                    color: "#f0ebe0",
-                    fontFamily: "'Inter', sans-serif",
+                    backgroundColor: "#0F2C23",
+                    color: "#F8FFE8",
+                    fontFamily: PX,
                   }}
                 >
                   Continue <ArrowRight size={12} />
@@ -739,9 +755,9 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                   disabled={loading || !isValid}
                   className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all duration-200 hover:opacity-90 disabled:opacity-40 text-[10px] tracking-widest uppercase font-bold px-7 py-3"
                   style={{
-                    backgroundColor: "#2d4a3e",
-                    color: "#f0ebe0",
-                    fontFamily: "'Inter', sans-serif",
+                    backgroundColor: "#0F2C23",
+                    color: "#F8FFE8",
+                    fontFamily: PX,
                   }}
                 >
                   {loading && <Loader2 size={12} className="animate-spin" />}
@@ -766,14 +782,14 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
         {/* RIGHT — decorative sidebar */}
         <aside
           className="hidden lg:flex w-[360px] shrink-0 flex-col justify-between p-10 relative overflow-hidden"
-          style={{ backgroundColor: "#2d4a3e" }}
+          style={{ backgroundColor: "#0F2C23" }}
         >
           {/* Dot grid texture */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
               backgroundImage:
-                "radial-gradient(circle, rgba(214,207,192,0.12) 1px, transparent 1px)",
+                "radial-gradient(circle, rgba(226,254,165,0.10) 1px, transparent 1px)",
               backgroundSize: "28px 28px",
             }}
           />
@@ -781,14 +797,19 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
           {/* Big faint step number */}
           <div className="relative z-10">
             <p
-              className="font-black text-[#f0ebe0]/08 leading-none"
-              style={{ fontFamily: "'Inter', sans-serif", fontSize: 100, letterSpacing: "-0.04em" }}
+              className="font-black leading-none"
+              style={{
+                fontFamily: PX,
+                fontSize: 100,
+                letterSpacing: "-0.04em",
+                color: "rgba(226,254,165,0.12)",
+              }}
             >
               {String(currentStep + 1).padStart(2, "0")}
             </p>
             <p
-              className="text-[10px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/30 mt-2"
-              style={{ fontFamily: "'Inter', sans-serif" }}
+              className="text-[10px] tracking-[0.2em] uppercase font-bold mt-2"
+              style={{ fontFamily: PX, color: "rgba(226,254,165,0.45)" }}
             >
               of {String(totalSteps).padStart(2, "0")} steps
             </p>
@@ -807,24 +828,24 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                   style={{ opacity: isCur ? 1 : isPast ? 0.35 : 0.18 }}
                 >
                   {isPast ? (
-                    <Check size={11} style={{ color: "#d6cfc0", flexShrink: 0 }} />
+                    <Check size={11} style={{ color: "#E2FEA5", flexShrink: 0 }} />
                   ) : (
                     <div
                       className="rounded-full shrink-0"
                       style={{
                         width: isCur ? 8 : 6,
                         height: isCur ? 8 : 6,
-                        backgroundColor: isCur ? "#d6cfc0" : "rgba(214,207,192,0.4)",
+                        backgroundColor: isCur ? "#E2FEA5" : "rgba(226,254,165,0.45)",
                       }}
                     />
                   )}
                   <p
                     className="truncate"
                     style={{
-                      fontFamily: isCur ? "'Inter', sans-serif" : "Georgia, serif",
+                      fontFamily: isCur ? PX : FN,
                       fontSize: isCur ? 13 : 12,
                       fontWeight: isCur ? 700 : 400,
-                      color: isCur ? "#f0ebe0" : "#d6cfc0",
+                      color: isCur ? "#F8FFE8" : "rgba(226,254,165,0.75)",
                     }}
                   >
                     {step.label}
@@ -837,16 +858,16 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
           {/* Bottom label + arrow */}
           <div className="relative z-10 flex items-end justify-between">
             <p
-              className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#f0ebe0]/25"
-              style={{ fontFamily: "'Inter', sans-serif" }}
+              className="text-[9px] tracking-[0.18em] uppercase font-bold"
+              style={{ fontFamily: PX, color: "rgba(226,254,165,0.4)" }}
             >
               Create Profile
             </p>
             <span
               className="inline-flex items-center justify-center rounded-full"
-              style={{ width: 40, height: 40, backgroundColor: "#d6cfc0" }}
+              style={{ width: 40, height: 40, backgroundColor: "#E2FEA5" }}
             >
-              <ArrowUpRight size={16} style={{ color: "#2d4a3e" }} />
+              <ArrowUpRight size={16} style={{ color: "#0F2C23" }} />
             </span>
           </div>
         </aside>
@@ -861,7 +882,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
           from { opacity: 0; transform: translateY(-18px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        textarea::placeholder, input::placeholder { color: rgba(45,74,62,0.35); }
+        textarea::placeholder, input::placeholder { color: rgba(15,44,35,0.4); }
       `}</style>
     </div>
   );
