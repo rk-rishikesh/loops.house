@@ -5,6 +5,9 @@ import { computePhase, getPhasePermissions } from "@/lib/hackathon-phase";
 import { getServerAuth } from "@/lib/server-auth";
 import { getHackathonInvitationsServer, getHackathonServer } from "@/lib/server-data";
 
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
+
 export default async function ManageJudgesPage({
   params,
 }: {
@@ -23,21 +26,31 @@ export default async function ManageJudgesPage({
   const invitations = await getHackathonInvitationsServer(hackathon_id, "judge");
 
   return (
-    <div className="min-h-screen" style={{ background: "#f0ebe0" }}>
-      <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
+      <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-6 flex items-center gap-3">
           <a
             href={`/host/${hackathon_id}/manage`}
-            className="text-sm opacity-60 hover:opacity-100"
-            style={{ color: "#2d4a3e" }}
+            className="text-[11px] tracking-[0.16em] uppercase font-bold no-underline"
+            style={{ color: "rgba(15,44,35,0.55)", fontFamily: PX }}
           >
             Manage
           </a>
-          <span style={{ color: "#2d4a3e", opacity: 0.3 }}>/</span>
-          <h1 className="text-xl font-semibold" style={{ color: "#2d4a3e" }}>
+          <span style={{ color: "rgba(15,44,35,0.35)" }}>/</span>
+          <h1
+            className="font-black uppercase leading-tight"
+            style={{
+              color: "#0F2C23",
+              fontFamily: PX,
+              fontSize: "clamp(18px, 2.4vw, 26px)",
+              letterSpacing: "-0.02em",
+            }}
+          >
             Judges
           </h1>
-          <HackathonPhaseBadge hackathon={hackathon} />
+          <div className="ml-2">
+            <HackathonPhaseBadge hackathon={hackathon} />
+          </div>
         </div>
         {permissions.canEditJudges ? (
           <JudgeInviteForm
@@ -47,7 +60,10 @@ export default async function ManageJudgesPage({
             hideHackathonPicker
           />
         ) : (
-          <p className="text-sm opacity-60" style={{ color: "#2d4a3e" }}>
+          <p
+            className="text-sm leading-relaxed"
+            style={{ color: "rgba(15,44,35,0.6)", fontFamily: FN }}
+          >
             Judge management is locked for finalized hackathons.
           </p>
         )}

@@ -1,10 +1,11 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import type { StoredHackathon } from "@/lib/data-mappers";
+import type { StoredHackathon, TechnicalResourceItem } from "@/lib/data-mappers";
 import { useSaveHackathon } from "@/lib/queries";
+import { HackathonProgramPreview } from "./hackathon-program-preview";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -80,8 +81,26 @@ const STEPS = [
     required: false,
   },
   {
-    id: "bounty_pool_summary",
+    id: "timeline",
     number: "05",
+    question: "When is the program happening?",
+    hint: "Set the key dates for your hackathon. These appear on the public schedule.",
+    type: "date-group" as const,
+    field: "timeline" as const,
+    required: true,
+  },
+  {
+    id: "resources",
+    number: "06",
+    question: "Technical Resources & Links",
+    hint: "Add your website and any documentation or starter kits for builders.",
+    type: "links" as const,
+    field: "resources" as const,
+    required: false,
+  },
+  {
+    id: "bounty_pool_summary",
+    number: "07",
     question: "Any prizes or rewards?",
     hint: "Optional — helps attract builders.",
     type: "text" as const,
@@ -91,7 +110,7 @@ const STEPS = [
   },
   {
     id: "organizer_notes",
-    number: "06",
+    number: "08",
     question: "Anything else the AI should know?",
     hint: "Partners, constraints, tone, or what success looks like to you.",
     type: "textarea" as const,
@@ -144,6 +163,20 @@ const STEP_FILLER = [
     statLabel: "problems is the sweet spot",
   },
   {
+    label: "Timeline",
+    headline: "Dates set the pace",
+    body: "Clear deadlines create urgency and help builders plan. A well-spaced schedule — start, submission, judging, results — keeps momentum high throughout the program.",
+    stat: "4 dates",
+    statLabel: "define the full lifecycle",
+  },
+  {
+    label: "Resources",
+    headline: "Give builders a head start",
+    body: "Link your website, documentation, starter kits, and API references. The more accessible your technical resources, the faster builders can ship meaningful projects.",
+    stat: "3×",
+    statLabel: "faster starts with good docs",
+  },
+  {
     label: "Incentives",
     headline: "Prizes move builders",
     body: "Even small prize pools signal seriousness. Tiered rewards (grand, runner-up, category) produce more competitive submissions than a single large prize.",
@@ -173,8 +206,15 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
     problem_statements: "",
     website_url: "",
     technical_docs: "",
+    technical_resources: [] as TechnicalResourceItem[],
     bounty_pool_summary: "",
     organizer_notes: "",
+    start_date: "",
+    submission_deadline: "",
+    judging_deadline: "",
+    results_date: "",
+    timeline: "",
+    resources: "",
   });
 
   const [draft, setDraft] = useState<HackathonProgramResponse | null>(null);
@@ -201,9 +241,16 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
   }
 
   function handleNext() {
-    if (currentStep.required && !form[currentStep.field as FormField]?.toString().trim()) {
-      setError("This field is required.");
-      return;
+    if (currentStep.required) {
+      if (currentStep.id === "timeline") {
+        if (!form.start_date.trim()) {
+          setError("Please set at least a start date.");
+          return;
+        }
+      } else if (!form[currentStep.field as FormField]?.toString().trim()) {
+        setError("This field is required.");
+        return;
+      }
     }
     setError(null);
     if (step < STEPS.length - 1) {
@@ -278,21 +325,28 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
       const hackathon: StoredHackathon = {
         id: hackathonId,
         name: draft.draft.hackathon_name || form.name || "Untitled hackathon",
+        description: draft.draft.overview || undefined,
         host_id: userId,
         problem_statements: problemStatements,
         theme: form.theme || undefined,
         website_url: form.website_url || undefined,
+        technical_resources:
+          form.technical_resources.length > 0 ? form.technical_resources : undefined,
         technical_docs: form.technical_docs || undefined,
         bounty_pool_summary: form.bounty_pool_summary || undefined,
         program_goal: form.program_goal || undefined,
-        organizer_notes: form.organizer_notes || undefined,
+        start_date: form.start_date || undefined,
+        submission_deadline: form.submission_deadline || undefined,
+        judging_deadline: form.judging_deadline || undefined,
+        results_date: form.results_date || undefined,
+        organizer_notes: draft.draft.organizer_notes.join("\n") || undefined,
         sponsor_tracks: [],
         judging_criteria: draft.draft.judging_criteria ?? [],
         created_at: new Date().toISOString(),
       };
 
       await saveHackathonMutation.mutateAsync(hackathon);
-      router.push("/host");
+      router.push("/host/" + hackathon.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save hackathon.");
     } finally {
@@ -410,6 +464,121 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   onFocus={(e) => (e.currentTarget.style.borderBottomColor = "#0F2C23")}
                   onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(15,44,35,0.2)")}
                 />
+              )}
+
+              {currentStep.type === "date-group" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+                  {[
+                    { label: "Start Date", field: "start_date" },
+                    { label: "Submission Deadline", field: "submission_deadline" },
+                    { label: "Judging Deadline", field: "judging_deadline" },
+                    { label: "Results Date", field: "results_date" },
+                  ].map((d) => (
+                    <div key={d.field} className="flex flex-col gap-2">
+                      <label
+                        className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#0F2C23]/40"
+                        style={{ fontFamily: PX }}
+                      >
+                        {d.label}
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={form[d.field as FormField] as string}
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, [d.field]: e.target.value }))
+                        }
+                        className="bg-white/40 border border-[#0F2C23]/10 rounded-xl px-4 py-3 outline-none focus:border-[#0F2C23] transition-all text-sm"
+                        style={{ fontFamily: FN }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {currentStep.type === "links" && (
+                <div className="space-y-8 mt-2">
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#0F2C23]/40"
+                      style={{ fontFamily: PX }}
+                    >
+                      Main Website
+                    </label>
+                    <input
+                      type="url"
+                      value={form.website_url}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, website_url: e.target.value }))
+                      }
+                      placeholder="https://yourhackathon.com"
+                      className="bg-white/40 border border-[#0F2C23]/10 rounded-xl px-4 py-3 outline-none focus:border-[#0F2C23] transition-all text-sm"
+                      style={{ fontFamily: FN }}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <label
+                      className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#0F2C23]/40"
+                      style={{ fontFamily: PX }}
+                    >
+                      Technical Resources
+                    </label>
+                    <div className="space-y-3">
+                      {form.technical_resources.map((res, i) => (
+                        <div key={i} className="flex gap-2 animate-[fadeUp_0.2s_ease-out]">
+                          <input
+                            type="text"
+                            placeholder="Resource Name (e.g. GitHub)"
+                            value={res.description}
+                            onChange={(e) => {
+                              const newRes = [...form.technical_resources];
+                              newRes[i].description = e.target.value;
+                              setForm((prev) => ({ ...prev, technical_resources: newRes }));
+                            }}
+                            className="w-1/3 bg-white/40 border border-[#0F2C23]/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-[#0F2C23]"
+                            style={{ fontFamily: FN }}
+                          />
+                          <input
+                            type="url"
+                            placeholder="https://..."
+                            value={res.url}
+                            onChange={(e) => {
+                              const newRes = [...form.technical_resources];
+                              newRes[i].url = e.target.value;
+                              setForm((prev) => ({ ...prev, technical_resources: newRes }));
+                            }}
+                            className="flex-1 bg-white/40 border border-[#0F2C23]/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-[#0F2C23]"
+                            style={{ fontFamily: FN }}
+                          />
+                          <button
+                            onClick={() => {
+                              const newRes = form.technical_resources.filter((_, idx) => idx !== i);
+                              setForm((prev) => ({ ...prev, technical_resources: newRes }));
+                            }}
+                            className="p-3 text-[#0F2C23]/20 hover:text-[#0F2C23] transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            technical_resources: [
+                              ...prev.technical_resources,
+                              { url: "", description: "" },
+                            ],
+                          }))
+                        }
+                        className="flex items-center gap-2 text-[9px] uppercase font-bold tracking-widest text-[#0F2C23]/40 hover:text-[#0F2C23] transition-colors"
+                        style={{ fontFamily: PX }}
+                      >
+                        <Plus size={12} /> Add more link
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {currentStep.type === "textarea" && (
@@ -844,268 +1013,151 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               )}
             </div>
           ) : (
-            /* Done: full AI draft preview */
-            <div className="flex flex-col h-full overflow-y-auto px-10 py-10">
-              <p
-                style={{
-                  fontFamily: PX,
-                  fontSize: 9,
-                  letterSpacing: "0.22em",
-                  textTransform: "uppercase",
-                  fontWeight: 700,
-                  color: "rgba(226,254,165,0.3)",
-                  marginBottom: 20,
-                }}
-              >
-                {draft ? "AI draft" : "Your brief"}
-              </p>
-
+            /* DONE: FULL SCREEN DRAFT VIEW or SUMMARY */
+            <div className="fixed inset-0 bg-[#F8FFE8] z-[60] overflow-y-auto animate-[fadeUp_0.4s_ease-out]">
               {!draft ? (
-                /* Brief summary before generation */
-                <div className="space-y-5">
-                  {STEPS.map((s) => {
-                    const val = form[s.field as FormField]?.toString().trim();
-                    if (!val) return null;
-                    return (
-                      <div key={s.id}>
-                        <p
-                          style={{
-                            fontFamily: PX,
-                            fontSize: 9,
-                            letterSpacing: "0.16em",
-                            textTransform: "uppercase",
-                            fontWeight: 700,
-                            color: "rgba(226,254,165,0.28)",
-                            marginBottom: 4,
-                          }}
-                        >
-                          {s.number} — {s.id.replace(/_/g, " ")}
-                        </p>
-                        <p
-                          style={{ fontSize: 13, color: "rgba(226,254,165,0.6)", lineHeight: 1.6 }}
-                        >
-                          {val.length > 120 ? `${val.slice(0, 120)}…` : val}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                /* AI draft content */
-                (() => {
-                  const d: any = draft.draft;
-                  const hackathonName = d.hackathon_name ?? form.name;
-                  const overview = d.overview ?? "No overview generated.";
-                  const goals: string[] = d.goals ?? [];
-                  const challenges: any[] = d.challenge_statements ?? [];
-                  const schedule: any[] = d.schedule ?? [];
-                  const slug = d.hackathon_id_suggestion;
+                /* SUMMARY BEFORE GENERATING */
+                <div className="max-w-4xl mx-auto px-10 py-24">
+                  <header className="mb-16">
+                    <h2
+                      className="text-4xl font-black uppercase text-[#0F2C23] mb-4"
+                      style={{ fontFamily: PX }}
+                    >
+                      Review Your Brief
+                    </h2>
+                    <p className="text-lg text-[#0F2C23]/60" style={{ fontFamily: FN }}>
+                      Ready to let the AI architect your program?
+                    </p>
+                  </header>
 
-                  return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div className="space-y-8">
+                      {STEPS.map((s) => {
+                        const val = form[s.field as FormField]?.toString().trim();
+                        if (!val || s.id === "timeline" || s.id === "resources") return null;
+                        return (
+                          <div key={s.id}>
+                            <p
+                              className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/30 mb-2"
+                              style={{ fontFamily: PX }}
+                            >
+                              {s.number} — {s.id}
+                            </p>
+                            <p
+                              className="text-[15px] text-[#0F2C23]/80 leading-relaxed"
+                              style={{ fontFamily: FN }}
+                            >
+                              {val}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
                     <div className="space-y-8">
                       <div>
-                        <h2
-                          style={{
-                            fontFamily: PX,
-                            fontWeight: 900,
-                            fontSize: 22,
-                            letterSpacing: "-0.02em",
-                            color: "#F8FFE8",
-                            lineHeight: 1.1,
-                            marginBottom: 8,
-                          }}
-                        >
-                          {hackathonName}
-                        </h2>
-                        {slug && (
-                          <p
-                            style={{
-                              fontFamily: PX,
-                              fontSize: 9,
-                              letterSpacing: "0.14em",
-                              textTransform: "uppercase",
-                              fontWeight: 700,
-                              color: "rgba(226,254,165,0.25)",
-                              marginBottom: 12,
-                            }}
-                          >
-                            /{slug}
-                          </p>
-                        )}
                         <p
-                          style={{ fontSize: 13, color: "rgba(226,254,165,0.6)", lineHeight: 1.7 }}
+                          className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/30 mb-4"
+                          style={{ fontFamily: PX }}
                         >
-                          {overview}
+                          VITAL DATES
+                        </p>
+                        <div className="bg-white/50 border border-[#0F2C23]/10 rounded-2xl p-6 space-y-4">
+                          {[
+                            { label: "Start", val: form.start_date },
+                            { label: "Submit", val: form.submission_deadline },
+                            { label: "Results", val: form.results_date },
+                          ].map((d) => (
+                            <div key={d.label} className="flex justify-between items-center">
+                              <span
+                                className="text-[10px] uppercase font-bold text-[#0F2C23]/40"
+                                style={{ fontFamily: PX }}
+                              >
+                                {d.label}
+                              </span>
+                              <span
+                                className="text-sm font-medium text-[#0F2C23]"
+                                style={{ fontFamily: FN }}
+                              >
+                                {d.val || "Not set"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* BOTTOM ACTION BAR (SUMMARY) */}
+                  <div className="fixed bottom-0 left-0 right-0 p-8 flex justify-center pointer-events-none">
+                    <div className="bg-white border border-[#0F2C23]/10 rounded-2xl p-4 flex gap-4 shadow-xl pointer-events-auto">
+                      <button
+                        onClick={() => setDone(false)}
+                        className="px-6 py-3 text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/60 hover:text-[#0F2C23]"
+                        style={{ fontFamily: PX }}
+                      >
+                        Make Edits
+                      </button>
+                      <button
+                        onClick={handleGenerate}
+                        disabled={isGenerating}
+                        className="px-10 py-3 bg-[#0F2C23] text-[#E2FEA5] rounded-xl text-[10px] uppercase font-bold tracking-widest hover:scale-[1.03] transition-transform flex items-center gap-3"
+                        style={{ fontFamily: PX }}
+                      >
+                        {isGenerating ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Sparkles size={12} />
+                        )}
+                        {isGenerating ? "Synthesizing..." : "Generate Program Draft"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <HackathonProgramPreview draft={draft.draft} />
+
+                  {/* ══ STICKY ACTION BAR (DRAFT) ══ */}
+                  <div className="fixed bottom-0 left-0 right-0 bg-[#F8FFE8]/80 backdrop-blur-xl border-t border-[#0F2C23]/10 p-8 z-50">
+                    <div className="max-w-6xl mx-auto flex items-center justify-between">
+                      <div className="flex items-center gap-6">
+                        <button
+                          onClick={() => setDraft(null)}
+                          className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/50 hover:text-[#0F2C23] transition-colors"
+                          style={{ fontFamily: PX }}
+                        >
+                          &larr; Back to Brief
+                        </button>
+                        <div className="h-4 w-px bg-[#0F2C23]/10" />
+                        <p
+                          className="text-xs text-[#0F2C23]/40 font-medium"
+                          style={{ fontFamily: FN }}
+                        >
+                          This draft is editable after you finalise the program.
                         </p>
                       </div>
 
-                      {goals.length > 0 && (
-                        <div>
-                          <p
-                            style={{
-                              fontFamily: PX,
-                              fontSize: 9,
-                              letterSpacing: "0.18em",
-                              textTransform: "uppercase",
-                              fontWeight: 700,
-                              color: "rgba(226,254,165,0.25)",
-                              marginBottom: 10,
-                            }}
-                          >
-                            Goals
-                          </p>
-                          <div className="space-y-2">
-                            {goals.map((g, i) => (
-                              <div key={i} className="flex items-start gap-3">
-                                <span
-                                  style={{
-                                    color: "rgba(226,254,165,0.2)",
-                                    fontFamily: PX,
-                                    fontWeight: 900,
-                                    fontSize: 10,
-                                    marginTop: 2,
-                                  }}
-                                >
-                                  →
-                                </span>
-                                <span
-                                  style={{
-                                    fontSize: 13,
-                                    color: "rgba(226,254,165,0.6)",
-                                    lineHeight: 1.6,
-                                  }}
-                                >
-                                  {g}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {challenges.length > 0 && (
-                        <div>
-                          <p
-                            style={{
-                              fontFamily: PX,
-                              fontSize: 9,
-                              letterSpacing: "0.18em",
-                              textTransform: "uppercase",
-                              fontWeight: 700,
-                              color: "rgba(226,254,165,0.25)",
-                              marginBottom: 10,
-                            }}
-                          >
-                            Challenges
-                          </p>
-                          <div className="space-y-3">
-                            {challenges.slice(0, 3).map((c, i) => (
-                              <div
-                                key={i}
-                                style={{
-                                  padding: "12px 16px",
-                                  borderRadius: 12,
-                                  backgroundColor: "rgba(226,254,165,0.05)",
-                                  border: "1px solid rgba(226,254,165,0.08)",
-                                }}
-                              >
-                                <p
-                                  style={{
-                                    fontFamily: PX,
-                                    fontWeight: 700,
-                                    fontSize: 12,
-                                    color: "rgba(226,254,165,0.8)",
-                                    marginBottom: 3,
-                                  }}
-                                >
-                                  {c.title}
-                                </p>
-                                <p
-                                  style={{
-                                    fontSize: 12,
-                                    color: "rgba(226,254,165,0.45)",
-                                    lineHeight: 1.5,
-                                  }}
-                                >
-                                  {c.summary}
-                                </p>
-                              </div>
-                            ))}
-                            {challenges.length > 3 && (
-                              <p
-                                style={{
-                                  fontFamily: PX,
-                                  fontSize: 10,
-                                  color: "rgba(226,254,165,0.25)",
-                                }}
-                              >
-                                + {challenges.length - 3} more challenges
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {schedule.length > 0 && (
-                        <div>
-                          <p
-                            style={{
-                              fontFamily: PX,
-                              fontSize: 9,
-                              letterSpacing: "0.18em",
-                              textTransform: "uppercase",
-                              fontWeight: 700,
-                              color: "rgba(226,254,165,0.25)",
-                              marginBottom: 10,
-                            }}
-                          >
-                            Schedule
-                          </p>
-                          <div className="space-y-2">
-                            {schedule.slice(0, 4).map((s, i) => (
-                              <div key={i} className="flex items-start gap-3">
-                                <span
-                                  style={{
-                                    fontFamily: PX,
-                                    fontWeight: 900,
-                                    fontSize: 9,
-                                    color: "rgba(226,254,165,0.2)",
-                                    width: 16,
-                                    marginTop: 3,
-                                    flexShrink: 0,
-                                  }}
-                                >
-                                  {String(i + 1).padStart(2, "0")}
-                                </span>
-                                <div>
-                                  <span
-                                    style={{
-                                      fontFamily: PX,
-                                      fontWeight: 700,
-                                      fontSize: 11,
-                                      color: "rgba(226,254,165,0.7)",
-                                    }}
-                                  >
-                                    {s.phase}
-                                  </span>
-                                  <span
-                                    style={{
-                                      fontSize: 11,
-                                      color: "rgba(226,254,165,0.4)",
-                                      marginLeft: 8,
-                                    }}
-                                  >
-                                    {s.description}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={handleGenerate}
+                          disabled={isGenerating}
+                          className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23] px-6 py-3 rounded-xl border border-[#0F2C23]/10 hover:bg-white transition-all shadow-sm"
+                          style={{ fontFamily: PX }}
+                        >
+                          {isGenerating ? "Reasoning..." : "Re-Generate"}
+                        </button>
+                        <button
+                          onClick={handleSave}
+                          disabled={isSaving}
+                          className="text-[10px] uppercase font-bold tracking-widest bg-[#0F2C23] text-[#E2FEA5] px-10 py-3 rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-[#0F2C23]/20 disabled:opacity-50"
+                          style={{ fontFamily: PX }}
+                        >
+                          {isSaving ? "Finalising..." : "Finalise Program"}
+                        </button>
+                      </div>
                     </div>
-                  );
-                })()
+                  </div>
+                </>
               )}
             </div>
           )}

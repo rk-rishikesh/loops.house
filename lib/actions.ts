@@ -54,7 +54,7 @@ async function getAuthUser() {
     id: user.id,
     email: user.email ?? "",
     isAdmin: profile.is_admin,
-    isEventCreator: profile.is_event_creator,
+    isEventCreator: process.env.GATE_CREATORS === "true" ? profile.is_event_creator : true,
   };
 }
 
@@ -138,10 +138,8 @@ export async function saveHackathonAction(hackathon: {
       if (!cohost) return { success: false, error: "Unauthorized" };
     }
   } else {
-    // Creating new — must be event_creator or admin
-    if (!user.isEventCreator && !user.isAdmin) {
-      return { success: false, error: "Unauthorized" };
-    }
+    // Creating new hackathon
+    // We allow any authenticated user to start as a host
   }
 
   const supabase = await createServerSupabase();
@@ -825,7 +823,12 @@ export async function editHackathonAction(
 
   const { id, ...updates } = parsed.data;
   const updatePayload: Record<string, unknown> = {};
-  const dateFields = new Set(["start_date", "submission_deadline", "judging_deadline", "results_date"]);
+  const dateFields = new Set([
+    "start_date",
+    "submission_deadline",
+    "judging_deadline",
+    "results_date",
+  ]);
   for (const [key, value] of Object.entries(updates)) {
     if (value !== undefined) {
       // Coerce empty date strings to null so Postgres doesn't choke on ""

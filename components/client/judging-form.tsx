@@ -2,7 +2,16 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowUpRight, Check, ChevronRight, ClipboardEdit, Gavel, Loader2, Lock, Sparkles } from "lucide-react";
+import {
+  ArrowUpRight,
+  Check,
+  ChevronRight,
+  ClipboardEdit,
+  Gavel,
+  Loader2,
+  Lock,
+  Sparkles,
+} from "lucide-react";
 import { Suspense, useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import type {
@@ -516,7 +525,6 @@ function JudgingFormContent({
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
-
       <div className="px-10 pt-10 pb-24">
         {/* ── Hero heading ─────────────────────────────────────────────── */}
         <div className="mb-14 flex flex-row items-end justify-between gap-6 flex-wrap">
@@ -680,15 +688,10 @@ function JudgingFormContent({
                   }}
                 >
                   <Lock size={13} style={{ color: "#0F2C23", opacity: 0.45 }} />
-                  <p
-                    className="text-sm"
-                    style={{ fontFamily: FN, color: "rgba(15,44,35,0.7)" }}
-                  >
+                  <p className="text-sm" style={{ fontFamily: FN, color: "rgba(15,44,35,0.7)" }}>
                     AI evaluation completed on{" "}
-                    {new Date(submission.ai_evaluated_at!)
-                      .toISOString()
-                      .slice(0, 10)}{" "}
-                    (YYYY-MM-DD). Score: {result.overall_score}/100. This cannot be re-run.
+                    {new Date(submission.ai_evaluated_at!).toISOString().slice(0, 10)} (YYYY-MM-DD).
+                    Score: {result.overall_score}/100. This cannot be re-run.
                   </p>
                 </div>
               ) : (
@@ -728,10 +731,7 @@ function JudgingFormContent({
                     border: "1px solid rgba(200,60,60,0.15)",
                   }}
                 >
-                  <p
-                    className="text-sm text-red-700"
-                    style={{ fontFamily: FN }}
-                  >
+                  <p className="text-sm text-red-700" style={{ fontFamily: FN }}>
                     {evalMutation.error.message}
                   </p>
                 </div>
@@ -745,10 +745,7 @@ function JudgingFormContent({
                     border: "1px solid rgba(200,140,20,0.2)",
                   }}
                 >
-                  <p
-                    className="text-sm"
-                    style={{ fontFamily: FN, color: "#8b6914" }}
-                  >
+                  <p className="text-sm" style={{ fontFamily: FN, color: "#8b6914" }}>
                     {saveError}
                   </p>
                 </div>
@@ -850,7 +847,10 @@ function JudgingFormContent({
               ) : (
                 <div className="flex flex-col gap-5">
                   {/* Overall notes */}
-                  <div className="rounded-2xl p-6" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+                  <div
+                    className="rounded-2xl p-6"
+                    style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+                  >
                     <p
                       className="text-[9px] tracking-[0.18em] uppercase font-bold mb-3"
                       style={{ fontFamily: PX, color: "rgba(15,44,35,0.45)" }}
@@ -869,8 +869,12 @@ function JudgingFormContent({
                         color: "#0F2C23",
                         fontFamily: FN,
                       }}
-                      onFocus={(e) => (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.1)")}
-                      onBlur={(e) => (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.06)")}
+                      onFocus={(e) =>
+                        (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.1)")
+                      }
+                      onBlur={(e) =>
+                        (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.06)")
+                      }
                     />
                   </div>
 
@@ -940,7 +944,8 @@ function JudgingFormContent({
                                 }
                                 className="w-20 rounded-xl px-3 py-2.5 text-sm outline-none font-semibold text-center transition-colors"
                                 style={{
-                                  backgroundColor: criterion.score > 0 ? "#0F2C23" : "rgba(15,44,35,0.06)",
+                                  backgroundColor:
+                                    criterion.score > 0 ? "#0F2C23" : "rgba(15,44,35,0.06)",
                                   color: criterion.score > 0 ? "#F8FFE8" : "#0F2C23",
                                   border: "none",
                                   fontFamily: PX,
@@ -1010,10 +1015,7 @@ function JudgingFormContent({
                         </span>
                       )}
                       {humanEvalMutation.isError && (
-                        <span
-                          className="text-xs text-red-300"
-                          style={{ fontFamily: FN }}
-                        >
+                        <span className="text-xs text-red-300" style={{ fontFamily: FN }}>
                           {humanEvalMutation.error.message}
                         </span>
                       )}
@@ -1089,8 +1091,8 @@ function JudgingFormContent({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-3">
                       <p
-                      className="text-[9px] tracking-[0.2em] uppercase font-bold"
-                      style={{ fontFamily: PX, color: "rgba(248,255,232,0.6)" }}
+                        className="text-[9px] tracking-[0.2em] uppercase font-bold"
+                        style={{ fontFamily: PX, color: "rgba(248,255,232,0.6)" }}
                       >
                         Overall Assessment
                       </p>

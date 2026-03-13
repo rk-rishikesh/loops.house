@@ -246,7 +246,7 @@ Supabase Postgres with migrations in `supabase/migrations/`. Key migrations:
 - `20260312071348_evaluation_per_judge.sql` — Per-judge evaluation tracking
 - `20260312_hackathon_mgmt.sql` — Hackathon management (speakers, finalization, results)
 
-Key tables: users, teams, team_members, loops_profiles, boosters, booster_tracks, hackathon_cohosts, hackathon_judges, hackathon_speakers, knowledge_bases, knowledge_base_chunks, booster_track_chunks, submissions, host_new, judge_invites, rate_limits. RLS enabled on all tables.
+Key tables: users, teams, team_members, loops_profiles, boosters, hackathon_tracks, hackathon_cohosts, hackathon_judges, hackathon_speakers, knowledge_bases, knowledge_base_chunks, booster_track_chunks, submissions, host_new, judge_invites, rate_limits. RLS enabled on all tables.
 
 Types: `lib/supabase/database.types.ts` (auto-generated, do not edit) re-exported through `lib/supabase/types.ts` with enum aliases.
 

@@ -72,7 +72,11 @@ export function ImageUpload({
         <div className="relative inline-block">
           <div
             className={`overflow-hidden ${
-              isCircle ? "rounded-full w-24 h-24" : isSquare ? "rounded-2xl w-28 h-28" : "rounded-2xl"
+              isCircle
+                ? "rounded-full w-24 h-24"
+                : isSquare
+                  ? "rounded-2xl w-28 h-28"
+                  : "rounded-2xl"
             }`}
             style={{ backgroundColor: "rgba(45,74,62,0.06)" }}
           >
@@ -107,7 +111,11 @@ export function ImageUpload({
           onDrop={handleDrop}
           disabled={uploading}
           className={`w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed cursor-pointer transition-all duration-200 ${
-            isCircle ? "rounded-full w-24 h-24" : isSquare ? "rounded-2xl w-28 h-28" : "rounded-2xl py-8"
+            isCircle
+              ? "rounded-full w-24 h-24"
+              : isSquare
+                ? "rounded-2xl w-28 h-28"
+                : "rounded-2xl py-8"
           }`}
           style={{
             borderColor: dragOver ? "#2d4a3e" : "rgba(45,74,62,0.2)",

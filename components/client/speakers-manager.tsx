@@ -6,6 +6,9 @@ import { useState, useTransition } from "react";
 import { addSpeakerAction, removeSpeakerAction, updateSpeakerAction } from "@/lib/actions";
 import type { StoredSpeaker } from "@/lib/data-mappers";
 
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
+
 interface Props {
   hackathonId: string;
   speakers: StoredSpeaker[];
@@ -68,134 +71,411 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
     setEditImageUrl(speaker.image_url ?? "");
   };
 
-  const inputStyle = {
-    background: "rgba(15,44,35,0.04)",
-    border: "1px solid rgba(15,44,35,0.12)",
-    color: "#2d4a3e",
-  };
-
   return (
-    <div className="space-y-6">
-      {canEdit && (
-        <div
-          className="rounded-2xl border p-4"
-          style={{ borderColor: "rgba(15,44,35,0.1)", background: "white" }}
+    <div className="px-10 pt-10 pb-24">
+      {/* ── Hero heading ─────────────────────────────────────────────── */}
+      <div className="mb-14">
+        <h1
+          className="font-black text-[#0F2C23] leading-[0.88] uppercase"
+          style={{
+            fontFamily: PX,
+            fontSize: "clamp(52px, 9vw, 138px)",
+            letterSpacing: "-0.025em",
+          }}
         >
-          <h3 className="mb-3 text-sm font-medium" style={{ color: "#2d4a3e" }}>
-            Add Speaker
-          </h3>
-          <div className="flex gap-3">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Speaker name"
-              className="flex-1 rounded-xl px-3 py-2 text-sm"
-              style={inputStyle}
-            />
-            <input
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="Image URL (optional)"
-              className="flex-1 rounded-xl px-3 py-2 text-sm"
-              style={inputStyle}
-            />
-            <button
-              onClick={handleAdd}
-              disabled={isPending || !name.trim()}
-              className="flex items-center gap-1 rounded-xl px-4 py-2 text-sm font-medium transition-opacity disabled:opacity-40"
-              style={{ background: "#2d4a3e", color: "#f0ebe0" }}
-            >
-              <Plus size={14} /> Add
-            </button>
-          </div>
-          {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
-        </div>
-      )}
-
-      <div className="space-y-2">
-        {speakers.length === 0 && (
-          <p className="text-sm opacity-50" style={{ color: "#2d4a3e" }}>
-            No speakers added yet.
-          </p>
-        )}
-        {speakers.map((speaker) => (
-          <div
-            key={speaker.id}
-            className="flex items-center gap-3 rounded-xl border p-3"
-            style={{ borderColor: "rgba(15,44,35,0.08)", background: "white" }}
+          SPEAKER
+          <br />
+          MANAGEMENT.
+        </h1>
+        <div className="flex justify-end mt-8">
+          <p
+            className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
+            style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
           >
-            {speaker.image_url ? (
-              <img
-                src={speaker.image_url}
-                alt={speaker.name}
-                className="h-10 w-10 rounded-full object-cover"
-              />
-            ) : (
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-full"
-                style={{ background: "rgba(15,44,35,0.06)" }}
-              >
-                <User size={16} style={{ color: "#2d4a3e", opacity: 0.4 }} />
-              </div>
-            )}
+            Add and manage speakers for this program. They&apos;ll appear on the public hackathon
+            page.
+          </p>
+        </div>
+      </div>
 
-            {editingId === speaker.id ? (
-              <div className="flex flex-1 gap-2">
-                <input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="flex-1 rounded-lg px-2 py-1 text-sm"
-                  style={inputStyle}
-                />
-                <input
-                  value={editImageUrl}
-                  onChange={(e) => setEditImageUrl(e.target.value)}
-                  placeholder="Image URL"
-                  className="flex-1 rounded-lg px-2 py-1 text-sm"
-                  style={inputStyle}
-                />
-                <button
-                  onClick={() => handleUpdate(speaker.id)}
-                  disabled={isPending}
-                  className="rounded-lg px-3 py-1 text-xs font-medium"
-                  style={{ background: "#2d4a3e", color: "#f0ebe0" }}
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => setEditingId(null)}
-                  className="rounded-lg px-3 py-1 text-xs"
-                  style={{ color: "#2d4a3e" }}
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
+      {/* ── Two-column body ───────────────────────────────────────────── */}
+      <div className="grid gap-8 items-start" style={{ gridTemplateColumns: "1fr 320px" }}>
+        {/* LEFT */}
+        <div className="flex flex-col gap-10">
+          {/* Step 01 — Add speaker */}
+          <div>
+            <div className="flex items-baseline gap-3 mb-5">
+              <span
+                className="font-black text-[#0F2C23]/18"
+                style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
+              >
+                01
+              </span>
+              <p
+                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+                style={{ fontFamily: PX }}
+              >
+                Add Speaker
+              </p>
+            </div>
+
+            {canEdit ? (
               <>
-                <span className="flex-1 text-sm font-medium" style={{ color: "#2d4a3e" }}>
-                  {speaker.name}
-                </span>
-                {canEdit && (
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => startEdit(speaker)}
-                      className="rounded-lg p-1.5 transition-colors hover:bg-black/5"
+                <div className="flex flex-col gap-4">
+                  <div className="flex-1">
+                    <p
+                      className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/40 mb-2"
+                      style={{ fontFamily: PX }}
                     >
-                      <Pencil size={14} style={{ color: "#2d4a3e" }} />
-                    </button>
-                    <button
-                      onClick={() => handleRemove(speaker.id)}
-                      disabled={isPending}
-                      className="rounded-lg p-1.5 transition-colors hover:bg-red-50"
+                      Speaker Name
+                    </p>
+                    <input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Jane Doe"
+                      className="w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors placeholder-[#0F2C23]/30"
+                      style={{
+                        backgroundColor: "#E2FEA5",
+                        border: "none",
+                        color: "#0F2C23",
+                        fontFamily: FN,
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
+                      onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p
+                      className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/40 mb-2"
+                      style={{ fontFamily: PX }}
                     >
-                      <Trash2 size={14} className="text-red-500" />
+                      Image URL (optional)
+                    </p>
+                    <input
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="https://example.com/photo.jpg"
+                      className="w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors placeholder-[#0F2C23]/30"
+                      style={{
+                        backgroundColor: "#E2FEA5",
+                        border: "none",
+                        color: "#0F2C23",
+                        fontFamily: FN,
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
+                      onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
+                    />
+                  </div>
+                  <div className="mt-1">
+                    <button
+                      onClick={handleAdd}
+                      disabled={isPending || !name.trim()}
+                      className="inline-flex items-center gap-2 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-md disabled:opacity-40 pl-5 pr-4 py-3.5 text-[9px] tracking-[0.15em] uppercase font-bold text-[#F8FFE8]"
+                      style={{ backgroundColor: "#0F2C23", fontFamily: PX }}
+                    >
+                      <Plus size={12} />
+                      {isPending ? "Adding..." : "Add Speaker"}
                     </button>
+                  </div>
+                </div>
+                {error && (
+                  <div
+                    className="mt-4 flex items-start gap-3 rounded-2xl px-5 py-4"
+                    style={{
+                      backgroundColor: "rgba(200,60,60,0.07)",
+                      border: "1px solid rgba(200,60,60,0.15)",
+                    }}
+                  >
+                    <p className="text-sm text-red-700" style={{ fontFamily: FN }}>
+                      {error}
+                    </p>
                   </div>
                 )}
               </>
+            ) : (
+              <p className="text-sm" style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}>
+                This hackathon is finalized. Speakers can no longer be edited.
+              </p>
             )}
           </div>
-        ))}
+
+          {/* Step 02 — Current speakers table */}
+          <div>
+            <div className="flex items-baseline justify-between mb-5">
+              <div className="flex items-baseline gap-3">
+                <span
+                  className="font-black text-[#0F2C23]/18"
+                  style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
+                >
+                  02
+                </span>
+                <p
+                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+                  style={{ fontFamily: PX }}
+                >
+                  Current Speakers
+                </p>
+              </div>
+              {speakers.length > 0 && (
+                <span
+                  className="text-[10px] tracking-widest uppercase font-bold text-[#0F2C23]/30"
+                  style={{ fontFamily: PX }}
+                >
+                  {speakers.length} speaker{speakers.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+
+            {/* Table header */}
+            <div
+              className="grid border-b border-t border-[#0F2C23]/20 py-3"
+              style={{ gridTemplateColumns: "64px 1fr 100px", gap: "0 20px" }}
+            >
+              {["No.", "Speaker", canEdit ? "Actions" : ""].map((col) => (
+                <p
+                  key={col}
+                  className="text-[11px] tracking-[0.12em] uppercase font-semibold text-[#0F2C23]/40"
+                  style={{ fontFamily: PX }}
+                >
+                  {col}
+                </p>
+              ))}
+            </div>
+
+            {/* Rows */}
+            {speakers.length === 0 ? (
+              <div className="py-20 text-center border-b border-[#0F2C23]/12">
+                <div
+                  className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-5"
+                  style={{ backgroundColor: "rgba(15,44,35,0.08)", color: "#0F2C23" }}
+                >
+                  <User size={20} />
+                </div>
+                <p
+                  className="font-black text-[#0F2C23] uppercase mb-2"
+                  style={{ fontFamily: PX, fontSize: 16, letterSpacing: "-0.02em" }}
+                >
+                  No speakers yet.
+                </p>
+                <p className="text-[#0F2C23]/50 text-sm" style={{ fontFamily: FN }}>
+                  Add your first speaker using the form above.
+                </p>
+              </div>
+            ) : (
+              speakers.map((speaker, idx) => (
+                <div
+                  key={speaker.id}
+                  className="grid items-center py-6 border-b border-[#0F2C23]/10 transition-all duration-150 hover:bg-[#0F2C23]/[0.02] rounded-sm"
+                  style={{ gridTemplateColumns: "64px 1fr 100px", gap: "0 20px" }}
+                >
+                  <p className="font-bold text-[#0F2C23]" style={{ fontFamily: PX, fontSize: 14 }}>
+                    {String(idx + 1).padStart(2, "0")}.
+                  </p>
+
+                  {editingId === speaker.id ? (
+                    <div className="flex flex-1 gap-2 items-center col-span-2">
+                      <input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="flex-1 rounded-2xl px-4 py-2.5 text-sm outline-none"
+                        style={{
+                          backgroundColor: "#E2FEA5",
+                          border: "none",
+                          color: "#0F2C23",
+                          fontFamily: FN,
+                        }}
+                      />
+                      <input
+                        value={editImageUrl}
+                        onChange={(e) => setEditImageUrl(e.target.value)}
+                        placeholder="Image URL"
+                        className="flex-1 rounded-2xl px-4 py-2.5 text-sm outline-none"
+                        style={{
+                          backgroundColor: "#E2FEA5",
+                          border: "none",
+                          color: "#0F2C23",
+                          fontFamily: FN,
+                        }}
+                      />
+                      <button
+                        onClick={() => handleUpdate(speaker.id)}
+                        disabled={isPending}
+                        className="rounded-full px-4 py-2 text-[9px] font-bold tracking-[0.16em] uppercase"
+                        style={{
+                          backgroundColor: "#0F2C23",
+                          color: "#E2FEA5",
+                          fontFamily: PX,
+                        }}
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="rounded-full px-3 py-2 text-[10px]"
+                        style={{ color: "rgba(15,44,35,0.7)", fontFamily: FN }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3 min-w-0">
+                        {speaker.image_url ? (
+                          <img
+                            src={speaker.image_url}
+                            alt={speaker.name}
+                            className="h-10 w-10 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className="flex h-10 w-10 items-center justify-center rounded-full shrink-0"
+                            style={{ background: "rgba(15,44,35,0.06)" }}
+                          >
+                            <User size={16} style={{ color: "#0F2C23", opacity: 0.4 }} />
+                          </div>
+                        )}
+                        <span
+                          className="text-[#0F2C23]/80 text-sm truncate"
+                          style={{ fontFamily: FN }}
+                        >
+                          {speaker.name}
+                        </span>
+                      </div>
+                      {canEdit ? (
+                        <div className="flex gap-1.5 justify-end">
+                          <button
+                            onClick={() => startEdit(speaker)}
+                            className="rounded-full p-2 transition-colors hover:bg-[rgba(15,44,35,0.06)]"
+                          >
+                            <Pencil size={14} style={{ color: "#0F2C23" }} />
+                          </button>
+                          <button
+                            onClick={() => handleRemove(speaker.id)}
+                            disabled={isPending}
+                            className="rounded-full p-2 transition-colors hover:bg-red-50"
+                          >
+                            <Trash2 size={14} className="text-red-500" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div />
+                      )}
+                    </>
+                  )}
+                </div>
+              ))
+            )}
+
+            {/* Footer strip */}
+            {speakers.length > 0 && (
+              <div className="flex items-center justify-between mt-6 pt-5 border-t border-[#0F2C23]/8">
+                <p className="text-[11px] text-[#0F2C23]/40" style={{ fontFamily: FN }}>
+                  {speakers.length} speaker{speakers.length !== 1 ? "s" : ""} listed
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT sidebar */}
+        <aside className="sticky top-[81px] flex flex-col gap-4">
+          {/* Status card */}
+          <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+            <p
+              className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5"
+              style={{ fontFamily: PX }}
+            >
+              Status
+            </p>
+            <div className="flex flex-col gap-2">
+              {[
+                {
+                  label: "Total speakers",
+                  value: speakers.length > 0 ? `${speakers.length} listed` : "None yet",
+                  done: speakers.length > 0,
+                },
+                {
+                  label: "With photo",
+                  value: `${speakers.filter((s) => s.image_url).length} of ${speakers.length}`,
+                  done:
+                    speakers.filter((s) => s.image_url).length === speakers.length &&
+                    speakers.length > 0,
+                },
+              ].map(({ label, value, done }) => (
+                <div
+                  key={label}
+                  className="flex items-center gap-3 py-3 border-b border-[#0F2C23]/08"
+                >
+                  <span
+                    className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center"
+                    style={{
+                      backgroundColor: done ? "#0F2C23" : "rgba(15,44,35,0.1)",
+                    }}
+                  >
+                    {done && (
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ backgroundColor: "#F8FFE8" }}
+                      />
+                    )}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="text-[9px] tracking-[0.14em] uppercase font-bold text-[#0F2C23]/38"
+                      style={{ fontFamily: PX }}
+                    >
+                      {label}
+                    </p>
+                    <p className="text-sm text-[#0F2C23]/65 truncate" style={{ fontFamily: FN }}>
+                      {value}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* How it works */}
+          <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#E2FEA5" }}>
+            <p
+              className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-4"
+              style={{ fontFamily: PX }}
+            >
+              How it works
+            </p>
+            <div className="flex flex-col gap-3">
+              {[
+                {
+                  n: "01",
+                  t: "Add each speaker with their name and an optional avatar image URL.",
+                },
+                {
+                  n: "02",
+                  t: "Speakers will appear on the public hackathon page for builders to see.",
+                },
+                {
+                  n: "03",
+                  t: "You can update or remove speakers at any time while the program is editable.",
+                },
+              ].map(({ n, t }) => (
+                <div key={n} className="flex items-start gap-3">
+                  <span
+                    className="font-black text-[#0F2C23]/20 leading-none shrink-0 mt-0.5"
+                    style={{ fontFamily: PX, fontSize: 11, width: 20 }}
+                  >
+                    {n}
+                  </span>
+                  <p
+                    className="text-xs text-[#0F2C23]/60 leading-relaxed"
+                    style={{ fontFamily: FN }}
+                  >
+                    {t}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );

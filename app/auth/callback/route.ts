@@ -4,7 +4,8 @@ import { createServerSupabase } from "@/lib/supabase/server";
 
 function getDashboardUrl(user: { is_admin: boolean; is_event_creator: boolean }): string {
   if (user.is_admin) return "/admin";
-  if (user.is_event_creator) return "/host";
+  // TODO: re-enable after testing phase — everyone lands on /dashboard for now
+  // if (user.is_event_creator) return "/host";
   return "/dashboard";
 }
 

@@ -1,34 +1,34 @@
 import { redirect } from "next/navigation";
-import { SpeakersManager } from "@/components/client/speakers-manager";
+import { EditHackathonForm } from "@/components/client/edit-hackathon-form";
 import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
+import { canManageHackathon, getFullCapabilities } from "@/lib/capabilities";
 import { computePhase, getPhasePermissions } from "@/lib/hackathon-phase";
 import { getServerAuth } from "@/lib/server-auth";
-import { getHackathonServer, getHackathonSpeakersServer } from "@/lib/server-data";
+import { getHackathonServer } from "@/lib/server-data";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
-export default async function SpeakersPage({
-  params,
-}: {
-  params: Promise<{ hackathon_id: string }>;
-}) {
+export default async function InfoPage({ params }: { params: Promise<{ hackathon_id: string }> }) {
   const { hackathon_id } = await params;
   const auth = await getServerAuth();
   if (!auth) redirect("/login?redirect=/host");
 
-  const [hackathon, speakers] = await Promise.all([
-    getHackathonServer(hackathon_id),
-    getHackathonSpeakersServer(hackathon_id),
-  ]);
+  const hackathon = await getHackathonServer(hackathon_id);
   if (!hackathon) redirect("/host");
+
+  const caps = await getFullCapabilities(supabaseAdmin, auth.userId);
+  if (!caps || !canManageHackathon(caps, hackathon.host_id ?? "", auth.userId, hackathon.id)) {
+    redirect("/host");
+  }
 
   const phase = computePhase(hackathon);
   const permissions = getPhasePermissions(phase);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+      <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-6 flex items-center gap-3">
           <a
             href={`/host/${hackathon_id}/manage`}
@@ -47,23 +47,22 @@ export default async function SpeakersPage({
               letterSpacing: "-0.02em",
             }}
           >
-            Speakers
+            Info
           </h1>
           <div className="ml-2">
             <HackathonPhaseBadge hackathon={hackathon} />
           </div>
         </div>
-        <SpeakersManager
-          hackathonId={hackathon_id}
-          speakers={speakers}
-          canEdit={permissions.canEditSpeakers}
-        />
-        {!permissions.canEditSpeakers && (
+
+        {/* Details form */}
+        {permissions.canEditDetails ? (
+          <EditHackathonForm hackathon={hackathon} permissions={permissions} />
+        ) : (
           <p
-            className="mt-4 text-sm leading-relaxed"
+            className="text-sm leading-relaxed"
             style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}
           >
-            This hackathon is finalized. Speaker details can no longer be edited.
+            This hackathon is finalized. No changes can be made.
           </p>
         )}
       </div>

@@ -265,7 +265,11 @@ async function clearAll() {
         else console.log(`  [OK]   Cleared ${table}`);
         continue;
       }
-      if (table === "team_members" || table === "hackathon_cohosts" || table === "hackathon_judges") {
+      if (
+        table === "team_members" ||
+        table === "hackathon_cohosts" ||
+        table === "hackathon_judges"
+      ) {
         const { error: e2 } = await supabase
           .from(table)
           .delete()
@@ -428,14 +432,17 @@ async function seedHackathons() {
       program_goal: "Identify and support innovative DeFi, identity, and governance ideas.",
       organizer_notes: "Focus on usability and real-world adoption potential.",
       judging_criteria: [
-        { name: "Technical Execution", description: "Code quality, architecture, and implementation" },
+        {
+          name: "Technical Execution",
+          description: "Code quality, architecture, and implementation",
+        },
         { name: "Innovation", description: "Novelty of the idea and approach" },
         { name: "User Experience", description: "Design, usability, and polish" },
         { name: "Impact", description: "Potential real-world impact and adoption" },
       ],
       status: "active",
-      start_date: daysFromNow(-2),          // started 2 days ago
-      submission_deadline: daysFromNow(5),   // 5 days from now
+      start_date: daysFromNow(-2), // started 2 days ago
+      submission_deadline: daysFromNow(5), // 5 days from now
       judging_deadline: daysFromNow(8),
       results_date: daysFromNow(10),
     },
@@ -455,15 +462,21 @@ async function seedHackathons() {
       ],
       program_goal: "Help 10 projects ship their v1 and acquire initial users.",
       judging_criteria: [
-        { name: "Code Integration & Technical Depth", description: "Quality of code and technical architecture" },
-        { name: "Ideation & Problem Definition", description: "Clarity of the problem being solved" },
+        {
+          name: "Code Integration & Technical Depth",
+          description: "Quality of code and technical architecture",
+        },
+        {
+          name: "Ideation & Problem Definition",
+          description: "Clarity of the problem being solved",
+        },
         { name: "Uniqueness & Innovation", description: "How novel is the approach" },
         { name: "Product Readiness", description: "How close to production-ready" },
         { name: "Track/Sponsor Fit", description: "Alignment with sponsor track goals" },
       ],
       status: "active",
-      start_date: daysFromNow(-14),          // started 14 days ago
-      submission_deadline: daysFromNow(-2),   // closed 2 days ago
+      start_date: daysFromNow(-14), // started 14 days ago
+      submission_deadline: daysFromNow(-2), // closed 2 days ago
       judging_deadline: daysFromNow(5),
       results_date: daysFromNow(7),
     },
@@ -492,10 +505,10 @@ async function seedHackathons() {
       ],
       status: "active",
       ai_weight: 0.4,
-      start_date: daysFromNow(-30),           // started 30 days ago
-      submission_deadline: daysFromNow(-14),   // closed 14 days ago
-      judging_deadline: daysFromNow(-5),       // judging done 5 days ago
-      results_date: daysFromNow(-2),           // results date 2 days ago
+      start_date: daysFromNow(-30), // started 30 days ago
+      submission_deadline: daysFromNow(-14), // closed 14 days ago
+      judging_deadline: daysFromNow(-5), // judging done 5 days ago
+      results_date: daysFromNow(-2), // results date 2 days ago
       // finalized_at is NULL → phase = "completed" (ready to finalize)
     },
   ];
@@ -516,8 +529,10 @@ async function seedHackathonTracks() {
       hackathon_id: IDS.hackathon_building,
       sponsor_name: "Ethereum Foundation",
       track_name: "Core Infrastructure",
-      track_description: "Build tools, libraries, or protocols that improve Ethereum core infrastructure.",
-      docs_text: "EIPs reference: https://eips.ethereum.org. Solidity docs: https://docs.soliditylang.org",
+      track_description:
+        "Build tools, libraries, or protocols that improve Ethereum core infrastructure.",
+      docs_text:
+        "EIPs reference: https://eips.ethereum.org. Solidity docs: https://docs.soliditylang.org",
       api_endpoints: ["https://mainnet.infura.io/v3/", "https://eth.llamarpc.com"],
     },
     {
@@ -525,7 +540,8 @@ async function seedHackathonTracks() {
       hackathon_id: IDS.hackathon_building,
       sponsor_name: "Polygon Labs",
       track_name: "Scaling Solutions",
-      track_description: "Build applications leveraging Polygon zkEVM or PoS for high-throughput use cases.",
+      track_description:
+        "Build applications leveraging Polygon zkEVM or PoS for high-throughput use cases.",
       docs_text: "Polygon zkEVM docs: https://docs.polygon.technology/zkEVM",
       api_endpoints: ["https://polygon-rpc.com"],
     },
@@ -582,19 +598,33 @@ async function seedProjects() {
       team_id: IDS.team_alpha,
       name: "YieldFlow Protocol",
       tagline: "Automated yield optimization across DeFi protocols",
-      description: "YieldFlow is a smart contract system that automatically rebalances user deposits across lending protocols to maximize yield while managing risk.",
-      refined_description: "YieldFlow Protocol is an AI-powered yield optimization engine that automatically rebalances user deposits across multiple DeFi lending protocols (Aave, Compound, Morpho) to maximize risk-adjusted returns.",
+      description:
+        "YieldFlow is a smart contract system that automatically rebalances user deposits across lending protocols to maximize yield while managing risk.",
+      refined_description:
+        "YieldFlow Protocol is an AI-powered yield optimization engine that automatically rebalances user deposits across multiple DeFi lending protocols (Aave, Compound, Morpho) to maximize risk-adjusted returns.",
       category: "DeFi",
       tech_stack: ["Solidity", "Hardhat", "React", "TypeScript", "ethers.js", "The Graph"],
-      colors: { primary_color: "#6366f1", secondary_color: "#818cf8", accent_color: "#a78bfa", theme_label: "indigo-modern" },
-      key_features: ["Auto-rebalancing across Aave, Compound, and Morpho", "Risk scoring per vault strategy", "Gas-optimized batch transactions", "Real-time yield dashboard", "Multi-sig treasury management"],
+      colors: {
+        primary_color: "#6366f1",
+        secondary_color: "#818cf8",
+        accent_color: "#a78bfa",
+        theme_label: "indigo-modern",
+      },
+      key_features: [
+        "Auto-rebalancing across Aave, Compound, and Morpho",
+        "Risk scoring per vault strategy",
+        "Gas-optimized batch transactions",
+        "Real-time yield dashboard",
+        "Multi-sig treasury management",
+      ],
       logo_url: "https://placehold.co/200x200",
       github_url: "https://github.com/example/yieldflow",
       website_url: "https://yieldflow.example.com",
       screenshot_urls: ["https://placehold.co/800x450", "https://placehold.co/800x450"],
       additional_links: [{ label: "Docs", url: "https://docs.yieldflow.example.com" }],
       social_links: [{ label: "Twitter", url: "https://twitter.com/yieldflow" }],
-      flattened_codebase: "// contracts/YieldVault.sol\npragma solidity ^0.8.20;\n\nimport '@openzeppelin/contracts/token/ERC20/ERC20.sol';\n\ncontract YieldVault is ERC20 {\n    mapping(address => uint256) public deposits;\n    function deposit(uint256 amount) external { deposits[msg.sender] += amount; _mint(msg.sender, amount); }\n    function rebalance() external { /* AI-driven rebalancing */ }\n}\n",
+      flattened_codebase:
+        "// contracts/YieldVault.sol\npragma solidity ^0.8.20;\n\nimport '@openzeppelin/contracts/token/ERC20/ERC20.sol';\n\ncontract YieldVault is ERC20 {\n    mapping(address => uint256) public deposits;\n    function deposit(uint256 amount) external { deposits[msg.sender] += amount; _mint(msg.sender, amount); }\n    function rebalance() external { /* AI-driven rebalancing */ }\n}\n",
       kb_sections: ["profile", "code", "theme"],
       knowledge_base_chunks: 24,
     },
@@ -603,12 +633,25 @@ async function seedProjects() {
       team_id: IDS.team_alpha,
       name: "ArtChain Gallery",
       tagline: "Curated NFT marketplace for digital artists",
-      description: "ArtChain is a curated NFT marketplace focusing on quality digital art with built-in royalty enforcement.",
-      refined_description: "ArtChain Gallery is a curated NFT marketplace that prioritizes quality digital art through a curation DAO. Features on-chain royalty enforcement via ERC-2981 and gasless minting via meta-transactions.",
+      description:
+        "ArtChain is a curated NFT marketplace focusing on quality digital art with built-in royalty enforcement.",
+      refined_description:
+        "ArtChain Gallery is a curated NFT marketplace that prioritizes quality digital art through a curation DAO. Features on-chain royalty enforcement via ERC-2981 and gasless minting via meta-transactions.",
       category: "NFT / Art",
       tech_stack: ["Solidity", "Next.js", "IPFS", "TypeScript", "Tailwind CSS"],
-      colors: { primary_color: "#ec4899", secondary_color: "#f472b6", accent_color: "#f9a8d4", theme_label: "pink-creative" },
-      key_features: ["Curated submissions via DAO voting", "On-chain royalty enforcement (ERC-2981)", "Gasless minting with meta-transactions", "Visual similarity search for art discovery", "Artist verification badges"],
+      colors: {
+        primary_color: "#ec4899",
+        secondary_color: "#f472b6",
+        accent_color: "#f9a8d4",
+        theme_label: "pink-creative",
+      },
+      key_features: [
+        "Curated submissions via DAO voting",
+        "On-chain royalty enforcement (ERC-2981)",
+        "Gasless minting with meta-transactions",
+        "Visual similarity search for art discovery",
+        "Artist verification badges",
+      ],
       logo_url: "https://placehold.co/200x200",
       github_url: "https://github.com/example/artchain",
       kb_sections: ["profile", "code"],
@@ -619,12 +662,25 @@ async function seedProjects() {
       team_id: IDS.team_beta,
       name: "DevConnect Hub",
       tagline: "Professional networking for Web3 developers",
-      description: "A social platform built specifically for Web3 developers to connect, collaborate, and find opportunities.",
-      refined_description: "DevConnect Hub is a professional networking platform designed exclusively for Web3 developers. It uses on-chain credentials and GitHub activity to verify skills.",
+      description:
+        "A social platform built specifically for Web3 developers to connect, collaborate, and find opportunities.",
+      refined_description:
+        "DevConnect Hub is a professional networking platform designed exclusively for Web3 developers. It uses on-chain credentials and GitHub activity to verify skills.",
       category: "Social / Developer Tools",
       tech_stack: ["Next.js", "TypeScript", "Supabase", "Tailwind CSS", "Prisma"],
-      colors: { primary_color: "#10b981", secondary_color: "#34d399", accent_color: "#6ee7b7", theme_label: "emerald-professional" },
-      key_features: ["On-chain credential verification", "GitHub activity integration", "Project opportunity matching", "Developer reputation scoring", "Real-time chat with code sharing"],
+      colors: {
+        primary_color: "#10b981",
+        secondary_color: "#34d399",
+        accent_color: "#6ee7b7",
+        theme_label: "emerald-professional",
+      },
+      key_features: [
+        "On-chain credential verification",
+        "GitHub activity integration",
+        "Project opportunity matching",
+        "Developer reputation scoring",
+        "Real-time chat with code sharing",
+      ],
       logo_url: "https://placehold.co/200x200",
       github_url: "https://github.com/example/devconnect",
       website_url: "https://devconnect.example.com",
@@ -638,12 +694,25 @@ async function seedProjects() {
       team_id: IDS.team_alpha,
       name: "GovernanceAI",
       tagline: "AI-powered DAO governance and proposal analysis",
-      description: "GovernanceAI uses LLMs to analyze DAO proposals, predict outcomes, and help delegates make informed voting decisions.",
-      refined_description: "GovernanceAI is an AI-powered DAO governance toolkit that analyzes proposals using NLP, predicts voter sentiment, and provides delegates with context-rich summaries to improve participation and decision quality.",
+      description:
+        "GovernanceAI uses LLMs to analyze DAO proposals, predict outcomes, and help delegates make informed voting decisions.",
+      refined_description:
+        "GovernanceAI is an AI-powered DAO governance toolkit that analyzes proposals using NLP, predicts voter sentiment, and provides delegates with context-rich summaries to improve participation and decision quality.",
       category: "DAO / Governance",
       tech_stack: ["Solidity", "Python", "React", "TypeScript", "OpenAI API", "The Graph"],
-      colors: { primary_color: "#8b5cf6", secondary_color: "#a78bfa", accent_color: "#c4b5fd", theme_label: "violet-governance" },
-      key_features: ["AI proposal summarization", "Voter sentiment prediction", "Delegate dashboard", "Historical voting pattern analysis", "Multi-DAO support"],
+      colors: {
+        primary_color: "#8b5cf6",
+        secondary_color: "#a78bfa",
+        accent_color: "#c4b5fd",
+        theme_label: "violet-governance",
+      },
+      key_features: [
+        "AI proposal summarization",
+        "Voter sentiment prediction",
+        "Delegate dashboard",
+        "Historical voting pattern analysis",
+        "Multi-DAO support",
+      ],
       logo_url: "https://placehold.co/200x200",
       github_url: "https://github.com/example/governanceai",
       website_url: "https://governanceai.example.com",
@@ -653,12 +722,25 @@ async function seedProjects() {
       team_id: IDS.team_beta,
       name: "OmniBridge",
       tagline: "Universal cross-chain bridge with intent-based routing",
-      description: "OmniBridge is a cross-chain bridge that uses intent-based design to find the optimal route for any token transfer across EVM and non-EVM chains.",
-      refined_description: "OmniBridge provides intent-based cross-chain transfers with MEV protection. Users specify what they want, and solvers compete to fulfill the intent at the best price across 12+ chains.",
+      description:
+        "OmniBridge is a cross-chain bridge that uses intent-based design to find the optimal route for any token transfer across EVM and non-EVM chains.",
+      refined_description:
+        "OmniBridge provides intent-based cross-chain transfers with MEV protection. Users specify what they want, and solvers compete to fulfill the intent at the best price across 12+ chains.",
       category: "Infrastructure",
       tech_stack: ["Solidity", "Rust", "TypeScript", "Next.js", "Go"],
-      colors: { primary_color: "#f59e0b", secondary_color: "#fbbf24", accent_color: "#fcd34d", theme_label: "amber-infra" },
-      key_features: ["Intent-based routing", "MEV protection", "12+ chain support", "Solver competition marketplace", "Sub-minute finality"],
+      colors: {
+        primary_color: "#f59e0b",
+        secondary_color: "#fbbf24",
+        accent_color: "#fcd34d",
+        theme_label: "amber-infra",
+      },
+      key_features: [
+        "Intent-based routing",
+        "MEV protection",
+        "12+ chain support",
+        "Solver competition marketplace",
+        "Sub-minute finality",
+      ],
       logo_url: "https://placehold.co/200x200",
       github_url: "https://github.com/example/omnibridge",
       website_url: "https://omnibridge.example.com",
@@ -668,12 +750,25 @@ async function seedProjects() {
       team_id: IDS.team_gamma,
       name: "SmartVault",
       tagline: "Account-abstracted smart wallet with social recovery",
-      description: "SmartVault is an ERC-4337 smart wallet with social recovery, session keys, and gas sponsorship built in.",
-      refined_description: "SmartVault leverages ERC-4337 account abstraction to provide a seamless wallet experience: social recovery via guardians, session keys for dApp interactions, and gas sponsorship for onboarding.",
+      description:
+        "SmartVault is an ERC-4337 smart wallet with social recovery, session keys, and gas sponsorship built in.",
+      refined_description:
+        "SmartVault leverages ERC-4337 account abstraction to provide a seamless wallet experience: social recovery via guardians, session keys for dApp interactions, and gas sponsorship for onboarding.",
       category: "Wallet / UX",
       tech_stack: ["Solidity", "TypeScript", "React Native", "Expo", "ethers.js"],
-      colors: { primary_color: "#0ea5e9", secondary_color: "#38bdf8", accent_color: "#7dd3fc", theme_label: "sky-wallet" },
-      key_features: ["ERC-4337 account abstraction", "Social recovery via guardians", "Session keys for dApps", "Gas sponsorship", "Biometric authentication"],
+      colors: {
+        primary_color: "#0ea5e9",
+        secondary_color: "#38bdf8",
+        accent_color: "#7dd3fc",
+        theme_label: "sky-wallet",
+      },
+      key_features: [
+        "ERC-4337 account abstraction",
+        "Social recovery via guardians",
+        "Session keys for dApps",
+        "Gas sponsorship",
+        "Biometric authentication",
+      ],
       logo_url: "https://placehold.co/200x200",
       github_url: "https://github.com/example/smartvault",
     },
@@ -691,15 +786,28 @@ async function seedKnowledgeBases() {
   check(
     "Knowledge bases",
     await supabase.from("knowledge_bases").insert([
-      { id: IDS.kb_defi, project_id: IDS.project_defi, sources: { profile: true, code: true, theme: true } },
+      {
+        id: IDS.kb_defi,
+        project_id: IDS.project_defi,
+        sources: { profile: true, code: true, theme: true },
+      },
       { id: IDS.kb_nft, project_id: IDS.project_nft, sources: { profile: true, code: true } },
       { id: IDS.kb_dao, project_id: IDS.project_dao, sources: { profile: true, code: true } },
     ]),
   );
 
-  await supabase.from("loops_profiles").update({ knowledge_base_id: IDS.kb_defi }).eq("id", IDS.project_defi);
-  await supabase.from("loops_profiles").update({ knowledge_base_id: IDS.kb_nft }).eq("id", IDS.project_nft);
-  await supabase.from("loops_profiles").update({ knowledge_base_id: IDS.kb_dao }).eq("id", IDS.project_dao);
+  await supabase
+    .from("loops_profiles")
+    .update({ knowledge_base_id: IDS.kb_defi })
+    .eq("id", IDS.project_defi);
+  await supabase
+    .from("loops_profiles")
+    .update({ knowledge_base_id: IDS.kb_nft })
+    .eq("id", IDS.project_nft);
+  await supabase
+    .from("loops_profiles")
+    .update({ knowledge_base_id: IDS.kb_dao })
+    .eq("id", IDS.project_dao);
   console.log("  [OK]   Linked knowledge bases to projects");
 }
 
@@ -849,10 +957,26 @@ async function seedHackathonRoles() {
   check(
     "Judges (4 → completed hackathon)",
     await supabase.from("hackathon_judges").insert([
-      { hackathon_id: IDS.hackathon_completed, user_id: judge1._authId, assigned_tracks: [IDS.track_base] },
-      { hackathon_id: IDS.hackathon_completed, user_id: judge2._authId, assigned_tracks: [IDS.track_base] },
-      { hackathon_id: IDS.hackathon_completed, user_id: judge3._authId, assigned_tracks: [IDS.track_avax] },
-      { hackathon_id: IDS.hackathon_completed, user_id: judge4._authId, assigned_tracks: [IDS.track_avax] },
+      {
+        hackathon_id: IDS.hackathon_completed,
+        user_id: judge1._authId,
+        assigned_tracks: [IDS.track_base],
+      },
+      {
+        hackathon_id: IDS.hackathon_completed,
+        user_id: judge2._authId,
+        assigned_tracks: [IDS.track_base],
+      },
+      {
+        hackathon_id: IDS.hackathon_completed,
+        user_id: judge3._authId,
+        assigned_tracks: [IDS.track_avax],
+      },
+      {
+        hackathon_id: IDS.hackathon_completed,
+        user_id: judge4._authId,
+        assigned_tracks: [IDS.track_avax],
+      },
     ]),
   );
 
@@ -860,9 +984,24 @@ async function seedHackathonRoles() {
   check(
     "Speakers (judging hackathon)",
     await supabase.from("hackathon_speakers").insert([
-      { id: IDS.speaker_1, hackathon_id: IDS.hackathon_judging, name: "Vitalik Buterin", image_url: "https://placehold.co/150x150" },
-      { id: IDS.speaker_2, hackathon_id: IDS.hackathon_judging, name: "Stani Kulechov", image_url: "https://placehold.co/150x150" },
-      { id: IDS.speaker_3, hackathon_id: IDS.hackathon_completed, name: "Brian Armstrong", image_url: "https://placehold.co/150x150" },
+      {
+        id: IDS.speaker_1,
+        hackathon_id: IDS.hackathon_judging,
+        name: "Vitalik Buterin",
+        image_url: "https://placehold.co/150x150",
+      },
+      {
+        id: IDS.speaker_2,
+        hackathon_id: IDS.hackathon_judging,
+        name: "Stani Kulechov",
+        image_url: "https://placehold.co/150x150",
+      },
+      {
+        id: IDS.speaker_3,
+        hackathon_id: IDS.hackathon_completed,
+        name: "Brian Armstrong",
+        image_url: "https://placehold.co/150x150",
+      },
     ]),
   );
 }
@@ -889,27 +1028,162 @@ async function seedHumanEvaluations() {
   const scoringMatrix = [
     // Judge 1 (Frank)
     [
-      { overall: 87, scores: { "Business Model": 85, "Team & Execution": 90, "Market Opportunity": 88, "Technical Innovation": 85, "Pitch Quality": 87 }, remarks: { "Business Model": "Solid revenue model via subscription fees", "Team & Execution": "Experienced team with prior exits" }, notes: "Top contender. Strong across all criteria." },
-      { overall: 76, scores: { "Business Model": 72, "Team & Execution": 80, "Market Opportunity": 75, "Technical Innovation": 82, "Pitch Quality": 70 }, remarks: { "Technical Innovation": "Novel intent-based design" }, notes: "Good tech but needs clearer monetization." },
-      { overall: 70, scores: { "Business Model": 65, "Team & Execution": 72, "Market Opportunity": 70, "Technical Innovation": 75, "Pitch Quality": 68 }, remarks: { "Technical Innovation": "ERC-4337 is promising" }, notes: "Decent wallet, competitive market." },
+      {
+        overall: 87,
+        scores: {
+          "Business Model": 85,
+          "Team & Execution": 90,
+          "Market Opportunity": 88,
+          "Technical Innovation": 85,
+          "Pitch Quality": 87,
+        },
+        remarks: {
+          "Business Model": "Solid revenue model via subscription fees",
+          "Team & Execution": "Experienced team with prior exits",
+        },
+        notes: "Top contender. Strong across all criteria.",
+      },
+      {
+        overall: 76,
+        scores: {
+          "Business Model": 72,
+          "Team & Execution": 80,
+          "Market Opportunity": 75,
+          "Technical Innovation": 82,
+          "Pitch Quality": 70,
+        },
+        remarks: { "Technical Innovation": "Novel intent-based design" },
+        notes: "Good tech but needs clearer monetization.",
+      },
+      {
+        overall: 70,
+        scores: {
+          "Business Model": 65,
+          "Team & Execution": 72,
+          "Market Opportunity": 70,
+          "Technical Innovation": 75,
+          "Pitch Quality": 68,
+        },
+        remarks: { "Technical Innovation": "ERC-4337 is promising" },
+        notes: "Decent wallet, competitive market.",
+      },
     ],
     // Judge 2 (Grace)
     [
-      { overall: 90, scores: { "Business Model": 88, "Team & Execution": 92, "Market Opportunity": 90, "Technical Innovation": 90, "Pitch Quality": 90 }, remarks: { "Market Opportunity": "Massive TAM in DAO governance" }, notes: "Exceptional project. Best in class." },
-      { overall: 78, scores: { "Business Model": 75, "Team & Execution": 78, "Market Opportunity": 80, "Technical Innovation": 80, "Pitch Quality": 75 }, remarks: { "Market Opportunity": "Growing cross-chain demand" }, notes: "Solid fundamentals, needs polish." },
-      { overall: 68, scores: { "Business Model": 62, "Team & Execution": 70, "Market Opportunity": 68, "Technical Innovation": 72, "Pitch Quality": 65 }, remarks: {}, notes: "Needs differentiation from existing wallets." },
+      {
+        overall: 90,
+        scores: {
+          "Business Model": 88,
+          "Team & Execution": 92,
+          "Market Opportunity": 90,
+          "Technical Innovation": 90,
+          "Pitch Quality": 90,
+        },
+        remarks: { "Market Opportunity": "Massive TAM in DAO governance" },
+        notes: "Exceptional project. Best in class.",
+      },
+      {
+        overall: 78,
+        scores: {
+          "Business Model": 75,
+          "Team & Execution": 78,
+          "Market Opportunity": 80,
+          "Technical Innovation": 80,
+          "Pitch Quality": 75,
+        },
+        remarks: { "Market Opportunity": "Growing cross-chain demand" },
+        notes: "Solid fundamentals, needs polish.",
+      },
+      {
+        overall: 68,
+        scores: {
+          "Business Model": 62,
+          "Team & Execution": 70,
+          "Market Opportunity": 68,
+          "Technical Innovation": 72,
+          "Pitch Quality": 65,
+        },
+        remarks: {},
+        notes: "Needs differentiation from existing wallets.",
+      },
     ],
     // Judge 3 (Hank)
     [
-      { overall: 85, scores: { "Business Model": 82, "Team & Execution": 88, "Market Opportunity": 85, "Technical Innovation": 87, "Pitch Quality": 82 }, remarks: { "Team & Execution": "Clear execution roadmap" }, notes: "Very promising. Would invest." },
-      { overall: 80, scores: { "Business Model": 78, "Team & Execution": 82, "Market Opportunity": 80, "Technical Innovation": 84, "Pitch Quality": 76 }, remarks: { "Technical Innovation": "Solver marketplace is innovative" }, notes: "Strong technical foundation." },
-      { overall: 72, scores: { "Business Model": 70, "Team & Execution": 74, "Market Opportunity": 72, "Technical Innovation": 76, "Pitch Quality": 68 }, remarks: {}, notes: "Good UX focus, needs business model work." },
+      {
+        overall: 85,
+        scores: {
+          "Business Model": 82,
+          "Team & Execution": 88,
+          "Market Opportunity": 85,
+          "Technical Innovation": 87,
+          "Pitch Quality": 82,
+        },
+        remarks: { "Team & Execution": "Clear execution roadmap" },
+        notes: "Very promising. Would invest.",
+      },
+      {
+        overall: 80,
+        scores: {
+          "Business Model": 78,
+          "Team & Execution": 82,
+          "Market Opportunity": 80,
+          "Technical Innovation": 84,
+          "Pitch Quality": 76,
+        },
+        remarks: { "Technical Innovation": "Solver marketplace is innovative" },
+        notes: "Strong technical foundation.",
+      },
+      {
+        overall: 72,
+        scores: {
+          "Business Model": 70,
+          "Team & Execution": 74,
+          "Market Opportunity": 72,
+          "Technical Innovation": 76,
+          "Pitch Quality": 68,
+        },
+        remarks: {},
+        notes: "Good UX focus, needs business model work.",
+      },
     ],
     // Judge 4 (Iris)
     [
-      { overall: 86, scores: { "Business Model": 84, "Team & Execution": 88, "Market Opportunity": 86, "Technical Innovation": 86, "Pitch Quality": 85 }, remarks: { "Pitch Quality": "Clear and compelling narrative" }, notes: "Strong across the board. Minor UX polish needed." },
-      { overall: 74, scores: { "Business Model": 70, "Team & Execution": 76, "Market Opportunity": 74, "Technical Innovation": 78, "Pitch Quality": 72 }, remarks: {}, notes: "Interesting concept, crowded space." },
-      { overall: 65, scores: { "Business Model": 60, "Team & Execution": 68, "Market Opportunity": 65, "Technical Innovation": 70, "Pitch Quality": 62 }, remarks: {}, notes: "Early stage, needs more traction." },
+      {
+        overall: 86,
+        scores: {
+          "Business Model": 84,
+          "Team & Execution": 88,
+          "Market Opportunity": 86,
+          "Technical Innovation": 86,
+          "Pitch Quality": 85,
+        },
+        remarks: { "Pitch Quality": "Clear and compelling narrative" },
+        notes: "Strong across the board. Minor UX polish needed.",
+      },
+      {
+        overall: 74,
+        scores: {
+          "Business Model": 70,
+          "Team & Execution": 76,
+          "Market Opportunity": 74,
+          "Technical Innovation": 78,
+          "Pitch Quality": 72,
+        },
+        remarks: {},
+        notes: "Interesting concept, crowded space.",
+      },
+      {
+        overall: 65,
+        scores: {
+          "Business Model": 60,
+          "Team & Execution": 68,
+          "Market Opportunity": 65,
+          "Technical Innovation": 70,
+          "Pitch Quality": 62,
+        },
+        remarks: {},
+        notes: "Early stage, needs more traction.",
+      },
     ],
   ];
 
@@ -1045,7 +1319,9 @@ async function seedCSVData() {
     await supabase.from("users").update({ display_name: displayName, username }).eq("id", authId);
 
     const teamId = randomUUID();
-    await supabase.from("teams").insert({ id: teamId, name: `Team ${info.firstName}`, owner_id: authId });
+    await supabase
+      .from("teams")
+      .insert({ id: teamId, name: `Team ${info.firstName}`, owner_id: authId });
     await supabase.from("team_members").insert({ team_id: teamId, user_id: authId, role: "owner" });
 
     userMap.set(email, { authId, teamId });
@@ -1067,7 +1343,8 @@ async function seedCSVData() {
     const problemStatement = row[col("Problem Statement")]?.trim() || "";
     const projectDesc = row[col("Project Description")]?.trim() || "";
     const githubUrl = row[col("Project Source Code")]?.trim() || "";
-    const demoUrl = row[col("Project Live Demo")]?.trim() || row[col("Project Live Demo ")]?.trim() || "";
+    const demoUrl =
+      row[col("Project Live Demo")]?.trim() || row[col("Project Live Demo ")]?.trim() || "";
     const presentationUrl = row[col("Project Presentation")]?.trim() || "";
     const videoUrl = row[col("Project Video Demo")]?.trim() || "";
     const twitter = submitterMap.get(email)?.twitter || "";
@@ -1188,20 +1465,34 @@ async function main() {
   console.log("\n  BUILDER (builder@loopsflow.test / Builder123!):");
   console.log("  1. Login at /login → visit /builder → see 4 projects");
   console.log("  2. Visit /hackathons → see 3 hackathons in different phases");
-  console.log(`  3. Visit /hackathons/${IDS.hackathon_building}/submit → submit project (building phase)`);
-  console.log(`  4. Visit /hackathons/${IDS.hackathon_judging}/submit → should be blocked (judging phase)`);
+  console.log(
+    `  3. Visit /hackathons/${IDS.hackathon_building}/submit → submit project (building phase)`,
+  );
+  console.log(
+    `  4. Visit /hackathons/${IDS.hackathon_judging}/submit → should be blocked (judging phase)`,
+  );
 
   console.log("\n  HOST (host@loopsflow.test / Host123!):");
-  console.log(`  1. Visit /host/${IDS.hackathon_building}/manage → edit hackathon (building phase)`);
-  console.log(`  2. Visit /host/${IDS.hackathon_judging}/manage → manage judges/speakers (judging phase)`);
-  console.log(`  3. Visit /host/${IDS.hackathon_completed}/manage → finalize hackathon (completed phase)`);
+  console.log(
+    `  1. Visit /host/${IDS.hackathon_building}/manage → edit hackathon (building phase)`,
+  );
+  console.log(
+    `  2. Visit /host/${IDS.hackathon_judging}/manage → manage judges/speakers (judging phase)`,
+  );
+  console.log(
+    `  3. Visit /host/${IDS.hackathon_completed}/manage → finalize hackathon (completed phase)`,
+  );
 
   console.log("\n  JUDGE (judge@loopsflow.test / Judge123!):");
   console.log(`  1. Visit /judge/${IDS.hackathon_judging}/<project_id> → evaluate projects`);
-  console.log(`  2. Visit /judge/${IDS.hackathon_completed}/<project_id> → see existing evaluations`);
+  console.log(
+    `  2. Visit /judge/${IDS.hackathon_completed}/<project_id> → see existing evaluations`,
+  );
 
   console.log("\n--- Seeded Data Summary ---");
-  console.log(`  Users:              ${TEST_USERS.length + csv.users} (${TEST_USERS.length} test + ${csv.users} CSV)`);
+  console.log(
+    `  Users:              ${TEST_USERS.length + csv.users} (${TEST_USERS.length} test + ${csv.users} CSV)`,
+  );
   console.log(`  Teams:              ${3 + csv.users} (3 test + ${csv.users} CSV)`);
   console.log(`  Projects:           ${6 + csv.projects} (6 test + ${csv.projects} CSV)`);
   console.log("  Hackathons:         3 (building, judging, completed)");

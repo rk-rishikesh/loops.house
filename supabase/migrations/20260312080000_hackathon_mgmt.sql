@@ -42,9 +42,11 @@ ALTER TABLE hackathon_speakers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hackathon_results ENABLE ROW LEVEL SECURITY;
 
 -- Speakers: public read, service-role write (via admin client)
+DROP POLICY IF EXISTS "Anyone can read speakers" ON hackathon_speakers;
 CREATE POLICY "Anyone can read speakers"
   ON hackathon_speakers FOR SELECT USING (true);
 
 -- Results: public read, service-role write
+DROP POLICY IF EXISTS "Anyone can read results" ON hackathon_results;
 CREATE POLICY "Anyone can read results"
   ON hackathon_results FOR SELECT USING (true);

@@ -90,7 +90,7 @@ export async function middleware(request: NextRequest) {
   if (!caps) {
     caps = (await getBasicCapabilities(supabase, userId)) ?? {
       isAdmin: false,
-      isEventCreator: false,
+      isEventCreator: process.env.GATE_CREATORS !== "true",
       isCohost: false,
       isJudge: false,
     };
@@ -123,11 +123,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // /host/new — only event creators or admins can create new hackathons
-  // (cohost check happens at page level since we need hackathon_id)
-  if (pathname === "/host/new" && !caps.isEventCreator && !caps.isAdmin) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+  // /host/new — allowing all authenticated users to reach the creation flow
+  // if (pathname === "/host/new" && !caps.isEventCreator && !caps.isAdmin) {
+  //   return NextResponse.redirect(new URL("/dashboard", request.url));
+  // }
 
   // /judge — only judges or admins
   if (pathname.startsWith("/judge") && !caps.isJudge && !caps.isAdmin) {
