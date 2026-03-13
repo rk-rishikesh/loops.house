@@ -1,6 +1,6 @@
 # Loops House
 
-Hackathon management platform with AI-powered project evaluation. Hosts create hackathons, builders submit projects, judges evaluate submissions (human + AI scoring), and the platform computes leaderboards and results.
+Hackathon management platform with AI-powered project evaluation. Hosts create hackathons, builders submit projects, judges evaluate submissions (human + AI scoring), and the platform computes leaderboards and results
 
 Built with Next.js 16, React 19, Supabase, and Google Gemini.
 
