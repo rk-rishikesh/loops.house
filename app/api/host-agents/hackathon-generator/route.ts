@@ -53,7 +53,7 @@ interface HackathonProgramResponse {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireAuth((caps) => caps.isAdmin || caps.isEventCreator);
+  const auth = await requireAuth();
   if (!auth) return unauthorized();
 
   // Rate limit: 5 requests per day per user
@@ -112,12 +112,16 @@ TASK:
 - Assume this is a remote-first, async-friendly program unless the input explicitly suggests otherwise.
 
 RULES:
-- Be concrete but keep everything editable — avoid hard-coding dates/times if they are not provided, use relative language instead (e.g., "Week 1").
+- Be concrete but keep everything editable. Calculate the total duration using start_date and submission_deadline to determine the best temporal unit for the schedule.
+- For short bursts (< 4 days), use day-based or time-of-day units (e.g., "Day 1", "Saturday Afternoon").
+- For mid-range (1–3 weeks), use "Week 1", "Week 2", etc., or "Early Phase", "Mid-Phase".
+- For long-term (> 1 month), use "Month 1", "Quarter 1", or thematic phases.
 - Derive challenge statements from the problem_statements and program_goal.
 - Make judging criteria aligned with the stated goals and (if present) any bounty pool or sponsor tracks.
 - If some fields are missing (e.g., technical_docs), still produce a best-effort draft and leave explicit TODO-style notes for the organizer.
 - Keep language concise and builder-friendly.
 - The hackathon_id_suggestion should be a URL-safe slug: lowercase, words separated by hyphens, no spaces.
+- In organizer_notes, include a brief explanation of why you chose the specific temporal units for the schedule (e.g., "Schedule based on a 48-hour sprint duration").
 
 Return STRICT JSON matching this TypeScript type:
 

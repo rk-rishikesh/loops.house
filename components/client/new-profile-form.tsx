@@ -1,17 +1,22 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   ArrowLeft,
   ArrowRight,
-  ArrowUpRight,
   Check,
   ChevronDown,
+  Database,
+  GraduationCap,
   Loader2,
-  Minus,
+  Network,
+  Plus,
+  Sparkles,
   X,
 } from "lucide-react";
-import Link from "next/link";
+import { KnowledgeBasePanel, KBStepStatus, KB_STEPS } from "@/components/client/knowledge-base-panel";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -19,35 +24,35 @@ import { ImageUpload, MultiImageUpload } from "@/components/client/image-upload"
 import { saveTeamAction } from "@/lib/actions";
 import type { StoredTeam } from "@/lib/data-mappers";
 import { useSaveProject } from "@/lib/queries";
-import { type CreateProfileSchema, createProfileSchema } from "@/lib/validations/schemas";
+
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-const STEPS = ["code-reader", "demo-reader", "theme-reader", "knowledge-base"] as const;
-type StepStatus = "pending" | "started" | "done" | "failed" | "skipped";
+// STEPS and StepStatus are now imported from knowledge-base-panel.tsx
 
-// ─── Step progress dots ───────────────────────────────────────────────────────
-function StepDots({ total, current }: { total: number; current: number }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      {Array.from({ length: total }).map((_, i) => (
-        <div
-          key={i}
-          className="rounded-full transition-all duration-300"
-          style={{
-            width: i === current ? 24 : 6,
-            height: 6,
-            backgroundColor:
-              i === current
-                ? "#2d4a3e"
-                : i < current
-                  ? "rgba(45,74,62,0.4)"
-                  : "rgba(45,74,62,0.15)",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+// Stricter builder profile schema (all key links required, richer description)
+const builderProfileSchema = z.object({
+  team_id: z.string().optional(),
+  name: z.string().min(1, "Project name is required"),
+  description: z
+    .string()
+    .min(80, "Please add a more detailed description (at least 80 characters)."),
+  github_url: z.string().url("GitHub URL must be a valid link"),
+  youtube_url: z.string().url("YouTube URL must be a valid link"),
+  logo_url: z.string().url("Logo URL must be a valid link"),
+  website_url: z
+    .string()
+    .min(1, "Website URL is required")
+    .refine(
+      (val) => /^https?:\/\//i.test(val) || /^www\./i.test(val),
+      "Website URL must be a valid link",
+    ),
+  screenshot_urls: z.string().optional(),
+  social_links: z.string().optional(),
+  hackathon_id: z.string().optional(),
+});
+type BuilderProfileInput = z.infer<typeof builderProfileSchema>;
 
 // ─── Custom dropdown ──────────────────────────────────────────────────────────
 function CustomDropdown({
@@ -80,11 +85,11 @@ function CustomDropdown({
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all duration-200 border-none cursor-pointer"
         style={{
-          backgroundColor: open ? "#2d4a3e" : "#d6cfc0",
-          color: open ? "#f0ebe0" : selected ? "#2d4a3e" : "rgba(45,74,62,0.45)",
+          backgroundColor: open ? "#0F2C23" : "rgba(15,44,35,0.06)",
+          color: open ? "#F8FFE8" : selected ? "#0F2C23" : "rgba(15,44,35,0.55)",
         }}
       >
-        <span className="font-semibold text-base" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <span className="font-semibold text-base" style={{ fontFamily: PX }}>
           {selected ? selected.label : placeholder}
         </span>
         <ChevronDown
@@ -92,7 +97,7 @@ function CustomDropdown({
           style={{
             transform: open ? "rotate(180deg)" : "rotate(0deg)",
             transition: "transform 0.2s ease",
-            color: open ? "#f0ebe0" : "#2d4a3e",
+            color: open ? "#F8FFE8" : "rgba(15,44,35,0.7)",
           }}
         />
       </button>
@@ -100,7 +105,7 @@ function CustomDropdown({
       {open && (
         <div
           className="absolute top-full left-0 right-0 z-50 mt-1 rounded-2xl overflow-hidden shadow-xl"
-          style={{ backgroundColor: "#2d4a3e" }}
+          style={{ backgroundColor: "#0F2C23" }}
         >
           {options.map((opt, i) => {
             const isSel = opt.value === value;
@@ -114,17 +119,17 @@ function CustomDropdown({
                 }}
                 className="w-full flex items-center justify-between px-5 py-3.5 text-left cursor-pointer border-none transition-colors duration-100"
                 style={{
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: FN,
                   fontSize: 14,
-                  color: isSel ? "#f0ebe0" : "rgba(240,235,224,0.6)",
-                  backgroundColor: isSel ? "rgba(240,235,224,0.12)" : "transparent",
+                  color: isSel ? "#F8FFE8" : "rgba(226,254,165,0.75)",
+                  backgroundColor: isSel ? "rgba(226,254,165,0.16)" : "transparent",
                   borderBottom:
-                    i < options.length - 1 ? "1px solid rgba(240,235,224,0.07)" : "none",
+                    i < options.length - 1 ? "1px solid rgba(226,254,165,0.16)" : "none",
                 }}
                 onMouseEnter={(e) => {
                   if (!isSel)
                     (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                      "rgba(240,235,224,0.07)";
+                      "rgba(226,254,165,0.1)";
                 }}
                 onMouseLeave={(e) => {
                   if (!isSel)
@@ -132,7 +137,7 @@ function CustomDropdown({
                 }}
               >
                 {opt.label}
-                {isSel && <Check size={13} style={{ color: "#f0ebe0" }} />}
+                {isSel && <Check size={13} style={{ color: "#F8FFE8" }} />}
               </button>
             );
           })}
@@ -142,74 +147,7 @@ function CustomDropdown({
   );
 }
 
-// ─── Progress panel ───────────────────────────────────────────────────────────
-function ProgressPanel({
-  progress,
-  errors: pErrors,
-}: {
-  progress: Record<string, StepStatus>;
-  errors: Record<string, string>;
-}) {
-  return (
-    <div className="rounded-2xl overflow-hidden max-w-lg" style={{ backgroundColor: "#2d4a3e" }}>
-      <div className="px-6 py-4 border-b" style={{ borderColor: "rgba(240,235,224,0.08)" }}>
-        <p
-          className="text-[10px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/50"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          Analysing your project…
-        </p>
-      </div>
-      <div className="px-6 py-5 flex flex-col gap-3">
-        {STEPS.map((s) => {
-          const status = progress[s] ?? "pending";
-          return (
-            <div key={s} className="flex items-center gap-3">
-              <span className="shrink-0 w-4">
-                {status === "done" && <Check size={14} style={{ color: "#d6cfc0" }} />}
-                {status === "failed" && <X size={14} style={{ color: "#ff8080" }} />}
-                {status === "skipped" && (
-                  <Minus size={14} style={{ color: "rgba(240,235,224,0.3)" }} />
-                )}
-                {status === "started" && (
-                  <Loader2 size={14} className="animate-spin" style={{ color: "#d6cfc0" }} />
-                )}
-                {status === "pending" && (
-                  <span
-                    className="block w-3 h-3 rounded-full"
-                    style={{ backgroundColor: "rgba(240,235,224,0.15)" }}
-                  />
-                )}
-              </span>
-              <span
-                className="text-[13px] flex-1"
-                style={{
-                  fontFamily: "Georgia, serif",
-                  color:
-                    status === "done"
-                      ? "#f0ebe0"
-                      : status === "failed"
-                        ? "#ff8080"
-                        : "rgba(240,235,224,0.45)",
-                }}
-              >
-                {s.replace(/-/g, " ")}
-              </span>
-              {status === "failed" && pErrors[s] && (
-                <span
-                  className="text-[10px] max-w-[120px] truncate"
-                  style={{ color: "#ff8080", opacity: 0.7 }}
-                >
-                  {pErrors[s]}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+// ProgressPanel has been moved to knowledge-base-panel.tsx as KnowledgeBasePanel
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface NewProfileFormProps {
@@ -223,13 +161,14 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [progress, setProgress] = useState<Record<string, StepStatus>>({});
+  const [progress, setProgress] = useState<Record<string, KBStepStatus>>({});
   const [progressErrors, setProgressErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [animDir, setAnimDir] = useState<1 | -1>(1);
   const [animKey, setAnimKey] = useState(0);
   const hasAppliedDefaults = useRef(false);
   const [screenshotFiles, setScreenshotFiles] = useState<string[]>([]);
+  const [showIntro, setShowIntro] = useState(true);
 
   const saveProjectMutation = useSaveProject();
 
@@ -241,8 +180,8 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
     control,
     formState: { errors, isValid },
     watch,
-  } = useForm<CreateProfileSchema>({
-    resolver: zodResolver(createProfileSchema),
+  } = useForm<BuilderProfileInput>({
+    resolver: zodResolver(builderProfileSchema),
     mode: "onChange",
     defaultValues: {
       team_id: "",
@@ -270,7 +209,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
   }, [initialTeamId, teams, reset]);
 
   const FORM_STEPS: {
-    key: keyof CreateProfileSchema;
+    key: keyof BuilderProfileInput;
     label: string;
     sub: string;
     optional?: boolean;
@@ -296,7 +235,6 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
       key: "github_url",
       label: "Where's the code?",
       sub: "Link your GitHub repository.",
-      optional: true,
       placeholder: "https://github.com/user/repo",
       type: "url",
     },
@@ -304,7 +242,6 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
       key: "youtube_url",
       label: "Got a demo video?",
       sub: "Paste your YouTube demo link.",
-      optional: true,
       placeholder: "https://youtube.com/watch?v=…",
       type: "url",
     },
@@ -312,21 +249,18 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
       key: "logo_url",
       label: "Upload a logo.",
       sub: "Show off your brand identity.",
-      optional: true,
       upload: "logo",
     },
     {
       key: "screenshot_urls",
       label: "Any screenshots?",
       sub: "Upload images that show what you built.",
-      optional: true,
       upload: "screenshots",
     },
     {
       key: "website_url",
       label: "Where can people find it?",
       sub: "Your live project URL.",
-      optional: true,
       placeholder: "https://myproject.com",
       type: "url",
     },
@@ -341,7 +275,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
     ...(teams.length > 0
       ? [
           {
-            key: "team_id" as keyof CreateProfileSchema,
+            key: "team_id" as keyof BuilderProfileInput,
             label: "Assign to an existing team?",
             sub: "Or we\u2019ll auto-create one for you.",
             optional: true,
@@ -367,6 +301,12 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
 
   const handleNext = async () => {
     if (!activeStep) return;
+    // Enforce screenshot requirement on the screenshots step before moving on
+    if (activeStep.upload === "screenshots" && screenshotFiles.length < 4) {
+      setError("Please upload at least 4 screenshots of your project.");
+      return;
+    }
+    setError(null);
     const ok = await trigger(activeStep.key);
     if (!ok && !activeStep.optional) return;
     if (currentStep < totalSteps - 1) navigateTo(currentStep + 1, 1);
@@ -377,11 +317,18 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
   };
 
   const onSubmit = useCallback(
-    async (data: CreateProfileSchema) => {
+    async (data: BuilderProfileInput) => {
       setError(null);
       setProgressErrors({});
       setLoading(true);
-      STEPS.forEach((s) => setProgress((p) => ({ ...p, [s]: "pending" })));
+      KB_STEPS.forEach((s) => setProgress((p) => ({ ...p, [s]: "pending" })));
+
+      // Enforce at least 4 screenshots
+      if (screenshotFiles.length < 4) {
+        setError("Please upload at least 4 screenshots of your project.");
+        setLoading(false);
+        return;
+      }
 
       // Auto-create team if none selected
       let resolvedTeamId = data.team_id;
@@ -460,7 +407,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                   ["done", "failed", "skipped"].includes(parsed.status as string)
                     ? parsed.status
                     : "started"
-                ) as StepStatus;
+                ) as KBStepStatus;
                 setProgress((p) => ({ ...p, [parsed.step as string]: status }));
                 if (parsed.status === "failed" && typeof parsed.error === "string")
                   setProgressErrors((e) => ({
@@ -506,13 +453,13 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
   const inputBase: React.CSSProperties = {
     width: "100%",
     maxWidth: 520,
-    backgroundColor: "#d6cfc0",
+    backgroundColor: "rgba(15,44,35,0.06)",
     border: "none",
     borderRadius: 16,
     padding: "18px 22px",
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: FN,
     fontSize: 16,
-    color: "#2d4a3e",
+    color: "#0F2C23",
     outline: "none",
     transition: "background-color 0.2s ease",
     letterSpacing: "0.01em",
@@ -523,333 +470,600 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#f0ebe0" }}>
-      {/* ── Nav ─────────────────────────────────────────────────────────────── */}
-      <header
-        className="flex items-center justify-between px-10 py-5 border-b"
-        style={{ borderColor: "rgba(45,74,62,0.12)", backgroundColor: "#f0ebe0" }}
-      >
-        <Link
-          href="/builder"
-          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          <ArrowLeft size={12} /> Builder
-        </Link>
-
-        <p
-          className="absolute left-1/2 -translate-x-1/2 text-[10px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          Create Profile
-        </p>
-
-        <StepDots total={totalSteps} current={currentStep} />
-      </header>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F8FFE8" }}>
 
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
       <div className="flex flex-1">
-        {/* LEFT — form */}
-        <main className="flex-1 flex flex-col justify-center px-10 md:px-20 lg:px-32 py-16">
-          <form onSubmit={handleSubmit(onSubmit)}>
-            {/* Step header */}
-            <div key={`hdr-${animKey}`} style={{ ...animStyle, marginBottom: 40 }}>
-              <div className="flex items-center gap-3 mb-5">
-                <span
-                  className="font-black text-[#2d4a3e]/18 leading-none"
+        {/* LEFT — form / intro */}
+        <main className="flex-1 flex flex-col justify-center px-6 md:px-12 lg:px-20 py-10">
+          {loading ? (
+            <div className="h-full min-h-[70vh] flex items-stretch">
+              <KnowledgeBasePanel progress={progress} errors={progressErrors} />
+            </div>
+          ) : showIntro ? (
+            <section className="w-full">
+              <div className="grid lg:grid-cols-[1.2fr,1fr] gap-8 lg:gap-16 items-center">
+                {/* Left Panel */}
+                <div className="flex flex-col items-start text-left">
+                  
+        
+                    <div className=" flex flex-row gap-12">
+                      <h1
+                        className="font-black text-[#0F2C23] leading-[0.85] uppercase mb-6"
+                        style={{
+                          fontFamily: PX,
+                          fontSize: "clamp(48px, 6.2vw, 88px)",
+                          letterSpacing: "-0.04em",
+                        }}
+                      >
+                        PROJECT
+                        <br />
+                        ONBOARDING.
+                      </h1>
+                      <p
+                        className="leading-relaxed mb-8 max-w-xl"
+                        style={{
+                          fontFamily: FN,
+                          fontSize: "clamp(15px, 1.25vw, 18px)",
+                          color: "rgba(15,44,35,0.6)",
+                        }}
+                      >
+                        Your project pipeline from raw links to an <span className="text-[#0F2C23] font-bold">AI-ready knowledge graph</span>. 
+                        Ship faster with agents that actually understand your codebase.
+                      </p>
+                    </div>
+  
+                 
+
+                  <div className="flex flex-col items-start gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowIntro(false)}
+                      className="group relative inline-flex items-center gap-4 rounded-full border-none cursor-pointer px-10 py-5 overflow-hidden transition-all duration-300 active:scale-95"
+                      style={{
+                        backgroundColor: "#0F2C23",
+                        boxShadow: "0 20px 40px -10px rgba(15, 44, 35, 0.4)",
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-[#E2FEA5] translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                      <span 
+                        className="relative z-10 text-[10px] font-black tracking-[0.2em] uppercase transition-colors duration-300 text-[#F8FFE8] group-hover:text-[#0F2C23]"
+                        style={{ fontFamily: PX }}
+                      >
+                        Initialize Creator
+                      </span>
+                      <ArrowRight 
+                        size={14} 
+                        className="relative z-10 transition-all duration-300 text-[#F8FFE8] group-hover:text-[#0F2C23] group-hover:translate-x-1" 
+                      />
+                    </button>
+                    <p 
+                      className="text-[9px] pl-2 uppercase font-bold tracking-[0.2em]" 
+                      style={{ fontFamily: PX, color: "rgba(15,44,35,0.35)" }}
+                    >
+                      Process time: ~2 minutes
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right Panel: Cards in 2x2 Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-5">
+                  {[
+                    {
+                      num: "01",
+                      icon: <Database size={20} />,
+                      title: "Feed project.",
+                      desc: "Drop your repo & demo. We handle the rest.",
+                    },
+                    {
+                      num: "02",
+                      icon: <Network size={20} />,
+                      title: "Build graph.",
+                      desc: "Engine crawls repo to build deep project context.",
+                    },
+                    {
+                      num: "03",
+                      icon: <Sparkles size={20} />,
+                      title: "Ideator ON.",
+                      desc: "Riff on ideas and positions with your project agent.",
+                    },
+                    {
+                      num: "04",
+                      icon: <GraduationCap size={20} />,
+                      title: "Mentor LIVE.",
+                      desc: "A personal coach that helps you ship quality code.",
+                    },
+                  ].map((step) => (
+                    <div 
+                      key={step.num}
+                      className="flex flex-col gap-4 p-7 rounded-[32px] border border-[#0F2C23]/5 transition-all duration-300 hover:border-[#0F2C23]/10 hover:shadow-lg hover:scale-[1.03]"
+                      style={{ backgroundColor: "rgba(226, 254, 165, 0.4)" }}
+                    >
+                      <div className="flex justify-between items-start">
+                        <span 
+                          className="font-black text-[24px] leading-none opacity-20" 
+                          style={{ fontFamily: PX, color: "#0F2C23" }}
+                        >
+                          {step.num}
+                        </span>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#0F2C23] text-[#E2FEA5]">
+                          {step.icon}
+                        </div>
+                      </div>
+                      <div>
+                        <h3 
+                          className="font-bold text-[15px] mb-1.5 uppercase tracking-tight" 
+                          style={{ fontFamily: PX, color: "#0F2C23" }}
+                        >
+                          {step.title}
+                        </h3>
+                        <p 
+                          className="text-[12px] leading-relaxed opacity-70" 
+                          style={{ fontFamily: FN, color: "#0F2C23" }}
+                        >
+                          {step.desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          ) : (
+            <form onSubmit={handleSubmit(onSubmit)}>
+              {/* Step header */}
+              <div key={`hdr-${animKey}`} style={{ ...animStyle, marginBottom: 40 }}>
+                <div className="flex items-center gap-3 mb-5">
+                  <span
+                    className="font-black leading-none"
+                    style={{
+                      fontFamily: PX,
+                      fontSize: "clamp(40px, 6vw, 72px)",
+                      letterSpacing: "-0.03em",
+                      color: "rgba(15,44,35,0.2)",
+                    }}
+                  >
+                    {String(currentStep + 1).padStart(2, "0")}
+                  </span>
+                </div>
+                <h1
+                  className="font-black text-[#0F2C23] leading-[0.9] uppercase mb-4"
                   style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: "clamp(40px, 6vw, 72px)",
-                    letterSpacing: "-0.03em",
+                    fontFamily: PX,
+                    fontSize: "clamp(28px, 4.5vw, 56px)",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {activeStep?.label}
+                </h1>
+                <p
+                  className="leading-relaxed"
+                  style={{
+                    fontFamily: FN,
+                    fontSize: "clamp(14px, 1.4vw, 16px)",
+                    color: "rgba(15,44,35,0.6)",
+                  }}
+                >
+                  {activeStep?.sub}
+                </p>
+              </div>
+
+              {/* Input */}
+              <div key={`inp-${animKey}`} style={{ ...animStyle, animationDelay: "0.06s" }}>
+                {/* team_id — optional, only shown when user has teams */}
+                {activeStep?.key === "team_id" && teams.length > 0 && (
+                  <Controller
+                    name="team_id"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomDropdown
+                        options={[
+                          { value: "", label: `Auto-create: ${projectName || "Project"}(Team)` },
+                          ...teams.map((t) => ({ value: t.id, label: t.name })),
+                        ]}
+                        value={field.value ?? ""}
+                        onChange={field.onChange}
+                        placeholder={`Auto-create: ${projectName || "Project"}(Team)`}
+                      />
+                    )}
+                  />
+                )}
+
+                {/* Upload inputs */}
+                {activeStep?.upload === "logo" && (
+                  <Controller
+                    name="logo_url"
+                    control={control}
+                    render={({ field }) => (
+                      <ImageUpload
+                        value={field.value}
+                        onChange={field.onChange}
+                        variant="square"
+                        placeholder="Upload logo"
+                      />
+                    )}
+                  />
+                )}
+
+                {activeStep?.upload === "screenshots" && (
+                  <MultiImageUpload
+                    value={screenshotFiles}
+                    onChange={(urls) => setScreenshotFiles(urls)}
+                    max={10}
+                    placeholder="Upload screenshots"
+                  />
+                )}
+
+                {/* Social links — compact rows with add button */}
+                {activeStep?.key === "social_links" && (
+                  <Controller
+                    name="social_links"
+                    control={control}
+                    render={({ field }) => {
+                      const items = (field.value ?? "").split("\n");
+                      if (items.length === 0) items.push("");
+
+                      const updateItem = (index: number, value: string) => {
+                        const next = [...items];
+                        next[index] = value;
+                        field.onChange(next.join("\n"));
+                      };
+
+                      const addItem = () => {
+                        field.onChange([...items, ""].join("\n"));
+                      };
+
+                      const removeItem = (index: number) => {
+                        const next = items.filter((_, i) => i !== index);
+                        field.onChange((next.length ? next : [""]).join("\n"));
+                      };
+
+                      return (
+                        <div className="flex flex-col gap-3">
+                          {items.map((val, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={val}
+                                onChange={(e) => updateItem(idx, e.target.value)}
+                                placeholder="Label, https://link.com/…"
+                                className="outline-none placeholder-[#2d4a3e]/30"
+                                style={{
+                                  ...inputBase,
+                                  maxWidth: 420,
+                                  paddingTop: 12,
+                                  paddingBottom: 12,
+                                  fontSize: 14,
+                                }}
+                                onFocus={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "rgba(15,44,35,0.1)")
+                                }
+                                onBlur={(e) =>
+                                  (e.currentTarget.style.backgroundColor =
+                                    "rgba(15,44,35,0.06)")
+                                }
+                              />
+                              {items.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeItem(idx)}
+                                  className="flex items-center justify-center rounded-full border-none cursor-pointer"
+                                  style={{
+                                    width: 26,
+                                    height: 26,
+                                    backgroundColor: "rgba(15,44,35,0.06)",
+                                    color: "rgba(15,44,35,0.7)",
+                                  }}
+                                >
+                                  <X size={12} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={addItem}
+                            className="inline-flex items-center justify-center gap-2 border-none cursor-pointer text-[10px] tracking-widest uppercase font-bold mt-1"
+                            style={{
+                              fontFamily: PX,
+                              width: "100%",
+                              maxWidth: 420,
+                              borderRadius: 16,
+                              paddingTop: 12,
+                              paddingBottom: 12,
+                              backgroundColor: "rgba(15,44,35,0.06)",
+                              color: "#0F2C23",
+                            }}
+                          >
+                            <Plus size={12} /> Add link
+                          </button>
+                        </div>
+                      );
+                    }}
+                  />
+                )}
+
+                {/* Text / URL inputs */}
+                {activeStep?.key !== "team_id" &&
+                  activeStep?.key !== "social_links" &&
+                  !activeStep?.upload &&
+                  (activeStep?.multiline ? (
+                    <textarea
+                      rows={4}
+                      placeholder={activeStep.placeholder}
+                      {...register(activeStep.key)}
+                      className="resize-none outline-none placeholder-[#2d4a3e]/30"
+                      style={{ ...inputBase, fontFamily: FN, lineHeight: 1.7 }}
+                      onFocus={(e) =>
+                        (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.1)")
+                      }
+                      onBlur={(e) =>
+                        (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.06)")
+                      }
+                    />
+                  ) : (
+                    <input
+                      type={activeStep?.type ?? "text"}
+                      placeholder={activeStep?.placeholder}
+                      {...register(activeStep!.key)}
+                      className="outline-none placeholder-[#2d4a3e]/30"
+                      style={inputBase}
+                      onFocus={(e) =>
+                        (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.1)")
+                      }
+                      onBlur={(e) =>
+                        (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.06)")
+                      }
+                    />
+                  ))}
+
+                {/* Field error */}
+                {activeStep?.key && errors[activeStep.key] && (
+                  <p
+                    className="mt-2 text-sm"
+                    style={{ fontFamily: FN, color: "#c0392b" }}
+                  >
+                    {errors[activeStep.key]?.message as string}
+                  </p>
+                )}
+
+                {/* Error */}
+                {error && !loading && (
+                  <p
+                    className="mt-4 text-sm"
+                    style={{ fontFamily: FN, color: "#c0392b" }}
+                  >
+                    {error}
+                  </p>
+                )}
+              </div>
+
+              {/* Buttons */}
+              <div
+                key={`btn-${animKey}`}
+                className="flex items-center gap-4 mt-12 flex-wrap"
+                style={{ ...animStyle, animationDelay: "0.12s" }}
+              >
+                {currentStep > 0 && (
+                  <button
+                    type="button"
+                    onClick={handlePrev}
+                    disabled={loading}
+                    className="inline-flex items-center gap-2 rounded-full cursor-pointer transition-all duration-200 hover:opacity-70 text-[10px] tracking-widest uppercase font-bold px-5 py-3"
+                    style={{
+                      backgroundColor: "transparent",
+                      color: "#0F2C23",
+                      border: "1.5px solid rgba(15,44,35,0.25)",
+                      fontFamily: PX,
+                    }}
+                  >
+                    <ArrowLeft size={11} /> Back
+                  </button>
+                )}
+
+                {!isLastStep ? (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={loading}
+                    className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all duration-200 hover:opacity-90 text-[10px] tracking-widest uppercase font-bold px-7 py-3"
+                    style={{
+                      backgroundColor: "#0F2C23",
+                      color: "#F8FFE8",
+                      fontFamily: PX,
+                    }}
+                  >
+                    Continue <ArrowRight size={12} />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={loading || !isValid}
+                    className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all duration-200 hover:opacity-90 disabled:opacity-40 text-[10px] tracking-widest uppercase font-bold px-7 py-3"
+                    style={{
+                      backgroundColor: "#0F2C23",
+                      color: "#F8FFE8",
+                      fontFamily: PX,
+                    }}
+                  >
+                    {loading && <Loader2 size={12} className="animate-spin" />}
+                    {loading ? "Creating…" : "Create Profile"}
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
+        </main>
+
+        {/* RIGHT — decorative sidebar (only during questions) */}
+        {!showIntro && !loading && (
+          <aside
+            className="hidden lg:flex w-[400px] shrink-0 flex-col justify-between p-12 relative overflow-hidden"
+            style={{ backgroundColor: "#0F2C23" }}
+          >
+            {/* Background Effects */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-20"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, rgba(226,254,165,0.2) 1px, transparent 1px)",
+                backgroundSize: "32px 32px",
+              }}
+            />
+            <div 
+              className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-[120px] pointer-events-none"
+              style={{ backgroundColor: "rgba(226,254,165,0.05)" }}
+            />
+
+            {/* Header / Big Number */}
+            <div className="relative z-10 flex flex-col gap-2">
+              <div className="flex items-baseline gap-4">
+                <motion.span
+                  key={currentStep}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="font-black leading-none"
+                  style={{
+                    fontFamily: PX,
+                    fontSize: 120,
+                    letterSpacing: "-0.06em",
+                    color: "#E2FEA5",
+                    textShadow: "0 0 40px rgba(226,254,165,0.1)",
                   }}
                 >
                   {String(currentStep + 1).padStart(2, "0")}
-                </span>
-                {activeStep?.optional && (
-                  <span
-                    className="text-[8px] tracking-[0.15em] uppercase font-bold px-2.5 py-1 rounded-sm"
-                    style={{
-                      backgroundColor: "rgba(45,74,62,0.08)",
-                      color: "#2d4a3e",
-                      fontFamily: "'Inter', sans-serif",
-                    }}
-                  >
-                    optional
-                  </span>
-                )}
-              </div>
-              <h1
-                className="font-black text-[#2d4a3e] leading-[0.9] uppercase mb-4"
-                style={{
-                  fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
-                  fontSize: "clamp(28px, 4.5vw, 56px)",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                {activeStep?.label}
-              </h1>
-              <p
-                className="text-[#2d4a3e]/50 leading-relaxed"
-                style={{ fontFamily: "Georgia, serif", fontSize: "clamp(14px, 1.4vw, 16px)" }}
-              >
-                {activeStep?.sub}
-              </p>
-            </div>
-
-            {/* Input */}
-            <div key={`inp-${animKey}`} style={{ ...animStyle, animationDelay: "0.06s" }}>
-              {/* team_id — optional, only shown when user has teams */}
-              {activeStep?.key === "team_id" && teams.length > 0 && (
-                <Controller
-                  name="team_id"
-                  control={control}
-                  render={({ field }) => (
-                    <CustomDropdown
-                      options={[
-                        { value: "", label: `Auto-create: ${projectName || "Project"}(Team)` },
-                        ...teams.map((t) => ({ value: t.id, label: t.name })),
-                      ]}
-                      value={field.value ?? ""}
-                      onChange={field.onChange}
-                      placeholder={`Auto-create: ${projectName || "Project"}(Team)`}
-                    />
-                  )}
-                />
-              )}
-
-              {/* hackathon_id step removed — linking happens via submissions now */}
-
-              {/* Upload inputs */}
-              {activeStep?.upload === "logo" && (
-                <Controller
-                  name="logo_url"
-                  control={control}
-                  render={({ field }) => (
-                    <ImageUpload
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Upload logo"
-                    />
-                  )}
-                />
-              )}
-
-              {activeStep?.upload === "screenshots" && (
-                <MultiImageUpload
-                  value={screenshotFiles}
-                  onChange={(urls) => setScreenshotFiles(urls)}
-                  max={10}
-                  placeholder="Upload screenshots"
-                />
-              )}
-
-              {/* Text / URL inputs */}
-              {activeStep?.key !== "team_id" &&
-                !activeStep?.upload &&
-                (activeStep?.multiline ? (
-                  <textarea
-                    rows={4}
-                    placeholder={activeStep.placeholder}
-                    {...register(activeStep.key)}
-                    className="resize-none outline-none placeholder-[#2d4a3e]/30"
-                    style={{ ...inputBase, fontFamily: "Georgia, serif", lineHeight: 1.7 }}
-                    onFocus={(e) => (e.currentTarget.style.backgroundColor = "#cdc7b7")}
-                    onBlur={(e) => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
-                  />
-                ) : (
-                  <input
-                    type={activeStep?.type ?? "text"}
-                    placeholder={activeStep?.placeholder}
-                    {...register(activeStep!.key)}
-                    className="outline-none placeholder-[#2d4a3e]/30"
-                    style={inputBase}
-                    onFocus={(e) => (e.currentTarget.style.backgroundColor = "#cdc7b7")}
-                    onBlur={(e) => (e.currentTarget.style.backgroundColor = "#d6cfc0")}
-                  />
-                ))}
-
-              {/* Field error */}
-              {activeStep?.key && errors[activeStep.key] && (
-                <p
-                  className="mt-2 text-sm"
-                  style={{ fontFamily: "Georgia, serif", color: "#c0392b" }}
-                >
-                  {errors[activeStep.key]?.message as string}
-                </p>
-              )}
-
-              {/* Progress */}
-              {loading && (
-                <div className="mt-6">
-                  <ProgressPanel progress={progress} errors={progressErrors} />
-                </div>
-              )}
-
-              {/* Error */}
-              {error && !loading && (
-                <p
-                  className="mt-4 text-sm"
-                  style={{ fontFamily: "Georgia, serif", color: "#c0392b" }}
-                >
-                  {error}
-                </p>
-              )}
-            </div>
-
-            {/* Buttons */}
-            <div
-              key={`btn-${animKey}`}
-              className="flex items-center gap-4 mt-12 flex-wrap"
-              style={{ ...animStyle, animationDelay: "0.12s" }}
-            >
-              {currentStep > 0 && (
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  disabled={loading}
-                  className="inline-flex items-center gap-2 rounded-full cursor-pointer transition-all duration-200 hover:opacity-70 text-[10px] tracking-widest uppercase font-bold px-5 py-3"
-                  style={{
-                    backgroundColor: "transparent",
-                    color: "#2d4a3e",
-                    border: "1.5px solid rgba(45,74,62,0.25)",
-                    fontFamily: "'Inter', sans-serif",
-                  }}
-                >
-                  <ArrowLeft size={11} /> Back
-                </button>
-              )}
-
-              {!isLastStep ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  disabled={loading}
-                  className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all duration-200 hover:opacity-90 text-[10px] tracking-widest uppercase font-bold px-7 py-3"
-                  style={{
-                    backgroundColor: "#2d4a3e",
-                    color: "#f0ebe0",
-                    fontFamily: "'Inter', sans-serif",
-                  }}
-                >
-                  Continue <ArrowRight size={12} />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={loading || !isValid}
-                  className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all duration-200 hover:opacity-90 disabled:opacity-40 text-[10px] tracking-widest uppercase font-bold px-7 py-3"
-                  style={{
-                    backgroundColor: "#2d4a3e",
-                    color: "#f0ebe0",
-                    fontFamily: "'Inter', sans-serif",
-                  }}
-                >
-                  {loading && <Loader2 size={12} className="animate-spin" />}
-                  {loading ? "Creating…" : "Create Profile"}
-                </button>
-              )}
-
-              {activeStep?.optional && !isLastStep && (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/35 hover:text-[#2d4a3e]/60 transition-colors bg-transparent border-none cursor-pointer"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
-                >
-                  Skip
-                </button>
-              )}
-            </div>
-          </form>
-        </main>
-
-        {/* RIGHT — decorative sidebar */}
-        <aside
-          className="hidden lg:flex w-[360px] shrink-0 flex-col justify-between p-10 relative overflow-hidden"
-          style={{ backgroundColor: "#2d4a3e" }}
-        >
-          {/* Dot grid texture */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle, rgba(214,207,192,0.12) 1px, transparent 1px)",
-              backgroundSize: "28px 28px",
-            }}
-          />
-
-          {/* Big faint step number */}
-          <div className="relative z-10">
-            <p
-              className="font-black text-[#f0ebe0]/08 leading-none"
-              style={{ fontFamily: "'Inter', sans-serif", fontSize: 100, letterSpacing: "-0.04em" }}
-            >
-              {String(currentStep + 1).padStart(2, "0")}
-            </p>
-            <p
-              className="text-[10px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/30 mt-2"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              of {String(totalSteps).padStart(2, "0")} steps
-            </p>
-          </div>
-
-          {/* Step preview list */}
-          <div className="relative z-10 flex flex-col gap-2.5">
-            {FORM_STEPS.slice(Math.max(0, currentStep - 1), currentStep + 5).map((step, i) => {
-              const absIdx = Math.max(0, currentStep - 1) + i;
-              const isCur = absIdx === currentStep;
-              const isPast = absIdx < currentStep;
-              return (
-                <div
-                  key={step.key}
-                  className="flex items-center gap-3 transition-all duration-300"
-                  style={{ opacity: isCur ? 1 : isPast ? 0.35 : 0.18 }}
-                >
-                  {isPast ? (
-                    <Check size={11} style={{ color: "#d6cfc0", flexShrink: 0 }} />
-                  ) : (
-                    <div
-                      className="rounded-full shrink-0"
-                      style={{
-                        width: isCur ? 8 : 6,
-                        height: isCur ? 8 : 6,
-                        backgroundColor: isCur ? "#d6cfc0" : "rgba(214,207,192,0.4)",
-                      }}
-                    />
-                  )}
+                </motion.span>
+                <div className="flex flex-col">
                   <p
-                    className="truncate"
-                    style={{
-                      fontFamily: isCur ? "'Inter', sans-serif" : "Georgia, serif",
-                      fontSize: isCur ? 13 : 12,
-                      fontWeight: isCur ? 700 : 400,
-                      color: isCur ? "#f0ebe0" : "#d6cfc0",
-                    }}
+                    className="text-[11px] tracking-[0.3em] uppercase font-black"
+                    style={{ fontFamily: PX, color: "rgba(226,254,165,0.4)" }}
                   >
-                    {step.label}
+                    Current
+                  </p>
+                  <p
+                    className="text-[11px] tracking-[0.3em] uppercase font-black"
+                    style={{ fontFamily: PX, color: "rgba(226,254,165,0.4)" }}
+                  >
+                    Phase
                   </p>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+              <div className="h-1 w-24 bg-[#E2FEA5]/10 rounded-full overflow-hidden mt-2">
+                <motion.div 
+                  className="h-full bg-[#E2FEA5]"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
+                  transition={{ duration: 0.6, ease: "circOut" }}
+                />
+              </div>
+            </div>
 
-          {/* Bottom label + arrow */}
-          <div className="relative z-10 flex items-end justify-between">
-            <p
-              className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#f0ebe0]/25"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              Create Profile
-            </p>
-            <span
-              className="inline-flex items-center justify-center rounded-full"
-              style={{ width: 40, height: 40, backgroundColor: "#d6cfc0" }}
-            >
-              <ArrowUpRight size={16} style={{ color: "#2d4a3e" }} />
-            </span>
-          </div>
-        </aside>
+            {/* Step Progress Stepper */}
+            <div className="relative z-10 py-6">
+              <div className="absolute left-[15px] top-8 bottom-8 w-px bg-white/5" />
+              
+              <div className="flex flex-col gap-6">
+                {FORM_STEPS.slice(
+                  Math.max(0, Math.min(currentStep - 1, totalSteps - 5)),
+                  Math.max(5, currentStep + 4)
+                ).map((step) => {
+                  const absoluteIdx = FORM_STEPS.indexOf(step);
+                  const isCur = absoluteIdx === currentStep;
+                  const isPast = absoluteIdx < currentStep;
+                  
+                  return (
+                    <motion.div
+                      key={step.key}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: isCur ? 1 : isPast ? 0.6 : 0.2, x: isCur ? 4 : 0 }}
+                      className="group flex items-start gap-5"
+                    >
+                      {/* Node */}
+                      <div className="relative z-20 flex-shrink-0 mt-1">
+                        {isPast ? (
+                          <div className="w-[28px] h-[28px] rounded-full bg-[#E2FEA5] flex items-center justify-center">
+                            <Check size={14} className="text-[#0F2C23] stroke-[3]" />
+                          </div>
+                        ) : isCur ? (
+                          <div className="relative">
+                            <motion.div
+                              animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.1, 0.4] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                              className="absolute inset-0 rounded-full bg-[#E2FEA5]"
+                            />
+                            <div className="relative w-[28px] h-[28px] rounded-full bg-[#E2FEA5] shadow-[0_0_15px_rgba(226,254,165,0.3)] flex items-center justify-center">
+                              <div className="w-2 h-2 rounded-full bg-[#0F2C23]" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-[28px] h-[28px] rounded-full border border-white/20 flex items-center justify-center bg-[#0F2C23]">
+                            <div className="w-1 h-1 rounded-full bg-white/20" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex flex-col pt-0.5 min-w-0">
+                        <p
+                          className="text-[9px] tracking-widest uppercase font-bold"
+                          style={{ 
+                            fontFamily: PX, 
+                            color: isCur ? "#E2FEA5" : "rgba(226,254,165,0.4)" 
+                          }}
+                        >
+                          Step {String(absoluteIdx + 1).padStart(2, "0")}
+                        </p>
+                        <h3
+                          className="text-[14px] font-bold leading-tight truncate"
+                          style={{ 
+                            fontFamily: FN, 
+                            color: isCur ? "#F8FFE8" : "rgba(248,255,232,0.6)" 
+                          }}
+                        >
+                          {step.label.replace(/\?|\./g, "")}
+                        </h3>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bottom Footer */}
+            <div className="relative z-10">
+              <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center gap-4 overflow-hidden">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#E2FEA5]/10 flex items-center justify-center">
+                  <div className="flex gap-1">
+                    <motion.div
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{ duration: 1.2, repeat: Infinity }}
+                      className="w-1.5 h-1.5 rounded-full bg-[#E2FEA5]"
+                    />
+                    <motion.div
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }}
+                      className="w-1.5 h-1.5 rounded-full bg-[#E2FEA5]"
+                    />
+                    <motion.div
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }}
+                      className="w-1.5 h-1.5 rounded-full bg-[#E2FEA5]"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <p className="text-[10px] uppercase font-black tracking-widest text-[#E2FEA5]/40" style={{ fontFamily: PX }}>
+                    System Processing
+                  </p>
+                  <p className="text-[14px] font-bold text-[#F8FFE8]" style={{ fontFamily: FN }}>
+                    Building Knowledge base
+                  </p>
+                </div>
+              </div>
+            </div>
+          </aside>
+        )}
       </div>
 
       <style>{`
@@ -861,7 +1075,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
           from { opacity: 0; transform: translateY(-18px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        textarea::placeholder, input::placeholder { color: rgba(45,74,62,0.35); }
+        textarea::placeholder, input::placeholder { color: rgba(15,44,35,0.4); }
       `}</style>
     </div>
   );

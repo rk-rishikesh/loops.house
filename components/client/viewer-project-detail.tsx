@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -23,12 +22,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { StoredProject, StoredSubmission } from "@/lib/data-mappers";
-import {
-  type ChatInputSchema,
-  type CodeQuerySchema,
-  chatInputSchema,
-  codeQuerySchema,
-} from "@/lib/validations/schemas";
+import { type ChatInputSchema, chatInputSchema } from "@/lib/validations/schemas";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -36,7 +30,6 @@ const FN = "var(--font-funnel-sans), sans-serif";
 /* ─── Types ─────────────────────────────────────────────────────── */
 type ChatMessage = { role: "user" | "assistant"; content: string };
 type ChatState = "bubble" | "open" | "expanded";
-type ChatTab = "chat" | "code";
 
 /* ─── Helpers ────────────────────────────────────────────────────── */
 function kbSnap(p: StoredProject) {
@@ -454,13 +447,24 @@ function ArrowCircle({ size = 44, inverted = false }: { size?: number; inverted?
 }
 
 /* ─── Accordion item ──────────────────────────────────────────────── */
-function AccordionItem({ index, title, body }: { index: number; title: string; body: string }) {
-  const [open, setOpen] = useState(false);
+function AccordionItem({
+  index,
+  title,
+  body,
+  isOpen,
+  onToggle,
+}: {
+  index: number;
+  title: string;
+  body: string;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
   return (
     <div className="border-b" style={{ borderColor: "rgba(15,44,35,0.1)" }}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={onToggle}
         className="w-full flex items-center gap-4 py-[18px] text-left bg-transparent border-none cursor-pointer group"
       >
         {/* Index watermark */}
@@ -469,7 +473,7 @@ function AccordionItem({ index, title, body }: { index: number; title: string; b
           style={{
             fontFamily: PX,
             fontSize: 13,
-            color: open ? "#0F2C23" : "rgba(15,44,35,0.2)",
+            color: isOpen ? "#0F2C23" : "rgba(15,44,35,0.2)",
             letterSpacing: "-0.02em",
             width: 24,
           }}
@@ -488,13 +492,13 @@ function AccordionItem({ index, title, body }: { index: number; title: string; b
           className="shrink-0 transition-transform duration-200"
           style={{ color: "rgba(15,44,35,0.45)" }}
         >
-          {open ? <Minus size={15} /> : <Plus size={15} />}
+          {isOpen ? <Minus size={15} /> : <Plus size={15} />}
         </span>
       </button>
 
       <div
         className="overflow-hidden transition-all duration-300 ease-in-out"
-        style={{ maxHeight: open ? 280 : 0, opacity: open ? 1 : 0 }}
+        style={{ maxHeight: isOpen ? 280 : 0, opacity: isOpen ? 1 : 0 }}
       >
         <p
           className="pb-5 text-[#0F2C23]/55 leading-relaxed"
@@ -559,35 +563,26 @@ function GalleryColumn({ shots, name }: { shots: string[]; name: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-3 h-full">
-      {/* Hero shot — tall 3:4 */}
-      <div
-        className="w-full rounded-3xl overflow-hidden relative shrink-0"
-        style={{ aspectRatio: "3/4", backgroundColor: "rgba(15,44,35,0.06)" }}
-      >
-        <Image src={shots[0]} alt={`${name} screenshot`} fill className="object-cover" />
-        <div className="absolute top-4 right-4">
-          <ArrowCircle size={48} />
-        </div>
+    <div className="h-full">
+      <div className="grid grid-cols-2 gap-3">
+        {shots.slice(0, 6).map((src, i) => (
+          <a
+            key={i}
+            href={src}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block rounded-2xl overflow-hidden relative"
+            style={{ aspectRatio: "4/3", backgroundColor: "rgba(15,44,35,0.06)" }}
+          >
+            <Image
+              src={src}
+              alt={`${name} screenshot ${i + 1}`}
+              fill
+              className="object-cover"
+            />
+          </a>
+        ))}
       </div>
-
-      {/* Thumbnail row */}
-      {shots.length > 1 && (
-        <div className="grid grid-cols-2 gap-3">
-          {shots.slice(1, 5).map((src, i) => (
-            <a
-              key={i}
-              href={src}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block rounded-2xl overflow-hidden relative"
-              style={{ aspectRatio: "16/9", backgroundColor: "rgba(15,44,35,0.06)" }}
-            >
-              <Image src={src} alt={`${name} screenshot ${i + 2}`} fill className="object-cover" />
-            </a>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -604,29 +599,10 @@ function AIChatPanel({
   onClose: () => void;
   onToggleExpand: () => void;
 }) {
-  const [tab, setTab] = useState<ChatTab>("chat");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatForm = useForm<ChatInputSchema>({ resolver: zodResolver(chatInputSchema) });
-  const codeForm = useForm<CodeQuerySchema>({ resolver: zodResolver(codeQuerySchema) });
-
-  const codeMutation = useMutation({
-    mutationFn: async (data: CodeQuerySchema): Promise<{ answer: string }> => {
-      const res = await fetch("/api/viewer-agents/code-query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          project_id: project.project_id,
-          question: data.question,
-          project: kbSnap(project),
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Query failed");
-      return json;
-    },
-  });
 
   const handleSend = chatForm.handleSubmit(async (data) => {
     const msg = data.message;
@@ -699,72 +675,74 @@ function AIChatPanel({
         boxShadow: "0 28px 72px rgba(15,44,35,0.38), 0 0 0 1px rgba(226,254,165,0.12)",
       }}
     >
-      {/* Header */}
+      {/* Header – single Project Chat */}
       <div
-        className="shrink-0 flex w-full items-stretch text-[9px] tracking-[0.16em] uppercase font-bold text-[#F8FFE8]"
+        className="shrink-0 flex w-full items-center justify-between px-4 py-2.5"
         style={{
           fontFamily: PX,
-          borderBottom: "1px solid rgba(226,254,165,0.1)",
+          borderBottom: "1px solid rgba(226,254,165,0.12)",
         }}
       >
-        {/* Left: Chat / Code tabs */}
-        <div
-          className="w-[150px] max-w-[45%] flex items-stretch"
-          style={{ borderRight: "1px solid rgba(226,254,165,0.12)" }}
-        >
-          {(["chat", "code"] as ChatTab[]).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className="flex-1 min-w-0 px-6 py-4 border-none cursor-pointer transition-all"
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{
+              backgroundColor: "rgba(226,254,165,0.14)",
+              boxShadow: "0 0 0 1px rgba(226,254,165,0.22)",
+            }}
+          >
+            <span
+              className="text-[9px] font-black tracking-[0.22em] uppercase"
+              style={{ fontFamily: PX, color: "#0F2C23" }}
+            >
+              AI
+            </span>
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span
+              className="text-[9px] tracking-[0.2em] uppercase font-bold"
+              style={{ color: "rgba(226,254,165,0.78)" }}
+            >
+              Project Chat
+            </span>
+            <span
+              className="truncate text-[11px] mt-0.5"
               style={{
-                backgroundColor: tab === t ? "#E2FEA5" : "rgba(226,254,165,0.06)",
-                color: tab === t ? "#0F2C23" : "rgba(226,254,165,0.55)",
+                fontFamily: FN,
+                color: "rgba(226,254,165,0.92)",
               }}
             >
-              {t === "chat" ? "Chat" : "Code"}
-            </button>
-          ))}
+              {project.name}
+            </span>
+          </div>
         </div>
 
-        {/* Middle: project name */}
-        <div
-          className="flex-1 min-w-0 px-4 flex items-center justify-center"
-          style={{ borderRight: "1px solid rgba(226,254,165,0.12)" }}
-        >
-          <span className="truncate">{project.name}</span>
-        </div>
-
-        {/* Right: window controls */}
-        <div className="flex items-center justify-end gap-1.5 px-3">
-          {/* Minimize / maximize */}
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={onToggleExpand}
             className="w-7 h-7 rounded-full flex items-center justify-center border-none cursor-pointer transition-colors"
-            style={{ color: "rgba(226,254,165,0.5)" }}
+            style={{ color: "rgba(226,254,165,0.6)" }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = "#F8FFE8";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "rgba(226,254,165,0.5)";
+              e.currentTarget.style.color = "rgba(226,254,165,0.6)";
             }}
           >
             {isExp ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
           </button>
 
-          {/* Close */}
           <button
             type="button"
             onClick={onClose}
             className="w-7 h-7 rounded-full flex items-center justify-center border-none cursor-pointer transition-colors"
-            style={{ color: "rgba(226,254,165,0.5)" }}
+            style={{ color: "rgba(226,254,165,0.6)" }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = "#F8FFE8";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "rgba(226,254,165,0.5)";
+              e.currentTarget.style.color = "rgba(226,254,165,0.6)";
             }}
           >
             <X size={12} />
@@ -772,9 +750,8 @@ function AIChatPanel({
         </div>
       </div>
 
-      {/* Chat */}
-      {tab === "chat" && (
-        <>
+      {/* Single Project Chat */}
+      <>
           <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
             {messages.length === 0 && (
               <div className="flex flex-col gap-2 pt-1">
@@ -816,42 +793,46 @@ function AIChatPanel({
                 ))}
               </div>
             )}
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {msg.role === "user" ? (
-                  /* user bubble — unchanged */
+            {messages.length > 0 && (
+              <div className="flex flex-col gap-3">
+                {messages.map((msg, i) => (
                   <div
-                    className="max-w-[85%] px-4 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap break-words"
+                    key={i}
+                    className={`flex ${
+                      msg.role === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    {msg.role === "user" ? (
+                      <div
+                    className="max-w-[85%] px-4 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap wrap-break-word"
                     style={{
                       fontFamily: FN,
                       borderRadius: "18px 18px 4px 18px",
-                      backgroundColor: "#E2FEA5",
-                      color: "#0F2C23",
+                      backgroundColor: "rgba(226,254,165,0.08)",
+                      color: "#F8FFE8",
                     }}
                   >
                     {msg.content || <span style={{ opacity: 0.4 }}>▮</span>}
                   </div>
-                ) : (
-                  /* ★ CHANGE 1 OF 2 — assistant bubble now renders markdown */
-                  <div
-                    className="max-w-[88%] px-4 py-3"
-                    style={{
-                      borderRadius: "18px 18px 18px 4px",
-                      backgroundColor: "rgba(226,254,165,0.08)",
-                    }}
-                  >
-                    {msg.content ? (
-                      <MarkdownDark md={msg.content} />
                     ) : (
-                      <span style={{ opacity: 0.4, color: "#F8FFE8" }}>▮</span>
+                      <div
+                        className="max-w-[88%] px-4 py-3"
+                        style={{
+                          borderRadius: "18px 18px 18px 4px",
+                          backgroundColor: "rgba(226,254,165,0.08)",
+                        }}
+                      >
+                        {msg.content ? (
+                          <MarkdownDark md={msg.content} />
+                        ) : (
+                          <span style={{ opacity: 0.4, color: "#F8FFE8" }}>▮</span>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
+                ))}
               </div>
-            ))}
+            )}
             {loading && messages[messages.length - 1]?.role !== "assistant" && (
               <div className="flex">
                 <div
@@ -906,85 +887,7 @@ function AIChatPanel({
               {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             </button>
           </form>
-        </>
-      )}
-
-      {/* Code */}
-      {tab === "code" && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Top: helper text */}
-          <div className="px-5 py-4 shrink-0">
-            <p className="text-[12px] text-[#F8FFE8]/38 leading-relaxed" style={{ fontFamily: FN }}>
-              Ask a technical question about the codebase.
-            </p>
-          </div>
-
-          {/* Middle: scrollable answer area */}
-          <div className="flex-1 overflow-y-auto px-5 pb-3">
-            {codeMutation.isPending && (
-              <div className="flex items-center gap-2 py-2">
-                <Loader2 size={12} className="animate-spin" style={{ color: "#E2FEA5" }} />
-                <span className="text-[12px] text-[#F8FFE8]/38" style={{ fontFamily: FN }}>
-                  Analysing codebase…
-                </span>
-              </div>
-            )}
-            {/* ★ CHANGE 2 OF 2 — code answer now renders markdown */}
-            {codeMutation.data && (
-              <div
-                className="rounded-xl px-4 py-4"
-                style={{
-                  backgroundColor: "rgba(226,254,165,0.07)",
-                  border: "1px solid rgba(226,254,165,0.1)",
-                }}
-              >
-                <MarkdownDark md={codeMutation.data.answer} />
-              </div>
-            )}
-            {codeMutation.isError && (
-              <p className="text-[12px] pt-2" style={{ fontFamily: FN, color: "#ff8080" }}>
-                {codeMutation.error.message}
-              </p>
-            )}
-          </div>
-
-          {/* Bottom: input form */}
-          <form
-            onSubmit={codeForm.handleSubmit((d) => codeMutation.mutate(d))}
-            className="flex gap-2 px-5 py-3 shrink-0"
-            style={{ borderTop: "1px solid rgba(226,254,165,0.08)" }}
-          >
-            <input
-              type="text"
-              {...codeForm.register("question")}
-              placeholder="How is auth implemented?"
-              disabled={codeMutation.isPending}
-              className="flex-1 rounded-xl px-4 py-2.5 text-[13px] outline-none"
-              style={{
-                fontFamily: FN,
-                backgroundColor: "rgba(226,254,165,0.07)",
-                border: "1px solid rgba(226,254,165,0.13)",
-                color: "#F8FFE8",
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(226,254,165,0.35)")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(226,254,165,0.13)")}
-            />
-            <button
-              type="submit"
-              disabled={codeMutation.isPending}
-              className="px-4 rounded-xl border-none cursor-pointer text-[9px] tracking-widest uppercase font-bold flex items-center gap-1.5 shrink-0"
-              style={{
-                fontFamily: PX,
-                backgroundColor: "#E2FEA5",
-                color: "#0F2C23",
-              }}
-            >
-              {codeMutation.isPending && <Loader2 size={11} className="animate-spin" />}
-              Ask
-            </button>
-          </form>
-        </div>
-      )}
+      </>
     </div>
   );
 }
@@ -995,6 +898,7 @@ function AIBubble({ onClick, hasMessages }: { onClick: () => void; hasMessages: 
     <button
       type="button"
       onClick={onClick}
+      aria-label="Open AI project chat"
       className="fixed bottom-6 right-6 z-300 w-14 h-14 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-200 hover:scale-110"
       style={{
         backgroundColor: "#0F2C23",
@@ -1002,7 +906,12 @@ function AIBubble({ onClick, hasMessages }: { onClick: () => void; hasMessages: 
         border: "2px solid rgba(226,254,165,0.18)",
       }}
     >
-      <Image src="/whiteLogo.png" alt="Loops" width={22} height={22} />
+      <span
+        className="text-xs font-black tracking-[0.22em] uppercase"
+        style={{ fontFamily: PX, color: "#F8FFE8" }}
+      >
+        AI
+      </span>
       {hasMessages && (
         <span
           className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full"
@@ -1026,6 +935,8 @@ export function ViewerProjectDetail({
 }) {
   const [chatState, setChatState] = useState<ChatState>("bubble");
   const [chatMsgs] = useState<ChatMessage[]>([]);
+  const [openWhyIndex, setOpenWhyIndex] = useState<number | null>(0);
+  const [descExpanded, setDescExpanded] = useState(false);
 
   if (!project)
     return (
@@ -1083,7 +994,7 @@ export function ViewerProjectDetail({
         style={{ gridTemplateColumns: "300px 1fr 360px", minHeight: "calc(100vh - 65px)" }}
       >
         {/* ══ LEFT — profile sidebar ══════════════════════════════ */}
-        <aside className="sticky top-[81px] flex flex-col gap-5">
+        <aside className="sticky top-0 flex flex-col gap-5">
           {/* Logo square */}
           <div
             className="w-full rounded-3xl overflow-hidden flex items-center justify-center"
@@ -1205,55 +1116,68 @@ export function ViewerProjectDetail({
         <div>
           <main className="flex flex-col gap-5 mb-4">
             {/* Description card */}
-            <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+            <div
+              className="rounded-3xl p-7"
+              style={{
+                backgroundColor: "rgba(15,44,35,0.04)",
+                minHeight: 180,
+              }}
+            >
               {/* <SectionLabel>Description</SectionLabel> */}
-              <p
-                className="text-[#0F2C23]/75 leading-relaxed whitespace-pre-wrap"
-                style={{
-                  fontFamily: FN,
-                  fontSize: "clamp(14px, 1.4vw, 16px)",
-                }}
-              >
-                {desc ? (
-                  desc
-                ) : (
-                  <span className="font-semibold italic">No description available yet.</span>
-                )}
-              </p>
-            </div>
-
-            {/* Gallery */}
-            {/* {screenshots.length > 0 && (
-              <div className="mt-4 w-full">
-                <div className="grid grid-cols-2 gap-3 w-full">
-                  {screenshots.slice(0, 4).map((src, i) => (
-                    <a
-                      key={i}
-                      href={src}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="relative block overflow-hidden rounded-2xl"
-                      style={{ aspectRatio: "4 / 3" }}
+              {desc ? (
+                <>
+                  <p
+                    className="text-[#0F2C23]/75 leading-relaxed whitespace-pre-wrap"
+                    style={{
+                      fontFamily: FN,
+                      fontSize: "clamp(14px, 1.4vw, 16px)",
+                      maxHeight: descExpanded ? "none" : 230,
+                      overflow: descExpanded ? "visible" : "hidden",
+                    }}
+                  >
+                    {desc}
+                  </p>
+                  {desc.length > 260 && (
+                    <button
+                      type="button"
+                      onClick={() => setDescExpanded((v) => !v)}
+                      className="mt-3 ml-auto text-[10px] tracking-[0.18em] uppercase font-bold border-none cursor-pointer px-0 py-0 flex items-center justify-end"
+                      style={{
+                        fontFamily: PX,
+                        color: "#0F2C23",
+                        background: "transparent",
+                      }}
                     >
-                      <Image
-                        src={src}
-                        alt=""
-                        fill
-                        className="object-cover"
-                      />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )} */}
+                      {descExpanded ? "Read less" : "Read more"}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p
+                  className="text-[#0F2C23]/75 leading-relaxed whitespace-pre-wrap"
+                  style={{
+                    fontFamily: FN,
+                    fontSize: "clamp(14px, 1.4vw, 16px)",
+                  }}
+                >
+                  <span className="font-semibold italic">No description available yet.</span>
+                </p>
+              )}
+            </div>
           </main>
           <GalleryColumn shots={shots} name={p.name} />
         </div>
 
         {/* ══ RIGHT — Why Choose + tech stack ═════════════════════ */}
-        <aside className="sticky top-[81px] flex flex-col gap-4">
+        <aside className="sticky top-0 flex flex-col gap-4">
           {/* Why Choose card */}
-          <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+          <div
+            className="rounded-3xl p-7 flex flex-col"
+            style={{
+              backgroundColor: "rgba(15,44,35,0.04)",
+              minHeight: "calc(100vh - 65px)",
+            }}
+          >
             {/* Header */}
             <div className="mb-5">
               <p
@@ -1277,10 +1201,22 @@ export function ViewerProjectDetail({
             </div>
 
             {/* Accordion */}
-            <div className="border-t" style={{ borderColor: "rgba(15,44,35,0.1)" }}>
+            <div
+              className="border-t flex-1 overflow-y-auto pr-1 why-choose-scroll"
+              style={{ borderColor: "rgba(15,44,35,0.1)", scrollbarWidth: "none" }}
+            >
               {whyItems.length > 0 ? (
                 whyItems.map((item, i) => (
-                  <AccordionItem key={i} index={i} title={item.title} body={item.body} />
+                  <AccordionItem
+                    key={i}
+                    index={i}
+                    title={item.title}
+                    body={item.body}
+                    isOpen={openWhyIndex === i}
+                    onToggle={() =>
+                      setOpenWhyIndex((curr) => (curr === i ? null : i))
+                    }
+                  />
                 ))
               ) : (
                 <div className="py-10 text-center">
@@ -1346,6 +1282,9 @@ export function ViewerProjectDetail({
       )}
 
       <style>{`
+        .why-choose-scroll::-webkit-scrollbar {
+          display: none;
+        }
         @keyframes ticker {
           0%   { transform: translateX(0); }
           100% { transform: translateX(-33.333%); }

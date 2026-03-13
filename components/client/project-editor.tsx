@@ -17,7 +17,9 @@ import {
   Users,
   Video,
   Youtube,
+  Database,
 } from "lucide-react";
+import { KnowledgeBasePanel, KBStepStatus } from "@/components/client/knowledge-base-panel";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -306,7 +308,7 @@ export function ProjectEditor({
     }
   };
 
-  type SectionView = "project" | "share";
+  type SectionView = "project" | "share" | "knowledge-base";
   const [activeSection, setActiveSection] = useState<SectionView>("project");
 
   useEffect(() => {
@@ -319,6 +321,7 @@ export function ProjectEditor({
         return;
       }
       if (h === "share") setActiveSection("share");
+      else if (h === "knowledge-base") setActiveSection("knowledge-base");
       else if (h === "edit") setActiveSection("project");
     };
     read();
@@ -387,6 +390,45 @@ export function ProjectEditor({
     color: "#0F2C23",
     outline: "none",
   };
+
+  /* ─── Knowledge Base full-screen view ─────────────────────── */
+  if (activeSection === "knowledge-base") {
+    // Mock progress for now - in a real app, this could come from the project status
+    const verifiedProgress: Record<string, KBStepStatus> = {
+      "code-reader": "done",
+      "demo-reader": "done",
+      "theme-reader": "done",
+      "knowledge-base": "done",
+    };
+
+    return (
+      <div className="flex flex-col h-screen overflow-hidden p-6 md:p-10">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="font-black text-[#0F2C23] uppercase tracking-tight" style={{ fontFamily: PX, fontSize: 32 }}>
+              Project Intelligence
+            </h1>
+            <p className="text-sm text-[#0F2C23]/60" style={{ fontFamily: FN }}>
+              Management and synchronization of your project&apos;s knowledge graph.
+            </p>
+          </div>
+          <div className="flex gap-3">
+             <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer px-6 py-3 text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                style={{ backgroundColor: "#0F2C23", color: "#E2FEA5", fontFamily: PX }}
+              >
+                <Database size={14} /> Sync Now
+              </button>
+          </div>
+        </div>
+        
+        <div className="flex-1 min-h-0 p-4 md:p-6 overflow-y-auto custom-scrollbar">
+          <KnowledgeBasePanel progress={verifiedProgress} errors={{}} />
+        </div>
+      </div>
+    );
+  }
 
   /* ─── Share full-screen view ─────────────────────────────────── */
   if (activeSection === "share") {

@@ -63,7 +63,8 @@ function LoginPageContent() {
   async function handleOAuth(provider: "google" | "github") {
     setServerError("");
     setOauthLoading(true);
-    const { error } = await signInWithOAuth(provider, explicitRedirect ?? undefined);
+    // Always send users to their dashboard after OAuth — ignore per-page redirects
+    const { error } = await signInWithOAuth(provider);
     if (error) {
       setServerError(error.message);
       setOauthLoading(false);
@@ -88,9 +89,8 @@ function LoginPageContent() {
       if (error) {
         setServerError(error.message);
       } else {
-        // After sign-in, redirect. The middleware will set capabilities cookies
-        // on the next request. Use explicit redirect or default to builder.
-        router.push(explicitRedirect ?? "/dashboard");
+        // After sign-in, always land on the main dashboard
+        router.push("/dashboard");
       }
     }
   };

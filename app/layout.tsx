@@ -64,7 +64,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} ${dmMono.variable} ${pixelifySans.variable} ${funnelSans.variable}`}
     >
-      <body className="antialiased">
+      <body className="">
         {/* Mobile / small-screen blocker */}
         <div
           className="fixed inset-0 z-9999 flex items-center justify-center px-8 text-center md:hidden"

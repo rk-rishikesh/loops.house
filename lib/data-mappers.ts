@@ -87,6 +87,7 @@ export interface StoredHackathon {
   status?: HackathonStatus;
   problem_statements: string[];
   theme?: string;
+  description?: string;
   is_exclusive?: boolean;
   website_url?: string;
   technical_resources?: TechnicalResourceItem[];
@@ -197,6 +198,7 @@ export function hackathonToStored(b: HackathonRow): StoredHackathon {
     status: b.status,
     problem_statements: b.problem_statements ?? [],
     theme: b.theme ?? undefined,
+    description: b.description ?? undefined,
     is_exclusive: b.is_exclusive ?? undefined,
     website_url: b.website_url ?? undefined,
     technical_resources: asJsonArray<TechnicalResourceItem>(b.technical_resources) || undefined,

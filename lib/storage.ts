@@ -123,6 +123,7 @@ export async function saveHackathon(hackathon: import("@/lib/data-mappers").Stor
       id: hackathon.id,
       host_id: hackathon.host_id!,
       name: hackathon.name,
+      description: hackathon.description ?? null,
       problem_statements: hackathon.problem_statements,
       theme: hackathon.theme ?? null,
       is_exclusive: hackathon.is_exclusive ?? false,
@@ -136,6 +137,7 @@ export async function saveHackathon(hackathon: import("@/lib/data-mappers").Stor
       judging_deadline: hackathon.judging_deadline ?? null,
       results_date: hackathon.results_date ?? null,
       organizer_notes: hackathon.organizer_notes ?? null,
+      judging_criteria: (hackathon.judging_criteria ?? []) as unknown as Json,
     })
     .select();
   if (error) throw new Error(`[storage] saveHackathon: ${error.message}`);

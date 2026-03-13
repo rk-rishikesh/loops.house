@@ -2,18 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  ArrowUpRight,
-  Check,
-  ChevronRight,
-  ClipboardEdit,
-  Gavel,
-  Loader2,
-  Lock,
-  Sparkles,
-} from "lucide-react";
-import Link from "next/link";
+import { ArrowUpRight, Check, ChevronRight, ClipboardEdit, Gavel, Loader2, Lock, Sparkles } from "lucide-react";
 import { Suspense, useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import type {
@@ -24,6 +13,9 @@ import type {
 } from "@/lib/data-mappers";
 import { getHackathon, getProject } from "@/lib/storage";
 import { type JudgingEvalSchema, judgingEvalSchema } from "@/lib/validations/schemas";
+
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 type EvalResult = {
@@ -69,18 +61,19 @@ function ScoreRing({ score, max = 100 }: { score: number; max?: number }) {
       </svg>
       <div className="absolute flex flex-col items-center">
         <span
-          className="font-black text-[#f0ebe0] leading-none"
+          className="font-black leading-none"
           style={{
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: PX,
             fontSize: 26,
             letterSpacing: "-0.03em",
+            color: "#F8FFE8",
           }}
         >
           {score}
         </span>
         <span
-          className="text-[#f0ebe0]/38 text-[9px] tracking-[0.12em] uppercase font-bold mt-0.5"
-          style={{ fontFamily: "'Inter', sans-serif" }}
+          className="text-[9px] tracking-[0.12em] uppercase font-bold mt-0.5"
+          style={{ fontFamily: PX, color: "rgba(248,255,232,0.55)" }}
         >
           /{max}
         </span>
@@ -123,7 +116,7 @@ function AiCriteriaCard({
   return (
     <div
       className="rounded-2xl overflow-hidden transition-all duration-200"
-      style={{ backgroundColor: "#f5f2ea" }}
+      style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
     >
       <button
         type="button"
@@ -131,22 +124,24 @@ function AiCriteriaCard({
         className="w-full flex items-center gap-4 px-6 py-5 text-left bg-transparent border-none cursor-pointer group"
       >
         <span
-          className="font-black text-[#2d4a3e]/18 leading-none shrink-0"
+          className="font-black leading-none shrink-0"
           style={{
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: PX,
             fontSize: 13,
             letterSpacing: "-0.02em",
             width: 24,
+            color: "rgba(15,44,35,0.35)",
           }}
         >
           {String(index + 1).padStart(2, "0")}
         </span>
         <div className="flex-1 min-w-0">
           <p
-            className="font-semibold text-[#2d4a3e] leading-snug mb-2"
+            className="font-semibold leading-snug mb-2"
             style={{
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: PX,
               fontSize: "clamp(13px, 1.3vw, 15px)",
+              color: "#0F2C23",
             }}
           >
             {criterion.criterion_name}
@@ -156,18 +151,19 @@ function AiCriteriaCard({
         <div className="flex items-center gap-3 shrink-0">
           <div className="text-right">
             <span
-              className="font-black text-[#2d4a3e] leading-none"
+              className="font-black leading-none"
               style={{
-                fontFamily: "'Inter', sans-serif",
+                fontFamily: PX,
                 fontSize: 18,
                 letterSpacing: "-0.02em",
+                color: "#0F2C23",
               }}
             >
               {criterion.score}
             </span>
             <span
-              className="text-[#2d4a3e]/35 text-[11px] ml-0.5"
-              style={{ fontFamily: "'Inter', sans-serif" }}
+              className="text-[11px] ml-0.5"
+              style={{ fontFamily: PX, color: "rgba(15,44,35,0.5)" }}
             >
               /{criterion.max_score}
             </span>
@@ -176,7 +172,7 @@ function AiCriteriaCard({
             size={14}
             className="transition-transform duration-200"
             style={{
-              color: "rgba(45,74,62,0.3)",
+              color: "rgba(15,44,35,0.4)",
               transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
             }}
           />
@@ -193,45 +189,45 @@ function AiCriteriaCard({
         >
           <div
             className="rounded-xl p-5 flex flex-col gap-3"
-            style={{ backgroundColor: "rgba(45,74,62,0.05)" }}
+            style={{ backgroundColor: "rgba(15,44,35,0.06)" }}
           >
             <p
-              className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/38"
-              style={{ fontFamily: "'Inter', sans-serif" }}
+              className="text-[9px] tracking-[0.18em] uppercase font-bold"
+              style={{ fontFamily: PX, color: "rgba(15,44,35,0.55)" }}
             >
               AI Evaluation
             </p>
             <p
-              className="text-[#2d4a3e]/65 leading-relaxed text-sm"
-              style={{ fontFamily: "Georgia, serif" }}
+              className="leading-relaxed text-sm"
+              style={{ fontFamily: FN, color: "rgba(15,44,35,0.75)" }}
             >
               {criterion.justification}
             </p>
             <div className="grid grid-cols-2 gap-3 mt-1">
               <div>
                 <p
-                  className="text-[9px] tracking-[0.14em] uppercase font-bold text-[#2d4a3e]/35 mb-1"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
+                  className="text-[9px] tracking-[0.14em] uppercase font-bold mb-1"
+                  style={{ fontFamily: PX, color: "rgba(15,44,35,0.5)" }}
                 >
                   Strength
                 </p>
                 <p
-                  className="text-xs text-[#2d4a3e]/60 leading-relaxed"
-                  style={{ fontFamily: "Georgia, serif" }}
+                  className="text-xs leading-relaxed"
+                  style={{ fontFamily: FN, color: "rgba(15,44,35,0.75)" }}
                 >
                   {criterion.strength}
                 </p>
               </div>
               <div>
                 <p
-                  className="text-[9px] tracking-[0.14em] uppercase font-bold text-[#2d4a3e]/35 mb-1"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
+                  className="text-[9px] tracking-[0.14em] uppercase font-bold mb-1"
+                  style={{ fontFamily: PX, color: "rgba(15,44,35,0.5)" }}
                 >
                   Improvement
                 </p>
                 <p
-                  className="text-xs text-[#2d4a3e]/60 leading-relaxed"
-                  style={{ fontFamily: "Georgia, serif" }}
+                  className="text-xs leading-relaxed"
+                  style={{ fontFamily: FN, color: "rgba(15,44,35,0.75)" }}
                 >
                   {criterion.improvement}
                 </p>
@@ -311,9 +307,9 @@ export function JudgingForm({
       fallback={
         <div
           className="min-h-screen flex items-center justify-center"
-          style={{ backgroundColor: "#f0ebe0" }}
+          style={{ backgroundColor: "#F8FFE8" }}
         >
-          <Loader2 size={18} className="animate-spin" style={{ color: "#2d4a3e" }} />
+          <Loader2 size={18} className="animate-spin" style={{ color: "#0F2C23" }} />
         </div>
       }
     >
@@ -519,43 +515,15 @@ function JudgingFormContent({
   const result = evalMutation.data ?? aiResult;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
-      {/* ── Nav ─────────────────────────────────────────────────────── */}
-      <div
-        className="sticky top-0 z-50 px-10 py-5 flex items-center justify-between"
-        style={{
-          backgroundColor: "#f0ebe0",
-          borderBottom: "1px solid rgba(45,74,62,0.1)",
-        }}
-      >
-        <Link
-          href="/judge"
-          className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#2d4a3e]/50 hover:text-[#2d4a3e] transition-colors no-underline"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          <ArrowLeft size={12} /> Judge
-        </Link>
-        <div className="flex items-center gap-3">
-          <span
-            className="text-[9px] tracking-[0.15em] uppercase font-bold px-3 py-1.5 rounded-full"
-            style={{
-              backgroundColor: "#2d4a3e",
-              color: "#f0ebe0",
-              fontFamily: "'Inter', sans-serif",
-            }}
-          >
-            Judge Evaluation
-          </span>
-        </div>
-      </div>
+    <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
 
       <div className="px-10 pt-10 pb-24">
         {/* ── Hero heading ─────────────────────────────────────────────── */}
-        <div className="mb-14">
+        <div className="mb-14 flex flex-row items-end justify-between gap-6 flex-wrap">
           <h1
-            className="font-black text-[#2d4a3e] leading-[0.88] uppercase"
+            className="font-black text-[#0F2C23] leading-[0.88] uppercase"
             style={{
-              fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+              fontFamily: PX,
               fontSize: "clamp(52px, 9vw, 138px)",
               letterSpacing: "-0.025em",
             }}
@@ -564,18 +532,17 @@ function JudgingFormContent({
             <br />
             JUDGING.
           </h1>
-          <div className="flex justify-end mt-8">
-            <p
-              className="text-[#2d4a3e]/55 max-w-[380px] text-right leading-relaxed"
-              style={{
-                fontFamily: "Georgia, serif",
-                fontSize: "clamp(14px, 1.5vw, 18px)",
-              }}
-            >
-              Score this project against the predefined criteria. Your evaluation is saved
-              independently from other judges.
-            </p>
-          </div>
+          <p
+            className="max-w-[380px] text-right leading-relaxed"
+            style={{
+              fontFamily: FN,
+              fontSize: "clamp(14px, 1.5vw, 18px)",
+              color: "rgba(15,44,35,0.55)",
+            }}
+          >
+            Score this project against the predefined criteria. Your evaluation is saved
+            independently from other judges.
+          </p>
         </div>
 
         {/* ── Two-column body ───────────────────────────────────────────── */}
@@ -586,9 +553,9 @@ function JudgingFormContent({
             <div>
               <div className="flex items-baseline gap-3 mb-5">
                 <span
-                  className="font-black text-[#2d4a3e]/18"
+                  className="font-black text-[#0F2C23]/18"
                   style={{
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                     fontSize: 32,
                     letterSpacing: "-0.025em",
                   }}
@@ -596,8 +563,8 @@ function JudgingFormContent({
                   01
                 </span>
                 <p
-                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
+                  className="text-[9px] tracking-[0.2em] uppercase font-bold"
+                  style={{ fontFamily: PX, color: "rgba(15,44,35,0.4)" }}
                 >
                   Project & Hackathon
                 </p>
@@ -605,17 +572,17 @@ function JudgingFormContent({
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Project card */}
-                <div className="rounded-2xl p-6" style={{ backgroundColor: "#d6cfc0" }}>
+                <div className="rounded-2xl p-6" style={{ backgroundColor: "rgba(15,44,35,0.06)" }}>
                   <p
-                    className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40 mb-3"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
+                    className="text-[9px] tracking-[0.18em] uppercase font-bold mb-3"
+                    style={{ fontFamily: PX, color: "rgba(15,44,35,0.45)" }}
                   >
                     Project
                   </p>
                   <p
-                    className="font-black text-[#2d4a3e] uppercase leading-tight mb-1"
+                    className="font-black text-[#0F2C23] uppercase leading-tight mb-1"
                     style={{
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: "clamp(15px, 1.8vw, 20px)",
                       letterSpacing: "-0.02em",
                     }}
@@ -624,8 +591,8 @@ function JudgingFormContent({
                   </p>
                   {project.tagline && (
                     <p
-                      className="text-[#2d4a3e]/55 text-sm leading-relaxed"
-                      style={{ fontFamily: "Georgia, serif" }}
+                      className="text-sm leading-relaxed"
+                      style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}
                     >
                       {project.tagline}
                     </p>
@@ -634,9 +601,9 @@ function JudgingFormContent({
                     <span
                       className="inline-block mt-3 text-[8px] tracking-[0.14em] uppercase font-bold px-2.5 py-1 rounded-sm"
                       style={{
-                        backgroundColor: "rgba(45,74,62,0.12)",
-                        color: "#2d4a3e",
-                        fontFamily: "'Inter', sans-serif",
+                        backgroundColor: "#0F2C23",
+                        color: "#F8FFE8",
+                        fontFamily: PX,
                       }}
                     >
                       {project.category}
@@ -647,17 +614,17 @@ function JudgingFormContent({
                 </div>
 
                 {/* Hackathon card */}
-                <div className="rounded-2xl p-6" style={{ backgroundColor: "#2d4a3e" }}>
+                <div className="rounded-2xl p-6" style={{ backgroundColor: "#0F2C23" }}>
                   <p
-                    className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#f0ebe0]/38 mb-3"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
+                    className="text-[9px] tracking-[0.18em] uppercase font-bold mb-3"
+                    style={{ fontFamily: PX, color: "rgba(248,255,232,0.55)" }}
                   >
                     Hackathon
                   </p>
                   <p
-                    className="font-black text-[#f0ebe0] uppercase leading-tight mb-1"
+                    className="font-black text-[#F8FFE8] uppercase leading-tight mb-1"
                     style={{
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: "clamp(15px, 1.8vw, 20px)",
                       letterSpacing: "-0.02em",
                     }}
@@ -666,8 +633,8 @@ function JudgingFormContent({
                   </p>
                   {hackathon.theme && (
                     <p
-                      className="text-[#f0ebe0]/50 text-sm leading-relaxed"
-                      style={{ fontFamily: "Georgia, serif" }}
+                      className="text-sm leading-relaxed"
+                      style={{ fontFamily: FN, color: "rgba(248,255,232,0.7)" }}
                     >
                       {hackathon.theme}
                     </p>
@@ -687,9 +654,9 @@ function JudgingFormContent({
             <div>
               <div className="flex items-baseline gap-3 mb-5">
                 <span
-                  className="font-black text-[#2d4a3e]/18"
+                  className="font-black text-[#0F2C23]/18"
                   style={{
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                     fontSize: 32,
                     letterSpacing: "-0.025em",
                   }}
@@ -697,8 +664,8 @@ function JudgingFormContent({
                   02
                 </span>
                 <p
-                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
+                  className="text-[9px] tracking-[0.2em] uppercase font-bold"
+                  style={{ fontFamily: PX, color: "rgba(15,44,35,0.4)" }}
                 >
                   AI Evaluation {aiIsLocked && "(Locked)"}
                 </p>
@@ -708,15 +675,20 @@ function JudgingFormContent({
                 <div
                   className="rounded-2xl px-5 py-3.5 flex items-center gap-3"
                   style={{
-                    backgroundColor: "rgba(45,74,62,0.06)",
-                    border: "1px solid rgba(45,74,62,0.1)",
+                    backgroundColor: "rgba(15,44,35,0.04)",
+                    border: "1px solid rgba(15,44,35,0.12)",
                   }}
                 >
-                  <Lock size={13} style={{ color: "#2d4a3e", opacity: 0.4 }} />
-                  <p className="text-sm text-[#2d4a3e]/60" style={{ fontFamily: "Georgia, serif" }}>
+                  <Lock size={13} style={{ color: "#0F2C23", opacity: 0.45 }} />
+                  <p
+                    className="text-sm"
+                    style={{ fontFamily: FN, color: "rgba(15,44,35,0.7)" }}
+                  >
                     AI evaluation completed on{" "}
-                    {new Date(submission.ai_evaluated_at!).toLocaleDateString()}. Score:{" "}
-                    {result.overall_score}/100. This cannot be re-run.
+                    {new Date(submission.ai_evaluated_at!)
+                      .toISOString()
+                      .slice(0, 10)}{" "}
+                    (YYYY-MM-DD). Score: {result.overall_score}/100. This cannot be re-run.
                   </p>
                 </div>
               ) : (
@@ -725,11 +697,11 @@ function JudgingFormContent({
                     type="submit"
                     disabled={evalMutation.isPending || !canRunAiEval}
                     className="inline-flex items-center gap-0 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-lg disabled:opacity-40"
-                    style={{ backgroundColor: "#2d4a3e" }}
+                    style={{ backgroundColor: "#0F2C23" }}
                   >
                     <span
-                      className="pl-6 pr-4 py-4 text-[10px] tracking-[0.18em] uppercase font-bold text-[#f0ebe0] flex items-center gap-2.5"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
+                      className="pl-6 pr-4 py-4 text-[10px] tracking-[0.18em] uppercase font-bold flex items-center gap-2.5"
+                      style={{ fontFamily: PX, color: "#F8FFE8" }}
                     >
                       {evalMutation.isPending ? (
                         <Loader2 size={13} className="animate-spin" />
@@ -740,9 +712,9 @@ function JudgingFormContent({
                     </span>
                     <span
                       className="w-10 h-10 flex items-center justify-center rounded-full m-1.5"
-                      style={{ backgroundColor: "#d6cfc0" }}
+                      style={{ backgroundColor: "#E2FEA5" }}
                     >
-                      <ArrowUpRight size={14} className="text-[#2d4a3e]" />
+                      <ArrowUpRight size={14} className="text-[#0F2C23]" />
                     </span>
                   </button>
                 </form>
@@ -756,7 +728,10 @@ function JudgingFormContent({
                     border: "1px solid rgba(200,60,60,0.15)",
                   }}
                 >
-                  <p className="text-sm text-red-700" style={{ fontFamily: "Georgia, serif" }}>
+                  <p
+                    className="text-sm text-red-700"
+                    style={{ fontFamily: FN }}
+                  >
                     {evalMutation.error.message}
                   </p>
                 </div>
@@ -770,7 +745,10 @@ function JudgingFormContent({
                     border: "1px solid rgba(200,140,20,0.2)",
                   }}
                 >
-                  <p className="text-sm" style={{ fontFamily: "Georgia, serif", color: "#8b6914" }}>
+                  <p
+                    className="text-sm"
+                    style={{ fontFamily: FN, color: "#8b6914" }}
+                  >
                     {saveError}
                   </p>
                 </div>
@@ -781,9 +759,9 @@ function JudgingFormContent({
             <div>
               <div className="flex items-baseline gap-3 mb-5">
                 <span
-                  className="font-black text-[#2d4a3e]/18"
+                  className="font-black text-[#0F2C23]/18"
                   style={{
-                    fontFamily: "'Inter', sans-serif",
+                    fontFamily: PX,
                     fontSize: 32,
                     letterSpacing: "-0.025em",
                   }}
@@ -791,8 +769,8 @@ function JudgingFormContent({
                   03
                 </span>
                 <p
-                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
+                  className="text-[9px] tracking-[0.2em] uppercase font-bold"
+                  style={{ fontFamily: PX, color: "rgba(15,44,35,0.4)" }}
                 >
                   Your Evaluation
                 </p>
@@ -801,15 +779,15 @@ function JudgingFormContent({
               {humanEvalSaved && !humanEvalOpen ? (
                 <div
                   className="rounded-2xl p-6 flex items-center justify-between"
-                  style={{ backgroundColor: "#2d4a3e" }}
+                  style={{ backgroundColor: "#0F2C23" }}
                 >
                   <div className="flex items-center gap-4">
                     <div
                       className="w-12 h-12 rounded-full flex items-center justify-center font-black text-sm"
                       style={{
-                        backgroundColor: "#d6cfc0",
-                        color: "#2d4a3e",
-                        fontFamily: "'Inter', sans-serif",
+                        backgroundColor: "#E2FEA5",
+                        color: "#0F2C23",
+                        fontFamily: PX,
                         letterSpacing: "-0.02em",
                       }}
                     >
@@ -817,14 +795,14 @@ function JudgingFormContent({
                     </div>
                     <div>
                       <p
-                        className="font-semibold text-[#f0ebe0] text-sm flex items-center gap-2"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
+                        className="font-semibold text-sm flex items-center gap-2"
+                        style={{ fontFamily: PX, color: "#F8FFE8" }}
                       >
                         <Check size={13} /> Evaluation Saved
                       </p>
                       <p
-                        className="text-[#f0ebe0]/45 text-xs mt-0.5"
-                        style={{ fontFamily: "Georgia, serif" }}
+                        className="text-xs mt-0.5"
+                        style={{ fontFamily: FN, color: "rgba(248,255,232,0.7)" }}
                       >
                         {humanCriteria.filter((c) => c.score > 0).length} criteria scored — overall{" "}
                         {humanEvalOverallScore}/100
@@ -836,9 +814,9 @@ function JudgingFormContent({
                     onClick={initHumanCriteria}
                     className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all hover:opacity-90 px-5 py-3"
                     style={{
-                      backgroundColor: "#d6cfc0",
-                      color: "#2d4a3e",
-                      fontFamily: "'Inter', sans-serif",
+                      backgroundColor: "#E2FEA5",
+                      color: "#0F2C23",
+                      fontFamily: PX,
                       fontSize: 10,
                       letterSpacing: "0.15em",
                       fontWeight: 700,
@@ -853,29 +831,29 @@ function JudgingFormContent({
                   type="button"
                   onClick={initHumanCriteria}
                   className="inline-flex items-center gap-0 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-lg disabled:opacity-40"
-                  style={{ backgroundColor: "#d6cfc0" }}
+                  style={{ backgroundColor: "rgba(15,44,35,0.06)" }}
                 >
                   <span
-                    className="pl-6 pr-4 py-4 text-[10px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e] flex items-center gap-2.5"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
+                    className="pl-6 pr-4 py-4 text-[10px] tracking-[0.18em] uppercase font-bold flex items-center gap-2.5"
+                    style={{ fontFamily: PX, color: "#0F2C23" }}
                   >
                     <ClipboardEdit size={13} />
                     {existingEvaluation ? "Edit Your Evaluation" : "Start Your Evaluation"}
                   </span>
                   <span
                     className="w-10 h-10 flex items-center justify-center rounded-full m-1.5"
-                    style={{ backgroundColor: "#2d4a3e" }}
+                    style={{ backgroundColor: "#0F2C23" }}
                   >
-                    <ArrowUpRight size={14} className="text-[#f0ebe0]" />
+                    <ArrowUpRight size={14} className="text-[#F8FFE8]" />
                   </span>
                 </button>
               ) : (
                 <div className="flex flex-col gap-5">
                   {/* Overall notes */}
-                  <div className="rounded-2xl p-6" style={{ backgroundColor: "#d6cfc0" }}>
+                  <div className="rounded-2xl p-6" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
                     <p
-                      className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#2d4a3e]/40 mb-3"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
+                      className="text-[9px] tracking-[0.18em] uppercase font-bold mb-3"
+                      style={{ fontFamily: PX, color: "rgba(15,44,35,0.45)" }}
                     >
                       Overall Notes
                     </p>
@@ -886,13 +864,13 @@ function JudgingFormContent({
                       rows={3}
                       className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-colors placeholder-[#2d4a3e]/30 resize-none"
                       style={{
-                        backgroundColor: "#c8c1b1",
+                        backgroundColor: "rgba(15,44,35,0.06)",
                         border: "none",
-                        color: "#2d4a3e",
-                        fontFamily: "Georgia, serif",
+                        color: "#0F2C23",
+                        fontFamily: FN,
                       }}
-                      onFocus={(e) => (e.currentTarget.style.backgroundColor = "#bfb8a8")}
-                      onBlur={(e) => (e.currentTarget.style.backgroundColor = "#c8c1b1")}
+                      onFocus={(e) => (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.1)")}
+                      onBlur={(e) => (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.06)")}
                     />
                   </div>
 
@@ -901,7 +879,7 @@ function JudgingFormContent({
                     <div
                       key={criterion.name}
                       className="rounded-2xl overflow-hidden"
-                      style={{ backgroundColor: "#f5f2ea" }}
+                      style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
                     >
                       <div className="px-6 py-5 flex items-start gap-4">
                         <div className="shrink-0 mt-1">
@@ -909,9 +887,9 @@ function JudgingFormContent({
                             className="w-12 h-12 rounded-full flex items-center justify-center font-black text-sm"
                             style={{
                               backgroundColor:
-                                criterion.score > 0 ? "#2d4a3e" : "rgba(45,74,62,0.1)",
-                              color: criterion.score > 0 ? "#f0ebe0" : "#2d4a3e",
-                              fontFamily: "'Inter', sans-serif",
+                                criterion.score > 0 ? "#0F2C23" : "rgba(15,44,35,0.08)",
+                              color: criterion.score > 0 ? "#F8FFE8" : "#0F2C23",
+                              fontFamily: PX,
                               letterSpacing: "-0.02em",
                             }}
                           >
@@ -920,14 +898,14 @@ function JudgingFormContent({
                         </div>
                         <div className="flex-1 min-w-0">
                           <p
-                            className="font-bold text-[#2d4a3e] text-sm uppercase tracking-wide mb-1"
-                            style={{ fontFamily: "'Inter', sans-serif" }}
+                            className="font-bold text-sm uppercase tracking-wide mb-1"
+                            style={{ fontFamily: PX, color: "#0F2C23" }}
                           >
                             {criterion.name}
                           </p>
                           <p
-                            className="text-xs text-[#2d4a3e]/50 mb-4"
-                            style={{ fontFamily: "Georgia, serif" }}
+                            className="text-xs mb-4"
+                            style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}
                           >
                             {criterion.description}
                           </p>
@@ -935,8 +913,8 @@ function JudgingFormContent({
                           <div className="flex gap-3 items-start">
                             <div className="shrink-0">
                               <p
-                                className="text-[9px] tracking-[0.12em] uppercase font-bold text-[#2d4a3e]/35 mb-1.5"
-                                style={{ fontFamily: "'Inter', sans-serif" }}
+                                className="text-[9px] tracking-[0.12em] uppercase font-bold mb-1.5"
+                                style={{ fontFamily: PX, color: "rgba(15,44,35,0.45)" }}
                               >
                                 Score (0-100)
                               </p>
@@ -962,17 +940,17 @@ function JudgingFormContent({
                                 }
                                 className="w-20 rounded-xl px-3 py-2.5 text-sm outline-none font-semibold text-center transition-colors"
                                 style={{
-                                  backgroundColor: criterion.score > 0 ? "#2d4a3e" : "#d6cfc0",
-                                  color: criterion.score > 0 ? "#f0ebe0" : "#2d4a3e",
+                                  backgroundColor: criterion.score > 0 ? "#0F2C23" : "rgba(15,44,35,0.06)",
+                                  color: criterion.score > 0 ? "#F8FFE8" : "#0F2C23",
                                   border: "none",
-                                  fontFamily: "'Inter', sans-serif",
+                                  fontFamily: PX,
                                 }}
                               />
                             </div>
                             <div className="flex-1">
                               <p
-                                className="text-[9px] tracking-[0.12em] uppercase font-bold text-[#2d4a3e]/35 mb-1.5"
-                                style={{ fontFamily: "'Inter', sans-serif" }}
+                                className="text-[9px] tracking-[0.12em] uppercase font-bold mb-1.5"
+                                style={{ fontFamily: PX, color: "rgba(15,44,35,0.45)" }}
                               >
                                 Remarks
                               </p>
@@ -989,10 +967,10 @@ function JudgingFormContent({
                                 }
                                 className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-colors placeholder-[#2d4a3e]/30"
                                 style={{
-                                  backgroundColor: "#d6cfc0",
+                                  backgroundColor: "rgba(15,44,35,0.06)",
                                   border: "none",
-                                  color: "#2d4a3e",
-                                  fontFamily: "Georgia, serif",
+                                  color: "#0F2C23",
+                                  fontFamily: FN,
                                 }}
                               />
                             </div>
@@ -1005,19 +983,19 @@ function JudgingFormContent({
                   {/* Save bar */}
                   <div
                     className="rounded-2xl px-7 py-5 flex items-center justify-between"
-                    style={{ backgroundColor: "#2d4a3e" }}
+                    style={{ backgroundColor: "#0F2C23" }}
                   >
                     <div>
                       <p
-                        className="font-semibold text-[#f0ebe0] text-sm"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
+                        className="font-semibold text-sm"
+                        style={{ fontFamily: PX, color: "#F8FFE8" }}
                       >
                         {humanCriteria.filter((c) => c.score > 0).length}/{humanCriteria.length}{" "}
                         criteria scored
                       </p>
                       <p
-                        className="text-[#f0ebe0]/45 text-xs mt-0.5"
-                        style={{ fontFamily: "Georgia, serif" }}
+                        className="text-xs mt-0.5"
+                        style={{ fontFamily: FN, color: "rgba(248,255,232,0.7)" }}
                       >
                         Overall score: {humanEvalOverallScore}/100
                       </p>
@@ -1025,8 +1003,8 @@ function JudgingFormContent({
                     <div className="flex items-center gap-3">
                       {humanEvalSaved && (
                         <span
-                          className="inline-flex items-center gap-1.5 text-[9px] tracking-[0.14em] uppercase font-bold text-[#f0ebe0]/50"
-                          style={{ fontFamily: "'Inter', sans-serif" }}
+                          className="inline-flex items-center gap-1.5 text-[9px] tracking-[0.14em] uppercase font-bold"
+                          style={{ fontFamily: PX, color: "rgba(248,255,232,0.7)" }}
                         >
                           <Check size={11} /> Saved
                         </span>
@@ -1034,7 +1012,7 @@ function JudgingFormContent({
                       {humanEvalMutation.isError && (
                         <span
                           className="text-xs text-red-300"
-                          style={{ fontFamily: "Georgia, serif" }}
+                          style={{ fontFamily: FN }}
                         >
                           {humanEvalMutation.error.message}
                         </span>
@@ -1049,10 +1027,10 @@ function JudgingFormContent({
                         }
                         className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer transition-all hover:opacity-90 disabled:opacity-35"
                         style={{
-                          backgroundColor: "#d6cfc0",
-                          color: "#2d4a3e",
+                          backgroundColor: "#E2FEA5",
+                          color: "#0F2C23",
                           padding: "10px 20px",
-                          fontFamily: "'Inter', sans-serif",
+                          fontFamily: PX,
                           fontSize: 10,
                           letterSpacing: "0.15em",
                           fontWeight: 700,
@@ -1077,9 +1055,9 @@ function JudgingFormContent({
               <div className="flex flex-col gap-6">
                 <div className="flex items-baseline gap-3">
                   <span
-                    className="font-black text-[#2d4a3e]/18"
+                    className="font-black text-[#0F2C23]/18"
                     style={{
-                      fontFamily: "'Inter', sans-serif",
+                      fontFamily: PX,
                       fontSize: 32,
                       letterSpacing: "-0.025em",
                     }}
@@ -1087,8 +1065,8 @@ function JudgingFormContent({
                     04
                   </span>
                   <p
-                    className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
+                    className="text-[9px] tracking-[0.2em] uppercase font-bold"
+                    style={{ fontFamily: PX, color: "rgba(15,44,35,0.4)" }}
                   >
                     AI Evaluation Results
                   </p>
@@ -1097,13 +1075,13 @@ function JudgingFormContent({
                 {/* Overall score hero card */}
                 <div
                   className="rounded-3xl p-8 flex items-start gap-8"
-                  style={{ backgroundColor: "#2d4a3e" }}
+                  style={{ backgroundColor: "#0F2C23" }}
                 >
                   <div className="shrink-0">
                     <ScoreRing score={result.overall_score ?? 0} max={100} />
                     <p
-                      className="text-[9px] tracking-[0.14em] uppercase font-bold text-[#f0ebe0]/38 text-center mt-2"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
+                      className="text-[9px] tracking-[0.14em] uppercase font-bold text-center mt-2"
+                      style={{ fontFamily: PX, color: "rgba(248,255,232,0.6)" }}
                     >
                       AI Score
                     </p>
@@ -1111,8 +1089,8 @@ function JudgingFormContent({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-3">
                       <p
-                        className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/38"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      className="text-[9px] tracking-[0.2em] uppercase font-bold"
+                      style={{ fontFamily: PX, color: "rgba(248,255,232,0.6)" }}
                       >
                         Overall Assessment
                       </p>
@@ -1124,19 +1102,20 @@ function JudgingFormContent({
                       />
                     </div>
                     <p
-                      className="text-[#f0ebe0]/75 leading-relaxed"
+                      className="leading-relaxed"
                       style={{
-                        fontFamily: "Georgia, serif",
+                        fontFamily: FN,
                         fontSize: "clamp(13px, 1.3vw, 15px)",
                         lineHeight: 1.85,
+                        color: "rgba(248,255,232,0.85)",
                       }}
                     >
                       {result.overall_summary}
                     </p>
                     {result.generated_at && (
                       <p
-                        className="mt-4 text-[9px] tracking-[0.14em] uppercase text-[#f0ebe0]/22"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
+                        className="mt-4 text-[9px] tracking-[0.14em] uppercase"
+                        style={{ fontFamily: PX, color: "rgba(248,255,232,0.45)" }}
                       >
                         Generated {result.generated_at}
                       </p>
@@ -1159,10 +1138,10 @@ function JudgingFormContent({
           {/* ═══ RIGHT sidebar ════════════════════════════════════════════ */}
           <aside className="sticky top-[81px] flex flex-col gap-4">
             {/* Status card */}
-            <div className="rounded-3xl p-7" style={{ backgroundColor: "#f5f2ea" }}>
+            <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
               <p
-                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#2d4a3e]/40 mb-5"
-                style={{ fontFamily: "'Inter', sans-serif" }}
+                className="text-[9px] tracking-[0.2em] uppercase font-bold mb-5"
+                style={{ fontFamily: PX, color: "rgba(15,44,35,0.45)" }}
               >
                 Evaluation Status
               </p>
@@ -1198,26 +1177,27 @@ function JudgingFormContent({
                 ].map(({ label, value, done }) => (
                   <div
                     key={label}
-                    className="flex items-center gap-3 py-3 border-b border-[#2d4a3e]/08"
+                    className="flex items-center gap-3 py-3 border-b"
+                    style={{ borderColor: "rgba(15,44,35,0.08)" }}
                   >
                     <span
                       className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center"
                       style={{
-                        backgroundColor: done ? "#2d4a3e" : "rgba(45,74,62,0.1)",
+                        backgroundColor: done ? "#0F2C23" : "rgba(15,44,35,0.08)",
                       }}
                     >
-                      {done && <Check size={10} style={{ color: "#f0ebe0" }} />}
+                      {done && <Check size={10} style={{ color: "#F8FFE8" }} />}
                     </span>
                     <div className="flex-1 min-w-0">
                       <p
-                        className="text-[9px] tracking-[0.14em] uppercase font-bold text-[#2d4a3e]/38"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
+                        className="text-[9px] tracking-[0.14em] uppercase font-bold"
+                        style={{ fontFamily: PX, color: "rgba(15,44,35,0.45)" }}
                       >
                         {label}
                       </p>
                       <p
-                        className="text-sm text-[#2d4a3e]/65 truncate"
-                        style={{ fontFamily: "Georgia, serif" }}
+                        className="text-sm truncate"
+                        style={{ fontFamily: FN, color: "rgba(15,44,35,0.65)" }}
                       >
                         {value}
                       </p>
@@ -1229,10 +1209,10 @@ function JudgingFormContent({
 
             {/* Score summary */}
             {(result || humanEvalSaved) && (
-              <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#2d4a3e" }}>
+              <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#0F2C23" }}>
                 <p
-                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#f0ebe0]/38 mb-4"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
+                  className="text-[9px] tracking-[0.2em] uppercase font-bold mb-4"
+                  style={{ fontFamily: PX, color: "rgba(248,255,232,0.6)" }}
                 >
                   Score Summary
                 </p>
@@ -1241,22 +1221,23 @@ function JudgingFormContent({
                     <div
                       className="rounded-xl p-4"
                       style={{
-                        backgroundColor: "rgba(240,235,224,0.07)",
+                        backgroundColor: "rgba(248,255,232,0.05)",
                       }}
                     >
                       <p
-                        className="font-black text-[#f0ebe0] leading-none"
+                        className="font-black leading-none"
                         style={{
-                          fontFamily: "'Inter', sans-serif",
+                          fontFamily: PX,
                           fontSize: 26,
                           letterSpacing: "-0.03em",
+                          color: "#F8FFE8",
                         }}
                       >
                         {result.overall_score ?? 0}
                       </p>
                       <p
-                        className="text-[9px] tracking-[0.14em] uppercase font-bold text-[#f0ebe0]/38 mt-1"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
+                        className="text-[9px] tracking-[0.14em] uppercase font-bold mt-1"
+                        style={{ fontFamily: PX, color: "rgba(248,255,232,0.6)" }}
                       >
                         AI Score
                       </p>
@@ -1266,22 +1247,23 @@ function JudgingFormContent({
                     <div
                       className="rounded-xl p-4"
                       style={{
-                        backgroundColor: "rgba(240,235,224,0.07)",
+                        backgroundColor: "rgba(248,255,232,0.05)",
                       }}
                     >
                       <p
-                        className="font-black text-[#f0ebe0] leading-none"
+                        className="font-black leading-none"
                         style={{
-                          fontFamily: "'Inter', sans-serif",
+                          fontFamily: PX,
                           fontSize: 26,
                           letterSpacing: "-0.03em",
+                          color: "#F8FFE8",
                         }}
                       >
                         {humanEvalOverallScore}
                       </p>
                       <p
-                        className="text-[9px] tracking-[0.14em] uppercase font-bold text-[#f0ebe0]/38 mt-1"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
+                        className="text-[9px] tracking-[0.14em] uppercase font-bold mt-1"
+                        style={{ fontFamily: PX, color: "rgba(248,255,232,0.6)" }}
                       >
                         Your Score
                       </p>

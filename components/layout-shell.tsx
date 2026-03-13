@@ -20,7 +20,11 @@ function useNavWidth() {
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isLanding = pathname === "/" || pathname === "/login";
+  const isLanding =
+    pathname === "/" ||
+    pathname === "/login" ||
+    pathname === "/shanghai" ||
+    pathname.startsWith("/shanghai/");
   const navWidth = useNavWidth();
 
   if (isLanding) {

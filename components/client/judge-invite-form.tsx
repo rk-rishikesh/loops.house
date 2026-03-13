@@ -62,37 +62,6 @@ export function JudgeInviteForm({
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
-      {/* ── Nav ─ strip style ─────────────────────────────────────── */}
-      <div className="sticky top-0 z-50" style={{ backgroundColor: "#F8FFE8" }}>
-        <div
-          className="flex w-full items-stretch border-t border-b border-[#0F2C23] text-[10px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]"
-          style={{ fontFamily: PX }}
-        >
-          {/* Left: back to host */}
-          <Link
-            href="/host"
-            className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#0F2C23] no-underline hover:bg-[rgba(15,44,35,0.06)]"
-          >
-            <span className="flex items-center gap-2">
-              <span>&larr;</span>
-              <span>Host</span>
-            </span>
-          </Link>
-
-          {/* Right: Judge Management + active hackathon */}
-          <div className="flex-1 min-w-0 py-8 flex items-center justify-between px-10">
-            <span>Judge Management</span>
-            {activeHackathon && (
-              <span
-                className="text-[9px] tracking-[0.15em] uppercase font-bold px-3 py-1.5 rounded-full"
-                style={{ backgroundColor: "#0F2C23", color: "#F8FFE8" }}
-              >
-                {activeHackathon.name}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
       <div className="px-10 pt-10 pb-24">
         {/* ── Hero heading ─────────────────────────────────────────────── */}
         <div className="mb-14">

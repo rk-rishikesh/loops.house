@@ -8,8 +8,8 @@ interface ImageUploadProps {
   value?: string;
   onChange: (url: string) => void;
   placeholder?: string;
-  /** Display as a compact circle (avatar) or rectangle */
-  variant?: "rect" | "circle";
+  /** Display as a compact circle (avatar), square, or rectangle */
+  variant?: "rect" | "circle" | "square";
 }
 
 export function ImageUpload({
@@ -56,6 +56,7 @@ export function ImageUpload({
   };
 
   const isCircle = variant === "circle";
+  const isSquare = variant === "square";
 
   return (
     <div className="w-full max-w-lg">
@@ -70,15 +71,19 @@ export function ImageUpload({
       {value ? (
         <div className="relative inline-block">
           <div
-            className={`overflow-hidden ${isCircle ? "rounded-full w-24 h-24" : "rounded-2xl"}`}
+            className={`overflow-hidden ${
+              isCircle ? "rounded-full w-24 h-24" : isSquare ? "rounded-2xl w-28 h-28" : "rounded-2xl"
+            }`}
             style={{ backgroundColor: "rgba(45,74,62,0.06)" }}
           >
             <Image
               src={value}
               alt=""
-              width={isCircle ? 96 : 280}
-              height={isCircle ? 96 : 180}
-              className={`object-cover ${isCircle ? "w-24 h-24" : "w-full h-auto"}`}
+              width={isCircle || isSquare ? 112 : 280}
+              height={isCircle || isSquare ? 112 : 180}
+              className={`object-cover ${
+                isCircle ? "w-24 h-24" : isSquare ? "w-28 h-28" : "w-full h-auto"
+              }`}
             />
           </div>
           <button
@@ -101,7 +106,9 @@ export function ImageUpload({
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           disabled={uploading}
-          className={`w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed cursor-pointer transition-all duration-200 ${isCircle ? "rounded-full w-24 h-24" : "rounded-2xl py-8"}`}
+          className={`w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed cursor-pointer transition-all duration-200 ${
+            isCircle ? "rounded-full w-24 h-24" : isSquare ? "rounded-2xl w-28 h-28" : "rounded-2xl py-8"
+          }`}
           style={{
             borderColor: dragOver ? "#2d4a3e" : "rgba(45,74,62,0.2)",
             backgroundColor: dragOver ? "rgba(45,74,62,0.06)" : "transparent",
