@@ -5,15 +5,18 @@ import { z } from "zod";
 import {
   ArrowLeft,
   ArrowRight,
-  ArrowUpRight,
   Check,
   ChevronDown,
+  Database,
+  GraduationCap,
   Loader2,
-  Minus,
+  Network,
   Plus,
+  Sparkles,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { KnowledgeBasePanel, KBStepStatus, KB_STEPS } from "@/components/client/knowledge-base-panel";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -26,8 +29,7 @@ const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-const STEPS = ["code-reader", "demo-reader", "theme-reader", "knowledge-base"] as const;
-type StepStatus = "pending" | "started" | "done" | "failed" | "skipped";
+// STEPS and StepStatus are now imported from knowledge-base-panel.tsx
 
 // Stricter builder profile schema (all key links required, richer description)
 const builderProfileSchema = z.object({
@@ -145,335 +147,7 @@ function CustomDropdown({
   );
 }
 
-// ─── Progress panel ───────────────────────────────────────────────────────────
-function ProgressPanel({
-  progress,
-  errors: pErrors,
-}: {
-  progress: Record<string, StepStatus>;
-  errors: Record<string, string>;
-}) {
-  const friendlyLabel: Record<(typeof STEPS)[number], string> = {
-    "code-reader": "Code Reader",
-    "demo-reader": "Demo Reader",
-    "theme-reader": "Theme Reader",
-    "knowledge-base": "Knowledge Graph",
-  };
-  const statusByStep = STEPS.map((step) => ({
-    step,
-    status: progress[step] ?? "pending",
-    error: pErrors[step],
-  }));
-  const runningCount = statusByStep.filter((s) => s.status === "started").length;
-
-  return (
-    <section className="h-full w-full">
-      <div
-        className="h-full grid gap-10 lg:grid-cols-[1.35fr,1fr]"
-        style={{
-          backgroundColor: "#F8FFE8",
-        }}
-      >
-        <div
-          className="px-0 py-2 md:py-4 flex flex-col gap-6"
-        >
-          <div>
-            <p
-              className="text-[10px] tracking-[0.28em] uppercase font-bold mb-3"
-              style={{ fontFamily: PX, color: "rgba(15,44,35,0.6)" }}
-            >
-              Builder Agents Runtime
-            </p>
-            <h2
-              className="font-black uppercase leading-[0.95] mb-3"
-              style={{
-                fontFamily: PX,
-                fontSize: "clamp(30px, 3.6vw, 40px)",
-                letterSpacing: "-0.04em",
-                color: "#0F2C23",
-              }}
-            >
-              Creating your project intelligence graph.
-            </h2>
-            <p
-              className="text-sm leading-relaxed max-w-xl"
-              style={{ fontFamily: FN, color: "rgba(15,44,35,0.75)" }}
-            >
-              Real-time orchestration is active. Sub-agents are parsing your repo, demo, and visual
-              identity, then wiring everything into a searchable context for Ideator and Mentor.
-            </p>
-          </div>
-
-          <div className="mt-1 flex flex-col gap-3">
-            {statusByStep.map((entry, idx) => {
-              const status = entry.status;
-              const hasError = status === "failed" && Boolean(entry.error);
-
-              const statusLabel =
-                status === "done"
-                  ? "Complete"
-                  : status === "failed"
-                    ? "Error"
-                    : status === "started"
-                      ? "In progress"
-                      : status === "skipped"
-                        ? "Skipped"
-                        : "Queued";
-
-              return (
-                <motion.div
-                  key={entry.step}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.24, delay: idx * 0.06 }}
-                  className="flex items-start gap-3 rounded-2xl px-3 py-2.5"
-                  style={{
-                    backgroundColor:
-                      status === "done"
-                        ? "rgba(15,44,35,0.04)"
-                        : status === "started"
-                          ? "rgba(15,44,35,0.03)"
-                          : "transparent",
-                  }}
-                >
-                  <span className="shrink-0 mt-0.5 w-5 flex justify-center">
-                    {status === "done" && <Check size={15} style={{ color: "#0F2C23" }} />}
-                    {status === "failed" && <X size={15} style={{ color: "#c0392b" }} />}
-                    {status === "skipped" && (
-                      <Minus size={15} style={{ color: "rgba(15,44,35,0.4)" }} />
-                    )}
-                    {status === "started" && (
-                      <Loader2 size={15} className="animate-spin" style={{ color: "#0F2C23" }} />
-                    )}
-                    {status === "pending" && (
-                      <span
-                        className="block w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: "rgba(15,44,35,0.25)" }}
-                      />
-                    )}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p
-                        className="text-[13px] font-semibold truncate"
-                        style={{ fontFamily: FN, color: "#0F2C23" }}
-                      >
-                        {friendlyLabel[entry.step]}
-                      </p>
-                      <span
-                        className="text-[9px] px-2 py-0.5 rounded-full uppercase tracking-[0.18em]"
-                        style={{
-                          fontFamily: PX,
-                          color:
-                            status === "done"
-                              ? "#F8FFE8"
-                              : status === "failed"
-                                ? "#c0392b"
-                                : "rgba(15,44,35,0.8)",
-                          backgroundColor:
-                            status === "done"
-                              ? "#0F2C23"
-                              : status === "failed"
-                                ? "rgba(192,57,43,0.12)"
-                                : "rgba(15,44,35,0.06)",
-                        }}
-                      >
-                        {statusLabel}
-                      </span>
-                    </div>
-                    {hasError ? (
-                      <p
-                        className="text-[11px] leading-snug wrap-break-word"
-                        style={{ fontFamily: FN, color: "#c0392b" }}
-                      >
-                        {entry.error}
-                      </p>
-                    ) : (
-                      <p
-                        className="text-[11px] leading-snug opacity-80"
-                        style={{ fontFamily: FN, color: "rgba(15,44,35,0.75)" }}
-                      >
-                        {idx === 0 && "Authenticating with GitHub and flattening the repository."}
-                        {idx === 1 &&
-                          "Streaming your demo video to capture features, narrative, and key moments."}
-                        {idx === 2 &&
-                          "Sampling your logo and screenshots to infer palette and visual language."}
-                        {idx === 3 &&
-                          "Writing vectors to the knowledge base so agents can query your project."}
-                      </p>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="px-0 py-2 md:py-4 flex flex-col justify-between gap-6">
-          <div>
-            <p
-              className="text-[10px] tracking-[0.22em] uppercase font-bold mb-2"
-              style={{ fontFamily: PX, color: "rgba(15,44,35,0.6)" }}
-            >
-              Agent Communication
-            </p>
-            <div
-              className="rounded-2xl overflow-hidden mb-4"
-              style={{
-                backgroundColor: "rgba(15,44,35,0.03)",
-              }}
-            >
-              <div
-                className="flex items-center justify-between px-4 py-3 border-b"
-                style={{ borderColor: "rgba(226,254,165,0.18)" }}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="inline-flex w-1.5 h-1.5 rounded-full animate-pulse"
-                    style={{ backgroundColor: "#0F2C23" }}
-                  />
-                  <span
-                    className="text-[11px] uppercase tracking-[0.18em]"
-                    style={{ fontFamily: PX, color: "rgba(15,44,35,0.85)" }}
-                  >
-                    Live stream
-                  </span>
-                </div>
-                <span
-                  className="text-[10px]"
-                  style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}
-                >
-                  {runningCount > 0 ? `${runningCount} active agent(s)` : "Awaiting next event"}
-                </span>
-              </div>
-              <div className="px-4 py-3 text-[11px] leading-relaxed space-y-1.5 min-h-[145px]">
-                <AnimatePresence mode="popLayout">
-                  {statusByStep.map((entry) => {
-                    const status = entry.status;
-                    const label = friendlyLabel[entry.step];
-                    return (
-                      <motion.p
-                        key={`${entry.step}-${status}`}
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 8 }}
-                        transition={{ duration: 0.22 }}
-                        className="flex items-start gap-2"
-                        style={{ fontFamily: FN, color: "rgba(15,44,35,0.8)" }}
-                      >
-                        <motion.span
-                          className="mt-0.5 inline-flex w-1.5 h-1.5 rounded-full"
-                          animate={
-                            status === "started"
-                              ? { scale: [1, 1.5, 1], opacity: [0.55, 1, 0.55] }
-                              : { scale: 1, opacity: 1 }
-                          }
-                          transition={{ duration: 1.2, repeat: status === "started" ? Infinity : 0 }}
-                          style={{
-                            backgroundColor:
-                              status === "done"
-                                ? "#0F2C23"
-                                : status === "failed"
-                                  ? "#c0392b"
-                                  : status === "started"
-                                    ? "rgba(15,44,35,0.85)"
-                                    : "rgba(15,44,35,0.35)",
-                          }}
-                        />
-                        <span className="flex-1">
-                          <span className="font-semibold">{label}</span>
-                          <span className="opacity-80">
-                            {status === "done" && " — synced."}
-                            {status === "started" && " — exchanging context packets…"}
-                            {status === "pending" && " — waiting in queue…"}
-                            {status === "failed" && " — encountered an upstream error."}
-                          </span>
-                        </span>
-                      </motion.p>
-                    );
-                  })}
-                </AnimatePresence>
-              </div>
-            </div>
-
-            <div
-              className="rounded-2xl p-4"
-              style={{
-                backgroundColor: "rgba(15,44,35,0.03)",
-              }}
-            >
-              <p
-                className="text-[10px] tracking-[0.18em] uppercase mb-3"
-                style={{ fontFamily: PX, color: "rgba(226,254,165,0.75)" }}
-              >
-                Agent topology
-              </p>
-              <div className="relative h-[190px]">
-                {[
-                  { id: "code-reader", x: "10%", y: "24%" },
-                  { id: "demo-reader", x: "66%", y: "24%" },
-                  { id: "theme-reader", x: "10%", y: "66%" },
-                  { id: "knowledge-base", x: "66%", y: "66%" },
-                ].map((node) => {
-                  const state = progress[node.id as (typeof STEPS)[number]] ?? "pending";
-                  return (
-                    <motion.div
-                      key={node.id}
-                      className="absolute rounded-xl px-2.5 py-2 text-[9px] uppercase tracking-[0.14em]"
-                      animate={
-                        state === "started"
-                          ? { scale: [1, 1.04, 1], boxShadow: ["0 0 0 rgba(0,0,0,0)", "0 0 24px rgba(226,254,165,0.22)", "0 0 0 rgba(0,0,0,0)"] }
-                          : { scale: 1 }
-                      }
-                      transition={{ duration: 1.3, repeat: state === "started" ? Infinity : 0 }}
-                      style={{
-                        left: node.x,
-                        top: node.y,
-                        transform: "translate(-50%, -50%)",
-                        fontFamily: PX,
-                        color: state === "done" ? "#06140F" : "#E2FEA5",
-                        backgroundColor:
-                          state === "done" ? "#E2FEA5" : "rgba(226,254,165,0.14)",
-                        border: "none",
-                      }}
-                    >
-                      {friendlyLabel[node.id as (typeof STEPS)[number]]}
-                    </motion.div>
-                  );
-                })}
-                <motion.div
-                  className="absolute h-px left-[10%] right-[34%] top-[24%]"
-                  animate={{ opacity: [0.25, 0.75, 0.25] }}
-                  transition={{ duration: 1.4, repeat: Infinity }}
-                  style={{ backgroundColor: "rgba(226,254,165,0.45)" }}
-                />
-                <motion.div
-                  className="absolute h-px left-[10%] right-[34%] top-[66%]"
-                  animate={{ opacity: [0.25, 0.75, 0.25] }}
-                  transition={{ duration: 1.4, repeat: Infinity, delay: 0.35 }}
-                  style={{ backgroundColor: "rgba(226,254,165,0.45)" }}
-                />
-                <motion.div
-                  className="absolute w-px top-[24%] bottom-[34%] left-[66%]"
-                  animate={{ opacity: [0.25, 0.75, 0.25] }}
-                  transition={{ duration: 1.4, repeat: Infinity, delay: 0.55 }}
-                  style={{ backgroundColor: "rgba(226,254,165,0.45)" }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <p
-            className="text-[10px] tracking-[0.2em] uppercase"
-            style={{ fontFamily: PX, color: "rgba(15,44,35,0.6)" }}
-          >
-            You&apos;ll be redirected to your new Builder profile as soon as this run completes.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
+// ProgressPanel has been moved to knowledge-base-panel.tsx as KnowledgeBasePanel
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface NewProfileFormProps {
@@ -487,7 +161,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [progress, setProgress] = useState<Record<string, StepStatus>>({});
+  const [progress, setProgress] = useState<Record<string, KBStepStatus>>({});
   const [progressErrors, setProgressErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [animDir, setAnimDir] = useState<1 | -1>(1);
@@ -647,7 +321,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
       setError(null);
       setProgressErrors({});
       setLoading(true);
-      STEPS.forEach((s) => setProgress((p) => ({ ...p, [s]: "pending" })));
+      KB_STEPS.forEach((s) => setProgress((p) => ({ ...p, [s]: "pending" })));
 
       // Enforce at least 4 screenshots
       if (screenshotFiles.length < 4) {
@@ -733,7 +407,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                   ["done", "failed", "skipped"].includes(parsed.status as string)
                     ? parsed.status
                     : "started"
-                ) as StepStatus;
+                ) as KBStepStatus;
                 setProgress((p) => ({ ...p, [parsed.step as string]: status }));
                 if (parsed.status === "failed" && typeof parsed.error === "string")
                   setProgressErrors((e) => ({
@@ -801,155 +475,138 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
       <div className="flex flex-1">
         {/* LEFT — form / intro */}
-        <main className="flex-1 flex flex-col justify-center px-10 md:px-20 lg:px-32 py-16">
+        <main className="flex-1 flex flex-col justify-center px-6 md:px-12 lg:px-20 py-10">
           {loading ? (
             <div className="h-full min-h-[70vh] flex items-stretch">
-              <ProgressPanel progress={progress} errors={progressErrors} />
+              <KnowledgeBasePanel progress={progress} errors={progressErrors} />
             </div>
           ) : showIntro ? (
-            <section className="max-w-5xl mx-auto">
-              <h1
-                className="text-center font-black text-[#0F2C23] mb-3"
-                style={{
-                  fontFamily: PX,
-                  fontSize: "clamp(28px, 3.4vw, 40px)",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                How profile creator works
-              </h1>
-              <p
-                className="text-center mb-12"
-                style={{
-                  fontFamily: FN,
-                  fontSize: 13,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  color: "rgba(15,44,35,0.55)",
-                }}
-              >
-                Your project pipeline from raw links to an AI-ready knowledge graph.
-              </p>
+            <section className="w-full">
+              <div className="grid lg:grid-cols-[1.2fr,1fr] gap-8 lg:gap-16 items-center">
+                {/* Left Panel */}
+                <div className="flex flex-col items-start text-left">
+                  
+        
+                    <div className=" flex flex-row gap-12">
+                      <h1
+                        className="font-black text-[#0F2C23] leading-[0.85] uppercase mb-6"
+                        style={{
+                          fontFamily: PX,
+                          fontSize: "clamp(48px, 6.2vw, 88px)",
+                          letterSpacing: "-0.04em",
+                        }}
+                      >
+                        PROJECT
+                        <br />
+                        ONBOARDING.
+                      </h1>
+                      <p
+                        className="leading-relaxed mb-8 max-w-xl"
+                        style={{
+                          fontFamily: FN,
+                          fontSize: "clamp(15px, 1.25vw, 18px)",
+                          color: "rgba(15,44,35,0.6)",
+                        }}
+                      >
+                        Your project pipeline from raw links to an <span className="text-[#0F2C23] font-bold">AI-ready knowledge graph</span>. 
+                        Ship faster with agents that actually understand your codebase.
+                      </p>
+                    </div>
+  
+                 
 
-              <div className="grid gap-6 md:grid-cols-4">
-                {/* Step 1 */}
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div
-                    className="w-full rounded-2xl border"
-                    style={{
-                      borderColor: "rgba(15,44,35,0.12)",
-                      backgroundColor: "#FFFFFF",
-                      height: 120,
-                    }}
-                  />
-                  <div>
-                    <p
-                      className="text-sm font-semibold mb-1"
-                      style={{ fontFamily: FN, color: "#0F2C23" }}
+                  <div className="flex flex-col items-start gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowIntro(false)}
+                      className="group relative inline-flex items-center gap-4 rounded-full border-none cursor-pointer px-10 py-5 overflow-hidden transition-all duration-300 active:scale-95"
+                      style={{
+                        backgroundColor: "#0F2C23",
+                        boxShadow: "0 20px 40px -10px rgba(15, 44, 35, 0.4)",
+                      }}
                     >
-                      Feed the project.
-                    </p>
-                    <p
-                      className="text-[12px] leading-relaxed"
-                      style={{ fontFamily: FN, color: "rgba(15,44,35,0.7)" }}
+                      <div className="absolute inset-0 bg-[#E2FEA5] translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                      <span 
+                        className="relative z-10 text-[10px] font-black tracking-[0.2em] uppercase transition-colors duration-300 text-[#F8FFE8] group-hover:text-[#0F2C23]"
+                        style={{ fontFamily: PX }}
+                      >
+                        Initialize Creator
+                      </span>
+                      <ArrowRight 
+                        size={14} 
+                        className="relative z-10 transition-all duration-300 text-[#F8FFE8] group-hover:text-[#0F2C23] group-hover:translate-x-1" 
+                      />
+                    </button>
+                    <p 
+                      className="text-[9px] pl-2 uppercase font-bold tracking-[0.2em]" 
+                      style={{ fontFamily: PX, color: "rgba(15,44,35,0.35)" }}
                     >
-                      Drop your links, repo, logo, screenshots, and social handles.
+                      Process time: ~2 minutes
                     </p>
                   </div>
                 </div>
 
-                {/* Step 2 */}
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div
-                    className="w-full rounded-2xl border"
-                    style={{
-                      borderColor: "rgba(15,44,35,0.12)",
-                      backgroundColor: "#FFFFFF",
-                      height: 120,
-                    }}
-                  />
-                  <div>
-                    <p
-                      className="text-sm font-semibold mb-1"
-                      style={{ fontFamily: FN, color: "#0F2C23" }}
+                {/* Right Panel: Cards in 2x2 Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-5">
+                  {[
+                    {
+                      num: "01",
+                      icon: <Database size={20} />,
+                      title: "Feed project.",
+                      desc: "Drop your repo & demo. We handle the rest.",
+                    },
+                    {
+                      num: "02",
+                      icon: <Network size={20} />,
+                      title: "Build graph.",
+                      desc: "Engine crawls repo to build deep project context.",
+                    },
+                    {
+                      num: "03",
+                      icon: <Sparkles size={20} />,
+                      title: "Ideator ON.",
+                      desc: "Riff on ideas and positions with your project agent.",
+                    },
+                    {
+                      num: "04",
+                      icon: <GraduationCap size={20} />,
+                      title: "Mentor LIVE.",
+                      desc: "A personal coach that helps you ship quality code.",
+                    },
+                  ].map((step) => (
+                    <div 
+                      key={step.num}
+                      className="flex flex-col gap-4 p-7 rounded-[32px] border border-[#0F2C23]/5 transition-all duration-300 hover:border-[#0F2C23]/10 hover:shadow-lg hover:scale-[1.03]"
+                      style={{ backgroundColor: "rgba(226, 254, 165, 0.4)" }}
                     >
-                      Build the graph.
-                    </p>
-                    <p
-                      className="text-[12px] leading-relaxed"
-                      style={{ fontFamily: FN, color: "rgba(15,44,35,0.7)" }}
-                    >
-                      Profile creator crawls your repo & links to build a knowledge graph.
-                    </p>
-                  </div>
+                      <div className="flex justify-between items-start">
+                        <span 
+                          className="font-black text-[24px] leading-none opacity-20" 
+                          style={{ fontFamily: PX, color: "#0F2C23" }}
+                        >
+                          {step.num}
+                        </span>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[#0F2C23] text-[#E2FEA5]">
+                          {step.icon}
+                        </div>
+                      </div>
+                      <div>
+                        <h3 
+                          className="font-bold text-[15px] mb-1.5 uppercase tracking-tight" 
+                          style={{ fontFamily: PX, color: "#0F2C23" }}
+                        >
+                          {step.title}
+                        </h3>
+                        <p 
+                          className="text-[12px] leading-relaxed opacity-70" 
+                          style={{ fontFamily: FN, color: "#0F2C23" }}
+                        >
+                          {step.desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                {/* Step 3 */}
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div
-                    className="w-full rounded-2xl border"
-                    style={{
-                      borderColor: "rgba(15,44,35,0.12)",
-                      backgroundColor: "#FFFFFF",
-                      height: 120,
-                    }}
-                  />
-                  <div>
-                    <p
-                      className="text-sm font-semibold mb-1"
-                      style={{ fontFamily: FN, color: "#0F2C23" }}
-                    >
-                      Ideator agent spins up.
-                    </p>
-                    <p
-                      className="text-[12px] leading-relaxed"
-                      style={{ fontFamily: FN, color: "rgba(15,44,35,0.7)" }}
-                    >
-                      Use the Ideator to riff on ideas, positioning, and tracks to target.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Step 4 */}
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div
-                    className="w-full rounded-2xl border"
-                    style={{
-                      borderColor: "rgba(15,44,35,0.12)",
-                      backgroundColor: "#FFFFFF",
-                      height: 120,
-                    }}
-                  />
-                  <div>
-                    <p
-                      className="text-sm font-semibold mb-1"
-                      style={{ fontFamily: FN, color: "#0F2C23" }}
-                    >
-                      Mentor agent unlocks.
-                    </p>
-                    <p
-                      className="text-[12px] leading-relaxed"
-                      style={{ fontFamily: FN, color: "rgba(15,44,35,0.7)" }}
-                    >
-                      Once saved, Mentor can answer code questions and help you ship.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-10 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => setShowIntro(false)}
-                  className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer text-[10px] tracking-widest uppercase font-bold px-8 py-3"
-                  style={{
-                    fontFamily: PX,
-                    backgroundColor: "#0F2C23",
-                    color: "#F8FFE8",
-                  }}
-                >
-                 Create Project <ArrowRight size={12} />
-                </button>
               </div>
             </section>
           ) : (
@@ -1242,94 +899,168 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
         {/* RIGHT — decorative sidebar (only during questions) */}
         {!showIntro && !loading && (
           <aside
-            className="hidden lg:flex w-[360px] shrink-0 flex-col justify-between p-10 relative overflow-hidden"
+            className="hidden lg:flex w-[400px] shrink-0 flex-col justify-between p-12 relative overflow-hidden"
             style={{ backgroundColor: "#0F2C23" }}
           >
-            {/* Dot grid texture */}
+            {/* Background Effects */}
             <div
-              className="absolute inset-0 pointer-events-none"
+              className="absolute inset-0 pointer-events-none opacity-20"
               style={{
                 backgroundImage:
-                  "radial-gradient(circle, rgba(226,254,165,0.10) 1px, transparent 1px)",
-                backgroundSize: "28px 28px",
+                  "radial-gradient(circle, rgba(226,254,165,0.2) 1px, transparent 1px)",
+                backgroundSize: "32px 32px",
               }}
             />
+            <div 
+              className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-[120px] pointer-events-none"
+              style={{ backgroundColor: "rgba(226,254,165,0.05)" }}
+            />
 
-            {/* Big faint step number */}
-            <div className="relative z-10">
-              <p
-                className="font-black leading-none"
-                style={{
-                  fontFamily: PX,
-                  fontSize: 100,
-                  letterSpacing: "-0.04em",
-                  color: "rgba(226,254,165,0.12)",
-                }}
-              >
-                {String(currentStep + 1).padStart(2, "0")}
-              </p>
-              <p
-                className="text-[10px] tracking-[0.2em] uppercase font-bold mt-2"
-                style={{ fontFamily: PX, color: "rgba(226,254,165,0.45)" }}
-              >
-                of {String(totalSteps).padStart(2, "0")} steps
-              </p>
-            </div>
-
-            {/* Step preview list */}
-            <div className="relative z-10 flex flex-col gap-2.5">
-              {FORM_STEPS.slice(Math.max(0, currentStep - 1), currentStep + 5).map((step, i) => {
-                const absIdx = Math.max(0, currentStep - 1) + i;
-                const isCur = absIdx === currentStep;
-                const isPast = absIdx < currentStep;
-                return (
-                  <div
-                    key={step.key}
-                    className="flex items-center gap-3 transition-all duration-300"
-                    style={{ opacity: isCur ? 1 : isPast ? 0.35 : 0.18 }}
+            {/* Header / Big Number */}
+            <div className="relative z-10 flex flex-col gap-2">
+              <div className="flex items-baseline gap-4">
+                <motion.span
+                  key={currentStep}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="font-black leading-none"
+                  style={{
+                    fontFamily: PX,
+                    fontSize: 120,
+                    letterSpacing: "-0.06em",
+                    color: "#E2FEA5",
+                    textShadow: "0 0 40px rgba(226,254,165,0.1)",
+                  }}
+                >
+                  {String(currentStep + 1).padStart(2, "0")}
+                </motion.span>
+                <div className="flex flex-col">
+                  <p
+                    className="text-[11px] tracking-[0.3em] uppercase font-black"
+                    style={{ fontFamily: PX, color: "rgba(226,254,165,0.4)" }}
                   >
-                    {isPast ? (
-                      <Check size={11} style={{ color: "#E2FEA5", flexShrink: 0 }} />
-                    ) : (
-                      <div
-                        className="rounded-full shrink-0"
-                        style={{
-                          width: isCur ? 8 : 6,
-                          height: isCur ? 8 : 6,
-                          backgroundColor: isCur ? "#E2FEA5" : "rgba(226,254,165,0.45)",
-                        }}
-                      />
-                    )}
-                    <p
-                      className="truncate"
-                      style={{
-                        fontFamily: isCur ? PX : FN,
-                        fontSize: isCur ? 13 : 12,
-                        fontWeight: isCur ? 700 : 400,
-                        color: isCur ? "#F8FFE8" : "rgba(226,254,165,0.75)",
-                      }}
-                    >
-                      {step.label}
-                    </p>
-                  </div>
-                );
-              })}
+                    Current
+                  </p>
+                  <p
+                    className="text-[11px] tracking-[0.3em] uppercase font-black"
+                    style={{ fontFamily: PX, color: "rgba(226,254,165,0.4)" }}
+                  >
+                    Phase
+                  </p>
+                </div>
+              </div>
+              <div className="h-1 w-24 bg-[#E2FEA5]/10 rounded-full overflow-hidden mt-2">
+                <motion.div 
+                  className="h-full bg-[#E2FEA5]"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
+                  transition={{ duration: 0.6, ease: "circOut" }}
+                />
+              </div>
             </div>
 
-            {/* Bottom label + arrow */}
-            <div className="relative z-10 flex items-end justify-between">
-              <p
-                className="text-[9px] tracking-[0.18em] uppercase font-bold"
-                style={{ fontFamily: PX, color: "rgba(226,254,165,0.4)" }}
-              >
-                Create Profile
-              </p>
-              <span
-                className="inline-flex items-center justify-center rounded-full"
-                style={{ width: 40, height: 40, backgroundColor: "#E2FEA5" }}
-              >
-                <ArrowUpRight size={16} style={{ color: "#0F2C23" }} />
-              </span>
+            {/* Step Progress Stepper */}
+            <div className="relative z-10 py-6">
+              <div className="absolute left-[15px] top-8 bottom-8 w-px bg-white/5" />
+              
+              <div className="flex flex-col gap-6">
+                {FORM_STEPS.slice(
+                  Math.max(0, Math.min(currentStep - 1, totalSteps - 5)),
+                  Math.max(5, currentStep + 4)
+                ).map((step) => {
+                  const absoluteIdx = FORM_STEPS.indexOf(step);
+                  const isCur = absoluteIdx === currentStep;
+                  const isPast = absoluteIdx < currentStep;
+                  
+                  return (
+                    <motion.div
+                      key={step.key}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: isCur ? 1 : isPast ? 0.6 : 0.2, x: isCur ? 4 : 0 }}
+                      className="group flex items-start gap-5"
+                    >
+                      {/* Node */}
+                      <div className="relative z-20 flex-shrink-0 mt-1">
+                        {isPast ? (
+                          <div className="w-[28px] h-[28px] rounded-full bg-[#E2FEA5] flex items-center justify-center">
+                            <Check size={14} className="text-[#0F2C23] stroke-[3]" />
+                          </div>
+                        ) : isCur ? (
+                          <div className="relative">
+                            <motion.div
+                              animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.1, 0.4] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                              className="absolute inset-0 rounded-full bg-[#E2FEA5]"
+                            />
+                            <div className="relative w-[28px] h-[28px] rounded-full bg-[#E2FEA5] shadow-[0_0_15px_rgba(226,254,165,0.3)] flex items-center justify-center">
+                              <div className="w-2 h-2 rounded-full bg-[#0F2C23]" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-[28px] h-[28px] rounded-full border border-white/20 flex items-center justify-center bg-[#0F2C23]">
+                            <div className="w-1 h-1 rounded-full bg-white/20" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex flex-col pt-0.5 min-w-0">
+                        <p
+                          className="text-[9px] tracking-widest uppercase font-bold"
+                          style={{ 
+                            fontFamily: PX, 
+                            color: isCur ? "#E2FEA5" : "rgba(226,254,165,0.4)" 
+                          }}
+                        >
+                          Step {String(absoluteIdx + 1).padStart(2, "0")}
+                        </p>
+                        <h3
+                          className="text-[14px] font-bold leading-tight truncate"
+                          style={{ 
+                            fontFamily: FN, 
+                            color: isCur ? "#F8FFE8" : "rgba(248,255,232,0.6)" 
+                          }}
+                        >
+                          {step.label.replace(/\?|\./g, "")}
+                        </h3>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bottom Footer */}
+            <div className="relative z-10">
+              <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center gap-4 overflow-hidden">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#E2FEA5]/10 flex items-center justify-center">
+                  <div className="flex gap-1">
+                    <motion.div
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{ duration: 1.2, repeat: Infinity }}
+                      className="w-1.5 h-1.5 rounded-full bg-[#E2FEA5]"
+                    />
+                    <motion.div
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }}
+                      className="w-1.5 h-1.5 rounded-full bg-[#E2FEA5]"
+                    />
+                    <motion.div
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }}
+                      className="w-1.5 h-1.5 rounded-full bg-[#E2FEA5]"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <p className="text-[10px] uppercase font-black tracking-widest text-[#E2FEA5]/40" style={{ fontFamily: PX }}>
+                    System Processing
+                  </p>
+                  <p className="text-[14px] font-bold text-[#F8FFE8]" style={{ fontFamily: FN }}>
+                    Building Knowledge base
+                  </p>
+                </div>
+              </div>
             </div>
           </aside>
         )}

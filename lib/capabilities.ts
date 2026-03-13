@@ -35,7 +35,7 @@ export async function getBasicCapabilities(
   userId: string,
 ): Promise<BasicCapabilities | null> {
   const [userResult, cohostResult, judgeResult] = await Promise.all([
-    supabase.from("users").select("is_admin, is_event_creator").eq("id", userId).single(),
+    supabase.from("users").select("is_admin, is_event_creator").eq("id", userId).maybeSingle(),
     supabase
       .from("hackathon_cohosts")
       .select("hackathon_id", { count: "exact", head: true })
@@ -46,11 +46,12 @@ export async function getBasicCapabilities(
       .eq("user_id", userId),
   ]);
 
-  if (!userResult.data) return null;
+  // If user row is missing, they still have a session, so give them basic builder caps
+  const userData = userResult.data ?? { is_admin: false, is_event_creator: false };
 
   return {
-    isAdmin: userResult.data.is_admin,
-    isEventCreator: userResult.data.is_event_creator,
+    isAdmin: userData.is_admin,
+    isEventCreator: userData.is_event_creator,
     isCohost: (cohostResult.count ?? 0) > 0,
     isJudge: (judgeResult.count ?? 0) > 0,
   };
@@ -62,19 +63,19 @@ export async function getFullCapabilities(
   userId: string,
 ): Promise<UserCapabilities | null> {
   const [userResult, cohostResult, judgeResult] = await Promise.all([
-    supabase.from("users").select("is_admin, is_event_creator").eq("id", userId).single(),
+    supabase.from("users").select("is_admin, is_event_creator").eq("id", userId).maybeSingle(),
     supabase.from("hackathon_cohosts").select("hackathon_id").eq("user_id", userId),
     supabase.from("hackathon_judges").select("hackathon_id").eq("user_id", userId),
   ]);
 
-  if (!userResult.data) return null;
+  const userData = userResult.data ?? { is_admin: false, is_event_creator: false };
 
   const cohostOf = (cohostResult.data ?? []).map((r) => r.hackathon_id);
   const judgeOf = (judgeResult.data ?? []).map((r) => r.hackathon_id);
 
   return {
-    isAdmin: userResult.data.is_admin,
-    isEventCreator: userResult.data.is_event_creator,
+    isAdmin: userData.is_admin,
+    isEventCreator: userData.is_event_creator,
     isCohost: cohostOf.length > 0,
     isJudge: judgeOf.length > 0,
     cohostOf,

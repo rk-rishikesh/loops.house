@@ -23,6 +23,7 @@ import {
   Trophy,
   Users,
   Zap,
+  Database,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -30,6 +31,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/app/providers";
 import { signOut } from "@/lib/auth";
+
+const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
 
 function clearAuthCookies() {
   document.cookie.split(";").forEach((c) => {
@@ -70,11 +74,10 @@ interface TabItem {
 }
 
 const GLOBAL_NAV: NavItem[] = [
-  { href: "/dashboard", icon: LayoutGrid, label: "Dashboard" },
-  { href: "/hackathons", icon: Zap, label: "Hackathons" },
+  { href: "/dashboard", icon: LayoutGrid, label: "Welcome" },
+  { href: "/hackathons", icon: Zap, label: "Explore Hackathons" },
   { href: "/builder/projects", icon: FolderOpen, label: "My Projects" },
-  { href: "/projects", icon: Eye, label: "Project Gallery" },
-  { href: "/notifications", icon: Bell, label: "Notifications" },
+  { href: "/projects", icon: Eye, label: "Discover Projects" },
   {
     href: "/judge",
     icon: Gavel,
@@ -84,9 +87,9 @@ const GLOBAL_NAV: NavItem[] = [
   {
     href: "/host",
     icon: Users,
-    label: "Host",
-    visible: (caps) => !!caps?.isEventCreator || !!caps?.isCohost || !!caps?.isAdmin,
+    label: "Host Navigation",
   },
+    { href: "/notifications", icon: Bell, label: "Notifications" },
 ];
 
 const HACKATHON_TABS: TabItem[] = [
@@ -101,8 +104,9 @@ const HACKATHON_TABS: TabItem[] = [
 
 const PROJECT_TABS: TabItem[] = [
   { key: "edit", icon: Pencil, label: "Edit" },
-  { key: "share", icon: Share2, label: "Share" },
-  { key: "public", icon: Globe, label: "Public URL" },
+  { key: "knowledge-base", icon: Database, label: "Knowledge Base" },
+  { key: "share", icon: Sparkles, label: "Amplify With AI" },
+  { key: "public", icon: Share2, label: "Public URL" },
 ];
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -225,32 +229,25 @@ function isGlobalActive(href: string, pathname: string) {
    Shared style helpers
    ═══════════════════════════════════════════════════════════════════ */
 
-const ACTIVE_BG = "rgba(226,254,165,0.12)";
-const HOVER_BG = "rgba(226,254,165,0.08)";
 const COLOR_ON = "#E2FEA5";
-const COLOR_OFF = "rgba(226,254,165,0.35)";
-
-function hoverHandlers(hoverBg = HOVER_BG) {
-  return {
-    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
-      e.currentTarget.style.backgroundColor = hoverBg;
-    },
-    onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
-      e.currentTarget.style.backgroundColor = "transparent";
-    },
-  };
-}
+const COLOR_OFF = "rgba(226,254,165,0.38)";
+const ACTIVE_BG = "rgba(226,254,165,0.08)";
 
 /* ═══════════════════════════════════════════════════════════════════
    Sub-components
    ═══════════════════════════════════════════════════════════════════ */
 
-function ActiveBar() {
+function ActiveIndicator() {
   return (
-    <span
-      className="absolute right-[-8px] top-1/2 -translate-y-1/2 rounded-full"
-      style={{ width: 3, height: 18, backgroundColor: COLOR_ON }}
-    />
+    <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center">
+      <div 
+        className="w-[3px] h-5 rounded-full" 
+        style={{ 
+          backgroundColor: COLOR_ON,
+          boxShadow: "0 0 12px rgba(226, 254, 165, 0.5)"
+        }} 
+      />
+    </div>
   );
 }
 
@@ -258,15 +255,17 @@ function LogoButton({ collapsed }: { collapsed: boolean }) {
   return (
     <Link
       href="/"
-      className="flex items-center gap-2 rounded-xl no-underline mb-4"
-      style={{ height: 40, paddingLeft: collapsed ? 10 : 10 }}
+      className="group flex items-center gap-3 rounded-2xl no-underline mb-6 transition-all duration-300"
+      style={{ height: 48, paddingLeft: collapsed ? 14 : 14 }}
       title="Home"
     >
-      <Image src="/logo.svg" alt="Loops" width={20} height={20} />
+      <div className="relative shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-white/5 group-hover:bg-white/10 transition-colors">
+        <Image src="/logo.svg" alt="Loops" width={18} height={18} />
+      </div>
       {!collapsed && (
         <span
-          className="text-sm font-semibold whitespace-nowrap overflow-hidden"
-          style={{ color: COLOR_ON }}
+          className="text-sm font-black tracking-widest uppercase transition-colors"
+          style={{ color: COLOR_ON, fontFamily: PX }}
         >
           Loops
         </span>
@@ -287,18 +286,21 @@ function BackButton({
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 rounded-xl no-underline mb-4 transition-colors"
+      className="group flex items-center gap-3 rounded-2xl no-underline mb-6 transition-all duration-300 hover:bg-white/5"
       style={{
-        height: 40,
-        backgroundColor: "transparent",
-        paddingLeft: collapsed ? 10 : 10,
+        height: 48,
+        paddingLeft: collapsed ? 14 : 14,
       }}
       title={label}
-      {...hoverHandlers()}
     >
-      <ArrowLeft size={16} style={{ color: COLOR_ON, flexShrink: 0 }} />
+      <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-[#E2FEA5]/5 text-[#E2FEA5] group-hover:bg-[#E2FEA5]/10 group-hover:-translate-x-0.5 transition-all">
+        <ArrowLeft size={16} />
+      </div>
       {!collapsed && (
-        <span className="text-xs whitespace-nowrap overflow-hidden" style={{ color: COLOR_OFF }}>
+        <span 
+          className="text-[10px] font-bold tracking-widest uppercase truncate" 
+          style={{ color: COLOR_OFF, fontFamily: PX }}
+        >
           {label}
         </span>
       )}
@@ -317,29 +319,42 @@ function NavItemRow({
 }) {
   const content = (
     <>
-      <item.icon size={18} style={{ color: active ? COLOR_ON : COLOR_OFF, flexShrink: 0 }} />
+      <div 
+        className={`shrink-0 transition-transform duration-300 ${active ? "scale-110" : "group-hover:scale-110"}`}
+        style={{ color: active ? COLOR_ON : COLOR_OFF }}
+      >
+        <item.icon size={18} strokeWidth={active ? 2.5 : 2} />
+      </div>
       {!collapsed && (
         <span
-          className="text-sm whitespace-nowrap overflow-hidden"
-          style={{ color: active ? COLOR_ON : COLOR_OFF }}
+          className="text-xs font-semibold tracking-wide truncate transition-colors"
+          style={{ 
+            color: active ? COLOR_ON : COLOR_OFF,
+            fontFamily: FN,
+          }}
         >
           {item.label}
         </span>
       )}
-      {active && <ActiveBar />}
+      {active && <ActiveIndicator />}
     </>
   );
 
-  const className = `relative flex items-center gap-3 rounded-xl no-underline transition-colors ${
-    collapsed ? "justify-center w-10 h-10" : "w-full h-10 px-3"
+  const className = `group relative flex items-center gap-4 rounded-2xl no-underline transition-all duration-300 ${
+    collapsed ? "justify-center w-11 h-11 mx-auto" : "w-full h-11 px-4"
   }`;
+
+  const styles = {
+    backgroundColor: active ? ACTIVE_BG : "transparent",
+    border: active ? "1px solid rgba(226, 254, 165, 0.1)" : "1px solid transparent",
+  };
 
   if (item.href) {
     return (
       <Link
         href={item.href}
         className={className}
-        style={{ backgroundColor: active ? ACTIVE_BG : "transparent" }}
+        style={styles}
         title={collapsed ? item.label : undefined}
       >
         {content}
@@ -350,7 +365,7 @@ function NavItemRow({
   return (
     <a
       className={className}
-      style={{ backgroundColor: active ? ACTIVE_BG : "transparent" }}
+      style={styles}
       title={collapsed ? item.label : undefined}
     >
       {content}
@@ -362,12 +377,12 @@ function GlobalNavItems({ pathname, collapsed }: { pathname: string; collapsed: 
   const { capabilities } = useAuth();
 
   return (
-    <>
+    <div className="flex flex-col gap-1.5">
       {GLOBAL_NAV.filter((item) => !item.visible || item.visible(capabilities)).map((item) => {
         const active = isGlobalActive(item.href, pathname);
         return <NavItemRow key={item.href} item={item} active={active} collapsed={collapsed} />;
       })}
-    </>
+    </div>
   );
 }
 
@@ -381,40 +396,44 @@ function HashTabItems({
   collapsed: boolean;
 }) {
   return (
-    <>
+    <div className="flex flex-col gap-1.5">
       {tabs.map((tab) => {
         const active = activeHash === tab.key;
-        const className = `relative flex items-center gap-3 rounded-xl no-underline transition-colors ${
-          collapsed ? "justify-center w-10 h-10" : "w-full h-10 px-3"
-        }`;
         return (
           <a
             key={tab.key}
             href={`#${tab.key}`}
-            className={className}
-            style={{ backgroundColor: active ? ACTIVE_BG : "transparent" }}
+            className={`group relative flex items-center gap-4 rounded-2xl no-underline transition-all duration-300 ${
+              collapsed ? "justify-center w-11 h-11 mx-auto" : "w-full h-11 px-4"
+            }`}
+            style={{ 
+              backgroundColor: active ? ACTIVE_BG : "transparent",
+              border: active ? "1px solid rgba(226, 254, 165, 0.1)" : "1px solid transparent",
+            }}
             title={collapsed ? tab.label : undefined}
           >
-            <tab.icon
-              size={18}
-              style={{
-                color: active ? COLOR_ON : COLOR_OFF,
-                flexShrink: 0,
-              }}
-            />
+            <div 
+              className={`shrink-0 transition-transform duration-300 ${active ? "scale-110" : "group-hover:scale-110"}`}
+              style={{ color: active ? COLOR_ON : COLOR_OFF }}
+            >
+              <tab.icon size={18} strokeWidth={active ? 2.5 : 2} />
+            </div>
             {!collapsed && (
               <span
-                className="text-sm whitespace-nowrap overflow-hidden"
-                style={{ color: active ? COLOR_ON : COLOR_OFF }}
+                className="text-xs font-semibold tracking-wide truncate transition-colors"
+                style={{ 
+                  color: active ? COLOR_ON : COLOR_OFF,
+                  fontFamily: FN,
+                }}
               >
                 {tab.label}
               </span>
             )}
-            {active && <ActiveBar />}
+            {active && <ActiveIndicator />}
           </a>
         );
       })}
-    </>
+    </div>
   );
 }
 
@@ -456,27 +475,27 @@ export function SideNav() {
 
   return (
     <nav
-      className="fixed left-0 top-0 hidden md:flex flex-col justify-between py-5 px-2 z-50 transition-[width] duration-200"
+      className="fixed left-0 top-0 hidden md:flex flex-col justify-between py-6 px-3 z-50 transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-[width] backdrop-blur-xl border border-white/5 shadow-2xl"
       style={{
         width,
         height: "calc(100vh - 32px)",
         top: 16,
         left: 16,
-        backgroundColor: "#0F2C23",
-        borderRadius: 15,
+        backgroundColor: "rgba(15, 44, 35, 0.98)",
+        borderRadius: 24,
       }}
     >
       {/* Top section */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col">
         {ctx.kind !== "global" ? (
           <BackButton
             href={ctx.backHref}
             label={
               ctx.kind === "hackathon"
-                ? "Back to list"
+                ? "Program Overview"
                 : ctx.kind === "project"
-                  ? "Back to projects"
-                  : "Back to host"
+                  ? "Project List"
+                  : "Command Center"
             }
             collapsed={collapsed}
           />
@@ -484,7 +503,7 @@ export function SideNav() {
           <LogoButton collapsed={collapsed} />
         )}
 
-        <div className="flex flex-col gap-1">
+        <div className="mt-2">
           {ctx.kind !== "global" ? (
             <HashTabItems tabs={ctx.tabs} activeHash={activeHash} collapsed={collapsed} />
           ) : (
@@ -493,27 +512,24 @@ export function SideNav() {
         </div>
       </div>
 
-      {/* Bottom: toggle + logout */}
-      <div className="flex flex-col gap-1">
+      {/* Bottom Actions */}
+      <div className="flex flex-col gap-2 pt-6 border-t border-white/5">
         <button
           type="button"
           onClick={toggle}
-          className={`flex items-center gap-3 rounded-xl border-none cursor-pointer transition-colors ${
-            collapsed ? "justify-center w-10 h-10" : "w-full h-10 px-3"
+          className={`group flex items-center gap-4 rounded-2xl border-none cursor-pointer transition-all duration-300 hover:bg-white/5 ${
+            collapsed ? "justify-center w-11 h-11 mx-auto" : "w-full h-11 px-4"
           }`}
           style={{ backgroundColor: "transparent" }}
-          title={collapsed ? "Expand" : "Collapse"}
-          {...hoverHandlers()}
+          title={collapsed ? "Expand Menu" : undefined}
         >
-          {collapsed ? (
-            <PanelLeftOpen size={17} style={{ color: COLOR_OFF }} />
-          ) : (
-            <>
-              <PanelLeftClose size={17} style={{ color: COLOR_OFF, flexShrink: 0 }} />
-              <span className="text-xs whitespace-nowrap" style={{ color: COLOR_OFF }}>
-                Collapse
-              </span>
-            </>
+          <div className="shrink-0 text-[#E2FEA5]/40 group-hover:text-[#E2FEA5] transition-colors">
+            {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </div>
+          {!collapsed && (
+            <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: COLOR_OFF, fontFamily: PX }}>
+              Collapse
+            </span>
           )}
         </button>
 
@@ -521,16 +537,17 @@ export function SideNav() {
           type="button"
           onClick={handleLogout}
           disabled={loggingOut}
-          className={`flex items-center gap-3 rounded-xl border-none cursor-pointer transition-colors disabled:opacity-50 ${
-            collapsed ? "justify-center w-10 h-10" : "w-full h-10 px-3"
+          className={`group flex items-center gap-4 rounded-2xl border-none cursor-pointer transition-all duration-300 hover:bg-red-500/10 disabled:opacity-50 ${
+            collapsed ? "justify-center w-11 h-11 mx-auto" : "w-full h-11 px-4"
           }`}
           style={{ backgroundColor: "transparent" }}
-          title={collapsed ? "Sign out" : undefined}
-          {...hoverHandlers()}
+          title={collapsed ? "Log out" : undefined}
         >
-          <LogOut size={17} style={{ color: COLOR_OFF, flexShrink: 0 }} />
+          <div className="shrink-0 text-[#E2FEA5]/40 group-hover:text-red-400 transition-colors">
+            <LogOut size={18} />
+          </div>
           {!collapsed && (
-            <span className="text-xs whitespace-nowrap" style={{ color: COLOR_OFF }}>
+            <span className="text-[10px] font-bold tracking-widest uppercase transition-colors group-hover:text-red-400" style={{ color: COLOR_OFF, fontFamily: PX }}>
               Sign out
             </span>
           )}

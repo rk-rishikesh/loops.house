@@ -138,10 +138,8 @@ export async function saveHackathonAction(hackathon: {
       if (!cohost) return { success: false, error: "Unauthorized" };
     }
   } else {
-    // Creating new — must be event_creator or admin
-    if (!user.isEventCreator && !user.isAdmin) {
-      return { success: false, error: "Unauthorized" };
-    }
+    // Creating new hackathon
+    // We allow any authenticated user to start as a host
   }
 
   const supabase = await createServerSupabase();

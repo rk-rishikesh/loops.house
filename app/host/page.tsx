@@ -105,32 +105,45 @@ export default async function HostDashboardPage() {
               ].map(({ label, value, sub, bg, fg, fgMid, Icon, iconColor }) => (
                 <div
                   key={label}
-                  className="rounded-xl flex items-center gap-4 px-5 py-3"
-                  style={{ backgroundColor: bg, minWidth: 220 }}
+                  className="rounded-2xl flex items-center gap-5 px-6 py-5"
+                  style={{ backgroundColor: bg, minWidth: 260 }}
                 >
                   <p
                     className="font-black leading-none"
-                    style={{ fontFamily: PX, fontSize: 22, letterSpacing: "-0.03em", color: fg }}
+                    style={{
+                      fontFamily: FN,
+                      fontSize: 30,
+                      letterSpacing: "-0.04em",
+                      color: fg,
+                    }}
                   >
                     {value}
                   </p>
                   <div className="flex-1 min-w-0">
                     <p
-                      className="text-[8px] tracking-[0.14em] uppercase font-bold leading-none"
-                      style={{ fontFamily: PX, color: fgMid }}
+                      className="text-[9px] tracking-[0.2em] uppercase font-bold leading-none"
+                      style={{
+                        fontFamily: PX,
+                        color: fgMid,
+                      }}
                     >
                       {label}
                     </p>
                     {sub && (
                       <p
-                        className="text-[7px] uppercase mt-1"
-                        style={{ fontFamily: PX, color: fgMid, opacity: 0.65 }}
+                        className="text-[9px] uppercase mt-1"
+                        style={{
+                          fontFamily: PX,
+                          color: fgMid,
+                          opacity: 0.75,
+                          letterSpacing: "0.2em",
+                        }}
                       >
                         {sub}
                       </p>
                     )}
                   </div>
-                  <Icon size={14} style={{ color: iconColor, flexShrink: 0 }} />
+                  <Icon size={18} style={{ color: iconColor, flexShrink: 0 }} />
                 </div>
               ))}
             </div>
@@ -162,13 +175,28 @@ export default async function HostDashboardPage() {
                     Hosted Hackathons.
                   </h2>
                 </div>
-                <Link
-                  href="/host/new"
-                  className="inline-flex items-center gap-2 no-underline rounded-full text-[#E2FEA5] text-[9px] tracking-widest uppercase font-bold px-5 py-2.5"
-                  style={{ backgroundColor: "#0F2C23", fontFamily: PX }}
-                >
-                  <Plus size={10} /> Create Hackathon
-                </Link>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/host/new"
+                    className="inline-flex items-center gap-2 no-underline rounded-full text-[#E2FEA5] text-[9px] tracking-widest uppercase font-bold px-5 py-3.5"
+                    style={{ backgroundColor: "#0F2C23", fontFamily: PX }}
+                  >
+                    <Plus size={10} /> Create Hackathon
+                  </Link>
+                  <span
+                    className="inline-flex items-center justify-center rounded-full text-[9px] font-black tracking-[0.22em] uppercase"
+                    style={{
+                      fontFamily: PX,
+                      width: 32,
+                      height: 32,
+                      backgroundColor: "rgba(15,44,35,0.06)",
+                      color: "#0F2C23",
+                      boxShadow: "0 0 0 1px rgba(15,44,35,0.12)",
+                    }}
+                  >
+                    AI
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -192,7 +220,7 @@ export default async function HostDashboardPage() {
                 </p>
                 <Link
                   href="/host/new"
-                  className="inline-flex items-center gap-2 no-underline rounded-full text-[#E2FEA5] text-[9px] tracking-widest uppercase font-bold px-5 py-2.5"
+                  className="inline-flex items-center gap-2 no-underline rounded-full text-[#E2FEA5] text-[9px] tracking-widest uppercase font-bold px-5 py-3.5"
                   style={{ backgroundColor: "#0F2C23", fontFamily: PX }}
                 >
                   <Plus size={10} /> Create Hackathon
@@ -207,16 +235,18 @@ export default async function HostDashboardPage() {
                 <div
                   className="grid py-3 mb-1"
                   style={{
-                    gridTemplateColumns: "24px 1fr 150px 110px 36px",
-                    gap: "0 14px",
+                    gridTemplateColumns: "24px 1.6fr 140px 80px",
+                    gap: "0 36px",
                     borderTop: "1px solid rgba(15,44,35,0.12)",
                     borderBottom: "1px solid rgba(15,44,35,0.12)",
                   }}
                 >
-                  {["#", "Program", "Stats", "Status", ""].map((col) => (
+                  {["#", "Program", "Status", "View"].map((col) => (
                     <p
                       key={col}
-                      className="text-[9px] tracking-[0.12em] uppercase font-bold text-[#0F2C23]/30"
+                      className={`text-[9px] tracking-[0.12em] uppercase font-bold text-[#0F2C23]/30 ${
+                        col === "Status" || col === "View" ? "text-center" : ""
+                      }`}
                       style={{ fontFamily: PX }}
                     >
                       {col}
@@ -235,8 +265,8 @@ export default async function HostDashboardPage() {
                       <div
                         className="grid py-5 transition-all rounded-sm hover:bg-[rgba(15,44,35,0.025)]"
                         style={{
-                          gridTemplateColumns: "24px 1fr 110px 150px 110px 36px",
-                          gap: "0 14px",
+                          gridTemplateColumns: "24px 1.6fr 140px 80px",
+                          gap: "0 36px",
                           borderBottom: "1px solid rgba(15,44,35,0.07)",
                           alignItems: "center",
                         }}
@@ -271,28 +301,18 @@ export default async function HostDashboardPage() {
                           )}
                         </div>
 
-                        {/* Stats: projects & developers */}
-                        <div className="text-[9px] text-[#0F2C23]/70 leading-snug">
-                          <p style={{ fontFamily: PX }}>
-                            {stats.projects} project
-                            {stats.projects !== 1 ? "s" : ""}
-                          </p>
-                          <p style={{ fontFamily: PX }}>
-                            {stats.teams} developer
-                            {stats.teams !== 1 ? "s" : ""}
-                          </p>
-                        </div>
-
                         {/* Status */}
                         <HackathonPhaseBadge hackathon={b} />
 
                         {/* Arrow */}
-                        <span
-                          className="w-8 h-8 flex items-center justify-center rounded-full transition-transform group-hover:scale-105"
-                          style={{ backgroundColor: "#0F2C23" }}
-                        >
-                          <ArrowUpRight size={13} style={{ color: "#E2FEA5" }} />
-                        </span>
+                        <div className="flex justify-center">
+                          <span
+                            className="w-8 h-8 flex items-center justify-center rounded-full transition-transform group-hover:scale-105"
+                            style={{ backgroundColor: "#0F2C23" }}
+                          >
+                            <ArrowUpRight size={13} style={{ color: "#E2FEA5" }} />
+                          </span>
+                        </div>
                       </div>
                     </Link>
                   );

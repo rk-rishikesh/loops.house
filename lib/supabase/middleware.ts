@@ -24,10 +24,24 @@ export async function requireAuth(
   check?: (caps: BasicCapabilities) => boolean,
 ): Promise<AuthResult | null> {
   const supabase = await createServerSupabase();
-  const {
+  let {
     data: { user },
     error,
   } = await supabase.auth.getUser();
+
+  // Route handlers don't run through edge middleware, so sessions can be stale.
+  // If the access token is expired, attempt a refresh before failing auth.
+  if ((error || !user) && !user) {
+    try {
+      await supabase.auth.refreshSession();
+    } catch {
+      // ignore and fall through
+    }
+
+    const retry = await supabase.auth.getUser();
+    user = retry.data.user;
+    error = retry.error;
+  }
 
   if (error || !user) return null;
 

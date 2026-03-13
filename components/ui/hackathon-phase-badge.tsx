@@ -28,11 +28,11 @@ export function HackathonPhaseBadge({
   const colors = PHASE_COLORS[phase];
   const label = PHASE_LABELS[phase];
 
-  const sizeClasses = size === "sm" ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-sm";
+  const sizeClasses = size === "sm" ? "px-1.5 py-1.5 text-xs" : "px-2.5 py-2 text-sm";
 
   return (
     <span
-      className={`inline-flex items-center rounded-full font-medium ${sizeClasses}`}
+      className={`inline-flex items-center justify-center rounded-full font-medium ${sizeClasses}`}
       style={{ backgroundColor: colors.bg, color: colors.text }}
     >
       {label}
