@@ -1,6 +1,8 @@
 import { ArrowUpRight, FolderOpen, Plus, Users, Zap } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
+import { getServerAuth } from "@/lib/server-auth";
 import { getHackathonsServer, getSubmissionsForHackathonsServer } from "@/lib/server-data";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
@@ -8,7 +10,13 @@ const FN = "var(--font-funnel-sans), sans-serif";
 
 /* ─── Page ────────────────────────────────────────────────────────── */
 export default async function HostDashboardPage() {
-  const hackathons = await getHackathonsServer();
+  const auth = await getServerAuth();
+  if (!auth) redirect("/login?redirect=/host");
+
+  const allHackathons = await getHackathonsServer();
+  const hackathons = allHackathons.filter(
+    (h) => h.host_id === auth.userId || auth.capabilities.cohostOf.includes(h.id),
+  );
   const hackathonIds = hackathons.map((b: { id: string }) => b.id);
   const submissions = await getSubmissionsForHackathonsServer(hackathonIds);
 
@@ -256,10 +264,6 @@ export default async function HostDashboardPage() {
 
                 {/* Rows */}
                 {hackathons.map((b, idx) => {
-                  const stats = hackathonStats[b.id] ?? {
-                    projects: 0,
-                    teams: 0,
-                  };
                   return (
                     <Link key={b.id} href={`/host/${b.id}`} className="no-underline group">
                       <div

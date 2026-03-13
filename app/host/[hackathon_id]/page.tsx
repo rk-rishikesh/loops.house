@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowUpRight, BarChart3, Gavel, Settings, Trophy } from "lucide-react";
+import { ArrowUpRight, BarChart3, Gavel, Settings, Trophy } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";

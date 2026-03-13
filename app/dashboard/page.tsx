@@ -1,4 +1,4 @@
-import { ArrowUpRight, FolderOpen, Zap, Trophy } from "lucide-react";
+import { ArrowUpRight, FolderOpen, Trophy, Zap } from "lucide-react";
 import Link from "next/link";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
@@ -92,12 +92,12 @@ export default function DashboardPage() {
             className="no-underline rounded-[48px] relative overflow-hidden group transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_40px_80px_-20px_rgba(226,254,165,0.4)]"
             style={{ backgroundColor: "#E2FEA5" }}
           >
-             {/* Background pattern */}
-             <div className="absolute inset-0 opacity-[0.1] pointer-events-none">
+            {/* Background pattern */}
+            <div className="absolute inset-0 opacity-[0.1] pointer-events-none">
               <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0F2C23" strokeWidth="0.5"/>
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0F2C23" strokeWidth="0.5" />
                   </pattern>
                 </defs>
                 <rect width="100%" height="100%" fill="url(#grid-pattern)" />
@@ -141,12 +141,22 @@ export default function DashboardPage() {
             className="no-underline rounded-[48px] relative overflow-hidden group transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_40px_80px_-20px_rgba(15,44,35,0.08)] border border-[#0F2C23]/5"
             style={{ backgroundColor: "rgba(15, 44, 35, 0.04)" }}
           >
-             {/* Background pattern */}
-             <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+            {/* Background pattern */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
               <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                 <defs>
-                  <pattern id="diagonal-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
-                    <path d="M 0 20 L 20 0 M -5 5 L 5 -5 M 15 25 L 25 15" fill="none" stroke="#0F2C23" strokeWidth="1"/>
+                  <pattern
+                    id="diagonal-pattern"
+                    width="20"
+                    height="20"
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <path
+                      d="M 0 20 L 20 0 M -5 5 L 5 -5 M 15 25 L 25 15"
+                      fill="none"
+                      stroke="#0F2C23"
+                      strokeWidth="1"
+                    />
                   </pattern>
                 </defs>
                 <rect width="100%" height="100%" fill="url(#diagonal-pattern)" />

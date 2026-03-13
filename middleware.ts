@@ -90,7 +90,7 @@ export async function middleware(request: NextRequest) {
   if (!caps) {
     caps = (await getBasicCapabilities(supabase, userId)) ?? {
       isAdmin: false,
-      isEventCreator: false,
+      isEventCreator: process.env.GATE_CREATORS !== "true",
       isCohost: false,
       isJudge: false,
     };

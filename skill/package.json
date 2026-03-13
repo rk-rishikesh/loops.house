@@ -1,0 +1,31 @@
+{
+  "name": "loopshouse",
+  "version": "0.1.1",
+  "type": "module",
+  "description": "Loops House CLI — manage hackathon projects, ideate with AI, and submit from your terminal or AI agent",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "directory": "skill"
+  },
+  "bin": {
+    "loops": "./dist/loops.js"
+  },
+  "files": [
+    "dist",
+    "SKILL.md",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "bun run bin/loops.ts",
+    "build": "bun build bin/loops.ts --outdir dist --target node && node -e \"const fs=require('fs');const f='dist/loops.js';const c=fs.readFileSync(f,'utf8');fs.writeFileSync(f,c.replace(/^#!.*\\n/,'#!/usr/bin/env node\\n'))\"",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "incur": "^0.3.2",
+    "@supabase/supabase-js": "^2.97.0"
+  }
+}

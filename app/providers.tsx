@@ -62,7 +62,8 @@ async function fetchCaps(
   if (!userResult.data) return null;
   return {
     isAdmin: userResult.data.is_admin,
-    isEventCreator: userResult.data.is_event_creator,
+    isEventCreator:
+      process.env.NEXT_PUBLIC_GATE_CREATORS === "true" ? userResult.data.is_event_creator : true,
     isCohost: (cohostResult.count ?? 0) > 0,
     isJudge: (judgeResult.count ?? 0) > 0,
   };

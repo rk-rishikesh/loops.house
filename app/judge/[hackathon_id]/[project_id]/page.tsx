@@ -41,10 +41,7 @@ export default async function JudgeProjectPage({
         className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: "#F8FFE8" }}
       >
-        <p
-          className="leading-relaxed"
-          style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}
-        >
+        <p className="leading-relaxed" style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}>
           Project, hackathon, or submission not found.
         </p>
       </div>
@@ -62,17 +59,12 @@ export default async function JudgeProjectPage({
         style={{ backgroundColor: "#F8FFE8" }}
       >
         <div className="text-center space-y-3">
-          <p
-            className="text-lg font-semibold"
-            style={{ fontFamily: PX, color: "#0F2C23" }}
-          >
+          <p className="text-lg font-semibold" style={{ fontFamily: PX, color: "#0F2C23" }}>
             Judging is not open yet
           </p>
-          <p
-            className="text-sm"
-            style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}
-          >
-            This hackathon is currently in the <strong>{phase}</strong> phase. Judging opens after the submission deadline.
+          <p className="text-sm" style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}>
+            This hackathon is currently in the <strong>{phase}</strong> phase. Judging opens after
+            the submission deadline.
           </p>
           <a
             href={`/judge/${hackathon_id}`}

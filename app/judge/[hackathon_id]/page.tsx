@@ -34,7 +34,6 @@ export default async function JudgeHackathonPage({
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
-
       <div className="px-10 pt-10 pb-24">
         {/* Hero heading */}
         <div className="mb-16 flex flex-row items-end justify-between gap-6 flex-wrap">

@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { motion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,12 +15,16 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { KnowledgeBasePanel, KBStepStatus, KB_STEPS } from "@/components/client/knowledge-base-panel";
-import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
 import { ImageUpload, MultiImageUpload } from "@/components/client/image-upload";
+import {
+  KB_STEPS,
+  type KBStepStatus,
+  KnowledgeBasePanel,
+} from "@/components/client/knowledge-base-panel";
 import { saveTeamAction } from "@/lib/actions";
 import type { StoredTeam } from "@/lib/data-mappers";
 import { useSaveProject } from "@/lib/queries";
@@ -471,7 +475,6 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F8FFE8" }}>
-
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
       <div className="flex flex-1">
         {/* LEFT — form / intro */}
@@ -485,35 +488,32 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
               <div className="grid lg:grid-cols-[1.2fr,1fr] gap-8 lg:gap-16 items-center">
                 {/* Left Panel */}
                 <div className="flex flex-col items-start text-left">
-                  
-        
-                    <div className=" flex flex-row gap-12">
-                      <h1
-                        className="font-black text-[#0F2C23] leading-[0.85] uppercase mb-6"
-                        style={{
-                          fontFamily: PX,
-                          fontSize: "clamp(48px, 6.2vw, 88px)",
-                          letterSpacing: "-0.04em",
-                        }}
-                      >
-                        PROJECT
-                        <br />
-                        ONBOARDING.
-                      </h1>
-                      <p
-                        className="leading-relaxed mb-8 max-w-xl"
-                        style={{
-                          fontFamily: FN,
-                          fontSize: "clamp(15px, 1.25vw, 18px)",
-                          color: "rgba(15,44,35,0.6)",
-                        }}
-                      >
-                        Your project pipeline from raw links to an <span className="text-[#0F2C23] font-bold">AI-ready knowledge graph</span>. 
-                        Ship faster with agents that actually understand your codebase.
-                      </p>
-                    </div>
-  
-                 
+                  <div className=" flex flex-row gap-12">
+                    <h1
+                      className="font-black text-[#0F2C23] leading-[0.85] uppercase mb-6"
+                      style={{
+                        fontFamily: PX,
+                        fontSize: "clamp(48px, 6.2vw, 88px)",
+                        letterSpacing: "-0.04em",
+                      }}
+                    >
+                      PROJECT
+                      <br />
+                      ONBOARDING.
+                    </h1>
+                    <p
+                      className="leading-relaxed mb-8 max-w-xl"
+                      style={{
+                        fontFamily: FN,
+                        fontSize: "clamp(15px, 1.25vw, 18px)",
+                        color: "rgba(15,44,35,0.6)",
+                      }}
+                    >
+                      Your project pipeline from raw links to an{" "}
+                      <span className="text-[#0F2C23] font-bold">AI-ready knowledge graph</span>.
+                      Ship faster with agents that actually understand your codebase.
+                    </p>
+                  </div>
 
                   <div className="flex flex-col items-start gap-4">
                     <button
@@ -526,19 +526,19 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                       }}
                     >
                       <div className="absolute inset-0 bg-[#E2FEA5] translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                      <span 
+                      <span
                         className="relative z-10 text-[10px] font-black tracking-[0.2em] uppercase transition-colors duration-300 text-[#F8FFE8] group-hover:text-[#0F2C23]"
                         style={{ fontFamily: PX }}
                       >
                         Initialize Creator
                       </span>
-                      <ArrowRight 
-                        size={14} 
-                        className="relative z-10 transition-all duration-300 text-[#F8FFE8] group-hover:text-[#0F2C23] group-hover:translate-x-1" 
+                      <ArrowRight
+                        size={14}
+                        className="relative z-10 transition-all duration-300 text-[#F8FFE8] group-hover:text-[#0F2C23] group-hover:translate-x-1"
                       />
                     </button>
-                    <p 
-                      className="text-[9px] pl-2 uppercase font-bold tracking-[0.2em]" 
+                    <p
+                      className="text-[9px] pl-2 uppercase font-bold tracking-[0.2em]"
                       style={{ fontFamily: PX, color: "rgba(15,44,35,0.35)" }}
                     >
                       Process time: ~2 minutes
@@ -574,14 +574,14 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                       desc: "A personal coach that helps you ship quality code.",
                     },
                   ].map((step) => (
-                    <div 
+                    <div
                       key={step.num}
                       className="flex flex-col gap-4 p-7 rounded-[32px] border border-[#0F2C23]/5 transition-all duration-300 hover:border-[#0F2C23]/10 hover:shadow-lg hover:scale-[1.03]"
                       style={{ backgroundColor: "rgba(226, 254, 165, 0.4)" }}
                     >
                       <div className="flex justify-between items-start">
-                        <span 
-                          className="font-black text-[24px] leading-none opacity-20" 
+                        <span
+                          className="font-black text-[24px] leading-none opacity-20"
                           style={{ fontFamily: PX, color: "#0F2C23" }}
                         >
                           {step.num}
@@ -591,14 +591,14 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                         </div>
                       </div>
                       <div>
-                        <h3 
-                          className="font-bold text-[15px] mb-1.5 uppercase tracking-tight" 
+                        <h3
+                          className="font-bold text-[15px] mb-1.5 uppercase tracking-tight"
                           style={{ fontFamily: PX, color: "#0F2C23" }}
                         >
                           {step.title}
                         </h3>
-                        <p 
-                          className="text-[12px] leading-relaxed opacity-70" 
+                        <p
+                          className="text-[12px] leading-relaxed opacity-70"
                           style={{ fontFamily: FN, color: "#0F2C23" }}
                         >
                           {step.desc}
@@ -736,12 +736,10 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                                   fontSize: 14,
                                 }}
                                 onFocus={(e) =>
-                                  (e.currentTarget.style.backgroundColor =
-                                    "rgba(15,44,35,0.1)")
+                                  (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.1)")
                                 }
                                 onBlur={(e) =>
-                                  (e.currentTarget.style.backgroundColor =
-                                    "rgba(15,44,35,0.06)")
+                                  (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.06)")
                                 }
                               />
                               {items.length > 1 && (
@@ -820,20 +818,14 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
 
                 {/* Field error */}
                 {activeStep?.key && errors[activeStep.key] && (
-                  <p
-                    className="mt-2 text-sm"
-                    style={{ fontFamily: FN, color: "#c0392b" }}
-                  >
+                  <p className="mt-2 text-sm" style={{ fontFamily: FN, color: "#c0392b" }}>
                     {errors[activeStep.key]?.message as string}
                   </p>
                 )}
 
                 {/* Error */}
                 {error && !loading && (
-                  <p
-                    className="mt-4 text-sm"
-                    style={{ fontFamily: FN, color: "#c0392b" }}
-                  >
+                  <p className="mt-4 text-sm" style={{ fontFamily: FN, color: "#c0392b" }}>
                     {error}
                   </p>
                 )}
@@ -911,7 +903,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                 backgroundSize: "32px 32px",
               }}
             />
-            <div 
+            <div
               className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-[120px] pointer-events-none"
               style={{ backgroundColor: "rgba(226,254,165,0.05)" }}
             />
@@ -950,7 +942,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                 </div>
               </div>
               <div className="h-1 w-24 bg-[#E2FEA5]/10 rounded-full overflow-hidden mt-2">
-                <motion.div 
+                <motion.div
                   className="h-full bg-[#E2FEA5]"
                   initial={{ width: 0 }}
                   animate={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
@@ -962,16 +954,16 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
             {/* Step Progress Stepper */}
             <div className="relative z-10 py-6">
               <div className="absolute left-[15px] top-8 bottom-8 w-px bg-white/5" />
-              
+
               <div className="flex flex-col gap-6">
                 {FORM_STEPS.slice(
                   Math.max(0, Math.min(currentStep - 1, totalSteps - 5)),
-                  Math.max(5, currentStep + 4)
+                  Math.max(5, currentStep + 4),
                 ).map((step) => {
                   const absoluteIdx = FORM_STEPS.indexOf(step);
                   const isCur = absoluteIdx === currentStep;
                   const isPast = absoluteIdx < currentStep;
-                  
+
                   return (
                     <motion.div
                       key={step.key}
@@ -1007,18 +999,18 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                       <div className="flex flex-col pt-0.5 min-w-0">
                         <p
                           className="text-[9px] tracking-widest uppercase font-bold"
-                          style={{ 
-                            fontFamily: PX, 
-                            color: isCur ? "#E2FEA5" : "rgba(226,254,165,0.4)" 
+                          style={{
+                            fontFamily: PX,
+                            color: isCur ? "#E2FEA5" : "rgba(226,254,165,0.4)",
                           }}
                         >
                           Step {String(absoluteIdx + 1).padStart(2, "0")}
                         </p>
                         <h3
                           className="text-[14px] font-bold leading-tight truncate"
-                          style={{ 
-                            fontFamily: FN, 
-                            color: isCur ? "#F8FFE8" : "rgba(248,255,232,0.6)" 
+                          style={{
+                            fontFamily: FN,
+                            color: isCur ? "#F8FFE8" : "rgba(248,255,232,0.6)",
                           }}
                         >
                           {step.label.replace(/\?|\./g, "")}
@@ -1053,7 +1045,10 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                   </div>
                 </div>
                 <div className="flex flex-col">
-                  <p className="text-[10px] uppercase font-black tracking-widest text-[#E2FEA5]/40" style={{ fontFamily: PX }}>
+                  <p
+                    className="text-[10px] uppercase font-black tracking-widest text-[#E2FEA5]/40"
+                    style={{ fontFamily: PX }}
+                  >
                     System Processing
                   </p>
                   <p className="text-[14px] font-bold text-[#F8FFE8]" style={{ fontFamily: FN }}>
