@@ -574,12 +574,7 @@ function GalleryColumn({ shots, name }: { shots: string[]; name: string }) {
             className="block rounded-2xl overflow-hidden relative"
             style={{ aspectRatio: "4/3", backgroundColor: "rgba(15,44,35,0.06)" }}
           >
-            <Image
-              src={src}
-              alt={`${name} screenshot ${i + 1}`}
-              fill
-              className="object-cover"
-            />
+            <Image src={src} alt={`${name} screenshot ${i + 1}`} fill className="object-cover" />
           </a>
         ))}
       </div>
@@ -752,141 +747,139 @@ function AIChatPanel({
 
       {/* Single Project Chat */}
       <>
-          <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
-            {messages.length === 0 && (
-              <div className="flex flex-col gap-2 pt-1">
-                <p
-                  className="text-[12px] text-[#F8FFE8]/38 leading-relaxed mb-2"
-                  style={{ fontFamily: FN }}
+        <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+          {messages.length === 0 && (
+            <div className="flex flex-col gap-2 pt-1">
+              <p
+                className="text-[12px] text-[#F8FFE8]/38 leading-relaxed mb-2"
+                style={{ fontFamily: FN }}
+              >
+                Ask anything — I have full context of this project.
+              </p>
+              {[
+                "How does auth work?",
+                "What's the tech stack?",
+                "Walk me through the key features.",
+              ].map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => chatForm.setValue("message", q)}
+                  className="text-left rounded-xl px-4 py-2.5 text-[12px] cursor-pointer border-none transition-all"
+                  style={{
+                    fontFamily: FN,
+                    backgroundColor: "rgba(226,254,165,0.06)",
+                    color: "rgba(226,254,165,0.45)",
+                    border: "1px solid rgba(226,254,165,0.1)",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                      "rgba(226,254,165,0.12)";
+                    (e.currentTarget as HTMLButtonElement).style.color = "rgba(226,254,165,0.82)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                      "rgba(226,254,165,0.06)";
+                    (e.currentTarget as HTMLButtonElement).style.color = "rgba(226,254,165,0.45)";
+                  }}
                 >
-                  Ask anything — I have full context of this project.
-                </p>
-                {[
-                  "How does auth work?",
-                  "What's the tech stack?",
-                  "Walk me through the key features.",
-                ].map((q) => (
-                  <button
-                    key={q}
-                    type="button"
-                    onClick={() => chatForm.setValue("message", q)}
-                    className="text-left rounded-xl px-4 py-2.5 text-[12px] cursor-pointer border-none transition-all"
-                    style={{
-                      fontFamily: FN,
-                      backgroundColor: "rgba(226,254,165,0.06)",
-                      color: "rgba(226,254,165,0.45)",
-                      border: "1px solid rgba(226,254,165,0.1)",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                        "rgba(226,254,165,0.12)";
-                      (e.currentTarget as HTMLButtonElement).style.color = "rgba(226,254,165,0.82)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                        "rgba(226,254,165,0.06)";
-                      (e.currentTarget as HTMLButtonElement).style.color = "rgba(226,254,165,0.45)";
-                    }}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            )}
-            {messages.length > 0 && (
-              <div className="flex flex-col gap-3">
-                {messages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`flex ${
-                      msg.role === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    {msg.role === "user" ? (
-                      <div
-                    className="max-w-[85%] px-4 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap wrap-break-word"
-                    style={{
-                      fontFamily: FN,
-                      borderRadius: "18px 18px 4px 18px",
-                      backgroundColor: "rgba(226,254,165,0.08)",
-                      color: "#F8FFE8",
-                    }}
-                  >
-                    {msg.content || <span style={{ opacity: 0.4 }}>▮</span>}
-                  </div>
-                    ) : (
-                      <div
-                        className="max-w-[88%] px-4 py-3"
-                        style={{
-                          borderRadius: "18px 18px 18px 4px",
-                          backgroundColor: "rgba(226,254,165,0.08)",
-                        }}
-                      >
-                        {msg.content ? (
-                          <MarkdownDark md={msg.content} />
-                        ) : (
-                          <span style={{ opacity: 0.4, color: "#F8FFE8" }}>▮</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            {loading && messages[messages.length - 1]?.role !== "assistant" && (
-              <div className="flex">
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+          {messages.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {messages.map((msg, i) => (
                 <div
-                  className="px-4 py-3 rounded-[18px] rounded-bl-[4px] flex gap-1.5 items-center"
-                  style={{ backgroundColor: "rgba(226,254,165,0.08)" }}
+                  key={i}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  {[0, 1, 2].map((i) => (
-                    <span
-                      key={i}
-                      className="w-1.5 h-1.5 rounded-full inline-block"
+                  {msg.role === "user" ? (
+                    <div
+                      className="max-w-[85%] px-4 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap wrap-break-word"
                       style={{
-                        backgroundColor: "rgba(226,254,165,0.5)",
-                        animation: `dotBounce 1s ${i * 0.15}s infinite`,
+                        fontFamily: FN,
+                        borderRadius: "18px 18px 4px 18px",
+                        backgroundColor: "rgba(226,254,165,0.08)",
+                        color: "#F8FFE8",
                       }}
-                    />
-                  ))}
+                    >
+                      {msg.content || <span style={{ opacity: 0.4 }}>▮</span>}
+                    </div>
+                  ) : (
+                    <div
+                      className="max-w-[88%] px-4 py-3"
+                      style={{
+                        borderRadius: "18px 18px 18px 4px",
+                        backgroundColor: "rgba(226,254,165,0.08)",
+                      }}
+                    >
+                      {msg.content ? (
+                        <MarkdownDark md={msg.content} />
+                      ) : (
+                        <span style={{ opacity: 0.4, color: "#F8FFE8" }}>▮</span>
+                      )}
+                    </div>
+                  )}
                 </div>
+              ))}
+            </div>
+          )}
+          {loading && messages[messages.length - 1]?.role !== "assistant" && (
+            <div className="flex">
+              <div
+                className="px-4 py-3 rounded-[18px] rounded-bl-[4px] flex gap-1.5 items-center"
+                style={{ backgroundColor: "rgba(226,254,165,0.08)" }}
+              >
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="w-1.5 h-1.5 rounded-full inline-block"
+                    style={{
+                      backgroundColor: "rgba(226,254,165,0.5)",
+                      animation: `dotBounce 1s ${i * 0.15}s infinite`,
+                    }}
+                  />
+                ))}
               </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
-          <form
-            onSubmit={handleSend}
-            className="flex gap-2 px-4 py-3 shrink-0"
-            style={{ borderTop: "1px solid rgba(226,254,165,0.08)" }}
+            </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
+        <form
+          onSubmit={handleSend}
+          className="flex gap-2 px-4 py-3 shrink-0"
+          style={{ borderTop: "1px solid rgba(226,254,165,0.08)" }}
+        >
+          <input
+            type="text"
+            {...chatForm.register("message")}
+            placeholder="Ask about the project…"
+            disabled={loading}
+            autoComplete="off"
+            className="flex-1 rounded-xl px-4 py-2.5 text-[13px] outline-none transition-all"
+            style={{
+              fontFamily: FN,
+              backgroundColor: "rgba(226,254,165,0.07)",
+              border: "1px solid rgba(226,254,165,0.13)",
+              color: "#F8FFE8",
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(226,254,165,0.35)")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(226,254,165,0.13)")}
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer shrink-0 transition-colors"
+            style={{
+              backgroundColor: loading ? "rgba(226,254,165,0.2)" : "#E2FEA5",
+              color: "#0F2C23",
+            }}
           >
-            <input
-              type="text"
-              {...chatForm.register("message")}
-              placeholder="Ask about the project…"
-              disabled={loading}
-              autoComplete="off"
-              className="flex-1 rounded-xl px-4 py-2.5 text-[13px] outline-none transition-all"
-              style={{
-                fontFamily: FN,
-                backgroundColor: "rgba(226,254,165,0.07)",
-                border: "1px solid rgba(226,254,165,0.13)",
-                color: "#F8FFE8",
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(226,254,165,0.35)")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(226,254,165,0.13)")}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-10 h-10 rounded-xl flex items-center justify-center border-none cursor-pointer shrink-0 transition-colors"
-              style={{
-                backgroundColor: loading ? "rgba(226,254,165,0.2)" : "#E2FEA5",
-                color: "#0F2C23",
-              }}
-            >
-              {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-            </button>
-          </form>
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+          </button>
+        </form>
       </>
     </div>
   );
@@ -1213,9 +1206,7 @@ export function ViewerProjectDetail({
                     title={item.title}
                     body={item.body}
                     isOpen={openWhyIndex === i}
-                    onToggle={() =>
-                      setOpenWhyIndex((curr) => (curr === i ? null : i))
-                    }
+                    onToggle={() => setOpenWhyIndex((curr) => (curr === i ? null : i))}
                   />
                 ))
               ) : (

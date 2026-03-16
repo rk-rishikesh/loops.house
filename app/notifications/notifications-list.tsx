@@ -1,6 +1,3 @@
-
-
-
 "use client";
 
 import type { LucideIcon } from "lucide-react";
@@ -64,10 +61,7 @@ function InvitationCard({ invitation }: { invitation: Invitation }) {
       style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
     >
       <div className="flex flex-col gap-0.5">
-        <span
-          className="text-sm font-medium"
-          style={{ color: "#0F2C23", fontFamily: FN }}
-        >
+        <span className="text-sm font-medium" style={{ color: "#0F2C23", fontFamily: FN }}>
           {inviterName} invited you
         </span>
         <span
@@ -136,10 +130,7 @@ export function NotificationsList({ invitations }: { invitations: Invitation[] }
         >
           All caught up.
         </p>
-        <p
-          className="text-[#0F2C23]/50 leading-relaxed"
-          style={{ fontFamily: FN, fontSize: 15 }}
-        >
+        <p className="text-[#0F2C23]/50 leading-relaxed" style={{ fontFamily: FN, fontSize: 15 }}>
           No pending invitations or notifications.
         </p>
       </div>
@@ -188,4 +179,3 @@ export function NotificationsList({ invitations }: { invitations: Invitation[] }
     </div>
   );
 }
-

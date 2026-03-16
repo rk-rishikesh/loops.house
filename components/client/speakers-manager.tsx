@@ -99,10 +99,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
       </div>
 
       {/* ── Two-column body ───────────────────────────────────────────── */}
-      <div
-        className="grid gap-8 items-start"
-        style={{ gridTemplateColumns: "1fr 320px" }}
-      >
+      <div className="grid gap-8 items-start" style={{ gridTemplateColumns: "1fr 320px" }}>
         {/* LEFT */}
         <div className="flex flex-col gap-10">
           {/* Step 01 — Add speaker */}
@@ -143,12 +140,8 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                         color: "#0F2C23",
                         fontFamily: FN,
                       }}
-                      onFocus={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#CBE595")
-                      }
-                      onBlur={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#E2FEA5")
-                      }
+                      onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
+                      onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
                     />
                   </div>
                   <div className="flex-1">
@@ -169,12 +162,8 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                         color: "#0F2C23",
                         fontFamily: FN,
                       }}
-                      onFocus={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#CBE595")
-                      }
-                      onBlur={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#E2FEA5")
-                      }
+                      onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
+                      onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
                     />
                   </div>
                   <div className="mt-1">
@@ -204,10 +193,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                 )}
               </>
             ) : (
-              <p
-                className="text-sm"
-                style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}
-              >
+              <p className="text-sm" style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}>
                 This hackathon is finalized. Speakers can no longer be edited.
               </p>
             )}
@@ -282,10 +268,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                   className="grid items-center py-6 border-b border-[#0F2C23]/10 transition-all duration-150 hover:bg-[#0F2C23]/[0.02] rounded-sm"
                   style={{ gridTemplateColumns: "64px 1fr 100px", gap: "0 20px" }}
                 >
-                  <p
-                    className="font-bold text-[#0F2C23]"
-                    style={{ fontFamily: PX, fontSize: 14 }}
-                  >
+                  <p className="font-bold text-[#0F2C23]" style={{ fontFamily: PX, fontSize: 14 }}>
                     {String(idx + 1).padStart(2, "0")}.
                   </p>
 
@@ -348,10 +331,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                             className="flex h-10 w-10 items-center justify-center rounded-full shrink-0"
                             style={{ background: "rgba(15,44,35,0.06)" }}
                           >
-                            <User
-                              size={16}
-                              style={{ color: "#0F2C23", opacity: 0.4 }}
-                            />
+                            <User size={16} style={{ color: "#0F2C23", opacity: 0.4 }} />
                           </div>
                         )}
                         <span
@@ -389,10 +369,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
             {/* Footer strip */}
             {speakers.length > 0 && (
               <div className="flex items-center justify-between mt-6 pt-5 border-t border-[#0F2C23]/8">
-                <p
-                  className="text-[11px] text-[#0F2C23]/40"
-                  style={{ fontFamily: FN }}
-                >
+                <p className="text-[11px] text-[#0F2C23]/40" style={{ fontFamily: FN }}>
                   {speakers.length} speaker{speakers.length !== 1 ? "s" : ""} listed
                 </p>
               </div>
@@ -403,10 +380,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
         {/* RIGHT sidebar */}
         <aside className="sticky top-[81px] flex flex-col gap-4">
           {/* Status card */}
-          <div
-            className="rounded-3xl p-7"
-            style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
-          >
+          <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
             <p
               className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5"
               style={{ fontFamily: PX }}
@@ -417,18 +391,15 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
               {[
                 {
                   label: "Total speakers",
-                  value:
-                    speakers.length > 0
-                      ? `${speakers.length} listed`
-                      : "None yet",
+                  value: speakers.length > 0 ? `${speakers.length} listed` : "None yet",
                   done: speakers.length > 0,
                 },
                 {
                   label: "With photo",
                   value: `${speakers.filter((s) => s.image_url).length} of ${speakers.length}`,
                   done:
-                    speakers.filter((s) => s.image_url).length ===
-                      speakers.length && speakers.length > 0,
+                    speakers.filter((s) => s.image_url).length === speakers.length &&
+                    speakers.length > 0,
                 },
               ].map(({ label, value, done }) => (
                 <div
@@ -438,9 +409,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                   <span
                     className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center"
                     style={{
-                      backgroundColor: done
-                        ? "#0F2C23"
-                        : "rgba(15,44,35,0.1)",
+                      backgroundColor: done ? "#0F2C23" : "rgba(15,44,35,0.1)",
                     }}
                   >
                     {done && (
@@ -457,10 +426,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                     >
                       {label}
                     </p>
-                    <p
-                      className="text-sm text-[#0F2C23]/65 truncate"
-                      style={{ fontFamily: FN }}
-                    >
+                    <p className="text-sm text-[#0F2C23]/65 truncate" style={{ fontFamily: FN }}>
                       {value}
                     </p>
                   </div>
@@ -470,10 +436,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
           </div>
 
           {/* How it works */}
-          <div
-            className="rounded-2xl px-6 py-5"
-            style={{ backgroundColor: "#E2FEA5" }}
-          >
+          <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#E2FEA5" }}>
             <p
               className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-4"
               style={{ fontFamily: PX }}

@@ -16,8 +16,9 @@ function getDashboard(
 ): string {
   if (!caps) return "/dashboard";
   if (caps.isAdmin) return "/admin";
-  if (caps.isEventCreator || caps.isCohost) return "/host";
-  if (caps.isJudge) return "/judge";
+  // TODO: re-enable after testing phase — everyone lands on /dashboard for now
+  // if (caps.isEventCreator || caps.isCohost) return "/host";
+  // if (caps.isJudge) return "/judge";
   return "/dashboard";
 }
 
@@ -210,13 +211,13 @@ function LoginPageContent() {
                   Password
                 </label>
                 <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  {...register("password")}
-                  className="w-full px-3 py-2 pr-10 rounded-xl border border-zinc-200 bg-white text-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#20332b]"
-                  placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
-                />
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    {...register("password")}
+                    className="w-full px-3 py-2 pr-10 rounded-xl border border-zinc-200 bg-white text-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#20332b]"
+                    placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                  />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}

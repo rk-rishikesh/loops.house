@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Check,
   Code2,
+  Database,
   ExternalLink,
   FileText,
   Github,
@@ -17,14 +18,13 @@ import {
   Users,
   Video,
   Youtube,
-  Database,
 } from "lucide-react";
-import { KnowledgeBasePanel, KBStepStatus } from "@/components/client/knowledge-base-panel";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { ImageUpload } from "@/components/client/image-upload";
+import { type KBStepStatus, KnowledgeBasePanel } from "@/components/client/knowledge-base-panel";
 import { createInvitationAction, removeTeamMemberAction, saveProjectAction } from "@/lib/actions";
 import type { StoredProject, StoredSubmission } from "@/lib/data-mappers";
 import type { TeamMemberInfo } from "@/lib/server-data";
@@ -405,7 +405,10 @@ export function ProjectEditor({
       <div className="flex flex-col h-screen overflow-hidden p-6 md:p-10">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-black text-[#0F2C23] uppercase tracking-tight" style={{ fontFamily: PX, fontSize: 32 }}>
+            <h1
+              className="font-black text-[#0F2C23] uppercase tracking-tight"
+              style={{ fontFamily: PX, fontSize: 32 }}
+            >
               Project Intelligence
             </h1>
             <p className="text-sm text-[#0F2C23]/60" style={{ fontFamily: FN }}>
@@ -413,16 +416,16 @@ export function ProjectEditor({
             </p>
           </div>
           <div className="flex gap-3">
-             <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer px-6 py-3 text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
-                style={{ backgroundColor: "#0F2C23", color: "#E2FEA5", fontFamily: PX }}
-              >
-                <Database size={14} /> Sync Now
-              </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer px-6 py-3 text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+              style={{ backgroundColor: "#0F2C23", color: "#E2FEA5", fontFamily: PX }}
+            >
+              <Database size={14} /> Sync Now
+            </button>
           </div>
         </div>
-        
+
         <div className="flex-1 min-h-0 p-4 md:p-6 overflow-y-auto custom-scrollbar">
           <KnowledgeBasePanel progress={verifiedProgress} errors={{}} />
         </div>

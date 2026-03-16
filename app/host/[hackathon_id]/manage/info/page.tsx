@@ -10,11 +10,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
-export default async function InfoPage({
-  params,
-}: {
-  params: Promise<{ hackathon_id: string }>;
-}) {
+export default async function InfoPage({ params }: { params: Promise<{ hackathon_id: string }> }) {
   const { hackathon_id } = await params;
   const auth = await getServerAuth();
   if (!auth) redirect("/login?redirect=/host");
@@ -73,4 +69,3 @@ export default async function InfoPage({
     </div>
   );
 }
-

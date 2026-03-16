@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowUpRight, Check, Clock, Loader2, Send, Users, X } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createInvitationAction } from "@/lib/actions";

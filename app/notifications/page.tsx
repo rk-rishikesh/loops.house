@@ -1,6 +1,3 @@
-
-
-
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/lib/server-auth";
 import { getPendingInvitationsServer } from "@/lib/server-data";
@@ -50,4 +47,3 @@ export default async function NotificationsPage() {
     </div>
   );
 }
-

@@ -5,10 +5,10 @@ import {
   ArrowLeft,
   Bell,
   CalendarDays,
+  Database,
   Eye,
   FolderOpen,
   Gavel,
-  Globe,
   GraduationCap,
   Info,
   LayoutGrid,
@@ -23,7 +23,6 @@ import {
   Trophy,
   Users,
   Zap,
-  Database,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -89,7 +88,7 @@ const GLOBAL_NAV: NavItem[] = [
     icon: Users,
     label: "Host Navigation",
   },
-    { href: "/notifications", icon: Bell, label: "Notifications" },
+  { href: "/notifications", icon: Bell, label: "Notifications" },
 ];
 
 const HACKATHON_TABS: TabItem[] = [
@@ -240,12 +239,12 @@ const ACTIVE_BG = "rgba(226,254,165,0.08)";
 function ActiveIndicator() {
   return (
     <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center">
-      <div 
-        className="w-[3px] h-5 rounded-full" 
-        style={{ 
+      <div
+        className="w-[3px] h-5 rounded-full"
+        style={{
           backgroundColor: COLOR_ON,
-          boxShadow: "0 0 12px rgba(226, 254, 165, 0.5)"
-        }} 
+          boxShadow: "0 0 12px rgba(226, 254, 165, 0.5)",
+        }}
       />
     </div>
   );
@@ -255,12 +254,13 @@ function LogoButton({ collapsed }: { collapsed: boolean }) {
   return (
     <Link
       href="/"
-      className="group flex items-center gap-3 rounded-2xl no-underline mb-6 transition-all duration-300"
-      style={{ height: 48, paddingLeft: collapsed ? 14 : 14 }}
+      className={`group flex items-center no-underline mb-6 transition-all duration-300 rounded-2xl ${
+        collapsed ? "justify-center w-11 h-11 mx-auto" : "w-full h-12 px-4 gap-3"
+      }`}
       title="Home"
     >
-      <div className="relative shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-white/5 group-hover:bg-white/10 transition-colors">
-        <Image src="/logo.svg" alt="Loops" width={18} height={18} />
+      <div className="relative shrink-0 flex items-center justify-center w-8 h-8 rounded-xl group-hover:bg-white/10 transition-colors">
+        <Image src="/lightlogo.svg" alt="Loops" width={18} height={18} />
       </div>
       {!collapsed && (
         <span
@@ -286,19 +286,17 @@ function BackButton({
   return (
     <Link
       href={href}
-      className="group flex items-center gap-3 rounded-2xl no-underline mb-6 transition-all duration-300 hover:bg-white/5"
-      style={{
-        height: 48,
-        paddingLeft: collapsed ? 14 : 14,
-      }}
+      className={`group flex items-center no-underline mb-6 transition-all duration-300 hover:bg-white/5 rounded-2xl ${
+        collapsed ? "justify-center w-11 h-11 mx-auto" : "w-full h-12 px-4 gap-3"
+      }`}
       title={label}
     >
       <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-[#E2FEA5]/5 text-[#E2FEA5] group-hover:bg-[#E2FEA5]/10 group-hover:-translate-x-0.5 transition-all">
         <ArrowLeft size={16} />
       </div>
       {!collapsed && (
-        <span 
-          className="text-[10px] font-bold tracking-widest uppercase truncate" 
+        <span
+          className="text-[10px] font-bold tracking-widest uppercase truncate"
           style={{ color: COLOR_OFF, fontFamily: PX }}
         >
           {label}
@@ -319,7 +317,7 @@ function NavItemRow({
 }) {
   const content = (
     <>
-      <div 
+      <div
         className={`shrink-0 transition-transform duration-300 ${active ? "scale-110" : "group-hover:scale-110"}`}
         style={{ color: active ? COLOR_ON : COLOR_OFF }}
       >
@@ -328,7 +326,7 @@ function NavItemRow({
       {!collapsed && (
         <span
           className="text-xs font-semibold tracking-wide truncate transition-colors"
-          style={{ 
+          style={{
             color: active ? COLOR_ON : COLOR_OFF,
             fontFamily: FN,
           }}
@@ -363,11 +361,7 @@ function NavItemRow({
   }
 
   return (
-    <a
-      className={className}
-      style={styles}
-      title={collapsed ? item.label : undefined}
-    >
+    <a className={className} style={styles} title={collapsed ? item.label : undefined}>
       {content}
     </a>
   );
@@ -406,13 +400,13 @@ function HashTabItems({
             className={`group relative flex items-center gap-4 rounded-2xl no-underline transition-all duration-300 ${
               collapsed ? "justify-center w-11 h-11 mx-auto" : "w-full h-11 px-4"
             }`}
-            style={{ 
+            style={{
               backgroundColor: active ? ACTIVE_BG : "transparent",
               border: active ? "1px solid rgba(226, 254, 165, 0.1)" : "1px solid transparent",
             }}
             title={collapsed ? tab.label : undefined}
           >
-            <div 
+            <div
               className={`shrink-0 transition-transform duration-300 ${active ? "scale-110" : "group-hover:scale-110"}`}
               style={{ color: active ? COLOR_ON : COLOR_OFF }}
             >
@@ -421,7 +415,7 @@ function HashTabItems({
             {!collapsed && (
               <span
                 className="text-xs font-semibold tracking-wide truncate transition-colors"
-                style={{ 
+                style={{
                   color: active ? COLOR_ON : COLOR_OFF,
                   fontFamily: FN,
                 }}
@@ -527,7 +521,10 @@ export function SideNav() {
             {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
           </div>
           {!collapsed && (
-            <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: COLOR_OFF, fontFamily: PX }}>
+            <span
+              className="text-[10px] font-bold tracking-widest uppercase"
+              style={{ color: COLOR_OFF, fontFamily: PX }}
+            >
               Collapse
             </span>
           )}
@@ -547,7 +544,10 @@ export function SideNav() {
             <LogOut size={18} />
           </div>
           {!collapsed && (
-            <span className="text-[10px] font-bold tracking-widest uppercase transition-colors group-hover:text-red-400" style={{ color: COLOR_OFF, fontFamily: PX }}>
+            <span
+              className="text-[10px] font-bold tracking-widest uppercase transition-colors group-hover:text-red-400"
+              style={{ color: COLOR_OFF, fontFamily: PX }}
+            >
               Sign out
             </span>
           )}

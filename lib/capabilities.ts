@@ -7,6 +7,10 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/** When GATE_CREATORS=true, only users with is_event_creator in DB can create events.
+ *  Otherwise (default), all authenticated users can create events. */
+const isCreatorGated = process.env.GATE_CREATORS === "true";
+
 /** Basic capabilities — available at cookie/middleware level for fast route gating */
 export interface BasicCapabilities {
   isAdmin: boolean;
@@ -51,7 +55,7 @@ export async function getBasicCapabilities(
 
   return {
     isAdmin: userData.is_admin,
-    isEventCreator: userData.is_event_creator,
+    isEventCreator: isCreatorGated ? userData.is_event_creator : true,
     isCohost: (cohostResult.count ?? 0) > 0,
     isJudge: (judgeResult.count ?? 0) > 0,
   };
@@ -75,7 +79,7 @@ export async function getFullCapabilities(
 
   return {
     isAdmin: userData.is_admin,
-    isEventCreator: userData.is_event_creator,
+    isEventCreator: isCreatorGated ? userData.is_event_creator : true,
     isCohost: cohostOf.length > 0,
     isJudge: judgeOf.length > 0,
     cohostOf,

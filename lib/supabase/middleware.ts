@@ -1,5 +1,8 @@
+import { createServerClient } from "@supabase/ssr";
+import { headers } from "next/headers";
 import { type BasicCapabilities, getBasicCapabilities } from "@/lib/capabilities";
 import { createServerSupabase } from "./server";
+import type { Database } from "./types";
 
 export type AuthUser = {
   id: string;
@@ -43,7 +46,12 @@ export async function requireAuth(
     error = retry.error;
   }
 
-  if (error || !user) return null;
+  // Fall back to Bearer token auth (used by CLI / MCP tools)
+  if (error || !user) {
+    const result = await tryBearerAuth(check);
+    if (result) return result;
+    return null;
+  }
 
   const caps = await getBasicCapabilities(supabase, user.id);
   if (!caps) return null;
@@ -58,6 +66,59 @@ export async function requireAuth(
     },
     supabase,
   };
+}
+
+/**
+ * Authenticate via Authorization: Bearer <supabase_access_token>.
+ * Used by CLI and MCP tools that can't set cookies.
+ */
+async function tryBearerAuth(
+  check?: (caps: BasicCapabilities) => boolean,
+): Promise<AuthResult | null> {
+  try {
+    const hdrs = await headers();
+    const authHeader = hdrs.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) return null;
+
+    const token = authHeader.slice(7);
+
+    // Create a Supabase client with the Bearer token injected as the session
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+        cookies: {
+          getAll: () => [],
+          setAll: () => {},
+        },
+      },
+    );
+
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (error || !user) return null;
+
+    const caps = await getBasicCapabilities(supabase, user.id);
+    if (!caps) return null;
+    if (check && !check(caps)) return null;
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email!,
+        is_admin: caps.isAdmin,
+        is_event_creator: caps.isEventCreator,
+      },
+      supabase,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function unauthorized(message = "Unauthorized") {

@@ -1,11 +1,11 @@
 "use client";
 
+import { ArrowLeft, ArrowRight, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import type { StoredHackathon, TechnicalResourceItem } from "@/lib/data-mappers";
 import { useSaveHackathon } from "@/lib/queries";
 import { HackathonProgramPreview } from "./hackathon-program-preview";
-import { Loader2, Sparkles, ArrowLeft, ArrowRight, Trash2, Plus } from "lucide-react";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -163,6 +163,20 @@ const STEP_FILLER = [
     statLabel: "problems is the sweet spot",
   },
   {
+    label: "Timeline",
+    headline: "Dates set the pace",
+    body: "Clear deadlines create urgency and help builders plan. A well-spaced schedule — start, submission, judging, results — keeps momentum high throughout the program.",
+    stat: "4 dates",
+    statLabel: "define the full lifecycle",
+  },
+  {
+    label: "Resources",
+    headline: "Give builders a head start",
+    body: "Link your website, documentation, starter kits, and API references. The more accessible your technical resources, the faster builders can ship meaningful projects.",
+    stat: "3×",
+    statLabel: "faster starts with good docs",
+  },
+  {
     label: "Incentives",
     headline: "Prizes move builders",
     body: "Even small prize pools signal seriousness. Tiered rewards (grand, runner-up, category) produce more competitive submissions than a single large prize.",
@@ -227,9 +241,16 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
   }
 
   function handleNext() {
-    if (currentStep.required && !form[currentStep.field as FormField]?.toString().trim()) {
-      setError("This field is required.");
-      return;
+    if (currentStep.required) {
+      if (currentStep.id === "timeline") {
+        if (!form.start_date.trim()) {
+          setError("Please set at least a start date.");
+          return;
+        }
+      } else if (!form[currentStep.field as FormField]?.toString().trim()) {
+        setError("This field is required.");
+        return;
+      }
     }
     setError(null);
     if (step < STEPS.length - 1) {
@@ -309,7 +330,8 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
         problem_statements: problemStatements,
         theme: form.theme || undefined,
         website_url: form.website_url || undefined,
-        technical_resources: form.technical_resources.length > 0 ? form.technical_resources : undefined,
+        technical_resources:
+          form.technical_resources.length > 0 ? form.technical_resources : undefined,
         technical_docs: form.technical_docs || undefined,
         bounty_pool_summary: form.bounty_pool_summary || undefined,
         program_goal: form.program_goal || undefined,
@@ -453,13 +475,18 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                     { label: "Results Date", field: "results_date" },
                   ].map((d) => (
                     <div key={d.field} className="flex flex-col gap-2">
-                      <label className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#0F2C23]/40" style={{ fontFamily: PX }}>
+                      <label
+                        className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#0F2C23]/40"
+                        style={{ fontFamily: PX }}
+                      >
                         {d.label}
                       </label>
                       <input
                         type="datetime-local"
                         value={form[d.field as FormField] as string}
-                        onChange={(e) => setForm(prev => ({ ...prev, [d.field]: e.target.value }))}
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, [d.field]: e.target.value }))
+                        }
                         className="bg-white/40 border border-[#0F2C23]/10 rounded-xl px-4 py-3 outline-none focus:border-[#0F2C23] transition-all text-sm"
                         style={{ fontFamily: FN }}
                       />
@@ -471,21 +498,29 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
               {currentStep.type === "links" && (
                 <div className="space-y-8 mt-2">
                   <div className="flex flex-col gap-2">
-                    <label className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#0F2C23]/40" style={{ fontFamily: PX }}>
+                    <label
+                      className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#0F2C23]/40"
+                      style={{ fontFamily: PX }}
+                    >
                       Main Website
                     </label>
                     <input
                       type="url"
                       value={form.website_url}
-                      onChange={(e) => setForm(prev => ({ ...prev, website_url: e.target.value }))}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, website_url: e.target.value }))
+                      }
                       placeholder="https://yourhackathon.com"
                       className="bg-white/40 border border-[#0F2C23]/10 rounded-xl px-4 py-3 outline-none focus:border-[#0F2C23] transition-all text-sm"
                       style={{ fontFamily: FN }}
                     />
                   </div>
-                  
+
                   <div className="space-y-4">
-                    <label className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#0F2C23]/40" style={{ fontFamily: PX }}>
+                    <label
+                      className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#0F2C23]/40"
+                      style={{ fontFamily: PX }}
+                    >
                       Technical Resources
                     </label>
                     <div className="space-y-3">
@@ -498,7 +533,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                             onChange={(e) => {
                               const newRes = [...form.technical_resources];
                               newRes[i].description = e.target.value;
-                              setForm(prev => ({ ...prev, technical_resources: newRes }));
+                              setForm((prev) => ({ ...prev, technical_resources: newRes }));
                             }}
                             className="w-1/3 bg-white/40 border border-[#0F2C23]/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-[#0F2C23]"
                             style={{ fontFamily: FN }}
@@ -510,7 +545,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                             onChange={(e) => {
                               const newRes = [...form.technical_resources];
                               newRes[i].url = e.target.value;
-                              setForm(prev => ({ ...prev, technical_resources: newRes }));
+                              setForm((prev) => ({ ...prev, technical_resources: newRes }));
                             }}
                             className="flex-1 bg-white/40 border border-[#0F2C23]/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-[#0F2C23]"
                             style={{ fontFamily: FN }}
@@ -518,7 +553,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                           <button
                             onClick={() => {
                               const newRes = form.technical_resources.filter((_, idx) => idx !== i);
-                              setForm(prev => ({ ...prev, technical_resources: newRes }));
+                              setForm((prev) => ({ ...prev, technical_resources: newRes }));
                             }}
                             className="p-3 text-[#0F2C23]/20 hover:text-[#0F2C23] transition-colors"
                           >
@@ -527,10 +562,15 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                         </div>
                       ))}
                       <button
-                        onClick={() => setForm(prev => ({ 
-                          ...prev, 
-                          technical_resources: [...prev.technical_resources, { url: "", description: "" }] 
-                        }))}
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            technical_resources: [
+                              ...prev.technical_resources,
+                              { url: "", description: "" },
+                            ],
+                          }))
+                        }
                         className="flex items-center gap-2 text-[9px] uppercase font-bold tracking-widest text-[#0F2C23]/40 hover:text-[#0F2C23] transition-colors"
                         style={{ fontFamily: PX }}
                       >
@@ -979,68 +1019,104 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                 /* SUMMARY BEFORE GENERATING */
                 <div className="max-w-4xl mx-auto px-10 py-24">
                   <header className="mb-16">
-                    <h2 className="text-4xl font-black uppercase text-[#0F2C23] mb-4" style={{ fontFamily: PX }}>Review Your Brief</h2>
-                    <p className="text-lg text-[#0F2C23]/60" style={{ fontFamily: FN }}>Ready to let the AI architect your program?</p>
+                    <h2
+                      className="text-4xl font-black uppercase text-[#0F2C23] mb-4"
+                      style={{ fontFamily: PX }}
+                    >
+                      Review Your Brief
+                    </h2>
+                    <p className="text-lg text-[#0F2C23]/60" style={{ fontFamily: FN }}>
+                      Ready to let the AI architect your program?
+                    </p>
                   </header>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                     <div className="space-y-8">
-                        {STEPS.map((s) => {
-                          const val = form[s.field as FormField]?.toString().trim();
-                          if (!val || s.id === "timeline" || s.id === "resources") return null;
-                          return (
-                            <div key={s.id}>
-                               <p className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/30 mb-2" style={{ fontFamily: PX }}>{s.number} — {s.id}</p>
-                               <p className="text-[15px] text-[#0F2C23]/80 leading-relaxed" style={{ fontFamily: FN }}>{val}</p>
+                    <div className="space-y-8">
+                      {STEPS.map((s) => {
+                        const val = form[s.field as FormField]?.toString().trim();
+                        if (!val || s.id === "timeline" || s.id === "resources") return null;
+                        return (
+                          <div key={s.id}>
+                            <p
+                              className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/30 mb-2"
+                              style={{ fontFamily: PX }}
+                            >
+                              {s.number} — {s.id}
+                            </p>
+                            <p
+                              className="text-[15px] text-[#0F2C23]/80 leading-relaxed"
+                              style={{ fontFamily: FN }}
+                            >
+                              {val}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="space-y-8">
+                      <div>
+                        <p
+                          className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/30 mb-4"
+                          style={{ fontFamily: PX }}
+                        >
+                          VITAL DATES
+                        </p>
+                        <div className="bg-white/50 border border-[#0F2C23]/10 rounded-2xl p-6 space-y-4">
+                          {[
+                            { label: "Start", val: form.start_date },
+                            { label: "Submit", val: form.submission_deadline },
+                            { label: "Results", val: form.results_date },
+                          ].map((d) => (
+                            <div key={d.label} className="flex justify-between items-center">
+                              <span
+                                className="text-[10px] uppercase font-bold text-[#0F2C23]/40"
+                                style={{ fontFamily: PX }}
+                              >
+                                {d.label}
+                              </span>
+                              <span
+                                className="text-sm font-medium text-[#0F2C23]"
+                                style={{ fontFamily: FN }}
+                              >
+                                {d.val || "Not set"}
+                              </span>
                             </div>
-                          );
-                        })}
-                     </div>
-                     <div className="space-y-8">
-                        <div>
-                           <p className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/30 mb-4" style={{ fontFamily: PX }}>VITAL DATES</p>
-                           <div className="bg-white/50 border border-[#0F2C23]/10 rounded-2xl p-6 space-y-4">
-                              {[
-                                { label: 'Start', val: form.start_date },
-                                { label: 'Submit', val: form.submission_deadline },
-                                { label: 'Results', val: form.results_date },
-                              ].map(d => (
-                                <div key={d.label} className="flex justify-between items-center">
-                                   <span className="text-[10px] uppercase font-bold text-[#0F2C23]/40" style={{ fontFamily: PX }}>{d.label}</span>
-                                   <span className="text-sm font-medium text-[#0F2C23]" style={{ fontFamily: FN }}>{d.val || 'Not set'}</span>
-                                </div>
-                              ))}
-                           </div>
+                          ))}
                         </div>
-                     </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* BOTTOM ACTION BAR (SUMMARY) */}
                   <div className="fixed bottom-0 left-0 right-0 p-8 flex justify-center pointer-events-none">
-                     <div className="bg-white border border-[#0F2C23]/10 rounded-2xl p-4 flex gap-4 shadow-xl pointer-events-auto">
-                        <button 
-                           onClick={() => setDone(false)}
-                           className="px-6 py-3 text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/60 hover:text-[#0F2C23]"
-                           style={{ fontFamily: PX }}
-                        >
-                           Make Edits
-                        </button>
-                        <button 
-                           onClick={handleGenerate}
-                           disabled={isGenerating}
-                           className="px-10 py-3 bg-[#0F2C23] text-[#E2FEA5] rounded-xl text-[10px] uppercase font-bold tracking-widest hover:scale-[1.03] transition-transform flex items-center gap-3"
-                           style={{ fontFamily: PX }}
-                        >
-                           {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                           {isGenerating ? "Synthesizing..." : "Generate Program Draft"}
-                        </button>
-                     </div>
+                    <div className="bg-white border border-[#0F2C23]/10 rounded-2xl p-4 flex gap-4 shadow-xl pointer-events-auto">
+                      <button
+                        onClick={() => setDone(false)}
+                        className="px-6 py-3 text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/60 hover:text-[#0F2C23]"
+                        style={{ fontFamily: PX }}
+                      >
+                        Make Edits
+                      </button>
+                      <button
+                        onClick={handleGenerate}
+                        disabled={isGenerating}
+                        className="px-10 py-3 bg-[#0F2C23] text-[#E2FEA5] rounded-xl text-[10px] uppercase font-bold tracking-widest hover:scale-[1.03] transition-transform flex items-center gap-3"
+                        style={{ fontFamily: PX }}
+                      >
+                        {isGenerating ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Sparkles size={12} />
+                        )}
+                        {isGenerating ? "Synthesizing..." : "Generate Program Draft"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
                 <>
                   <HackathonProgramPreview draft={draft.draft} />
-                  
+
                   {/* ══ STICKY ACTION BAR (DRAFT) ══ */}
                   <div className="fixed bottom-0 left-0 right-0 bg-[#F8FFE8]/80 backdrop-blur-xl border-t border-[#0F2C23]/10 p-8 z-50">
                     <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -1053,7 +1129,10 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                           &larr; Back to Brief
                         </button>
                         <div className="h-4 w-px bg-[#0F2C23]/10" />
-                        <p className="text-xs text-[#0F2C23]/40 font-medium" style={{ fontFamily: FN }}>
+                        <p
+                          className="text-xs text-[#0F2C23]/40 font-medium"
+                          style={{ fontFamily: FN }}
+                        >
                           This draft is editable after you finalise the program.
                         </p>
                       </div>

@@ -1,29 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
+  CalendarDays,
+  ChevronDown,
   FileText,
-  Trophy,
+  Loader2,
   Plus,
   Send,
-  Loader2,
   Sparkles,
-  CalendarDays,
+  Trophy,
   Users,
-  ChevronDown,
 } from "lucide-react";
-import type {
-  StoredHackathon,
-  StoredProject,
-  StoredSubmission,
-} from "@/lib/data-mappers";
-import { useIsMounted } from "@/hooks/use-is-mounted";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { ProjectEditor } from "@/components/client/project-editor";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { submitProjectAction } from "@/lib/actions";
+import type { StoredHackathon, StoredProject, StoredSubmission } from "@/lib/data-mappers";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -67,12 +63,22 @@ export function BuilderHackathonDetail({
     (s) => s.hackathon_id === hackathonId && userProjectIds.has(s.project_id),
   );
   const submittedProject =
-    (hackathonSubmission && projects.find((p) => p.project_id === hackathonSubmission.project_id)) ?? null;
+    (hackathonSubmission &&
+      projects.find((p) => p.project_id === hackathonSubmission.project_id)) ??
+    null;
 
   useEffect(() => {
     const read = () => {
       const h = (window.location.hash.replace("#", "") || "info") as SectionKey;
-      const valid: SectionKey[] = ["ideator", "mentor", "info", "speakers", "schedule", "prizes", "submit"];
+      const valid: SectionKey[] = [
+        "ideator",
+        "mentor",
+        "info",
+        "speakers",
+        "schedule",
+        "prizes",
+        "submit",
+      ];
       setSection(valid.includes(h) ? h : "info");
     };
     read();
@@ -89,8 +95,14 @@ export function BuilderHackathonDetail({
 
   if (hackathon === null) {
     return (
-      <div className="flex flex-col h-screen overflow-hidden p-4" style={{ backgroundColor: "#F8FFE8" }}>
-        <div className="flex-1 rounded-[15px] flex items-center justify-center" style={{ backgroundColor: "#0F2C23" }}>
+      <div
+        className="flex flex-col h-screen overflow-hidden p-4"
+        style={{ backgroundColor: "#F8FFE8" }}
+      >
+        <div
+          className="flex-1 rounded-[15px] flex items-center justify-center"
+          style={{ backgroundColor: "#0F2C23" }}
+        >
           <p style={{ fontFamily: FN, color: "rgba(226,254,165,0.5)" }}>Opportunity not found.</p>
         </div>
       </div>
@@ -273,7 +285,9 @@ export function BuilderHackathonDetail({
   /* ─── Chat view (shared between Ideator & Mentor) ──────────── */
   function renderChat() {
     const isIdeator = section === "ideator";
-    const placeholder = isIdeator ? "Describe your idea or ask for help..." : "Ask your mentor anything...";
+    const placeholder = isIdeator
+      ? "Describe your idea or ask for help..."
+      : "Ask your mentor anything...";
 
     if (mounted && !isAuthenticated) {
       return (
@@ -318,11 +332,21 @@ export function BuilderHackathonDetail({
           <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-10 py-10">
             <p
               className="font-black uppercase leading-none select-none text-center mb-5"
-              style={{ fontFamily: PX, fontSize: "clamp(48px, 6vw, 80px)", letterSpacing: "-0.04em", opacity: 0.04, lineHeight: 0.85, color: "#E2FEA5" }}
+              style={{
+                fontFamily: PX,
+                fontSize: "clamp(48px, 6vw, 80px)",
+                letterSpacing: "-0.04em",
+                opacity: 0.04,
+                lineHeight: 0.85,
+                color: "#E2FEA5",
+              }}
             >
               {WATERMARKS[section]}
             </p>
-            <p className="text-sm leading-relaxed text-center max-w-[440px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}>
+            <p
+              className="text-sm leading-relaxed text-center max-w-[440px]"
+              style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
+            >
               {isIdeator
                 ? "Start with your idea. The Ideator will sharpen it, map it to the challenges, and outline next steps."
                 : "Your AI Mentor can guide you through technical decisions, architecture, and implementation strategy."}
@@ -347,10 +371,18 @@ export function BuilderHackathonDetail({
                   type="button"
                   onClick={() => injectStarter(s)}
                   className="rounded-2xl px-4 py-3.5 text-left text-[12px] transition-all hover:scale-[1.01] flex items-start justify-between gap-3 border-none cursor-pointer"
-                  style={{ fontFamily: FN, backgroundColor: "rgba(226,254,165,0.04)", color: "rgba(226,254,165,0.65)", border: "1px solid rgba(226,254,165,0.08)" }}
+                  style={{
+                    fontFamily: FN,
+                    backgroundColor: "rgba(226,254,165,0.04)",
+                    color: "rgba(226,254,165,0.65)",
+                    border: "1px solid rgba(226,254,165,0.08)",
+                  }}
                 >
                   <span className="leading-snug">{s}</span>
-                  <ArrowUpRight size={10} style={{ color: "rgba(226,254,165,0.2)", flexShrink: 0, marginTop: 2 }} />
+                  <ArrowUpRight
+                    size={10}
+                    style={{ color: "rgba(226,254,165,0.2)", flexShrink: 0, marginTop: 2 }}
+                  />
                 </button>
               ))}
             </div>
@@ -358,22 +390,38 @@ export function BuilderHackathonDetail({
         ) : (
           <div className="flex-1 overflow-y-auto px-10 py-8 flex flex-col gap-5">
             {messages.map((msg, i) => (
-              <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                key={i}
+                className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              >
                 {msg.role === "assistant" && (
-                  <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#E2FEA5" }}>
+                  <div
+                    className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-1"
+                    style={{ backgroundColor: "#E2FEA5" }}
+                  >
                     <Sparkles size={12} style={{ color: "#0F2C23" }} />
                   </div>
                 )}
                 <div
                   className="rounded-2xl px-5 py-4 max-w-[78%]"
                   style={{
-                    backgroundColor: msg.role === "user" ? "rgba(226,254,165,0.12)" : "rgba(226,254,165,0.045)",
+                    backgroundColor:
+                      msg.role === "user" ? "rgba(226,254,165,0.12)" : "rgba(226,254,165,0.045)",
                     borderBottomRightRadius: msg.role === "user" ? 4 : 16,
                     borderBottomLeftRadius: msg.role === "assistant" ? 4 : 16,
-                    border: msg.role === "assistant" ? "1px solid rgba(226,254,165,0.06)" : "1px solid rgba(226,254,165,0.08)",
+                    border:
+                      msg.role === "assistant"
+                        ? "1px solid rgba(226,254,165,0.06)"
+                        : "1px solid rgba(226,254,165,0.08)",
                   }}
                 >
-                  <p className="text-sm leading-[1.85] whitespace-pre-wrap" style={{ fontFamily: FN, color: msg.role === "user" ? "#E2FEA5" : "rgba(226,254,165,0.65)" }}>
+                  <p
+                    className="text-sm leading-[1.85] whitespace-pre-wrap"
+                    style={{
+                      fontFamily: FN,
+                      color: msg.role === "user" ? "#E2FEA5" : "rgba(226,254,165,0.65)",
+                    }}
+                  >
                     {msg.content}
                   </p>
                 </div>
@@ -387,10 +435,18 @@ export function BuilderHackathonDetail({
         <form
           className="shrink-0 px-10 py-6"
           style={{ borderTop: "1px solid rgba(226,254,165,0.06)" }}
-          onSubmit={(e) => { e.preventDefault(); void sendMessage(draft.trim()); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            void sendMessage(draft.trim());
+          }}
         >
           {error && (
-            <p className="mb-3 text-[12px]" style={{ fontFamily: FN, color: "rgba(226,254,165,0.6)" }}>{error}</p>
+            <p
+              className="mb-3 text-[12px]"
+              style={{ fontFamily: FN, color: "rgba(226,254,165,0.6)" }}
+            >
+              {error}
+            </p>
           )}
           <div className="flex items-end gap-3">
             <textarea
@@ -401,7 +457,13 @@ export function BuilderHackathonDetail({
               rows={1}
               disabled={loading}
               className="flex-1 resize-none outline-none rounded-2xl px-5 py-4 text-sm"
-              style={{ fontFamily: FN, backgroundColor: "rgba(226,254,165,0.035)", color: "#E2FEA5", border: "1px solid rgba(226,254,165,0.1)", lineHeight: 1.7 }}
+              style={{
+                fontFamily: FN,
+                backgroundColor: "rgba(226,254,165,0.035)",
+                color: "#E2FEA5",
+                border: "1px solid rgba(226,254,165,0.1)",
+                lineHeight: 1.7,
+              }}
             />
             <button
               type="submit"
@@ -482,10 +544,7 @@ export function BuilderHackathonDetail({
               >
                 AI idea partner
               </p>
-              <p
-                className="text-sm leading-relaxed"
-                style={{ fontFamily: FN, color: "#0F2C23" }}
-              >
+              <p className="text-sm leading-relaxed" style={{ fontFamily: FN, color: "#0F2C23" }}>
                 Use the <span className="font-semibold">Ideator agent</span> to brainstorm concepts,
                 map them to challenges, and shape a clear project plan.
               </p>
@@ -507,10 +566,7 @@ export function BuilderHackathonDetail({
               >
                 AI build mentor
               </p>
-              <p
-                className="text-sm leading-relaxed"
-                style={{ fontFamily: FN, color: "#0F2C23" }}
-              >
+              <p className="text-sm leading-relaxed" style={{ fontFamily: FN, color: "#0F2C23" }}>
                 Switch to the <span className="font-semibold">Mentor agent</span> for architecture
                 reviews, implementation guidance, and polish before you submit.
               </p>
@@ -556,10 +612,7 @@ export function BuilderHackathonDetail({
           SPEAKERS
         </p>
 
-        <div
-          className="grid gap-6"
-          style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
-        >
+        <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
           {speakers.map((s) => (
             <div
               key={s.name}
@@ -620,10 +673,13 @@ export function BuilderHackathonDetail({
 
   /* ─── Schedule view ─────────────────────────────────────────── */
   function renderSchedule() {
-    const hasAnyDate = h.start_date || h.submission_deadline || h.judging_deadline || h.results_date;
+    const hasAnyDate =
+      h.start_date || h.submission_deadline || h.judging_deadline || h.results_date;
     const rows: { label: string; value: string }[] = [
       ...(h.start_date ? [{ label: "Start date", value: h.start_date }] : []),
-      ...(h.submission_deadline ? [{ label: "Submission deadline", value: h.submission_deadline }] : []),
+      ...(h.submission_deadline
+        ? [{ label: "Submission deadline", value: h.submission_deadline }]
+        : []),
       ...(h.judging_deadline ? [{ label: "Judging deadline", value: h.judging_deadline }] : []),
       ...(h.results_date ? [{ label: "Results", value: h.results_date }] : []),
     ];
@@ -712,10 +768,7 @@ export function BuilderHackathonDetail({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20">
-            <CalendarDays
-              size={24}
-              style={{ color: "rgba(15,44,35,0.35)", marginBottom: 16 }}
-            />
+            <CalendarDays size={24} style={{ color: "rgba(15,44,35,0.35)", marginBottom: 16 }} />
             <p
               className="text-sm text-center max-w-[360px]"
               style={{ fontFamily: FN, color: "rgba(15,44,35,0.55)" }}
@@ -838,18 +891,13 @@ export function BuilderHackathonDetail({
                     border: "1px solid rgba(15,44,35,0.07)",
                   }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor =
-                      "rgba(15,44,35,0.04)")
+                    (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.04)")
                   }
                   onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor =
-                      "rgba(15,44,35,0.02)")
+                    (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.02)")
                   }
                 >
-                  <FileText
-                    size={12}
-                    style={{ color: "rgba(15,44,35,0.6)", flexShrink: 0 }}
-                  />
+                  <FileText size={12} style={{ color: "rgba(15,44,35,0.6)", flexShrink: 0 }} />
                   <span
                     className="text-[12px] truncate"
                     style={{
@@ -1016,13 +1064,9 @@ export function BuilderHackathonDetail({
 
     // Already-submitted project IDs for this hackathon (to filter them out)
     const submittedProjectIds = new Set(
-      submissions
-        .filter((s) => s.hackathon_id === hackathonId)
-        .map((s) => s.project_id),
+      submissions.filter((s) => s.hackathon_id === hackathonId).map((s) => s.project_id),
     );
-    const availableProjects = projects.filter(
-      (p) => !submittedProjectIds.has(p.project_id),
-    );
+    const availableProjects = projects.filter((p) => !submittedProjectIds.has(p.project_id));
 
     return (
       <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-10">
@@ -1092,10 +1136,7 @@ export function BuilderHackathonDetail({
             </>
           ) : (
             <>
-              <SubmitProjectPicker
-                projects={availableProjects}
-                hackathonId={hackathonId}
-              />
+              <SubmitProjectPicker projects={availableProjects} hackathonId={hackathonId} />
               <p
                 className="mt-6 text-xs leading-relaxed"
                 style={{ fontFamily: FN, color: "rgba(226,254,165,0.65)" }}
@@ -1134,10 +1175,7 @@ export function BuilderHackathonDetail({
   // similar to the /hackathons listing (no dark rounded container).
   if (SIMPLE_SECTIONS.includes(section)) {
     return (
-      <main
-        className="min-h-screen"
-        style={{ backgroundColor: "#F8FFE8" }}
-      >
+      <main className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
         {SECTION_RENDERER[section]()}
       </main>
     );
@@ -1232,10 +1270,7 @@ function SubmitProjectPicker({
       </div>
 
       {submitError && (
-        <p
-          className="text-xs mb-3"
-          style={{ fontFamily: FN, color: "#ff6b6b" }}
-        >
+        <p className="text-xs mb-3" style={{ fontFamily: FN, color: "#ff6b6b" }}>
           {submitError}
         </p>
       )}
@@ -1250,11 +1285,7 @@ function SubmitProjectPicker({
           fontFamily: PX,
         }}
       >
-        {isPending ? (
-          <Loader2 size={12} className="animate-spin" />
-        ) : (
-          <Send size={12} />
-        )}
+        {isPending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
         {isPending ? "Submitting…" : "Submit Project"}
       </button>
     </div>

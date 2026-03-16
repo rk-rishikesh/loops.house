@@ -100,8 +100,8 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
             className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
             style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
           >
-            Configure the core information, timeline, and prize structure for your program. This data
-            is public once the program is launched.
+            Configure the core information, timeline, and prize structure for your program. This
+            data is public once the program is launched.
           </p>
         </div>
       </div>
@@ -118,14 +118,19 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
               >
                 01
               </span>
-              <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40" style={{ fontFamily: PX }}>
+              <p
+                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+                style={{ fontFamily: PX }}
+              >
                 Core Information
               </p>
             </div>
 
             <div className="grid gap-5">
               <div>
-                <label style={labelStyle} className="mb-2 block">Program Name</label>
+                <label style={labelStyle} className="mb-2 block">
+                  Program Name
+                </label>
                 <input
                   {...register("name")}
                   className="w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors placeholder-[#0F2C23]/30"
@@ -141,7 +146,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
               </div>
 
               <div>
-                <label style={labelStyle} className="mb-2 block">Theme / Tagline</label>
+                <label style={labelStyle} className="mb-2 block">
+                  Theme / Tagline
+                </label>
                 <input
                   {...register("theme")}
                   placeholder="e.g. Building the future of decentralization"
@@ -153,7 +160,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
               </div>
 
               <div>
-                <label style={labelStyle} className="mb-2 block">Program Goal</label>
+                <label style={labelStyle} className="mb-2 block">
+                  Program Goal
+                </label>
                 <textarea
                   {...register("program_goal")}
                   rows={4}
@@ -166,7 +175,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
               </div>
 
               <div>
-                <label style={labelStyle} className="mb-2 block">Website URL (optional)</label>
+                <label style={labelStyle} className="mb-2 block">
+                  Website URL (optional)
+                </label>
                 <input
                   {...register("website_url")}
                   type="url"
@@ -189,14 +200,19 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
               >
                 02
               </span>
-              <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40" style={{ fontFamily: PX }}>
+              <p
+                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+                style={{ fontFamily: PX }}
+              >
                 Timeline & Deadlines
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <label style={labelStyle} className="mb-2 block">Start Date</label>
+                <label style={labelStyle} className="mb-2 block">
+                  Start Date
+                </label>
                 <input
                   {...register("start_date")}
                   type="datetime-local"
@@ -208,7 +224,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                 />
               </div>
               <div>
-                <label style={labelStyle} className="mb-2 block">Submission Deadline</label>
+                <label style={labelStyle} className="mb-2 block">
+                  Submission Deadline
+                </label>
                 <input
                   {...register("submission_deadline")}
                   type="datetime-local"
@@ -220,7 +238,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                 />
               </div>
               <div>
-                <label style={labelStyle} className="mb-2 block">Judging Deadline</label>
+                <label style={labelStyle} className="mb-2 block">
+                  Judging Deadline
+                </label>
                 <input
                   {...register("judging_deadline")}
                   type="datetime-local"
@@ -232,7 +252,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                 />
               </div>
               <div>
-                <label style={labelStyle} className="mb-2 block">Results Announcement</label>
+                <label style={labelStyle} className="mb-2 block">
+                  Results Announcement
+                </label>
                 <input
                   {...register("results_date")}
                   type="datetime-local"
@@ -260,13 +282,18 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
               >
                 03
               </span>
-              <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40" style={{ fontFamily: PX }}>
+              <p
+                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+                style={{ fontFamily: PX }}
+              >
                 Prizes & Judging
               </p>
             </div>
 
             <div>
-              <label style={labelStyle} className="mb-2 block">Prize Pool Summary</label>
+              <label style={labelStyle} className="mb-2 block">
+                Prize Pool Summary
+              </label>
               <textarea
                 {...register("bounty_pool_summary")}
                 rows={3}
@@ -291,11 +318,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                 className="pl-5 pr-3 py-3.5 text-[9px] tracking-[0.15em] uppercase font-bold text-[#F8FFE8] flex items-center gap-2"
                 style={{ fontFamily: PX }}
               >
-                {isPending ? (
-                  <Loader2 size={11} className="animate-spin" />
-                ) : (
-                  <Save size={11} />
-                )}
+                {isPending ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
                 {isPending ? "Saving..." : "Save Changes"}
               </span>
               <span
@@ -311,7 +334,8 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                 className="flex items-center gap-2 rounded-2xl px-4 py-2 text-xs"
                 style={{
                   fontFamily: FN,
-                  backgroundColor: message.type === "success" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+                  backgroundColor:
+                    message.type === "success" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
                   color: message.type === "success" ? "#166534" : "#B91C1C",
                   border: `1px solid ${message.type === "success" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}`,
                 }}
@@ -327,7 +351,10 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
         <aside className="sticky top-[81px] flex flex-col gap-4">
           {/* Status card */}
           <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
-            <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5" style={{ fontFamily: PX }}>
+            <p
+              className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5"
+              style={{ fontFamily: PX }}
+            >
               Profile Completion
             </p>
             <div className="flex flex-col gap-2">
@@ -348,7 +375,10 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   value: watchedValues.bounty_pool_summary ? "Defined" : "Empty",
                 },
               ].map(({ label, done, value }) => (
-                <div key={label} className="flex items-center gap-3 py-3 border-b border-[#0F2C23]/08">
+                <div
+                  key={label}
+                  className="flex items-center gap-3 py-3 border-b border-[#0F2C23]/08"
+                >
                   <span
                     className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center"
                     style={{ backgroundColor: done ? "#0F2C23" : "rgba(15,44,35,0.1)" }}
@@ -356,7 +386,10 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                     {done && <Check size={10} style={{ color: "#F8FFE8" }} />}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[9px] tracking-[0.14em] uppercase font-bold text-[#0F2C23]/38" style={{ fontFamily: PX }}>
+                    <p
+                      className="text-[9px] tracking-[0.14em] uppercase font-bold text-[#0F2C23]/38"
+                      style={{ fontFamily: PX }}
+                    >
                       {label}
                     </p>
                     <p className="text-sm text-[#0F2C23]/65 truncate" style={{ fontFamily: FN }}>
@@ -370,13 +403,22 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
 
           {/* Guide card */}
           <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#E2FEA5" }}>
-            <p className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-4" style={{ fontFamily: PX }}>
+            <p
+              className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-4"
+              style={{ fontFamily: PX }}
+            >
               Configuration Guide
             </p>
             <div className="flex flex-col gap-3">
               {[
-                { n: "01", t: "Keep your program name and theme concise to attract more builders." },
-                { n: "02", t: "Double-check dates — they affect when submissions and judging are open." },
+                {
+                  n: "01",
+                  t: "Keep your program name and theme concise to attract more builders.",
+                },
+                {
+                  n: "02",
+                  t: "Double-check dates — they affect when submissions and judging are open.",
+                },
                 { n: "03", t: "A clear prize summary helps participants understand the stakes." },
               ].map(({ n, t }) => (
                 <div key={n} className="flex items-start gap-3">
@@ -386,7 +428,10 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   >
                     {n}
                   </span>
-                  <p className="text-xs text-[#0F2C23]/60 leading-relaxed" style={{ fontFamily: FN }}>
+                  <p
+                    className="text-xs text-[#0F2C23]/60 leading-relaxed"
+                    style={{ fontFamily: FN }}
+                  >
                     {t}
                   </p>
                 </div>
@@ -396,9 +441,15 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
 
           {/* Unsaved changes warning */}
           {isDirty && !isPending && (
-            <div className="rounded-2xl px-6 py-4 flex items-center gap-3" style={{ backgroundColor: "#0F2C23" }}>
+            <div
+              className="rounded-2xl px-6 py-4 flex items-center gap-3"
+              style={{ backgroundColor: "#0F2C23" }}
+            >
               <Clock size={16} className="text-[#E2FEA5] shrink-0" />
-              <p className="text-[10px] tracking-wide uppercase font-bold text-white/80" style={{ fontFamily: PX }}>
+              <p
+                className="text-[10px] tracking-wide uppercase font-bold text-white/80"
+                style={{ fontFamily: PX }}
+              >
                 Unsaved Changes
               </p>
             </div>
