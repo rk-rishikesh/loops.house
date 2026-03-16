@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import {
   DM_Mono,
   Funnel_Sans,
@@ -54,6 +55,7 @@ export const metadata: Metadata = {
   description: "Build hackathon projects, host events, and discover projects.",
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -67,31 +69,28 @@ export default function RootLayout({
       <body className="">
         {/* Mobile / small-screen blocker */}
         <div
-          className="fixed inset-0 z-9999 flex items-center justify-center px-8 text-center md:hidden"
-          style={{ backgroundColor: "#F8FFE8" }}
+          className="fixed inset-0 z-9999 flex items-center justify-center bg-[#F8FFE8] px-8 text-center md:hidden"
         >
-          <div>
-            <p
-              className="font-black uppercase leading-none mb-4"
-              style={{
-                fontFamily: "var(--font-pixelify-sans), sans-serif",
-                fontSize: 28,
-                letterSpacing: "-0.025em",
-                color: "#0F2C23",
-              }}
-            >
-              Desktop Only
-            </p>
-            <p
-              className="text-sm leading-relaxed max-w-[320px] mx-auto"
-              style={{
-                fontFamily: "var(--font-funnel-sans), sans-serif",
-                color: "rgba(15,44,35,0.7)",
-              }}
-            >
-              This experience is designed for desktop screens. Please switch to a laptop or desktop
-              to continue.
-            </p>
+          <div className="flex flex-col items-center gap-8">
+            <Image
+              src="/assets/portal/peepingCat.svg"
+              alt="Peeping Cat"
+              width={200}
+              height={200}
+              className="h-40 w-40 object-contain"
+            />
+            <div className="flex flex-col gap-3">
+              <h1
+                className={`${pixelifySans.className} text-4xl font-bold uppercase leading-none tracking-tight text-[#0F2C23] sm:text-5xl`}
+              >
+                Big Ideas Need<br />Big Screen
+              </h1>
+              <p
+                className={`${funnelSans.className} text-lg  text-[#0F2C23B3]`}
+              >
+                Switch to Desktop
+              </p>
+            </div>
           </div>
         </div>
         <SupabaseProvider>
