@@ -78,8 +78,8 @@ export async function middleware(request: NextRequest) {
 
   if (!session) return response;
 
-  // Extract user ID from JWT
-  const userId = JSON.parse(atob(session.access_token.split(".")[1])).sub as string;
+  // Use Supabase session user ID directly (no manual JWT decoding)
+  const userId = session.user.id;
 
   // Resolve capabilities — cookie first, then DB
   let caps: BasicCapabilities | null = null;
