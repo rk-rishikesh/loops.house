@@ -207,6 +207,8 @@ export function ProjectEditor({
 
   type EditSection = "hero" | "description" | "meta" | "links" | "logo" | null;
   const [editingSection, setEditingSection] = useState<EditSection>(null);
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [openOverviewIndex, setOpenOverviewIndex] = useState<number | null>(0);
 
   const openSection = (section: NonNullable<EditSection>) => {
     if (!project) return;
@@ -450,39 +452,11 @@ export function ProjectEditor({
             style={{ borderBottom: "1px solid rgba(226,254,165,0.06)" }}
           >
             <p
-              className="text-[9px] tracking-[0.25em] uppercase font-bold"
-              style={{ fontFamily: PX, color: "rgba(226,254,165,0.3)" }}
+              className="text-[25px] tracking-[0.25em] uppercase font-bold"
+              style={{ fontFamily: FN, color: "rgba(226,254,165, 1)" }}
             >
-              {p.name} — AI Lab
+              {p.name}
             </p>
-            <div className="flex items-center gap-2">
-              {[
-                { key: "social-copy" as const, label: "Social Copy" },
-                { key: "project-mentor" as const, label: "Mentor" },
-                { key: "pitch-coach" as const, label: "Pitch" },
-                { key: "code-reviewer" as const, label: "Code Review" },
-              ].map((tab) => {
-                const isActive = activeLabTab === tab.key;
-                const isEnabled = tab.key === "social-copy";
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => isEnabled && setActiveLabTab(tab.key as typeof activeLabTab)}
-                    disabled={!isEnabled}
-                    className="inline-flex items-center gap-1.5 rounded-full border-none cursor-pointer px-3.5 py-1.5 text-[8px] tracking-[0.16em] uppercase font-bold disabled:cursor-not-allowed"
-                    style={{
-                      fontFamily: PX,
-                      backgroundColor: isActive ? "#E2FEA5" : "rgba(226,254,165,0.06)",
-                      color: isActive ? "#0F2C23" : "rgba(226,254,165,0.4)",
-                      opacity: isEnabled ? 1 : 0.35,
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
           </div>
 
           {/* Body */}
@@ -748,34 +722,6 @@ export function ProjectEditor({
             </div>
           ) : (
             <>
-              <div className="flex items-start justify-between gap-4">
-                <h1
-                  className="font-black text-[#0F2C23] leading-[0.88] uppercase"
-                  style={{
-                    fontFamily: PX,
-                    fontSize: "clamp(48px, 8vw, 120px)",
-                    letterSpacing: "-0.025em",
-                  }}
-                >
-                  {p.name}
-                </h1>
-                <div className="mt-3">
-                  <PencilBtn onClick={() => openSection("hero")} />
-                </div>
-              </div>
-              {p.tagline && (
-                <div className="flex justify-end mt-4">
-                  <p
-                    className="text-[#0F2C23]/55 max-w-[420px] text-right leading-relaxed"
-                    style={{
-                      fontFamily: FN,
-                      fontSize: "clamp(14px, 1.5vw, 18px)",
-                    }}
-                  >
-                    {p.tagline}
-                  </p>
-                </div>
-              )}
             </>
           )}
         </div>
@@ -822,6 +768,23 @@ export function ProjectEditor({
                   />
                 </div>
               )}
+            </div>
+
+            {/* Name + tagline (viewer-style) */}
+            <div>
+              <h2
+                className="font-black text-[#0F2C23] leading-[0.9] uppercase mb-3"
+                style={{
+                  fontFamily: PX,
+                  fontSize: "clamp(20px, 2.8vw, 30px)",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {p.name}
+              </h2>
+              <p className="text-[#0F2C23]/55 leading-relaxed text-sm" style={{ fontFamily: FN }}>
+                {p.tagline || desc.slice(0, 130) || "No tagline."}
+              </p>
             </div>
 
             {/* Category + tags */}
@@ -1092,15 +1055,45 @@ export function ProjectEditor({
                     <SectionLabel>AI Generated Description</SectionLabel>
                     <PencilBtn onClick={() => openSection("description")} />
                   </div>
-                  <p
-                    className="text-[#0F2C23]/75 leading-relaxed"
-                    style={{
-                      fontFamily: FN,
-                      fontSize: "clamp(14px, 1.4vw, 16px)",
-                    }}
-                  >
-                    {desc || "No description available yet."}
-                  </p>
+                  {desc ? (
+                    <>
+                      <p
+                        className="text-[#0F2C23]/75 leading-relaxed whitespace-pre-wrap"
+                        style={{
+                          fontFamily: FN,
+                          fontSize: "clamp(14px, 1.4vw, 16px)",
+                          maxHeight: descExpanded ? "none" : 230,
+                          overflow: descExpanded ? "visible" : "hidden",
+                        }}
+                      >
+                        {desc}
+                      </p>
+                      {desc.length > 260 && (
+                        <button
+                          type="button"
+                          onClick={() => setDescExpanded((v) => !v)}
+                          className="mt-3 ml-auto text-[10px] tracking-[0.18em] uppercase font-bold border-none cursor-pointer px-0 py-0 flex items-center justify-end"
+                          style={{
+                            fontFamily: PX,
+                            color: "#0F2C23",
+                            background: "transparent",
+                          }}
+                        >
+                          {descExpanded ? "Read less" : "Read more"}
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <p
+                      className="text-[#0F2C23]/75 leading-relaxed whitespace-pre-wrap"
+                      style={{
+                        fontFamily: FN,
+                        fontSize: "clamp(14px, 1.4vw, 16px)",
+                      }}
+                    >
+                      <span className="font-semibold italic">No description available yet.</span>
+                    </p>
+                  )}
                 </>
               )}
             </div>
@@ -1135,32 +1128,87 @@ export function ProjectEditor({
             {/* Features card */}
             {features.length > 0 && (
               <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
-                <SectionLabel>Key Features</SectionLabel>
-                <div className="border-t border-[#0F2C23]/12 mt-3">
-                  {features.slice(0, 8).map((f, i) => (
-                    <div
-                      key={i}
-                      className="flex items-start gap-3 py-3 border-b border-[#0F2C23]/08"
-                    >
-                      <span
-                        className="font-black text-[#0F2C23]/18 leading-none shrink-0 mt-0.5"
-                        style={{
-                          fontFamily: PX,
-                          fontSize: 12,
-                          letterSpacing: "-0.02em",
-                          width: 20,
-                        }}
+                <p
+                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/35 mb-2"
+                  style={{ fontFamily: PX }}
+                >
+                  Overview
+                </p>
+                <h3
+                  className="font-black text-[#0F2C23] leading-[0.9] uppercase mb-4"
+                  style={{
+                    fontFamily: PX,
+                    fontSize: "clamp(18px, 2.2vw, 24px)",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  Why Choose
+                  <br />
+                  {p.name}
+                </h3>
+
+                <div className="border-t border-[#0F2C23]/12">
+                  {features.slice(0, 8).map((f, i) => {
+                    const isOpen = openOverviewIndex === i;
+                    const idx = f.indexOf(":");
+                    const rawTitle = (idx >= 0 ? f.slice(0, idx) : f).trim();
+                    const title = rawTitle.length > 58 ? `${rawTitle.slice(0, 58)}…` : rawTitle;
+                    const body = (idx >= 0 ? f.slice(idx + 1) : f).trim();
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setOpenOverviewIndex((cur) => (cur === i ? null : i))}
+                        className="w-full text-left py-3 border-b border-[#0F2C23]/08 cursor-pointer"
+                        style={{ background: "transparent" }}
                       >
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <p
-                        className="text-[#0F2C23]/70 text-sm leading-relaxed"
-                        style={{ fontFamily: FN }}
-                      >
-                        {f}
-                      </p>
-                    </div>
-                  ))}
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <span
+                              className="font-black text-[#0F2C23]/18 leading-none shrink-0 mt-0.5"
+                              style={{
+                                fontFamily: PX,
+                                fontSize: 12,
+                                letterSpacing: "-0.02em",
+                                width: 20,
+                              }}
+                            >
+                              {String(i + 1).padStart(2, "0")}
+                            </span>
+                            <div className="min-w-0">
+                              <p
+                                className="text-[#0F2C23] font-semibold leading-snug"
+                                style={{
+                                  fontFamily: FN,
+                                  fontSize: 13,
+                                }}
+                              >
+                                {title}
+                              </p>
+                              <p
+                                className="text-[#0F2C23]/60 text-sm leading-relaxed mt-1"
+                                style={{
+                                  fontFamily: FN,
+                                  display: "-webkit-box",
+                                  WebkitLineClamp: isOpen ? "unset" : 2,
+                                  WebkitBoxOrient: "vertical",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                {body}
+                              </p>
+                            </div>
+                          </div>
+                          <span
+                            className="text-[10px] tracking-widest uppercase font-bold shrink-0"
+                            style={{ fontFamily: PX, color: "rgba(15,44,35,0.35)" }}
+                          >
+                            {isOpen ? "—" : "+"}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1269,7 +1317,7 @@ export function ProjectEditor({
                               className="rounded-xl overflow-auto max-h-52"
                               style={{ backgroundColor: "rgba(0,0,0,0.2)" }}
                             >
-                              <pre className="p-4 text-[11px] text-[#F8FFE8]/60 whitespace-pre-wrap break-words font-mono">
+                              <pre className="p-4 text-[11px] text-[#F8FFE8]/60 whitespace-pre-wrap wrap-break-word font-mono">
                                 {String(p.flattened_codebase).slice(0, 60_000)}
                               </pre>
                             </div>

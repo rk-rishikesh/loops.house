@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowUpRight, Check, Clock, Eye, Loader2, Plus, Save, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type { z } from "zod";
 import { editHackathonAction } from "@/lib/actions";
@@ -24,7 +24,7 @@ interface Props {
 }
 
 const inputCls =
-  "w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors placeholder-[#0F2C23]/30";
+  "w-full rounded-2xl px-5 py-3 text-sm leading-[1.2] outline-none transition-colors placeholder-[#0F2C23]/30";
 const inputStyle = {
   backgroundColor: "#E2FEA5",
   border: "none",
@@ -66,6 +66,51 @@ function SectionHeader({ num, title }: { num: string; title: string }) {
   );
 }
 
+function parsePrizeSummary(text: string): { title: string; currency?: string; amount?: number; description?: string }[] {
+  const blocks = text
+    .split(/\n\s*\n/g)
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  return blocks.map((block) => {
+    const [firstLineRaw, ...rest] = block.split("\n");
+    const firstLine = (firstLineRaw ?? "").trim();
+    const description = rest.join("\n").trim() || undefined;
+
+    // Expected AI format: "1st Prize — USD 2500" (but be tolerant)
+    const parts = firstLine.split("—").map((p) => p.trim()).filter(Boolean);
+    const title = parts[0] ?? firstLine;
+    const rhs = parts[1] ?? "";
+    const m = rhs.match(/\b([A-Z]{3})\b\s+([\d,]+(?:\.\d+)?)/);
+    const currency = m?.[1];
+    const amount = m?.[2] ? Number(m[2].replace(/,/g, "")) : undefined;
+
+    return { title, currency, amount, description };
+  });
+}
+
+function serializePrizeSummary(
+  prizes: { title: string; currency?: string; amount?: number; description?: string }[],
+): string {
+  return prizes
+    .map((p) => {
+      const title = (p.title ?? "").trim();
+      const currency = (p.currency ?? "").trim().toUpperCase();
+      const amount = typeof p.amount === "number" && Number.isFinite(p.amount) ? p.amount : undefined;
+      const firstLine =
+        title && currency && typeof amount === "number"
+          ? `${title} — ${currency} ${amount.toLocaleString()}`
+          : title
+            ? title
+            : "";
+
+      const desc = (p.description ?? "").trim();
+      return [firstLine, desc].filter(Boolean).join("\n");
+    })
+    .filter(Boolean)
+    .join("\n\n");
+}
+
 export function EditHackathonForm({ hackathon, permissions }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -79,6 +124,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
     formState: { errors, isDirty },
     watch,
     setValue,
+    reset,
   } = useForm<FormData>({
     resolver: zodResolver(editHackathonSchema),
     defaultValues: {
@@ -127,6 +173,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
       const result = await editHackathonAction(data);
       if (result.success) {
         setMessage({ type: "success", text: "Hackathon updated" });
+        reset(data);
         router.refresh();
       } else {
         setMessage({ type: "error", text: result.error });
@@ -135,12 +182,22 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
   };
 
   const watchedValues = watch();
+  const [prizeRows, setPrizeRows] = useState(() => parsePrizeSummary(hackathon.bounty_pool_summary ?? ""));
+  const [lastSyncedSummary, setLastSyncedSummary] = useState(hackathon.bounty_pool_summary ?? "");
+
+  useEffect(() => {
+    const nextSummary = watchedValues.bounty_pool_summary ?? "";
+    if (nextSummary === lastSyncedSummary) return;
+    setPrizeRows(parsePrizeSummary(nextSummary));
+    setLastSyncedSummary(nextSummary);
+  }, [lastSyncedSummary, watchedValues.bounty_pool_summary]);
 
   return (
     <div className="pt-6 pb-24">
       {/* Hero */}
       <div className="mb-14 flex flex-row justify-between">
-        <h1
+       <div>
+       <h1
           className="font-black text-[#0F2C23] leading-[0.88] uppercase"
           style={{
             fontFamily: PX,
@@ -152,6 +209,8 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
           <br />
           DETAILS.
         </h1>
+       </div>
+       
         <div className="flex justify-end mt-8">
           <p
             className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
@@ -170,10 +229,13 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
           <div>
             <SectionHeader num="01" title="Core Information" />
             <div className="grid gap-5">
-              <div className="grid grid-cols-2 gap-5">
+              <div
+                className="grid gap-4 items-start"
+                style={{ gridTemplateColumns: "180px 1fr" }}
+              >
                 <div>
                   <label style={labelStyle} className="mb-2 block text-lg">
-                    Logo (required to publish)
+                    Logo (required)
                   </label>
                   <ImageUpload
                     value={watchedValues.logo_url}
@@ -234,7 +296,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   {...register("description")}
                   rows={3}
                   placeholder="Detailed description of your program"
-                  className={`${inputCls} resize-none`}
+                  className={`${inputCls} resize-none leading-relaxed`}
                   style={inputStyle}
                   onFocus={focusIn}
                   onBlur={focusOut}
@@ -249,7 +311,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   {...register("program_goal")}
                   rows={4}
                   placeholder="What is the objective of this program?"
-                  className={`${inputCls} resize-none`}
+                  className={`${inputCls} resize-none leading-relaxed`}
                   style={inputStyle}
                   onFocus={focusIn}
                   onBlur={focusOut}
@@ -316,15 +378,148 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                 <label style={labelStyle} className="mb-2 block">
                   Prize Pool Summary
                 </label>
-                <textarea
-                  {...register("bounty_pool_summary")}
-                  rows={3}
-                  placeholder="Describe the prizes, tracks, and judging criteria..."
-                  className={`${inputCls} resize-none`}
-                  style={inputStyle}
-                  onFocus={focusIn}
-                  onBlur={focusOut}
-                />
+
+                <input type="hidden" {...register("bounty_pool_summary")} />
+
+                <div className="rounded-3xl p-6" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <p
+                      className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/35"
+                      style={{ fontFamily: FN }}
+                    >
+                      Prize breakdown
+                    </p>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-[11px] font-black border-none cursor-pointer transition-colors hover:bg-[#0F2C23]/8"
+                      style={{ backgroundColor: "rgba(15,44,35,0.06)", color: "#0F2C23", fontFamily: FN }}
+                      onClick={() => {
+                        const next = [...prizeRows, { title: "Prize", currency: "USD", amount: 0, description: "" }];
+                        setPrizeRows(next);
+                        const summary = serializePrizeSummary(next);
+                        setLastSyncedSummary(summary);
+                        setValue("bounty_pool_summary", summary, { shouldDirty: true });
+                      }}
+                    >
+                      <Plus size={12} /> Add prize
+                    </button>
+                  </div>
+
+                  {prizeRows.length === 0 ? (
+                    <div className="rounded-2xl px-4 py-3" style={{ backgroundColor: "rgba(226,254,165,0.35)" }}>
+                      <p className="text-sm text-[#0F2C23]/60 leading-relaxed" style={{ fontFamily: FN }}>
+                        Add prizes here. This will be saved as the program’s prize summary.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {prizeRows.map((p, i) => (
+                        <div
+                          key={`${p.title}-${i}`}
+                          className="rounded-2xl px-4 py-4 border border-[#0F2C23]/10"
+                          style={{ backgroundColor: "rgba(255,255,255,0.55)" }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="min-w-0 flex-1">
+                              <input
+                                value={p.title}
+                                placeholder="Prize title (e.g. 1st Prize)"
+                                className="w-full rounded-xl px-4 py-2 text-sm outline-none"
+                                style={inputStyle}
+                                onFocus={focusIn}
+                                onBlur={focusOut}
+                                onChange={(e) => {
+                                  const next = prizeRows.map((row, idx) =>
+                                    idx === i ? { ...row, title: e.target.value } : row,
+                                  );
+                                  setPrizeRows(next);
+                                  const summary = serializePrizeSummary(next);
+                                  setLastSyncedSummary(summary);
+                                  setValue("bounty_pool_summary", summary, { shouldDirty: true });
+                                }}
+                              />
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <input
+                                value={p.currency ?? ""}
+                                placeholder="USD"
+                                className="w-[70px] rounded-xl px-3 py-2 text-sm outline-none uppercase"
+                                style={inputStyle}
+                                onFocus={focusIn}
+                                onBlur={focusOut}
+                                onChange={(e) => {
+                                  const next = prizeRows.map((row, idx) =>
+                                    idx === i ? { ...row, currency: e.target.value.toUpperCase().slice(0, 3) } : row,
+                                  );
+                                  setPrizeRows(next);
+                                  const summary = serializePrizeSummary(next);
+                                  setLastSyncedSummary(summary);
+                                  setValue("bounty_pool_summary", summary, { shouldDirty: true });
+                                }}
+                              />
+                              <input
+                                value={typeof p.amount === "number" && Number.isFinite(p.amount) ? String(p.amount) : ""}
+                                inputMode="numeric"
+                                placeholder="0"
+                                className="w-[110px] rounded-xl px-3 py-2 text-sm outline-none text-right"
+                                style={inputStyle}
+                                onFocus={focusIn}
+                                onBlur={focusOut}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  const parsed = raw.trim() === "" ? undefined : Number(raw.replace(/,/g, ""));
+                                  const next = prizeRows.map((row, idx) =>
+                                    idx === i ? { ...row, amount: typeof parsed === "number" && !Number.isNaN(parsed) ? parsed : undefined } : row,
+                                  );
+                                  setPrizeRows(next);
+                                  const summary = serializePrizeSummary(next);
+                                  setLastSyncedSummary(summary);
+                                  setValue("bounty_pool_summary", summary, { shouldDirty: true });
+                                }}
+                              />
+                              <button
+                                type="button"
+                                className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center border-none cursor-pointer transition-colors hover:bg-red-50"
+                                style={{ backgroundColor: "rgba(15,44,35,0.06)" }}
+                                onClick={() => {
+                                  const next = prizeRows.filter((_, idx) => idx !== i);
+                                  setPrizeRows(next);
+                                  const summary = serializePrizeSummary(next);
+                                  setLastSyncedSummary(summary);
+                                  setValue("bounty_pool_summary", summary, { shouldDirty: true });
+                                }}
+                              >
+                                <Trash2 size={14} className="text-[#0F2C23]/40" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="mt-3">
+                            <textarea
+                              value={p.description ?? ""}
+                              rows={2}
+                              placeholder="Optional description (eligibility, track notes, etc.)"
+                              className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none leading-relaxed"
+                              style={inputStyle}
+                              onFocus={focusIn}
+                              onBlur={focusOut}
+                              onChange={(e) => {
+                                const next = prizeRows.map((row, idx) =>
+                                  idx === i ? { ...row, description: e.target.value } : row,
+                                );
+                                setPrizeRows(next);
+                                const summary = serializePrizeSummary(next);
+                                setLastSyncedSummary(summary);
+                                setValue("bounty_pool_summary", summary, { shouldDirty: true });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Problem Statements */}
@@ -614,7 +809,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
               className="text-[10px] tracking-wide uppercase font-bold"
                 style={{ fontFamily: FN, color: "#0F2C23" }}
             >
-              Preview Public Page
+              Preview Hackathon Information
             </p>
           </button>
 

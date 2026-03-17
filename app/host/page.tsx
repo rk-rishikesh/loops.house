@@ -81,7 +81,7 @@ export default async function HostDashboardPage() {
             <div className="flex flex-col gap-2 shrink-0 mt-1">
               {[
                 {
-                  label: "Hackathons Hosted",
+                  label: "Hackathons Created",
                   value: totalHackathons,
                   sub: null,
                   bg: "#0F2C23",
@@ -242,7 +242,7 @@ export default async function HostDashboardPage() {
                       className={`text-[9px] tracking-[0.12em] uppercase font-bold text-[#0F2C23]/30 ${
                         col === "Status" || col === "View" ? "text-center" : ""
                       }`}
-                      style={{ fontFamily: PX }}
+                      style={{ fontFamily: FN }}
                     >
                       {col}
                     </p>
@@ -265,7 +265,7 @@ export default async function HostDashboardPage() {
                         {/* Index */}
                         <span
                           className="font-black text-[#0F2C23]/18 tabular-nums"
-                          style={{ fontFamily: PX, fontSize: 11, letterSpacing: "-0.01em" }}
+                          style={{ fontFamily: FN, fontSize: 11, letterSpacing: "-0.01em" }}
                         >
                           {String(idx + 1).padStart(2, "0")}
                         </span>
@@ -275,7 +275,7 @@ export default async function HostDashboardPage() {
                           <p
                             className="font-black text-[#0F2C23] uppercase leading-tight truncate"
                             style={{
-                              fontFamily: PX,
+                              fontFamily: FN,
                               fontSize: "clamp(12px, 1.3vw, 14px)",
                               letterSpacing: "-0.01em",
                             }}

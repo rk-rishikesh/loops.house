@@ -5,11 +5,11 @@ import { useEffect } from "react";
 import type { StoredHackathon } from "@/lib/data-mappers";
 import {
   HackathonAboutSection,
+  HackathonChallengesSection,
   HackathonPrizesSection,
   HackathonScheduleSection,
 } from "@/components/hackathon-sections";
 
-const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
 export function HackathonPreviewModal({
@@ -39,7 +39,7 @@ export function HackathonPreviewModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center"
+      className="fixed inset-0 z-100 flex items-center justify-center"
       style={{ backgroundColor: "rgba(15,44,35,0.6)", backdropFilter: "blur(8px)" }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -64,13 +64,13 @@ export function HackathonPreviewModal({
               style={{
                 backgroundColor: "rgba(15,44,35,0.08)",
                 color: "#0F2C23",
-                fontFamily: PX,
+                fontFamily: FN,
               }}
             >
               Preview
             </span>
             <p className="text-xs text-[#0F2C23]/50" style={{ fontFamily: FN }}>
-              This is how builders will see your hackathon
+              This is the hackathon information that would be displayed to the builders
             </p>
           </div>
           <button
@@ -97,6 +97,7 @@ export function HackathonPreviewModal({
               <HackathonAboutSection hackathon={hackathon} compact />
               <HackathonScheduleSection hackathon={hackathon} />
               <HackathonPrizesSection hackathon={hackathon} />
+              <HackathonChallengesSection hackathon={hackathon} />
             </div>
           )}
         </div>

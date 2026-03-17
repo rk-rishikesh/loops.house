@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerAuth } from "@/lib/server-auth";
 import { getPendingInvitationsServer } from "@/lib/server-data";
 import { NotificationsList } from "./notifications-list";
+import { NotificationsCenterContainer } from "./notifications-center-container";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -14,7 +15,7 @@ export default async function NotificationsPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
-      <div className="px-7 pt-10 pb-20">
+      <div className="px-7 pt-10 pb-20 min-h-screen flex flex-col">
         {/* Hero heading */}
         <div className="mb-14 flex flex-row items-end justify-between gap-6">
           <h1
@@ -38,9 +39,9 @@ export default async function NotificationsPage() {
           </p>
         </div>
 
-        <div className="flex flex-col justify-start max-w-2xl min-h-[50vh]">
+        <NotificationsCenterContainer>
           <NotificationsList invitations={invitations} />
-        </div>
+        </NotificationsCenterContainer>
       </div>
     </div>
   );

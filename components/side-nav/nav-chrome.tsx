@@ -3,7 +3,7 @@
 import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { COLOR_ON, COLOR_OFF, PX } from "./styles";
+import { COLOR_ON, COLOR_OFF, FN, PX } from "./styles";
 
 export function LogoButton({ collapsed }: { collapsed: boolean }) {
   return (
@@ -43,10 +43,10 @@ export function BackButton({
   return (
     <Link
       href={href}
-      className={`group flex items-center no-underline mb-6 transition-all duration-300 hover:bg-white/5 rounded-2xl ${
+      className={`group flex justify-between items-center no-underline mb-6 transition-all duration-300 hover:bg-white/5 rounded-2xl ${
         collapsed
           ? "justify-center w-11 h-11 mx-auto"
-          : "w-full h-12 px-4 gap-3"
+          : "w-full h-12 px-3 gap-3"
       }`}
       title={label}
     >
@@ -56,7 +56,7 @@ export function BackButton({
       {!collapsed && (
         <span
           className="text-[10px] font-bold tracking-widest uppercase truncate"
-          style={{ color: COLOR_OFF, fontFamily: PX }}
+          style={{ color: COLOR_OFF, fontFamily: FN }}
         >
           {label}
         </span>

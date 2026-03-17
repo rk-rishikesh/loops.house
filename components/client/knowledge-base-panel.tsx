@@ -39,7 +39,7 @@ export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelP
                 className="px-2 py-0.5 rounded bg-[#0F2C23] text-[#E2FEA5] text-[9px] font-black tracking-widest uppercase"
                 style={{ fontFamily: PX }}
               >
-                Active Session
+                Knowledge Graph
               </span>
               <div className="h-[1px] flex-1 bg-[#0F2C23]/10" />
             </div>
@@ -150,7 +150,7 @@ export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelP
         </div>
 
         {/* Right: Agent Control Center */}
-        <div className="flex flex-col gap-6 py-4">
+        {/* <div className="flex flex-col gap-6 py-4">
           <div
             className="flex-1 rounded-[40px] p-8 flex flex-col gap-8 relative overflow-hidden"
             style={{ backgroundColor: "#0F2C23" }}
@@ -174,8 +174,6 @@ export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelP
                   ))}
                 </div>
               </div>
-
-              {/* Console logs */}
               <div className="flex-1 bg-black/20 rounded-3xl p-6 font-mono text-[11px] leading-relaxed border border-white/5 overflow-y-auto custom-scrollbar">
                 <AnimatePresence mode="popLayout">
                   {statusByStep.map((entry) => {
@@ -224,7 +222,7 @@ export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelP
               Encryption Layer: AES-256 / Protocol: SSH-v2
             </p>
           </div>
-        </div>
+        </div> */}
       </div>
     </section>
   );

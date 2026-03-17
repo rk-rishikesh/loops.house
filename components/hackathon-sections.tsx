@@ -1,4 +1,4 @@
-import { ArrowUpRight, ExternalLink, FileText, Globe, Trophy } from "lucide-react";
+import { ArrowUpRight, ExternalLink, FileText, Globe, Trophy, Zap } from "lucide-react";
 import Image from "next/image";
 import type { StoredHackathon } from "@/lib/data-mappers";
 
@@ -17,6 +17,28 @@ function fmt(iso?: string) {
   });
 }
 
+function parsePrizeSummaryBlocks(text: string): { title: string; currency?: string; amount?: number; description?: string }[] {
+  const blocks = text
+    .split(/\n\s*\n/g)
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  return blocks.map((block) => {
+    const [firstLineRaw, ...rest] = block.split("\n");
+    const firstLine = (firstLineRaw ?? "").trim();
+    const description = rest.join("\n").trim() || undefined;
+
+    const parts = firstLine.split("—").map((p) => p.trim()).filter(Boolean);
+    const title = parts[0] ?? firstLine;
+    const rhs = parts[1] ?? "";
+    const m = rhs.match(/\b([A-Z]{3})\b\s+([\d,]+(?:\.\d+)?)/);
+    const currency = m?.[1];
+    const amount = m?.[2] ? Number(m[2].replace(/,/g, "")) : undefined;
+
+    return { title, currency, amount, description };
+  });
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    About / Info section
    ═══════════════════════════════════════════════════════════════════ */
@@ -29,6 +51,7 @@ export function HackathonAboutSection({
   compact?: boolean;
 }) {
   const hasResources = (h.technical_resources?.length ?? 0) > 0;
+  const hasAboutMeta = !!h.theme || !!h.description || !!h.program_goal;
   const titleSize = compact ? "clamp(28px, 4vw, 48px)" : "clamp(46px, 6vw, 82px)";
 
   return (
@@ -37,7 +60,7 @@ export function HackathonAboutSection({
         {/* Banner + Logo */}
         {h.banner_url && (
           <div
-            className="rounded-2xl overflow-hidden"
+            className="rounded-2xl overflow-hidden mb-4"
             style={{ aspectRatio: "3/1", position: "relative" }}
           >
             <Image
@@ -70,9 +93,9 @@ export function HackathonAboutSection({
             <Image src={h.logo_url} alt={h.name} width={50} height={50} className="object-cover" />
           )}
           <h2
-            className="font-black uppercase leading-[0.92]"
+            className="font-black uppercase leading-[0.88]"
             style={{
-              fontFamily: PX,
+              fontFamily: FN,
               fontSize: titleSize,
               letterSpacing: "-0.04em",
               color: "#0F2C23",
@@ -81,33 +104,57 @@ export function HackathonAboutSection({
             {h.name || "Untitled Program"}
           </h2>
         </div>
-        {h.theme && (
-          <p
-            className="mt-2 text-base leading-relaxed"
-            style={{ fontFamily: FN, color: "rgba(15,44,35,0.65)" }}
-          >
-            {h.theme}
-          </p>
-        )}
       </div>
-      {/* Description / Goal */}
-      {(h.description || h.program_goal) && (
-        <div className="mb-6">
-          {h.description && (
-            <p
-              className="text-sm leading-[1.8] mb-3"
-              style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}
-            >
-              {h.description}
-            </p>
+
+      {/* Theme / Description / Program goal (card) */}
+      {hasAboutMeta && (
+        <div
+          className="rounded-2xl p-6 mb-6"
+          style={{
+            backgroundColor: "rgba(15,44,35,0.03)",
+            border: "1px solid rgba(15,44,35,0.08)",
+          }}
+        >
+          {h.theme && (
+            <div className="mb-5 last:mb-0">
+              <p
+                className="text-[15px] tracking-[0.16em] uppercase font-bold mb-2"
+                style={{ fontFamily: FN, color: "rgba(15,44,35,0.5)" }}
+              >
+                Theme
+              </p>
+              <p className="text-[#0F2C23]/70 leading-relaxed" style={{ fontFamily: FN, fontSize: 13 }}>
+                {h.theme}
+              </p>
+            </div>
           )}
+
+          {h.description && (
+            <div className="mb-5 last:mb-0">
+              <p
+                className="text-[15px] tracking-[0.16em] uppercase font-bold mb-2"
+                style={{ fontFamily: FN, color: "rgba(15,44,35,0.5)" }}
+              >
+                Description
+              </p>
+              <p className="text-[#0F2C23]/70 leading-relaxed" style={{ fontFamily: FN, fontSize: 13 }}>
+                {h.description}
+              </p>
+            </div>
+          )}
+
           {h.program_goal && h.program_goal !== h.description && (
-            <p
-              className="text-sm leading-[1.8]"
-              style={{ fontFamily: FN, color: "rgba(15,44,35,0.5)" }}
-            >
-              {h.program_goal}
-            </p>
+            <div className="mb-0">
+              <p
+                className="text-[15px] tracking-[0.16em] uppercase font-bold mb-2"
+                style={{ fontFamily: FN, color: "rgba(15,44,35,0.5)" }}
+              >
+                Program goal
+              </p>
+              <p className="text-[#0F2C23]/65 leading-relaxed" style={{ fontFamily: FN, fontSize: 13 }}>
+                {h.program_goal}
+              </p>
+            </div>
           )}
         </div>
       )}
@@ -139,39 +186,41 @@ export function HackathonAboutSection({
 
       {/* Technical resources */}
       {hasResources && (
-        <div
-          className="rounded-2xl p-6"
-          style={{
-            backgroundColor: "rgba(15,44,35,0.03)",
-            border: "1px solid rgba(15,44,35,0.08)",
-          }}
-        >
+        <div>
           <p
-            className="text-[10px] tracking-[0.16em] uppercase font-bold mb-4"
-            style={{ fontFamily: PX, color: "rgba(15,44,35,0.4)" }}
+            className="text-[15px] tracking-[0.16em] uppercase font-bold mb-4"
+            style={{ fontFamily: FN, color: "rgba(15,44,35,0.4)" }}
           >
             Resources
           </p>
-          <div className="flex flex-col gap-2">
-            {h.technical_resources!.map((r, i) => (
-              <a
-                key={i}
-                href={r.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 rounded-xl px-4 py-3 no-underline transition-colors hover:bg-[rgba(15,44,35,0.04)]"
-                style={{ backgroundColor: "rgba(15,44,35,0.02)" }}
-              >
-                <FileText size={12} style={{ color: "rgba(15,44,35,0.5)" }} />
-                <span
-                  className="text-xs flex-1 truncate"
-                  style={{ fontFamily: FN, color: "rgba(15,44,35,0.65)" }}
+          <div
+            className="rounded-2xl p-6"
+            style={{
+              backgroundColor: "rgba(15,44,35,0.03)",
+              border: "1px solid rgba(15,44,35,0.08)",
+            }}
+          >
+            <div className="flex flex-col gap-2">
+              {h.technical_resources!.map((r, i) => (
+                <a
+                  key={i}
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 no-underline transition-colors hover:bg-[rgba(15,44,35,0.04)]"
+                  style={{ backgroundColor: "rgba(15,44,35,0.02)" }}
                 >
-                  {r.description || r.url}
-                </span>
-                <ArrowUpRight size={10} style={{ color: "rgba(15,44,35,0.3)" }} />
-              </a>
-            ))}
+                  <FileText size={12} style={{ color: "rgba(15,44,35,0.5)" }} />
+                  <span
+                    className="text-xs flex-1 truncate"
+                    style={{ fontFamily: FN, color: "rgba(15,44,35,0.65)" }}
+                  >
+                    {r.description || r.url}
+                  </span>
+                  <ArrowUpRight size={10} style={{ color: "rgba(15,44,35,0.3)" }} />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -197,48 +246,29 @@ export function HackathonScheduleSection({ hackathon: h }: { hackathon: StoredHa
 
   return (
     <div>
-      <p
-        className="text-[10px] tracking-[0.22em] uppercase font-bold mb-6"
-        style={{ fontFamily: PX, color: "rgba(15,44,35,0.5)" }}
-      >
-        Schedule
-      </p>
-      <div
-        className="rounded-[22px] px-10 py-6"
-        style={{ backgroundColor: "rgba(248,255,232,0.9)" }}
-      >
-        {rows.map((r, idx) => (
-          <div key={r.label} className="flex gap-5 py-4">
-            <div className="flex flex-col items-center pt-1">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#0F2C23" }} />
-              {idx !== rows.length - 1 && (
-                <span
-                  style={{
-                    width: 1,
-                    flex: 1,
-                    background:
-                      "linear-gradient(to bottom, rgba(15,44,35,0.2), rgba(15,44,35,0.04))",
-                    marginTop: 6,
-                  }}
-                />
-              )}
-            </div>
-            <div className="flex-1 flex items-baseline justify-between gap-6">
-              <p
-                className="text-[#0F2C23]/60 uppercase font-bold"
-                style={{ fontFamily: PX, fontSize: 12, letterSpacing: "0.12em" }}
-              >
+      <div className="flex items-center gap-3 mb-10">
+        <div className="w-8 h-8 rounded-full bg-[#0F2C23]/5 flex items-center justify-center text-[#0F2C23]">
+          <Zap size={16} />
+        </div>
+        <h3 className="text-2xl font-black uppercase text-[#0F2C23]" style={{ fontFamily: FN }}>
+          Timeline
+        </h3>
+      </div>
+
+      <div className="p-10 rounded-[48px] bg-white border-2 border-[#0F2C23]/10 shadow-[0_20px_40px_-15px_rgba(15,44,35,0.05)]">
+        <div className="space-y-8">
+          {rows.map((r) => (
+            <div key={r.label} className="relative pl-8">
+              <div className="absolute left-[-5px] top-3 w-2 h-2 rounded-full bg-[#0F2C23]" />
+              <h4 className="font-bold text-[#0F2C23] text-lg mb-1" style={{ fontFamily: FN }}>
                 {r.label}
-              </p>
-              <p
-                className="text-[#0F2C23] font-medium"
-                style={{ fontFamily: FN, fontSize: "clamp(14px, 1.4vw, 16px)" }}
-              >
+              </h4>
+              <p className="text-sm text-[#0F2C23]/50 leading-relaxed" style={{ fontFamily: FN }}>
                 {r.value}
               </p>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -258,60 +288,43 @@ export function HackathonPrizesSection({ hackathon: h }: { hackathon: StoredHack
 
   return (
     <div>
-      <p
-        className="text-[10px] tracking-[0.22em] uppercase font-bold mb-6"
-        style={{ fontFamily: PX, color: "rgba(15,44,35,0.5)" }}
-      >
-        Prizes + Challenges
-      </p>
+      <div className="flex items-center gap-3 mb-10">
+        <div className="w-8 h-8 rounded-full bg-[#0F2C23]/5 flex items-center justify-center text-[#0F2C23]">
+          <Trophy size={16} />
+        </div>
+        <h3 className="text-2xl font-black uppercase text-[#0F2C23]" style={{ fontFamily: FN }}>
+          Prizes
+        </h3>
+      </div>
 
       {h.bounty_pool_summary && (
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-3">
-            <Trophy size={16} style={{ color: "#0F2C23" }} />
-            <p
-              className="text-[10px] tracking-[0.16em] uppercase font-bold"
-              style={{ fontFamily: PX, color: "rgba(15,44,35,0.5)" }}
-            >
-              Prize Pool
-            </p>
-          </div>
-          <p
-            className="font-black text-[#0F2C23] leading-none"
-            style={{
-              fontFamily: PX,
-              fontSize: "clamp(28px, 4vw, 42px)",
-              letterSpacing: "-0.03em",
-            }}
-          >
-            {h.bounty_pool_summary}
-          </p>
-        </div>
-      )}
-
-      {hasChallenges && (
-        <div className="mb-8">
-          <p
-            className="text-[10px] tracking-[0.16em] uppercase font-bold mb-4"
-            style={{ fontFamily: PX, color: "rgba(15,44,35,0.5)" }}
-          >
-            Challenges
-          </p>
-          <div className="flex flex-col gap-3">
-            {h.problem_statements!.map((s, i) => (
-              <div key={i} className="flex items-baseline gap-3">
-                <span
-                  className="font-black text-[#0F2C23]/20 leading-none shrink-0"
-                  style={{ fontFamily: PX, fontSize: 11, width: 22 }}
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <p
-                  className="text-[#0F2C23]/70 leading-relaxed"
-                  style={{ fontFamily: FN, fontSize: 13 }}
-                >
-                  {s}
-                </p>
+        <div className="p-10 rounded-[48px] bg-white border-2 border-[#0F2C23]/10 shadow-[0_20px_40px_-15px_rgba(15,44,35,0.05)] mb-12">
+          <div className="space-y-4">
+            {parsePrizeSummaryBlocks(h.bounty_pool_summary).map((p, i) => (
+              <div
+                key={`${p.title}-${i}`}
+                className="flex items-start justify-between gap-4 border-b border-[#0F2C23]/10 pb-4 last:border-0 last:pb-0"
+              >
+                <div className="min-w-0">
+                  <p className="font-bold text-[#0F2C23]" style={{ fontFamily: FN }}>
+                    {p.title}
+                  </p>
+                  {p.description && (
+                    <p
+                      className="text-sm text-[#0F2C23]/55 leading-relaxed whitespace-pre-wrap"
+                      style={{ fontFamily: FN }}
+                    >
+                      {p.description}
+                    </p>
+                  )}
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="font-black text-[#0F2C23]" style={{ fontFamily: FN }}>
+                    {typeof p.amount === "number" && p.amount > 0 && p.currency
+                      ? `${p.currency} ${p.amount.toLocaleString()}`
+                      : "—"}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -320,34 +333,34 @@ export function HackathonPrizesSection({ hackathon: h }: { hackathon: StoredHack
 
       {hasTracks && (
         <div
-          className="rounded-2xl p-8 mb-6"
+          className="rounded-[48px] p-10 mb-12"
           style={{
-            backgroundColor: "rgba(15,44,35,0.03)",
-            border: "1px solid rgba(15,44,35,0.08)",
+            backgroundColor: "#fff",
+            border: "2px solid rgba(15,44,35,0.10)",
+            boxShadow: "0 20px 40px -15px rgba(15,44,35,0.05)",
           }}
         >
           <p
-            className="text-[10px] tracking-[0.16em] uppercase font-bold mb-4"
-            style={{ fontFamily: PX, color: "rgba(15,44,35,0.5)" }}
+            className="text-xl font-black uppercase text-[#0F2C23] mb-8"
+            style={{ fontFamily: FN }}
           >
             Sponsor Tracks
           </p>
           <div className="flex flex-col gap-4">
             {h.sponsor_tracks!.map((t, i) => (
-              <div key={i} className="flex items-start gap-4 rounded-xl px-4 py-3">
-                <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0 mt-1"
-                  style={{ backgroundColor: "#0F2C23" }}
-                />
+              <div
+                key={i}
+                className="flex items-start gap-4 rounded-[32px] px-8 py-6 bg-white border border-[#0F2C23]/10"
+              >
                 <div>
                   <p
                     className="font-bold text-[#0F2C23] uppercase"
-                    style={{ fontFamily: PX, fontSize: 13 }}
+                    style={{ fontFamily: FN, fontSize: 15 }}
                   >
                     {t.sponsor}
                   </p>
                   {t.track_description && (
-                    <p className="text-[#0F2C23]/55 mt-1" style={{ fontFamily: FN, fontSize: 12 }}>
+                    <p className="text-[#0F2C23]/55 mt-2 leading-relaxed" style={{ fontFamily: FN, fontSize: 13 }}>
                       {t.track_description}
                     </p>
                   )}
@@ -359,49 +372,82 @@ export function HackathonPrizesSection({ hackathon: h }: { hackathon: StoredHack
       )}
 
       {hasCriteria && (
-        <div
-          className="rounded-2xl p-8"
-          style={{
-            backgroundColor: "rgba(15,44,35,0.03)",
-            border: "1px solid rgba(15,44,35,0.08)",
-          }}
-        >
-          <p
-            className="text-[10px] tracking-[0.16em] uppercase font-bold mb-4"
-            style={{ fontFamily: PX, color: "rgba(15,44,35,0.5)" }}
-          >
-            Judging Criteria
-          </p>
-          <div className="flex flex-col gap-3">
-            {h.judging_criteria!.map((c, i) => (
-              <div key={i} className="flex items-start gap-3 px-4 py-3 rounded-xl">
-                <span
-                  className="font-black text-[#0F2C23]/20 leading-none shrink-0 mt-0.5"
-                  style={{ fontFamily: PX, fontSize: 11, width: 20 }}
+        <div className="mt-12">
+          <div className="p-10 rounded-[48px] bg-[#E2FEA5] text-[#0F2C23] shadow-[0_30px_60px_-15px_rgba(226,254,165,0.4)] relative overflow-hidden">
+            <div className="absolute -top-4 -right-4 opacity-5 rotate-12">
+              <Trophy size={120} />
+            </div>
+            <div className="flex items-center gap-3 mb-8">
+              <h3 className="text-xl font-black uppercase" style={{ fontFamily: FN }}>
+                Judging Criteria
+              </h3>
+            </div>
+            <div className="space-y-6">
+              {h.judging_criteria!.map((c, i) => (
+                <div
+                  key={i}
+                  className="border-b border-[#0F2C23]/10 pb-5 last:border-0 last:pb-0"
                 >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div className="flex-1">
-                  <p
-                    className="font-bold text-[#0F2C23] uppercase"
-                    style={{ fontFamily: PX, fontSize: 12 }}
-                  >
+                  <p className="text-[20px] font-black uppercase mb-2 tracking-tight" style={{ fontFamily: FN }}>
                     {c.name}
                   </p>
                   {c.description && (
-                    <p
-                      className="text-[#0F2C23]/50 mt-0.5"
-                      style={{ fontFamily: FN, fontSize: 11 }}
-                    >
+                    <p className="text-[15px] opacity-70 leading-relaxed" style={{ fontFamily: FN }}>
                       {c.description}
                     </p>
                   )}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+export function HackathonChallengesSection({ hackathon: h }: { hackathon: StoredHackathon }) {
+  const hasChallenges = (h.problem_statements?.length ?? 0) > 0;
+  if (!hasChallenges) return null;
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-10">
+        <div className="w-8 h-8 rounded-full bg-[#0F2C23]/5 flex items-center justify-center text-[#0F2C23]">
+          <Trophy size={16} />
+        </div>
+        <h3 className="text-2xl font-black uppercase text-[#0F2C23]" style={{ fontFamily: FN }}>
+          Challenge Matrix
+        </h3>
+      </div>
+
+      <div className="space-y-6">
+        {h.problem_statements!.map((s, i) => (
+          <div
+            key={i}
+            className="p-8 rounded-[32px] bg-white border border-[#0F2C23]/10 transition-all hover:border-[#0F2C23]/25 group"
+          >
+            <div className="flex justify-between items-start mb-4">
+              <h4 className="font-black text-[#0F2C23] uppercase text-lg leading-tight" style={{ fontFamily: FN }}>
+                Challenge {String(i + 1).padStart(2, "0")}
+              </h4>
+              
+            </div>
+            <p className="text-[15px] text-[#0F2C23]/60 leading-relaxed" style={{ fontFamily: FN }}>
+              {s}
+            </p>
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity mt-4">
+              <div className="h-px flex-1 bg-[#0F2C23]/5" />
+              <span
+                className="text-[9px] uppercase font-bold text-[#0F2C23]/25 tracking-widest"
+                style={{ fontFamily: PX }}
+              >
+                Builder Focus
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

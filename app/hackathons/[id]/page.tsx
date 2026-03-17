@@ -6,6 +6,7 @@ import { getServerAuth } from "@/lib/server-auth";
 import {
   getHackathonServer,
   getHackathonResultsServer,
+  getHackathonSpeakersServer,
   getProjectsServer,
   getSubmissionsServer,
   getUserProjectsServer,
@@ -30,8 +31,9 @@ export default async function HackathonDetailPage({ params }: { params: Promise<
   const auth = await getServerAuth();
   const { id } = await params;
 
-  const [hackathon, projects, submissions] = await Promise.all([
+  const [hackathon, speakers, projects, submissions] = await Promise.all([
     getHackathonServer(id),
+    getHackathonSpeakersServer(id),
     auth ? getUserProjectsServer(auth.userId) : Promise.resolve([]),
     auth ? getSubmissionsServer(id) : Promise.resolve([]),
   ]);
@@ -57,6 +59,7 @@ export default async function HackathonDetailPage({ params }: { params: Promise<
     <BuilderHackathonDetail
       hackathonId={id}
       hackathon={hackathon}
+      speakers={speakers}
       projects={projects}
       submissions={submissions}
       isAuthenticated={!!auth}

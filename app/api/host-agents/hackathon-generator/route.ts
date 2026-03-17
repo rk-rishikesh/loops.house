@@ -23,6 +23,10 @@ interface ProgramDraft {
   hackathon_name: string;
   /** AI-suggested stable ID/slug (e.g. "ai-copilot-bootcamp-2025") */
   hackathon_id_suggestion: string;
+  /** AI-refined theme/tagline for the program */
+  theme: string;
+  /** AI-refined program goal */
+  program_goal: string;
   overview: string;
   target_audience: string;
   goals: string[];
@@ -66,7 +70,7 @@ export async function POST(request: NextRequest) {
   if (!auth) return unauthorized();
 
   // Rate limit: 5 requests per day per user
-  const rl = await checkRateLimit(`hackathon-gen:${auth.user.id}`, 5, 86400000);
+  const rl = await checkRateLimit(`hackathon-gen:${auth.user.id}`, 10, 86400000);
   if (!rl.allowed) {
     return NextResponse.json(
       {
@@ -121,13 +125,18 @@ TASK:
 
 RULES:
 - Be concrete but keep everything editable.
+- Refine the host-provided theme and program_goal into clearer, publish-ready copy.
+- Always return "theme" and "program_goal" in the JSON output (do not leave them blank; if missing, infer best-effort from the other fields and note assumptions in organizer_notes).
 - Always express schedule phases using ACTUAL DATES derived from the input (do not use "Day 1", "Week 1", "Month 1").
   - Use the host-provided ISO datetimes (start_date, submission_deadline, judging_deadline, results_date) to label phases like:
     - "Mar 13–Mar 15: Build"
     - "Mar 16: Submissions due"
     - "Mar 16–Mar 18: Judging"
     - "Mar 19: Results"
-  - If a date is missing, use the closest available date(s) and note the missing date in organizer_notes.
+  - If start_date/submission_deadline/judging_deadline/results_date are provided, you MUST use them and MUST NOT use placeholders like "Start date – Submission deadline".
+  - If one or more dates are missing, DO NOT write "TODO" in the schedule.
+    - Instead, use a simple placeholder label in the phase like "Start date – Submission deadline: Build" or "Submission deadline – Results date: Judging".
+    - Put any missing-date reminders ONLY in organizer_notes.
 - Derive challenge statements from the problem_statements and program_goal.
 - Make judging criteria aligned with the stated goals and (if present) any bounty pool or sponsor tracks.
 - If bounty_pool_summary is present, translate it into a structured prize breakdown in "prizes":
@@ -150,6 +159,8 @@ Return STRICT JSON matching this TypeScript type:
 {
   "hackathon_name": string; // AI-suggested marketing name for the hackathon
   "hackathon_id_suggestion": string; // URL-safe slug, e.g. "ai-copilot-bootcamp-2025"
+  "theme": string; // AI-refined theme/tagline (publish-ready)
+  "program_goal": string; // AI-refined goal (publish-ready)
   "overview": string; // 2-3 sentence summary of the program
   "target_audience": string; // who this is for
   "goals": string[]; // 3-6 bullet goals

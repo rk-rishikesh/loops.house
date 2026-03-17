@@ -119,7 +119,7 @@ export function HackathonProgramPreview({
 
       {/* Deep Dive Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-16">
-        {/* Challenge Statements */}
+        {/* Challenge Statements + Judging Criteria */}
         <div className="lg:col-span-3">
           <div className="flex items-center gap-3 mb-10">
             <div className="w-8 h-8 rounded-full bg-[#0F2C23]/5 flex items-center justify-center text-[#0F2C23]">
@@ -167,9 +167,42 @@ export function HackathonProgramPreview({
               </div>
             ))}
           </div>
+
+          {/* Judging Criteria */}
+          <div className="mt-14">
+            <div className="p-10 rounded-[48px] bg-[#E2FEA5] text-[#0F2C23] shadow-[0_30px_60px_-15px_rgba(226,254,165,0.4)] relative overflow-hidden">
+              <div className="absolute -top-4 -right-4 opacity-5 rotate-12">
+                <Trophy size={120} />
+              </div>
+              <div className="flex items-center gap-3 mb-8">
+                <Gavel size={20} />
+                <h3 className="text-xl font-black uppercase" style={{ fontFamily: FN }}>
+                  Judging Criteria
+                </h3>
+              </div>
+              <div className="space-y-6">
+                {draft.judging_criteria.map((jc, i) => (
+                  <div
+                    key={i}
+                    className="border-b border-[#0F2C23]/10 pb-5 last:border-0 last:pb-0"
+                  >
+                    <p
+                      className="text-[20px] font-black uppercase mb-2 tracking-tight"
+                      style={{ fontFamily: FN }}
+                    >
+                      {jc.name}
+                    </p>
+                    <p className="text-[15px] opacity-70 leading-relaxed" style={{ fontFamily: FN }}>
+                      {jc.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Right Sidebar: Timeline & Criteria */}
+        {/* Right Sidebar: Timeline & Prizes */}
         <div className="lg:col-span-2 space-y-16">
           {/* Timeline */}
           <div className="p-2 ml-4">
@@ -203,40 +236,15 @@ export function HackathonProgramPreview({
             </div>
           </div>
 
-          {/* Judging Criteria */}
-          <div className="p-10 rounded-[48px] bg-[#E2FEA5] text-[#0F2C23] shadow-[0_30px_60px_-15px_rgba(226,254,165,0.4)] relative overflow-hidden">
-            <div className="absolute -top-4 -right-4 opacity-5 rotate-12">
-              <Trophy size={120} />
-            </div>
-            <div className="flex items-center gap-3 mb-8">
-              <Gavel size={20} />
-              <h3 className="text-xl font-black uppercase" style={{ fontFamily: FN }}>
-                Judging Criteria
-              </h3>
-            </div>
-            <div className="space-y-6">
-              {draft.judging_criteria.map((jc, i) => (
-                <div key={i} className="border-b border-[#0F2C23]/10 pb-5 last:border-0 last:pb-0">
-                  <p
-                    className="text-[20px] font-black uppercase mb-2 tracking-tight"
-                    style={{ fontFamily: FN }}
-                  >
-                    {jc.name}
-                  </p>
-                  <p className="text-[15px] opacity-70 leading-relaxed" style={{ fontFamily: FN }}>
-                    {jc.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Prizes */}
           {draft.prizes?.length > 0 && (
             <div className="p-10 rounded-[48px] bg-white border-2 border-[#0F2C23]/10 shadow-[0_20px_40px_-15px_rgba(15,44,35,0.05)]">
               <div className="flex items-center gap-3 mb-8">
                 <Trophy size={20} className="text-[#0F2C23]" />
-                <h3 className="text-xl font-black uppercase text-[#0F2C23]" style={{ fontFamily: FN }}>
+                <h3
+                  className="text-xl font-black uppercase text-[#0F2C23]"
+                  style={{ fontFamily: FN }}
+                >
                   Prizes
                 </h3>
               </div>
@@ -251,7 +259,10 @@ export function HackathonProgramPreview({
                         {p.title}
                       </p>
                       {p.description && (
-                        <p className="text-sm text-[#0F2C23]/55 leading-relaxed" style={{ fontFamily: FN }}>
+                        <p
+                          className="text-sm text-[#0F2C23]/55 leading-relaxed"
+                          style={{ fontFamily: FN }}
+                        >
                           {p.description}
                         </p>
                       )}

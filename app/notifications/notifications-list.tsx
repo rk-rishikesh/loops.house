@@ -113,7 +113,7 @@ function InvitationCard({ invitation }: { invitation: Invitation }) {
 export function NotificationsList({ invitations }: { invitations: Invitation[] }) {
   if (invitations.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-20 gap-3">
+      <div className="flex flex-col items-center justify-center gap-3 text-center">
         <div
           className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-2"
           style={{ backgroundColor: "rgba(15,44,35,0.06)", color: "#0F2C23" }}

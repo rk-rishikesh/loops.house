@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { StoredHackathon, StoredProject, StoredSubmission } from "@/lib/data-mappers";
+import type { StoredHackathon, StoredProject, StoredSpeaker, StoredSubmission } from "@/lib/data-mappers";
 import type { LeaderboardEntry } from "@/components/client/hackathon-leaderboard";
 import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
 import { setHackathonTabOverride } from "@/components/side-nav/hackathon-tab-store";
@@ -24,6 +24,7 @@ import type { SectionKey } from "@/app/hackathons/[id]/_components/constants";
 interface BuilderHackathonDetailProps {
   hackathonId: string;
   hackathon: StoredHackathon | null;
+  speakers: StoredSpeaker[];
   projects: StoredProject[];
   submissions: StoredSubmission[];
   isAuthenticated: boolean;
@@ -33,6 +34,7 @@ interface BuilderHackathonDetailProps {
 export function BuilderHackathonDetail({
   hackathonId,
   hackathon,
+  speakers,
   projects,
   submissions,
   isAuthenticated,
@@ -144,7 +146,7 @@ export function BuilderHackathonDetail({
       case "info":
         return <HackathonInfoSection hackathon={h} />;
       case "speakers":
-        return <HackathonSpeakersSection />;
+        return <HackathonSpeakersSection speakers={speakers} />;
       case "schedule":
         return <HackathonScheduleSection hackathon={h} />;
       case "prizes":

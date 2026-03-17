@@ -13,6 +13,8 @@ const FN = "var(--font-funnel-sans), sans-serif";
 interface ProgramDraft {
   hackathon_name: string;
   hackathon_id_suggestion: string;
+  theme: string;
+  program_goal: string;
   overview: string;
   target_audience: string;
   goals: string[];
@@ -333,6 +335,10 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
       website_url: form.website_url || undefined,
       bounty_pool_summary: form.bounty_pool_summary || undefined,
       program_goal: form.program_goal || undefined,
+      start_date: form.start_date || undefined,
+      submission_deadline: form.submission_deadline || undefined,
+      judging_deadline: form.judging_deadline || undefined,
+      results_date: form.results_date || undefined,
       organizer_notes: form.organizer_notes ? [form.organizer_notes] : undefined,
     };
 
@@ -374,18 +380,27 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
       const problemStatements =
         problemStatementsFromAi.length > 0 ? problemStatementsFromAi : problemStatementsFromUser;
 
+      const aiPrizeSummary = (draft.draft.prizes ?? [])
+        .map((p) => {
+          const amount = typeof p.amount === "number" && p.amount > 0 ? `${p.currency} ${p.amount}` : "";
+          const parts = [p.title, amount].filter(Boolean).join(" — ");
+          return p.description ? `${parts}\n${p.description}` : parts;
+        })
+        .filter(Boolean)
+        .join("\n\n");
+
       const hackathonId = draft.hackathon_id || crypto.randomUUID();
       const result = await saveHackathonAction({
         id: hackathonId,
         name: draft.draft.hackathon_name || form.name || "Untitled hackathon",
         description: draft.draft.overview || undefined,
         problem_statements: problemStatements,
-        theme: form.theme || undefined,
+        theme: draft.draft.theme || form.theme || undefined,
         website_url: form.website_url || undefined,
         technical_resources:
           form.technical_resources.length > 0 ? form.technical_resources : undefined,
-        bounty_pool_summary: form.bounty_pool_summary || undefined,
-        program_goal: form.program_goal || undefined,
+        bounty_pool_summary: aiPrizeSummary || form.bounty_pool_summary || undefined,
+        program_goal: draft.draft.program_goal || form.program_goal || undefined,
         start_date: form.start_date || undefined,
         submission_deadline: form.submission_deadline || undefined,
         judging_deadline: form.judging_deadline || undefined,
