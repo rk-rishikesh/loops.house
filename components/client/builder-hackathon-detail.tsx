@@ -3,17 +3,15 @@
 import { useEffect, useState } from "react";
 import type { StoredHackathon, StoredProject, StoredSpeaker, StoredSubmission } from "@/lib/data-mappers";
 import type { LeaderboardEntry } from "@/components/client/hackathon-leaderboard";
-import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
 import { setHackathonTabOverride } from "@/components/side-nav/hackathon-tab-store";
 import { HackathonInfoSection } from "@/app/hackathons/[id]/_components/hackathon-info";
-import { HackathonChatSection } from "@/app/hackathons/[id]/_components/hackathon-chat";
+import { HackathonTechBuddyChat } from "@/app/hackathons/[id]/_components/hackathon-tech-buddy-chat";
 import { HackathonSpeakersSection } from "@/app/hackathons/[id]/_components/hackathon-speakers";
 import { HackathonScheduleSection } from "@/app/hackathons/[id]/_components/hackathon-schedule";
 import { HackathonPrizesSection } from "@/app/hackathons/[id]/_components/hackathon-prizes";
 import { HackathonSubmitSection } from "@/app/hackathons/[id]/_components/hackathon-submit";
 import { HackathonResultsSection } from "@/app/hackathons/[id]/_components/hackathon-results";
 import {
-  PX,
   FN,
   WATERMARKS,
   SECTION_META,
@@ -69,7 +67,7 @@ export function BuilderHackathonDetail({
       "schedule",
       "prizes",
       "submit",
-      ...(hideAi ? [] : (["ideator", "mentor"] as SectionKey[])),
+      ...(hideAi ? [] : (["techbuddy"] as SectionKey[])),
       ...(hackathon &&
       (hackathon.phase === "judging" ||
         hackathon.phase === "completed" ||
@@ -115,15 +113,15 @@ export function BuilderHackathonDetail({
         <div className="flex items-center gap-3">
           <p
             className="text-[9px] tracking-[0.25em] uppercase font-bold"
-            style={{ fontFamily: PX, color: "rgba(226,254,165,0.3)" }}
+            style={{ fontFamily: FN, color: "rgba(226,254,165,0.3)" }}
           >
             {m.label} — {h.name}
           </p>
-          <HackathonPhaseBadge phase={h.phase} size="sm" />
+          {/* <HackathonPhaseBadge phase={h.phase} size="sm" /> */}
         </div>
         <p
           className="text-[9px] tracking-[0.18em] uppercase font-bold"
-          style={{ fontFamily: PX, color: "rgba(226,254,165,0.2)" }}
+          style={{ fontFamily: FN, color: "rgba(226,254,165,0.2)" }}
         >
           {WATERMARKS[section]}
         </p>
@@ -133,11 +131,9 @@ export function BuilderHackathonDetail({
 
   function renderSection() {
     switch (section) {
-      case "ideator":
-      case "mentor":
+      case "techbuddy":
         return (
-          <HackathonChatSection
-            section={section}
+          <HackathonTechBuddyChat
             hackathonId={hackathonId}
             hackathon={h}
             isAuthenticated={isAuthenticated}
@@ -175,7 +171,7 @@ export function BuilderHackathonDetail({
     );
   }
 
-  // Dark container layout for ideator / mentor / submit
+  // Dark container layout for techbuddy / submit
   return (
     <div
       className="flex flex-col h-screen overflow-hidden p-4"

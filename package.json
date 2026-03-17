@@ -37,6 +37,8 @@
     "react-dom": "19.2.3",
     "react-grid-layout": "^2.2.2",
     "react-hook-form": "^7.71.2",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.4.0",
     "youtube-transcript": "^1.2.1",
     "zod": "^4.3.6"
@@ -51,8 +53,8 @@
     "bcryptjs": "^3.0.3",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "incur": "^0.3.2",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "incur": "^0.3.2"
+    "typescript": "^5"
   }
 }

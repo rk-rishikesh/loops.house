@@ -2,18 +2,30 @@
 
 import { CalendarDays } from "lucide-react";
 import type { StoredHackathon } from "@/lib/data-mappers";
-import { PX, FN } from "./constants";
+import { FN } from "./constants";
+
+function fmt(iso?: string) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export function HackathonScheduleSection({ hackathon }: { hackathon: StoredHackathon }) {
   const h = hackathon;
   const hasAnyDate = h.start_date || h.submission_deadline || h.judging_deadline || h.results_date;
   const rows: { label: string; value: string }[] = [
-    ...(h.start_date ? [{ label: "Start date", value: h.start_date }] : []),
+    ...(h.start_date ? [{ label: "Start date", value: fmt(h.start_date)! }] : []),
     ...(h.submission_deadline
-      ? [{ label: "Submission deadline", value: h.submission_deadline }]
+      ? [{ label: "Submission deadline", value: fmt(h.submission_deadline)! }]
       : []),
-    ...(h.judging_deadline ? [{ label: "Judging deadline", value: h.judging_deadline }] : []),
-    ...(h.results_date ? [{ label: "Results", value: h.results_date }] : []),
+    ...(h.judging_deadline ? [{ label: "Judging deadline", value: fmt(h.judging_deadline)! }] : []),
+    ...(h.results_date ? [{ label: "Results", value: fmt(h.results_date)! }] : []),
   ];
 
   return (
@@ -21,7 +33,7 @@ export function HackathonScheduleSection({ hackathon }: { hackathon: StoredHacka
       <p
         className="font-black uppercase leading-none select-none mb-8"
         style={{
-          fontFamily: PX,
+          fontFamily: FN,
           fontSize: "clamp(48px, 6vw, 80px)",
           letterSpacing: "-0.04em",
           lineHeight: 0.85,
@@ -31,59 +43,52 @@ export function HackathonScheduleSection({ hackathon }: { hackathon: StoredHacka
         SCHEDULE
       </p>
       {hasAnyDate ? (
-        <div className="rounded-[28px] bg-transparent">
-          <div className="px-2 py-2">
-            <div
-              className="rounded-[22px] px-10 py-6"
-              style={{ backgroundColor: "rgba(248,255,232,0.9)" }}
-            >
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center gap-4">
+            <h3 className="text-xl font-black uppercase text-[#0F2C23]" style={{ fontFamily: FN }}>
+              Timeline
+            </h3>
+            <div className="h-px flex-1 bg-[#0F2C23]/10" />
+          </div>
+
+          <div
+            className="rounded-[32px] border border-[#0F2C23]/10 overflow-hidden"
+            style={{
+              backgroundColor: "rgba(15,44,35,0.04)",
+              boxShadow: "0 20px 40px -15px rgba(15,44,35,0.06)",
+            }}
+          >
+            <div className="px-8 py-6">
               {rows.map((r, idx) => (
                 <div
                   key={r.label}
-                  className="flex gap-5 py-4"
-                  style={{ marginTop: idx === 0 ? 0 : 4 }}
+                  className="py-6"
+                  style={{
+                    borderBottom: idx === rows.length - 1 ? "none" : "1px solid rgba(15,44,35,0.10)",
+                  }}
                 >
-                  <div className="flex flex-col items-center pt-1">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: "#0F2C23" }}
-                    />
-                    {idx !== rows.length - 1 && (
-                      <span
-                        style={{
-                          width: 1,
-                          flex: 1,
-                          background:
-                            "linear-gradient(to bottom, rgba(15,44,35,0.2), rgba(15,44,35,0.04))",
-                          marginTop: 6,
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1 flex items-baseline justify-between gap-6">
-                    <p
-                      className="m-0 uppercase font-black"
-                      style={{
-                        fontFamily: PX,
-                        fontSize: 12,
-                        letterSpacing: "0.12em",
-                        color: "rgba(15,44,35,0.75)",
-                      }}
-                    >
-                      {r.label}
-                    </p>
-                    <p
-                      className="m-0 text-right"
-                      style={{
-                        fontFamily: FN,
-                        fontSize: "clamp(14px, 1.4vw, 16px)",
-                        letterSpacing: "0",
-                        color: "rgba(15,44,35,0.85)",
-                      }}
-                    >
-                      {r.value}
-                    </p>
-                  </div>
+                  <p
+                    className="m-0 uppercase font-black"
+                    style={{
+                      fontFamily: FN,
+                      fontSize: 12,
+                      letterSpacing: "0.14em",
+                      color: "rgba(15,44,35,0.55)",
+                    }}
+                  >
+                    {r.label}
+                  </p>
+                  <p
+                    className="mt-2 m-0 font-black text-[#0F2C23]"
+                    style={{
+                      fontFamily: FN,
+                      fontSize: "clamp(18px, 2.1vw, 24px)",
+                      letterSpacing: "-0.015em",
+                      lineHeight: 1.08,
+                    }}
+                  >
+                    {r.value}
+                  </p>
                 </div>
               ))}
             </div>

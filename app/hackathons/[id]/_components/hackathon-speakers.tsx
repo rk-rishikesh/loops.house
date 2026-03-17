@@ -46,7 +46,7 @@ export function HackathonSpeakersSection({ speakers }: { speakers: StoredSpeaker
       <p
         className="font-black uppercase leading-none select-none mb-10"
         style={{
-          fontFamily: PX,
+          fontFamily: FN,
           fontSize: "clamp(48px, 6vw, 80px)",
           letterSpacing: "-0.04em",
           lineHeight: 0.85,
@@ -61,10 +61,6 @@ export function HackathonSpeakersSection({ speakers }: { speakers: StoredSpeaker
           <div
             key={s.id}
             className="rounded-3xl p-8"
-            style={{
-              backgroundColor: "rgba(15,44,35,0.02)",
-              border: "1px solid rgba(15,44,35,0.06)",
-            }}
           >
             <div className="flex flex-col items-center text-center gap-4">
               <div
@@ -94,15 +90,9 @@ export function HackathonSpeakersSection({ speakers }: { speakers: StoredSpeaker
 
               <div className="min-w-0">
                 <p
-                  className="text-[9px] tracking-[0.22em] uppercase font-bold mb-2"
-                  style={{ fontFamily: PX, color: "rgba(15,44,35,0.55)" }}
-                >
-                  Speaker
-                </p>
-                <p
                   className="font-black uppercase leading-tight"
                   style={{
-                    fontFamily: PX,
+                    fontFamily: FN,
                     fontSize: "clamp(18px, 2vw, 26px)",
                     letterSpacing: "-0.02em",
                     color: "#0F2C23",

@@ -1,14 +1,28 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, Clock, Trophy, Zap } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowUpRight, Clock, Search, Trophy, Zap } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
-const MONO = "'SF Mono','Fira Code','Consolas',monospace";
+
+function fmtDateTime(iso?: string) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 type EventStatus = "ongoing" | "upcoming" | "past";
 type TabId = "ongoing" | "upcoming" | "past";
@@ -16,6 +30,7 @@ type TabId = "ongoing" | "upcoming" | "past";
 type Hackathon = {
   id: string;
   name: string;
+  logo_url?: string;
   theme?: string;
   bounty_pool_summary?: string;
   problem_statements: string[];
@@ -24,99 +39,7 @@ type Hackathon = {
   judging_deadline?: string;
   results_date?: string;
 };
-
-const TERMINAL_LINES = [
-  "> initializing hackathon_agent...",
-  "> scanning submissions...",
-  "> indexing challenges...",
-  "> preparing judging pipeline...",
-  "> ready. explore hackathons.",
-];
-
 const TAGLINE = "Discover hackathons, build projects, and compete for prizes";
-
-function TerminalTypewriter({ lines }: { lines: string[] }) {
-  const [displayedLines, setDisplayedLines] = useState<string[]>([]);
-  const [currentLine, setCurrentLine] = useState(0);
-  const [currentChar, setCurrentChar] = useState(0);
-  const [cursorVisible, setCursorVisible] = useState(true);
-
-  useEffect(() => {
-    const blink = setInterval(() => setCursorVisible((v) => !v), 520);
-    return () => clearInterval(blink);
-  }, []);
-
-  useEffect(() => {
-    if (currentLine >= lines.length) return;
-    const line = lines[currentLine];
-    if (currentChar < line.length) {
-      const speed = line[currentChar] === "." ? 120 : 28 + Math.random() * 22;
-      const t = setTimeout(() => setCurrentChar((c) => c + 1), speed);
-      return () => clearTimeout(t);
-    }
-    const pause = setTimeout(() => {
-      setDisplayedLines((prev) => [...prev, line]);
-      setCurrentLine((l) => l + 1);
-      setCurrentChar(0);
-    }, 350);
-    return () => clearTimeout(pause);
-  }, [currentLine, currentChar, lines]);
-
-  const typing = currentLine < lines.length ? lines[currentLine].slice(0, currentChar) : null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.3 }}
-      className="px-1 py-1 overflow-hidden"
-    >
-      <div className="flex items-center gap-1.5 mb-3">
-        {["rgba(15,44,35,0.15)", "rgba(15,44,35,0.1)", "rgba(15,44,35,0.1)"].map((c, i) => (
-          <span key={i} className="w-2 h-2 rounded-full" style={{ backgroundColor: c }} />
-        ))}
-        <span
-          className="ml-2 text-[8px] tracking-[0.14em] uppercase font-bold"
-          style={{ fontFamily: PX, color: "rgba(15,44,35,0.25)" }}
-        >
-          terminal
-        </span>
-      </div>
-      <div
-        className="flex flex-col gap-0.5"
-        style={{ fontFamily: MONO, fontSize: 12, lineHeight: 1.7 }}
-      >
-        <AnimatePresence>
-          {displayedLines.map((line, i) => (
-            <motion.p
-              key={i}
-              initial={{ opacity: 0, x: -4 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.15 }}
-              className="m-0"
-              style={{
-                color:
-                  line.includes("ready") || line.includes("online")
-                    ? "#0F2C23"
-                    : "rgba(15,44,35,0.45)",
-              }}
-            >
-              {line}
-            </motion.p>
-          ))}
-        </AnimatePresence>
-        {typing !== null && (
-          <p className="m-0" style={{ color: "rgba(15,44,35,0.55)" }}>
-            {typing}
-            <span style={{ opacity: cursorVisible ? 1 : 0, color: "#0F2C23", fontWeight: 700 }}>
-              ▋
-            </span>
-          </p>
-        )}
-      </div>
-    </motion.div>
-  );
-}
 
 const TAB_CONFIG: { id: TabId; label: string }[] = [
   { id: "ongoing", label: "Open Now" },
@@ -181,7 +104,7 @@ function FeaturedHero({ b }: { b: Hackathon }) {
             <h2
               className="font-black text-[#E2FEA5] uppercase leading-[0.88]"
               style={{
-                fontFamily: PX,
+                fontFamily: FN,
                 fontSize: "clamp(40px, 6vw, 80px)",
                 letterSpacing: "-0.04em",
                 margin: "0 0 18px",
@@ -211,7 +134,7 @@ function FeaturedHero({ b }: { b: Hackathon }) {
                 <Zap size={11} style={{ color: "#f0c060", flexShrink: 0 }} />
                 <span
                   className="text-[11px]"
-                  style={{ fontFamily: PX, color: "rgba(226,254,165,0.7)" }}
+                  style={{ fontFamily: FN, color: "rgba(226,254,165,0.7)" }}
                 >
                   {b.problem_statements.length} challenges
                 </span>
@@ -225,7 +148,7 @@ function FeaturedHero({ b }: { b: Hackathon }) {
                 <Trophy size={11} style={{ color: "#4caf7d", flexShrink: 0 }} />
                 <span
                   className="text-[11px] truncate"
-                  style={{ fontFamily: PX, color: "rgba(226,254,165,0.7)" }}
+                  style={{ fontFamily: FN, color: "rgba(226,254,165,0.7)" }}
                 >
                   {String(b.bounty_pool_summary).slice(0, 32)}
                 </span>
@@ -239,9 +162,9 @@ function FeaturedHero({ b }: { b: Hackathon }) {
                 <Clock size={11} style={{ color: "#E2FEA5", flexShrink: 0 }} />
                 <span
                   className="text-[11px] truncate"
-                  style={{ fontFamily: PX, color: "rgba(226,254,165,0.7)" }}
+                  style={{ fontFamily: FN, color: "rgba(226,254,165,0.7)" }}
                 >
-                  Due {b.submission_deadline}
+                  Due {fmtDateTime(b.submission_deadline)}
                 </span>
               </div>
             )}
@@ -276,7 +199,7 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
             />
             <span
               className="text-[8px] tracking-[0.18em] uppercase font-bold"
-              style={{ fontFamily: PX, color: fgSub }}
+              style={{ fontFamily: FN, color: fgSub }}
             >
               {statusLabel}
             </span>
@@ -292,7 +215,7 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
         <h3
           className="font-black uppercase leading-[1.1] mb-2 flex-1"
           style={{
-            fontFamily: PX,
+            fontFamily: FN,
             fontSize: "clamp(14px, 1.5vw, 17px)",
             letterSpacing: "-0.02em",
             color: fg,
@@ -307,29 +230,34 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
           </p>
         )}
 
-        <div className="flex flex-wrap gap-1.5 mt-auto">
-          {b.problem_statements.length > 0 && (
-            <span
-              className="text-[8px] tracking-widest uppercase font-bold px-2.5 py-1 rounded-sm"
+        <div className="mt-auto flex items-center justify-between gap-4">
+          {b.logo_url ? (
+            <div
+              className="relative w-10 h-10 rounded-xl overflow-hidden"
               style={{
-                fontFamily: PX,
-                backgroundColor: isPast ? "rgba(15,44,35,0.06)" : "rgba(15,44,35,0.08)",
-                color: fgSub,
+                backgroundColor: isPast ? "rgba(15,44,35,0.06)" : "rgba(248,255,232,0.08)",
+                border: `1px solid ${isPast ? "rgba(15,44,35,0.10)" : "rgba(248,255,232,0.12)"}`,
               }}
             >
-              {b.problem_statements.length} challenge{b.problem_statements.length !== 1 ? "s" : ""}
-            </span>
+              <Image src={b.logo_url} alt={b.name} fill className="object-cover" sizes="40px" />
+            </div>
+          ) : (
+            <div
+              className="w-10 h-10 rounded-xl"
+              style={{
+                backgroundColor: isPast ? "rgba(15,44,35,0.06)" : "rgba(248,255,232,0.08)",
+                border: `1px solid ${isPast ? "rgba(15,44,35,0.10)" : "rgba(248,255,232,0.12)"}`,
+              }}
+            />
           )}
-          {b.bounty_pool_summary && (
-            <span
-              className="text-[8px] tracking-widest uppercase font-bold px-2.5 py-1 rounded-sm"
-              style={{
-                fontFamily: PX,
-                backgroundColor: isPast ? "rgba(15,44,35,0.06)" : "rgba(15,44,35,0.08)",
-                color: fgSub,
-              }}
-            >
-              Prize pool
+
+          {b.submission_deadline ? (
+            <span className="text-[10px] truncate" style={{ fontFamily: FN, color: fgSub }}>
+              Due {fmtDateTime(b.submission_deadline)}
+            </span>
+          ) : (
+            <span className="text-[10px]" style={{ fontFamily: FN, color: fgSub }}>
+              {statusLabel}
             </span>
           )}
         </div>
@@ -342,16 +270,14 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
   const mounted = useIsMounted();
   const withStatus = list.map((h, idx) => ({ ...h, _status: deriveStatus(h, idx) as EventStatus }));
 
-  const featured = withStatus[0] ?? null;
+  // Prefer featuring an "Open Now" hackathon so we don't surface "Upcoming" in that bucket.
+  const featured = withStatus.find((h) => h._status === "ongoing") ?? withStatus[0] ?? null;
 
   const bucketed: Record<TabId, typeof withStatus> = {
     ongoing: withStatus.filter((h) => h._status === "ongoing"),
     upcoming: withStatus.filter((h) => h._status === "upcoming"),
     past: withStatus.filter((h) => h._status === "past"),
   };
-  if (featured && !bucketed.ongoing.find((h) => h.id === featured.id)) {
-    bucketed.ongoing = [featured, ...bucketed.ongoing];
-  }
 
   const counts: Record<TabId, number> = {
     ongoing: bucketed.ongoing.length,
@@ -360,12 +286,21 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
   };
 
   const [activeTab, setActiveTab] = useState<TabId>("ongoing");
+  const [query, setQuery] = useState("");
   const tabItems = bucketed[activeTab];
+  const q = query.trim().toLowerCase();
+  const filteredItems =
+    q.length === 0
+      ? tabItems
+      : tabItems.filter((h) => {
+          const hay = `${h.name ?? ""} ${h.theme ?? ""}`.toLowerCase();
+          return hay.includes(q);
+        });
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
       <div
-        className="px-10 pt-10 pb-24 transition-all duration-500 ease-out"
+        className="px-10 pb-24 transition-all duration-500 ease-out"
         style={{
           opacity: mounted ? 1 : 0,
           transform: mounted ? "translateY(0)" : "translateY(20px)",
@@ -401,9 +336,7 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
               {TAGLINE}
             </motion.p>
           </div>
-          <div className="w-[320px] shrink-0">
-            <TerminalTypewriter lines={TERMINAL_LINES} />
-          </div>
+         
         </div>
 
         {/* ── Empty state ── */}
@@ -443,13 +376,11 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
             )}
 
             {/* ── Tab bar (header style) ── */}
-            <div
-              className="flex items-center border-t border-b py-4"
-              style={{
-                borderColor: "rgba(15,44,35,0.12)",
-                backgroundColor: "#F8FFE8",
-              }}
-            >
+            <div className="mt-8 flex items-center justify-between gap-6">
+              <div
+                className="inline-flex items-center gap-2 rounded-full p-1"
+                style={{ backgroundColor: "rgba(15,44,35,0.06)", border: "1px solid rgba(15,44,35,0.10)" }}
+              >
               {TAB_CONFIG.map((tab) => {
                 const on = tab.id === activeTab;
                 return (
@@ -457,14 +388,15 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className="flex-1 border-none cursor-pointer bg-transparent py-0 flex items-center justify-center gap-2 transition-colors"
+                    className="border-none cursor-pointer px-5 py-2 rounded-full flex items-center justify-center gap-2 transition-all"
                     style={{
-                      fontFamily: PX,
+                      fontFamily: FN,
                       fontSize: 10,
                       letterSpacing: "0.14em",
                       fontWeight: 600,
                       textTransform: "uppercase",
-                      color: on ? "rgba(15,44,35,0.7)" : "rgba(15,44,35,0.4)",
+                      color: on ? "#0F2C23" : "rgba(15,44,35,0.55)",
+                      backgroundColor: on ? "#E2FEA5" : "transparent",
                     }}
                   >
                     {tab.label}
@@ -472,12 +404,34 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
                   </button>
                 );
               })}
+              </div>
+
+              <div className="relative w-[360px] max-w-[40vw]">
+                <Search
+                  size={14}
+                  className="absolute left-4 top-1/2 -translate-y-1/2"
+                  style={{ color: "rgba(15,44,35,0.35)" }}
+                />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search hackathons..."
+                  className="w-full rounded-full pl-10 pr-4 py-2.5 outline-none"
+                  style={{
+                    fontFamily: FN,
+                    fontSize: 12,
+                    backgroundColor: "rgba(15,44,35,0.04)",
+                    border: "1px solid rgba(15,44,35,0.10)",
+                    color: "#0F2C23",
+                  }}
+                />
+              </div>
             </div>
 
             {/* ── Grid ── */}
-            {tabItems.length > 0 ? (
+            {filteredItems.length > 0 ? (
               <div className="grid gap-4 mt-8" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-                {tabItems.map((h) => (
+                {filteredItems.map((h) => (
                   <HackCard key={h.id} b={h} status={h._status} />
                 ))}
               </div>
@@ -490,10 +444,10 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
                   className="text-[10px] tracking-[0.18em] uppercase font-bold mb-3"
                   style={{ fontFamily: PX, color: "rgba(226,254,165,0.5)" }}
                 >
-                  No {activeTab} programs
+                  {q.length > 0 ? "No matching hackathons" : `No ${activeTab} programs`}
                 </p>
                 <p className="text-sm" style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}>
-                  Check back soon or explore another tab.
+                  {q.length > 0 ? "Try a different search term." : "Check back soon or explore another tab."}
                 </p>
               </div>
             )}

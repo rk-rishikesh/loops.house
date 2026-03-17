@@ -51,107 +51,124 @@ export function HackathonAboutSection({
   compact?: boolean;
 }) {
   const hasResources = (h.technical_resources?.length ?? 0) > 0;
-  const hasAboutMeta = !!h.theme || !!h.description || !!h.program_goal;
-  const titleSize = compact ? "clamp(28px, 4vw, 48px)" : "clamp(46px, 6vw, 82px)";
+  
+  const titleSize = compact ? "clamp(28px, 4.5vw, 44px)" : "clamp(34px, 5.2vw, 62px)";
+  const hasBanner = !!h.banner_url;
+  const hasLogo = !!h.logo_url;
 
   return (
-    <div>
+    <div className="flex flex-col gap-12 sm:gap-16">
+      {/* Banner + Brand Hero Block */}
       <div className="relative">
-        {/* Banner + Logo */}
-        {h.banner_url && (
-          <div
-            className="rounded-2xl overflow-hidden mb-4"
-            style={{ aspectRatio: "3/1", position: "relative" }}
-          >
-            <Image
-              src={h.banner_url}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 800px"
-            />
-            {h.logo_url && (
-              <div
-                className="z-10 overflow-hidden rounded-full"
-                style={{
-                  position: "absolute",
-                  left: 12,
-                  bottom: 12,
-                  width: compact ? 56 : 72,
-                  height: compact ? 56 : 72,
-                }}
-              >
-                <Image src={h.logo_url} alt={h.name} fill className="object-cover" />
-              </div>
-            )}
+        {h.banner_url ? (
+          <div className="relative group">
+            {/* Banner */}
+            <div className="relative rounded-[32px] sm:rounded-[48px] border-4 border-[#0F2C23]/5 shadow-2xl bg-[#0F2C23]/5 overflow-hidden">
+              <div className="relative w-full overflow-hidden" style={{ aspectRatio: "21/9" }}>
+              <Image
+                src={h.banner_url}
+                alt=""
+                fill
+                className="object-cover transition-transform duration-1000 group-hover:scale-105"
+                priority
+                sizes="(max-width: 768px) 100vw, 1200px"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-[#0F2C23]/60 via-[#0F2C23]/20 to-transparent" />
+            </div>
+            </div>
+
           </div>
+        ) : (
+          h.logo_url && (
+            <div className="flex items-center gap-6 mb-8">
+              <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-3xl overflow-hidden border-2 border-[#0F2C23]/10 bg-white p-1 shadow-lg">
+                <div className="relative w-full h-full rounded-2xl overflow-hidden">
+                  <Image src={h.logo_url} alt={h.name} fill className="object-cover" />
+                </div>
+              </div>
+            </div>
+          )
         )}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-6">
-          {!h.banner_url && h.logo_url && (
-            <Image src={h.logo_url} alt={h.name} width={50} height={50} className="object-cover" />
+
+      {/* Title & Tagline & Actions Row */}
+      <div className={hasBanner ? "pt-10 sm:pt-14" : ""}>
+        <div className="flex items-center justify-between gap-6">
+          <div className="flex items-center gap-5 min-w-0">
+            {hasLogo && (
+              <div
+                className={hasBanner ? "-mt-10 sm:-mt-14" : ""}
+              >
+                <div className="relative w-20 h-20 sm:w-32 sm:h-32 rounded-3xl overflow-hidden border-4 border-white shadow-2xl bg-white p-1">
+                  <div className="relative w-full h-full rounded-2xl overflow-hidden">
+                    <Image src={h.logo_url!} alt={h.name} fill className="object-cover" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="min-w-0">
+              <h1
+                className="font-black uppercase tracking-tighter text-[#0F2C23]"
+                style={{ fontFamily: FN, fontSize: titleSize, lineHeight: 0.90 }}
+              >
+                {h.name || "Untitled Program"}
+              </h1>
+              {h.theme && (
+                <p
+                  className="mt-2 text-base sm:text-lg font-bold text-[#0F2C23]/55 italic tracking-tight"
+                  style={{ fontFamily: FN }}
+                >
+                  "{h.theme}"
+                </p>
+              )}
+            </div>
+          </div>
+
+          {h.website_url && (
+            <a
+              href={h.website_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 group flex items-center gap-3 rounded-full px-7 py-3 bg-[#0F2C23] text-white hover:bg-[#0F2C23]/90 transition-all shadow-[0_10px_30px_-10px_rgba(15,44,35,0.35)] hover:-translate-y-0.5 active:scale-95"
+              style={{ textDecoration: "none" }}
+            >
+              <Globe size={16} className="opacity-70 group-hover:rotate-12 transition-transform duration-500" />
+              <span className="font-bold text-[11px] tracking-[0.2em] uppercase" style={{ fontFamily:FN  }}>
+                Visit Website
+              </span>
+              <ExternalLink size={14} className="opacity-30 group-hover:opacity-100 transition-opacity" />
+            </a>
           )}
-          <h2
-            className="font-black uppercase leading-[0.88]"
-            style={{
-              fontFamily: FN,
-              fontSize: titleSize,
-              letterSpacing: "-0.04em",
-              color: "#0F2C23",
-            }}
-          >
-            {h.name || "Untitled Program"}
-          </h2>
         </div>
       </div>
 
-      {/* Theme / Description / Program goal (card) */}
-      {hasAboutMeta && (
-        <div
-          className="rounded-2xl p-6 mb-6"
-          style={{
-            backgroundColor: "rgba(15,44,35,0.03)",
-            border: "1px solid rgba(15,44,35,0.08)",
-          }}
-        >
-          {h.theme && (
-            <div className="mb-5 last:mb-0">
-              <p
-                className="text-[15px] tracking-[0.16em] uppercase font-bold mb-2"
-                style={{ fontFamily: FN, color: "rgba(15,44,35,0.5)" }}
-              >
-                Theme
-              </p>
-              <p className="text-[#0F2C23]/70 leading-relaxed" style={{ fontFamily: FN, fontSize: 13 }}>
-                {h.theme}
-              </p>
-            </div>
-          )}
-
+      {/* Program Details Section */}
+      {(h.description || h.program_goal) && (
+        <div className="flex flex-col gap-12 sm:gap-20">
           {h.description && (
-            <div className="mb-5 last:mb-0">
-              <p
-                className="text-[15px] tracking-[0.16em] uppercase font-bold mb-2"
-                style={{ fontFamily: FN, color: "rgba(15,44,35,0.5)" }}
-              >
-                Description
-              </p>
-              <p className="text-[#0F2C23]/70 leading-relaxed" style={{ fontFamily: FN, fontSize: 13 }}>
+            <div className="flex flex-col gap-6 max-w-4xl">
+              <div className="flex items-center gap-4">
+                <h3 className="text-xl font-black uppercase text-[#0F2C23]" style={{ fontFamily: FN }}>
+                  Description
+                </h3>
+                <div className="h-px flex-1 bg-[#0F2C23]/10" />
+              </div>
+              <p className="text-[#0F2C23]/70 leading-relaxed text-lg sm:text-xl font-medium" style={{ fontFamily: FN }}>
                 {h.description}
               </p>
             </div>
           )}
 
           {h.program_goal && h.program_goal !== h.description && (
-            <div className="mb-0">
-              <p
-                className="text-[15px] tracking-[0.16em] uppercase font-bold mb-2"
-                style={{ fontFamily: FN, color: "rgba(15,44,35,0.5)" }}
-              >
-                Program goal
-              </p>
-              <p className="text-[#0F2C23]/65 leading-relaxed" style={{ fontFamily: FN, fontSize: 13 }}>
+            <div className="flex flex-col gap-6 max-w-4xl">
+              <div className="flex items-center gap-4">
+                <h3 className="text-xl font-black uppercase text-[#0F2C23]" style={{ fontFamily: FN }}>
+                  Program Goal
+                </h3>
+                <div className="h-px flex-1 bg-[#0F2C23]/10" />
+              </div>
+              <p className="text-[#0F2C23]/70 leading-relaxed text-lg sm:text-xl font-medium" style={{ fontFamily: FN }}>
                 {h.program_goal}
               </p>
             </div>
@@ -159,68 +176,45 @@ export function HackathonAboutSection({
         </div>
       )}
 
-      {/* Links row */}
-      {h.website_url && (
-        <div className="flex flex-wrap gap-3 mb-6">
-          <a
-            href={h.website_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 no-underline transition-colors hover:bg-[#0F2C23]/8"
-            style={{
-              backgroundColor: "rgba(15,44,35,0.04)",
-              border: "1px solid rgba(15,44,35,0.08)",
-            }}
-          >
-            <Globe size={13} style={{ color: "rgba(15,44,35,0.5)" }} />
-            <span
-              className="text-xs font-medium truncate"
-              style={{ fontFamily: FN, color: "#0F2C23", maxWidth: 200 }}
-            >
-              Website
-            </span>
-            <ExternalLink size={10} style={{ color: "rgba(15,44,35,0.3)" }} />
-          </a>
-        </div>
-      )}
-
-      {/* Technical resources */}
+      {/* Technical Resources Section */}
       {hasResources && (
-        <div>
-          <p
-            className="text-[15px] tracking-[0.16em] uppercase font-bold mb-4"
-            style={{ fontFamily: FN, color: "rgba(15,44,35,0.4)" }}
-          >
-            Resources
-          </p>
-          <div
-            className="rounded-2xl p-6"
-            style={{
-              backgroundColor: "rgba(15,44,35,0.03)",
-              border: "1px solid rgba(15,44,35,0.08)",
-            }}
-          >
-            <div className="flex flex-col gap-2">
-              {h.technical_resources!.map((r, i) => (
-                <a
-                  key={i}
-                  href={r.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 no-underline transition-colors hover:bg-[rgba(15,44,35,0.04)]"
-                  style={{ backgroundColor: "rgba(15,44,35,0.02)" }}
-                >
-                  <FileText size={12} style={{ color: "rgba(15,44,35,0.5)" }} />
-                  <span
-                    className="text-xs flex-1 truncate"
-                    style={{ fontFamily: FN, color: "rgba(15,44,35,0.65)" }}
-                  >
+        <div className="flex flex-col gap-10">
+          <div className="flex items-center gap-6">
+            <h3 className="text-[11px] tracking-[0.4em] font-black text-[#0F2C23]/25 uppercase whitespace-nowrap" style={{ fontFamily: PX }}>
+              Technical Arsenal
+            </h3>
+            <div className="h-px w-full bg-linear-to-r from-[#0F2C23]/10 to-transparent" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {h.technical_resources!.map((r, i) => (
+              <a
+                key={i}
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex flex-col items-start gap-4 p-7 rounded-[32px] bg-white border border-[#0F2C23]/5 shadow-sm hover:shadow-xl hover:border-[#0F2C23]/15 transition-all duration-300 relative overflow-hidden"
+              >
+                {/* Background Accent */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-[#0F2C23]/2 rounded-bl-[100px] transition-all group-hover:w-full group-hover:h-full group-hover:rounded-none duration-500" />
+                
+                <div className="relative z-10 flex items-center justify-between w-full">
+                  <div className="w-12 h-12 rounded-2xl bg-[#0F2C23]/5 flex items-center justify-center text-[#0F2C23] group-hover:bg-[#E2FEA5] group-hover:scale-110 transition-all duration-500">
+                    <FileText size={20} />
+                  </div>
+                  <ArrowUpRight size={16} className="text-[#0F2C23]/10 group-hover:text-[#0F2C23] group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                </div>
+                
+                <div className="relative z-10 mt-2">
+                  <p className="text-[14px] font-bold text-[#0F2C23] leading-snug group-hover:text-black transition-colors" style={{ fontFamily: FN }}>
                     {r.description || r.url}
+                  </p>
+                  <span className="text-[9px] text-[#0F2C23]/30 uppercase tracking-[0.2em] mt-3 block font-black" style={{ fontFamily: PX }}>
+                    Access Data
                   </span>
-                  <ArrowUpRight size={10} style={{ color: "rgba(15,44,35,0.3)" }} />
-                </a>
-              ))}
-            </div>
+                </div>
+              </a>
+            ))}
           </div>
         </div>
       )}

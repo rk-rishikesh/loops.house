@@ -2,6 +2,8 @@
 
 import { ArrowUpRight, Loader2, Plus, Send, Sparkles } from "lucide-react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useEffect, useRef, useState } from "react";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import type { StoredHackathon } from "@/lib/data-mappers";
@@ -9,10 +11,11 @@ import type { Message, SectionKey } from "./constants";
 import { FN, PX, WATERMARKS } from "./constants";
 
 interface HackathonChatSectionProps {
-  section: Extract<SectionKey, "ideator" | "mentor">;
+  section: Extract<SectionKey, "techbuddy">;
   hackathonId: string;
   hackathon: StoredHackathon;
   isAuthenticated: boolean;
+  apiPath: string;
 }
 
 export function HackathonChatSection({
@@ -20,6 +23,7 @@ export function HackathonChatSection({
   hackathonId,
   hackathon,
   isAuthenticated,
+  apiPath,
 }: HackathonChatSectionProps) {
   const mounted = useIsMounted();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -36,10 +40,7 @@ export function HackathonChatSection({
     el.style.height = Math.min(el.scrollHeight, 140) + "px";
   }, [draft]);
 
-  const isIdeator = section === "ideator";
-  const placeholder = isIdeator
-    ? "Describe your idea or ask for help..."
-    : "Ask your mentor anything...";
+  const placeholder = "Ideate or ask any tech questions...";
 
   async function sendMessage(userMessage: string) {
     if (!userMessage || loading) return;
@@ -49,19 +50,19 @@ export function HackathonChatSection({
     setLoading(true);
 
     try {
-      const res = await fetch("/api/builder-agents/project-ideator", {
+      const res = await fetch(apiPath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage,
           conversation_history: messages,
           hackathon_id: hackathonId,
-          booster_context: {
+          hackathon_context: {
             problem_statements: hackathon.problem_statements,
             sponsor_tracks: hackathon.sponsor_tracks,
             theme: hackathon.theme,
+            technical_resources: hackathon.technical_resources,
           },
-          agent: section === "mentor" ? "developer" : "ideator",
         }),
       });
 
@@ -138,7 +139,7 @@ export function HackathonChatSection({
           className="text-sm leading-relaxed text-center max-w-[420px] mb-6"
           style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
         >
-          Sign in to use {isIdeator ? "Ideator" : "Mentor"} for this hackathon.
+          Sign in to use Tech Buddy for this hackathon.
         </p>
         <Link
           href="/login"
@@ -176,25 +177,15 @@ export function HackathonChatSection({
             className="text-sm leading-relaxed text-center max-w-[440px]"
             style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
           >
-            {isIdeator
-              ? "Start with your idea. The Ideator will sharpen it, map it to the challenges, and outline next steps."
-              : "Your AI Mentor can guide you through technical decisions, architecture, and implementation strategy."}
+            Start with your idea or a technical question. Tech Buddy can help you map to challenges and guide implementation.
           </p>
           <div className="mt-8 grid grid-cols-2 gap-3 max-w-[560px] w-full">
-            {(isIdeator
-              ? [
-                  "I have a rough idea — help me sharpen it",
-                  "Which challenge should I tackle?",
-                  "Turn this into an MVP plan",
-                  "What stack would you recommend?",
-                ]
-              : [
-                  "Review my architecture approach",
-                  "How should I structure my project?",
-                  "Help me with the technical writeup",
-                  "What are the judging criteria?",
-                ]
-            ).map((s) => (
+            {[
+              "I have a rough idea, help me sharpen it",
+              "Which challenge should I tackle?",
+              "Turn this into an MVP plan",
+              "Review my architecture approach",
+            ].map((s) => (
               <button
                 key={s}
                 type="button"
@@ -234,25 +225,93 @@ export function HackathonChatSection({
               <div
                 className="rounded-2xl px-5 py-4 max-w-[78%]"
                 style={{
-                  backgroundColor:
-                    msg.role === "user" ? "rgba(226,254,165,0.12)" : "rgba(226,254,165,0.045)",
+                  backgroundColor: msg.role === "user" ? "rgba(226,254,165,0.14)" : "rgba(226,254,165,0.06)",
                   borderBottomRightRadius: msg.role === "user" ? 4 : 16,
                   borderBottomLeftRadius: msg.role === "assistant" ? 4 : 16,
                   border:
                     msg.role === "assistant"
-                      ? "1px solid rgba(226,254,165,0.06)"
-                      : "1px solid rgba(226,254,165,0.08)",
+                      ? "1px solid rgba(226,254,165,0.10)"
+                      : "1px solid rgba(226,254,165,0.12)",
                 }}
               >
-                <p
-                  className="text-sm leading-[1.85] whitespace-pre-wrap"
-                  style={{
-                    fontFamily: FN,
-                    color: msg.role === "user" ? "#E2FEA5" : "rgba(226,254,165,0.65)",
-                  }}
-                >
-                  {msg.content}
-                </p>
+                {msg.role === "assistant" ? (
+                  <div
+                    className="text-sm leading-[1.85]"
+                    style={{ fontFamily: FN, color: "rgba(226,254,165,0.78)" }}
+                  >
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: ({ node, ...props }) => (
+                          <a
+                            {...props}
+                            className="underline underline-offset-2"
+                            style={{ color: "#E2FEA5" }}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          />
+                        ),
+                        p: ({ node, ...props }) => <p {...props} className="mb-3 last:mb-0" />,
+                        ul: ({ node, ...props }) => <ul {...props} className="list-disc pl-6 mb-3 last:mb-0" />,
+                        ol: ({ node, ...props }) => <ol {...props} className="list-decimal pl-6 mb-3 last:mb-0" />,
+                        li: ({ node, ...props }) => <li {...props} className="mb-1 last:mb-0" />,
+                        h1: ({ node, ...props }) => <h1 {...props} className="text-lg font-black mb-2" />,
+                        h2: ({ node, ...props }) => <h2 {...props} className="text-base font-black mb-2" />,
+                        h3: ({ node, ...props }) => <h3 {...props} className="text-sm font-black mb-2" />,
+                        strong: ({ node, ...props }) => <strong {...props} className="font-black text-[#E2FEA5]" />,
+                        code: ({ className, children, ...props }) =>
+                          // react-markdown v10 types don't expose `inline`; detect via className presence
+                          className ? (
+                            <pre
+                              className="rounded-xl p-4 overflow-x-auto mb-3"
+                              style={{
+                                backgroundColor: "rgba(226,254,165,0.06)",
+                                border: "1px solid rgba(226,254,165,0.10)",
+                              }}
+                            >
+                              <code
+                                {...props}
+                                className={className}
+                                style={{
+                                  color: "rgba(226,254,165,0.85)",
+                                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                                  fontSize: 12,
+                                }}
+                              >
+                                {children}
+                              </code>
+                            </pre>
+                          ) : (
+                            <code
+                              {...props}
+                              className="px-1.5 py-0.5 rounded-md"
+                              style={{
+                                backgroundColor: "rgba(226,254,165,0.10)",
+                                color: "#E2FEA5",
+                                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                                fontSize: 12,
+                              }}
+                            >
+                              {children}
+                            </code>
+                          ),
+                        blockquote: ({ node, ...props }) => (
+                          <blockquote
+                            {...props}
+                            className="border-l-2 pl-4 italic mb-3 last:mb-0"
+                            style={{ borderColor: "rgba(226,254,165,0.20)", color: "rgba(226,254,165,0.70)" }}
+                          />
+                        ),
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <p className="text-sm leading-[1.85] whitespace-pre-wrap" style={{ fontFamily: FN, color: "#E2FEA5" }}>
+                    {msg.content}
+                  </p>
+                )}
               </div>
             </div>
           ))}

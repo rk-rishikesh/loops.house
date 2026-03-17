@@ -7,7 +7,6 @@ import {
   Eye,
   FolderOpen,
   Gavel,
-  GraduationCap,
   Info,
   LayoutGrid,
   Mic2,
@@ -56,8 +55,7 @@ export const HACKATHON_TABS: TabItem[] = [
   { key: "speakers", icon: Mic2, label: "Speakers" },
   { key: "schedule", icon: CalendarDays, label: "Schedule" },
   { key: "prizes", icon: Trophy, label: "Tracks" },
-  { key: "ideator", icon: Sparkles, label: "Ideate With AI" },
-  { key: "mentor", icon: GraduationCap, label: "AI Mentor" },
+  { key: "techbuddy", icon: Sparkles, label: "Tech Buddy" },
   { key: "submit", icon: Send, label: "Submit Project" },
 ];
 
@@ -72,7 +70,7 @@ export function getHackathonTabs(override: HackathonTabOverride | null): TabItem
   const hideAi = phase === "judging" || phase === "completed" || phase === "finalized";
 
   let tabs = HACKATHON_TABS.filter((t) => {
-    if (hideAi && (t.key === "ideator" || t.key === "mentor")) return false;
+    if (hideAi && t.key === "techbuddy") return false;
     if (hideAi && t.key === "submit" && !hasSubmission) return false;
     return true;
   });

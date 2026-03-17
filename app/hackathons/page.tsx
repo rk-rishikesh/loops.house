@@ -9,6 +9,7 @@ export default async function HackathonsPage() {
     .map((h) => ({
       id: h.id,
       name: h.name,
+      logo_url: h.logo_url ?? undefined,
       theme: h.theme ?? undefined,
       bounty_pool_summary: h.bounty_pool_summary ?? undefined,
       problem_statements: h.problem_statements ?? [],

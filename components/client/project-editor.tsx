@@ -189,9 +189,9 @@ export function ProjectEditor({
     twitter_post?: string;
     suggested_hashtags?: string[];
   } | null>(null);
-  const [activeLabTab, setActiveLabTab] = useState<
-    "project-mentor" | "social-copy" | "pitch-coach" | "code-reviewer"
-  >("social-copy");
+  // const [activeLabTab, setActiveLabTab] = useState<
+  //   "project-mentor" | "social-copy" | "pitch-coach" | "code-reviewer"
+  // >("social-copy");
   const [labPrompt, setLabPrompt] = useState("");
   const [editForm, setEditForm] = useState<Record<string, string>>({
     name: "",

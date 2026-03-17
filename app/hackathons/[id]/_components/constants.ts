@@ -2,8 +2,7 @@ export const PX = "var(--font-pixelify-sans), sans-serif";
 export const FN = "var(--font-funnel-sans), sans-serif";
 
 export type SectionKey =
-  | "ideator"
-  | "mentor"
+  | "techbuddy"
   | "info"
   | "speakers"
   | "schedule"
@@ -14,8 +13,7 @@ export type SectionKey =
 export type Message = { role: "user" | "assistant"; content: string };
 
 export const WATERMARKS: Record<SectionKey, string> = {
-  ideator: "IDEATE",
-  mentor: "MENTOR",
+  techbuddy: "TECH BUDDY",
   info: "INFO",
   speakers: "SPEAKERS",
   schedule: "SCHEDULE",
@@ -28,15 +26,8 @@ export const SECTION_META: Record<
   SectionKey,
   { label: string; accent: string; accentFaint: string; panelBg: string; panelBorder: string }
 > = {
-  ideator: {
-    label: "Ideator",
-    accent: "#E2FEA5",
-    accentFaint: "rgba(226,254,165,0.35)",
-    panelBg: "rgba(226,254,165,0.04)",
-    panelBorder: "1px solid rgba(226,254,165,0.06)",
-  },
-  mentor: {
-    label: "Mentor",
+  techbuddy: {
+    label: "Tech Buddy",
     accent: "#E2FEA5",
     accentFaint: "rgba(226,254,165,0.35)",
     panelBg: "rgba(226,254,165,0.04)",
