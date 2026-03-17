@@ -131,7 +131,7 @@ export default async function HostDashboardPage() {
                     <p
                       className="text-[9px] tracking-[0.2em] uppercase font-bold leading-none"
                       style={{
-                        fontFamily: PX,
+                        fontFamily: FN,
                         color: fgMid,
                       }}
                     >
@@ -141,7 +141,7 @@ export default async function HostDashboardPage() {
                       <p
                         className="text-[9px] uppercase mt-1"
                         style={{
-                          fontFamily: PX,
+                          fontFamily: FN,
                           color: fgMid,
                           opacity: 0.75,
                           letterSpacing: "0.2em",
@@ -165,44 +165,32 @@ export default async function HostDashboardPage() {
             <div className="flex items-center justify-between mb-7">
               <div className="flex items-center justify-between w-full">
                 <div className="flex-1 items-center gap-2">
-                  <p
+                  {/* <p
                     className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-1"
-                    style={{ fontFamily: PX }}
+                    style={{ fontFamily: FN }}
                   >
                     Your Programs
-                  </p>
+                  </p> */}
                   <h2
                     className="font-black text-[#0F2C23] uppercase"
                     style={{
-                      fontFamily: PX,
+                      fontFamily: FN,
                       fontSize: "clamp(20px, 2.5vw, 28px)",
                       letterSpacing: "-0.02em",
                     }}
                   >
-                    Hosted Hackathons.
+                    Your Hosted Hackathons
                   </h2>
                 </div>
                 <div className="flex items-center gap-3">
                   <Link
                     href="/host/new"
                     className="inline-flex items-center gap-2 no-underline rounded-full text-[#E2FEA5] text-[9px] tracking-widest uppercase font-bold px-5 py-3.5"
-                    style={{ backgroundColor: "#0F2C23", fontFamily: PX }}
+                    style={{ backgroundColor: "#0F2C23", fontFamily: FN }}
                   >
                     <Plus size={10} /> Create Hackathon
                   </Link>
-                  <span
-                    className="inline-flex items-center justify-center rounded-full text-[9px] font-black tracking-[0.22em] uppercase"
-                    style={{
-                      fontFamily: PX,
-                      width: 32,
-                      height: 32,
-                      backgroundColor: "rgba(15,44,35,0.06)",
-                      color: "#0F2C23",
-                      boxShadow: "0 0 0 1px rgba(15,44,35,0.12)",
-                    }}
-                  >
-                    AI
-                  </span>
+              
                 </div>
               </div>
             </div>
@@ -218,7 +206,7 @@ export default async function HostDashboardPage() {
                 </div>
                 <p
                   className="font-black text-[#0F2C23] uppercase mb-2"
-                  style={{ fontFamily: PX, fontSize: 16, letterSpacing: "-0.01em" }}
+                  style={{ fontFamily: FN, fontSize: 16, letterSpacing: "-0.01em" }}
                 >
                   No hackathons yet.
                 </p>
@@ -228,7 +216,7 @@ export default async function HostDashboardPage() {
                 <Link
                   href="/host/new"
                   className="inline-flex items-center gap-2 no-underline rounded-full text-[#E2FEA5] text-[9px] tracking-widest uppercase font-bold px-5 py-3.5"
-                  style={{ backgroundColor: "#0F2C23", fontFamily: PX }}
+                  style={{ backgroundColor: "#0F2C23", fontFamily: FN }}
                 >
                   <Plus size={10} /> Create Hackathon
                 </Link>

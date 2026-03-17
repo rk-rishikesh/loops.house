@@ -181,44 +181,6 @@ export function HackathonAnalytics({
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
-      {/* ── Nav ───────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-50" style={{ backgroundColor: "#F8FFE8" }}>
-        <div
-          className="flex w-full items-stretch border-t border-b border-[#0F2C23] text-[10px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]"
-          style={{ fontFamily: PX }}
-        >
-          <Link
-            href={backHref}
-            className="w-[240px] max-w-xs px-10 py-8 flex items-center justify-start border-r border-[#0F2C23] no-underline hover:bg-[rgba(15,44,35,0.06)]"
-          >
-            <span className="flex items-center gap-2">
-              <ArrowLeft size={11} />
-              <span>Host</span>
-            </span>
-          </Link>
-          <div className="flex-1 min-w-0 py-8 flex items-center justify-between px-10">
-            <div className="flex items-center gap-3">
-              <PhaseBadge phase={stats.currentPhase} />
-              {stats.daysToDeadline !== null && (
-                <span
-                  className="text-[10px] tracking-[0.12em] uppercase font-bold"
-                  style={{
-                    fontFamily: PX,
-                    color: stats.daysToDeadline <= 3 ? "#dc2626" : "rgba(15,44,35,0.45)",
-                  }}
-                >
-                  {stats.daysToDeadline > 0
-                    ? `${stats.daysToDeadline}d left`
-                    : stats.daysToDeadline === 0
-                      ? "Today"
-                      : `${Math.abs(stats.daysToDeadline)}d ago`}
-                </span>
-              )}
-            </div>
-            <span>{hackathon.name} ANALYTICS</span>
-          </div>
-        </div>
-      </div>
 
       <div className="px-10 pt-10 pb-24">
         {/* ── Hero ───────────────────────────────────────────────── */}

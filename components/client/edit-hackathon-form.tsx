@@ -37,7 +37,7 @@ const labelStyle = {
   fontWeight: 700,
   letterSpacing: "0.18em",
   textTransform: "uppercase",
-  fontFamily: PX,
+  fontFamily: FN,
 } as const;
 
 function focusIn(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -52,13 +52,13 @@ function SectionHeader({ num, title }: { num: string; title: string }) {
     <div className="flex items-baseline gap-3 mb-6">
       <span
         className="font-black text-[#0F2C23]/18"
-        style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
+        style={{ fontFamily: FN, fontSize: 32, letterSpacing: "-0.025em" }}
       >
         {num}
       </span>
       <p
-        className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
-        style={{ fontFamily: PX }}
+        className="text-[15px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+        style={{ fontFamily: FN }}
       >
         {title}
       </p>
@@ -139,7 +139,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
   return (
     <div className="pt-6 pb-24">
       {/* Hero */}
-      <div className="mb-14">
+      <div className="mb-14 flex flex-row justify-between">
         <h1
           className="font-black text-[#0F2C23] leading-[0.88] uppercase"
           style={{
@@ -172,7 +172,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
             <div className="grid gap-5">
               <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <label style={labelStyle} className="mb-2 block">
+                  <label style={labelStyle} className="mb-2 block text-lg">
                     Logo (required to publish)
                   </label>
                   <ImageUpload
@@ -360,7 +360,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                     style={{
                       backgroundColor: "rgba(15,44,35,0.04)",
                       color: "#0F2C23",
-                      fontFamily: PX,
+                      fontFamily: FN,
                     }}
                   >
                     <Plus size={12} /> Add Challenge
@@ -411,7 +411,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                     style={{
                       backgroundColor: "rgba(15,44,35,0.04)",
                       color: "#0F2C23",
-                      fontFamily: PX,
+                      fontFamily: FN,
                     }}
                   >
                     <Plus size={12} /> Add Criterion
@@ -468,7 +468,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                     style={{
                       backgroundColor: "rgba(15,44,35,0.04)",
                       color: "#0F2C23",
-                      fontFamily: PX,
+                      fontFamily: FN,
                     }}
                   >
                     <Plus size={12} /> Add Resource
@@ -512,7 +512,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
             >
               <span
                 className="pl-5 pr-3 py-3.5 text-[9px] tracking-[0.15em] uppercase font-bold text-[#F8FFE8] flex items-center gap-2"
-                style={{ fontFamily: PX }}
+                style={{ fontFamily: FN }}
               >
                 {isPending ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
                 {isPending ? "Saving..." : "Save Changes"}
@@ -549,7 +549,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
           <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
             <p
               className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5"
-              style={{ fontFamily: PX }}
+              style={{ fontFamily: FN }}
             >
               Profile Completion
             </p>
@@ -589,7 +589,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   <div className="flex-1 min-w-0">
                     <p
                       className="text-[9px] tracking-[0.14em] uppercase font-bold text-[#0F2C23]/38"
-                      style={{ fontFamily: PX }}
+                      style={{ fontFamily: FN }}
                     >
                       {label}
                     </p>
@@ -606,13 +606,13 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
           <button
             type="button"
             onClick={() => setShowPreviewModal(true)}
-            className="rounded-2xl px-6 py-4 flex items-center gap-3 border-none cursor-pointer transition-colors w-full text-left hover:scale-[1.01] transition-all"
+            className="rounded-2xl px-6 py-4 flex items-center gap-3 border-none cursor-pointer transition-all w-full text-left hover:scale-[1.01]"
             style={{ backgroundColor: "#E2FEA5" }}
           >
             <Eye size={16} style={{ color: "#0F2C23" }} />
             <p
               className="text-[10px] tracking-wide uppercase font-bold"
-              style={{ fontFamily: PX, color: "#0F2C23" }}
+                style={{ fontFamily: FN, color: "#0F2C23" }}
             >
               Preview Public Page
             </p>
@@ -627,7 +627,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
               <Clock size={16} className="text-[#E2FEA5] shrink-0" />
               <p
                 className="text-[10px] tracking-wide uppercase font-bold text-white/80"
-                style={{ fontFamily: PX }}
+                style={{ fontFamily: FN }}
               >
                 Unsaved Changes
               </p>

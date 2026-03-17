@@ -108,7 +108,7 @@ export default async function HostBoosterPage({
         )}
 
         {/* ── Stat cards ───────────────────────────────────────────── */}
-        <div className="grid grid-cols-4 gap-4 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           {[
             { label: "Submissions", value: totalSubmissions, icon: Gavel },
             { label: "Judges", value: judgeCount, icon: Users },
@@ -142,43 +142,43 @@ export default async function HostBoosterPage({
               </div>
             </div>
           ))}
-
-          <Link href={`/host/${hackathon.id}/analytics`} className="group no-underline">
-            <div
-              className="rounded-3xl p-6 flex flex-col justify-between h-full transition-all duration-200 group-hover:scale-[1.01]"
-              style={{ backgroundColor: "#0F2C23" }}
-            >
-              <div className="flex items-start justify-between">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: "rgba(248,255,232,0.06)" }}
-                >
-                  <BarChart3 size={18} style={{ color: "#E2FEA5" }} />
-                </div>
-                <ArrowCircle size={36} />
-              </div>
-              <div className="mt-4">
-                <h3
-                  className="font-black uppercase leading-tight mb-1"
-                  style={{
-                    fontFamily: PX,
-                    fontSize: "clamp(14px, 1.5vw, 18px)",
-                    letterSpacing: "-0.02em",
-                    color: "#F8FFE8",
-                  }}
-                >
-                  Full Analytics
-                </h3>
-                <p
-                  className="text-xs leading-relaxed"
-                  style={{ fontFamily: FN, color: "rgba(248,255,232,0.6)" }}
-                >
-                  AI reports, categories &amp; tech stacks
-                </p>
-              </div>
-            </div>
-          </Link>
         </div>
+
+        <Link href={`/host/${hackathon.id}/analytics`} className="group no-underline block mb-12">
+          <div
+            className="rounded-3xl p-6 flex flex-col justify-between transition-all duration-200 group-hover:scale-[1.01]"
+            style={{ backgroundColor: "#0F2C23", minHeight: 140 }}
+          >
+            <div className="flex items-start justify-between">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: "rgba(248,255,232,0.06)" }}
+              >
+                <BarChart3 size={18} style={{ color: "#E2FEA5" }} />
+              </div>
+              <ArrowCircle size={36} />
+            </div>
+            <div className="mt-6">
+              <h3
+                className="font-black uppercase leading-tight mb-1"
+                style={{
+                  fontFamily: PX,
+                  fontSize: "clamp(14px, 1.5vw, 18px)",
+                  letterSpacing: "-0.02em",
+                  color: "#F8FFE8",
+                }}
+              >
+                Full Analytics
+              </h3>
+              <p
+                className="text-xs leading-relaxed"
+                style={{ fontFamily: FN, color: "rgba(248,255,232,0.6)" }}
+              >
+                AI reports, categories &amp; tech stacks
+              </p>
+            </div>
+          </div>
+        </Link>
 
         {/* ── Finalize CTA (only when completed phase) ──────────────── */}
         {permissions.canFinalize && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Plus, Sparkles, Trash2, Info, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import type { TechnicalResourceItem } from "@/lib/data-mappers";
@@ -25,6 +25,12 @@ interface ProgramDraft {
   schedule: { phase: string; description: string }[];
   submission_requirements: string[];
   judging_criteria: { name: string; description: string }[];
+  prizes: {
+    title: string;
+    currency: string;
+    amount: number;
+    description?: string;
+  }[];
   documentation_plan: string[];
   organizer_notes: string[];
 }
@@ -54,11 +60,11 @@ const STEPS = [
     id: "theme",
     number: "02",
     question: "What's the theme or focus area?",
-    hint: "Optional — helps the AI narrow challenge statements.",
+    hint: "Helps the AI narrow challenge statements.",
     type: "text" as const,
     placeholder: "e.g. AI copilots for productivity, devtools, or infra",
     field: "theme" as const,
-    required: false,
+    required: true,
   },
   {
     id: "program_goal",
@@ -68,7 +74,7 @@ const STEPS = [
     type: "textarea" as const,
     placeholder: "What do you want this hackathon to achieve for builders and sponsors?",
     field: "program_goal" as const,
-    required: false,
+    required: true,
   },
   {
     id: "problem_statements",
@@ -78,13 +84,13 @@ const STEPS = [
     type: "textarea" as const,
     placeholder: "Build a tool that…\nHelp teams ship AI copilots for…",
     field: "problem_statements" as const,
-    required: false,
+    required: true,
   },
   {
     id: "timeline",
     number: "05",
-    question: "When is the program happening?",
-    hint: "Set the key dates for your hackathon. These appear on the public schedule.",
+    question: "When is the hackathon happening?",
+    hint: "Set the key dates for your hackathon. You can updated them later again from Host Dashboard",
     type: "date-group" as const,
     field: "timeline" as const,
     required: true,
@@ -96,28 +102,28 @@ const STEPS = [
     hint: "Add your website and any documentation or starter kits for builders.",
     type: "links" as const,
     field: "resources" as const,
-    required: false,
+    required: true,
   },
   {
     id: "bounty_pool_summary",
     number: "07",
     question: "Any prizes or rewards?",
-    hint: "Optional — helps attract builders.",
+    hint: "Helps attract builders.",
     type: "text" as const,
     placeholder: "$10k total pool, $5k grand prize, swag for top 20…",
     field: "bounty_pool_summary" as const,
-    required: false,
+    required: true,
   },
   {
     id: "organizer_notes",
     number: "08",
-    question: "Anything else the AI should know?",
-    hint: "Partners, constraints, tone, or what success looks like to you.",
+    question: "Anything else?",
+    hint: "Cconstraints, tone, or what success looks like to you.",
     type: "textarea" as const,
     placeholder:
       "Anything you'd tell a human co-host about constraints, partners, or success criteria.",
     field: "organizer_notes" as const,
-    required: false,
+    required: true,
   },
 ];
 
@@ -164,7 +170,7 @@ const STEP_FILLER = [
   {
     label: "Timeline",
     headline: "Dates set the pace",
-    body: "Clear deadlines create urgency and help builders plan. A well-spaced schedule — start, submission, judging, results — keeps momentum high throughout the program.",
+    body: "Clear deadlines create urgency and help builders plan. A well-spaced schedule that includes building start time, submission deadline, judging schedule, results announcement date, keeps momentum high throughout the program.",
     stat: "4 dates",
     statLabel: "define the full lifecycle",
   },
@@ -238,17 +244,58 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
   }
 
   function handleNext() {
-    if (currentStep.required) {
-      if (currentStep.id === "timeline") {
-        if (!form.start_date.trim()) {
-          setError("Please set at least a start date.");
+    if (currentStep.id === "timeline") {
+      if (
+        !form.start_date.trim() ||
+        !form.submission_deadline.trim() ||
+        !form.judging_deadline.trim() ||
+        !form.results_date.trim()
+      ) {
+        setError("Please set all dates (Start, Submission, Judging, Results) to continue.");
+        return;
+      }
+    } else if (currentStep.id === "resources") {
+      if (!form.website_url.trim()) {
+        setError("Main website URL is required.");
+        return;
+      }
+      const urlRegex = /^https?:\/\/[^\s$.?#].[^\s]*$/i;
+      if (!urlRegex.test(form.website_url.trim())) {
+        setError("Please enter a valid URL for the website (e.g., https://...).");
+        return;
+      }
+      for (const res of form.technical_resources) {
+        if (!res.description.trim() || !res.url.trim()) {
+          setError("All added technical resources must have both a name and a URL.");
           return;
         }
-      } else if (!form[currentStep.field as FormField]?.toString().trim()) {
+        if (!urlRegex.test(res.url.trim())) {
+          setError(`Invalid URL format for resource: ${res.description}`);
+          return;
+        }
+      }
+    } else {
+      const val = form[currentStep.field as FormField]?.toString().trim() || "";
+      if (!val) {
         setError("This field is required.");
         return;
       }
+      
+      const wordCount = val.split(/\s+/).filter(Boolean).length;
+      if (currentStep.type === "textarea" && wordCount < 5) {
+        setError("Please provide more detail. At least 5 words are required.");
+        return;
+      }
+      if (currentStep.type === "text" && wordCount < 2) {
+        setError("Please provide more detail. At least 2 words are required.");
+        return;
+      }
+      if (currentStep.id === "problem_statements" && wordCount < 10) {
+        setError("Please provide more detail. At least 10 words are required for problem statements.");
+        return;
+      }
     }
+
     setError(null);
     if (step < STEPS.length - 1) {
       animateStep(step + 1);
@@ -312,10 +359,20 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
     setIsSaving(true);
 
     try {
-      const problemStatements = form.problem_statements
+      const problemStatementsFromAi = (draft.draft.challenge_statements ?? [])
+        .map((c) => {
+          const title = (c.title ?? "").trim();
+          const summary = (c.summary ?? "").trim();
+          if (title && summary) return `${title} — ${summary}`;
+          return title || summary;
+        })
+        .filter(Boolean);
+      const problemStatementsFromUser = form.problem_statements
         .split("\n")
         .map((s) => s.trim())
         .filter(Boolean);
+      const problemStatements =
+        problemStatementsFromAi.length > 0 ? problemStatementsFromAi : problemStatementsFromUser;
 
       const hackathonId = draft.hackathon_id || crypto.randomUUID();
       const result = await saveHackathonAction({
@@ -391,7 +448,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
               {/* Question */}
               <h1
                 style={{
-                  fontFamily: PX,
+                  fontFamily: FN,
                   fontWeight: 900,
                   fontSize: "clamp(22px, 3vw, 32px)",
                   letterSpacing: "-0.025em",
@@ -413,21 +470,6 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                 }}
               >
                 {currentStep.hint}
-                {!currentStep.required && (
-                  <span
-                    style={{
-                      fontFamily: PX,
-                      fontSize: 9,
-                      letterSpacing: "0.15em",
-                      textTransform: "uppercase",
-                      fontWeight: 700,
-                      color: "rgba(15,44,35,0.3)",
-                      marginLeft: 10,
-                    }}
-                  >
-                    Optional
-                  </span>
-                )}
               </p>
 
               {/* ── Input ── */}
@@ -469,7 +511,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                     <div key={d.field} className="flex flex-col gap-2">
                       <label
                         className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#0F2C23]/40"
-                        style={{ fontFamily: PX }}
+                        style={{ fontFamily: FN }}
                       >
                         {d.label}
                       </label>
@@ -492,7 +534,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                   <div className="flex flex-col gap-2">
                     <label
                       className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#0F2C23]/40"
-                      style={{ fontFamily: PX }}
+                      style={{ fontFamily: FN }}
                     >
                       Main Website
                     </label>
@@ -502,7 +544,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                       onChange={(e) =>
                         setForm((prev) => ({ ...prev, website_url: e.target.value }))
                       }
-                      placeholder="https://yourhackathon.com"
+                      placeholder="https://yourwebsite.com"
                       className="bg-white/40 border border-[#0F2C23]/10 rounded-xl px-4 py-3 outline-none focus:border-[#0F2C23] transition-all text-sm"
                       style={{ fontFamily: FN }}
                     />
@@ -511,7 +553,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                   <div className="space-y-4">
                     <label
                       className="text-[9px] uppercase font-bold tracking-[0.1em] text-[#0F2C23]/40"
-                      style={{ fontFamily: PX }}
+                      style={{ fontFamily: FN }}
                     >
                       Technical Resources
                     </label>
@@ -564,7 +606,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                           }))
                         }
                         className="flex items-center gap-2 text-[9px] uppercase font-bold tracking-widest text-[#0F2C23]/40 hover:text-[#0F2C23] transition-colors"
-                        style={{ fontFamily: PX }}
+                        style={{ fontFamily: FN }}
                       >
                         <Plus size={12} /> Add more link
                       </button>
@@ -607,7 +649,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                     fontSize: 12,
                     color: "#8b1c1c",
                     marginTop: 8,
-                    fontFamily: PX,
+                    fontFamily: FN,
                   }}
                 >
                   {error}
@@ -629,7 +671,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                       border: "1.5px solid rgba(15,44,35,0.2)",
                       backgroundColor: "transparent",
                       cursor: "pointer",
-                      fontFamily: PX,
+                      fontFamily: FN,
                       fontSize: 10,
                       letterSpacing: "0.14em",
                       textTransform: "uppercase",
@@ -654,7 +696,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                     border: "none",
                     backgroundColor: "#0F2C23",
                     cursor: "pointer",
-                    fontFamily: PX,
+                    fontFamily: FN,
                     fontSize: 10,
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
@@ -662,32 +704,9 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                     color: "#F8FFE8",
                   }}
                 >
-                  {step === STEPS.length - 1 ? "Finish brief" : "Continue"}
+                  {step === STEPS.length - 1 ? "Finish brief" : "Next"}
                   <ArrowRight size={12} />
                 </button>
-
-                {!currentStep.required && step < STEPS.length - 1 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForm((prev) => ({ ...prev, [currentStep.field]: "" }));
-                      animateStep(step + 1);
-                    }}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      cursor: "pointer",
-                      fontFamily: PX,
-                      fontSize: 10,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      fontWeight: 700,
-                      color: "rgba(15,44,35,0.3)",
-                    }}
-                  >
-                    Skip
-                  </button>
-                )}
               </div>
             </div>
           ) : (
@@ -695,7 +714,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
             <div>
               <p
                 style={{
-                  fontFamily: PX,
+                  fontFamily: FN,
                   fontSize: 80,
                   fontWeight: 900,
                   color: "rgba(15,44,35,0.07)",
@@ -709,7 +728,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
               </p>
               <h1
                 style={{
-                  fontFamily: PX,
+                  fontFamily: FN,
                   fontWeight: 900,
                   fontSize: "clamp(22px, 3vw, 30px)",
                   letterSpacing: "-0.025em",
@@ -779,7 +798,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                       border: "none",
                       backgroundColor: "#0F2C23",
                       cursor: isGenerating ? "wait" : "pointer",
-                      fontFamily: PX,
+                      fontFamily: FN,
                       fontSize: 10,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
@@ -809,7 +828,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                       border: "none",
                       backgroundColor: "#0F2C23",
                       cursor: isSaving ? "wait" : "pointer",
-                      fontFamily: PX,
+                      fontFamily: FN,
                       fontSize: 10,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
@@ -834,7 +853,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                     background: "transparent",
                     border: "none",
                     cursor: "pointer",
-                    fontFamily: PX,
+                    fontFamily: FN,
                     fontSize: 10,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
@@ -867,7 +886,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                 {/* Label */}
                 <p
                   style={{
-                    fontFamily: PX,
+                    fontFamily: FN,
                     fontSize: 9,
                     letterSpacing: "0.22em",
                     textTransform: "uppercase",
@@ -882,7 +901,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                 {/* Headline */}
                 <h2
                   style={{
-                    fontFamily: PX,
+                    fontFamily: FN,
                     fontWeight: 900,
                     fontSize: "clamp(20px, 2.4vw, 28px)",
                     letterSpacing: "-0.025em",
@@ -907,7 +926,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                 </p>
 
                 {/* Stat */}
-                <div
+                {/* <div
                   style={{
                     display: "inline-flex",
                     flexDirection: "column",
@@ -920,7 +939,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                 >
                   <span
                     style={{
-                      fontFamily: PX,
+                      fontFamily: FN,
                       fontWeight: 900,
                       fontSize: 26,
                       letterSpacing: "-0.03em",
@@ -933,7 +952,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                   </span>
                   <span
                     style={{
-                      fontFamily: PX,
+                      fontFamily: FN,
                       fontSize: 9,
                       letterSpacing: "0.14em",
                       textTransform: "uppercase",
@@ -943,7 +962,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                   >
                     {filler.statLabel}
                   </span>
-                </div>
+                </div> */}
               </div>
 
               {/* Bottom: answered so far */}
@@ -951,33 +970,57 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                 <div
                   style={{
                     borderTop: "1px solid rgba(226,254,165,0.08)",
-                    padding: "16px 20px",
+                    padding: "24px 20px",
                     display: "flex",
                     flexDirection: "column",
-                    gap: 10,
+                    gap: 16,
                   }}
                 >
-                  <p
-                    style={{
-                      fontFamily: PX,
-                      fontSize: 9,
-                      letterSpacing: "0.2em",
-                      textTransform: "uppercase",
-                      fontWeight: 700,
-                      color: "rgba(226,254,165,0.22)",
-                      marginBottom: 4,
-                    }}
-                  >
-                    Brief so far
-                  </p>
-                  {summary.slice(-4).map((s) => {
+                  {/* Progress Bar */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <p
+                        style={{
+                          fontFamily: FN,
+                          fontSize: 9,
+                          letterSpacing: "0.2em",
+                          textTransform: "uppercase",
+                          fontWeight: 700,
+                          color: "#E2FEA5",
+                        }}
+                      >
+                        Knowledge Graph Updated
+                      </p>
+                      <span
+                        style={{
+                          fontFamily: FN,
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: "rgba(226,254,165,0.6)",
+                        }}
+                      >
+                        {Math.round((summary.length / STEPS.length) * 100)}%
+                      </span>
+                    </div>
+                    {/* Progress Track */}
+                    <div className="h-[2px] w-full bg-white/10 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-[#E2FEA5] transition-all duration-500 ease-out" 
+                        style={{ width: `${(summary.length / STEPS.length) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Recent Brief Answers */}
+                  <div className="flex flex-col gap-3 mt-2">
+                    {summary.slice(-4).map((s) => {
                     const val = form[s.field as FormField]?.toString().trim();
                     const truncated = val && val.length > 60 ? `${val.slice(0, 60)}…` : val;
                     return (
                       <div key={s.id} className="flex items-start gap-3">
                         <span
                           style={{
-                            fontFamily: PX,
+                            fontFamily: FN,
                             fontSize: 9,
                             fontWeight: 900,
                             color: "rgba(226,254,165,0.2)",
@@ -1001,6 +1044,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               )}
             </div>
@@ -1013,7 +1057,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                   <header className="mb-16">
                     <h2
                       className="text-4xl font-black uppercase text-[#0F2C23] mb-4"
-                      style={{ fontFamily: PX }}
+                      style={{ fontFamily: FN }}
                     >
                       Review Your Brief
                     </h2>
@@ -1026,12 +1070,12 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                     <div className="space-y-8">
                       {STEPS.map((s) => {
                         const val = form[s.field as FormField]?.toString().trim();
-                        if (!val || s.id === "timeline" || s.id === "resources") return null;
+                        if (!val || s.id === "timeline" || s.id === "resources" || s.id === "bounty_pool_summary") return null;
                         return (
                           <div key={s.id}>
                             <p
                               className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/30 mb-2"
-                              style={{ fontFamily: PX }}
+                              style={{ fontFamily: FN }}
                             >
                               {s.number} — {s.id}
                             </p>
@@ -1049,56 +1093,76 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                       <div>
                         <p
                           className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/30 mb-4"
-                          style={{ fontFamily: PX }}
+                          style={{ fontFamily: FN }}
                         >
-                          VITAL DATES
+                          IMPORTANT DATES
                         </p>
-                        <div className="bg-white/50 border border-[#0F2C23]/10 rounded-2xl p-6 space-y-4">
+                        <div className="bg-[#0F2C23] border border-[#E2FEA5]/10 rounded-2xl p-6 space-y-4 shadow-[0_20px_40px_-10px_rgba(15,44,35,0.2)]">
                           {[
                             { label: "Start", val: form.start_date },
                             { label: "Submit", val: form.submission_deadline },
                             { label: "Results", val: form.results_date },
                           ].map((d) => (
-                            <div key={d.label} className="flex justify-between items-center">
+                            <div key={d.label} className="flex justify-between items-center border-b border-[#F8FFE8]/10 pb-3 last:border-0 last:pb-0">
                               <span
-                                className="text-[10px] uppercase font-bold text-[#0F2C23]/40"
-                                style={{ fontFamily: PX }}
+                                className="text-[10px] uppercase font-bold text-[#F8FFE8]/40"
+                                style={{ fontFamily: FN }}
                               >
                                 {d.label}
                               </span>
                               <span
-                                className="text-sm font-medium text-[#0F2C23]"
+                                className="text-sm font-medium text-[#E2FEA5]"
                                 style={{ fontFamily: FN }}
                               >
-                                {d.val || "Not set"}
+                                {d.val ? new Date(d.val).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : "Not set"}
                               </span>
                             </div>
                           ))}
                         </div>
                       </div>
+
+                      {form.bounty_pool_summary && (
+                        <div>
+                          <p
+                            className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/30 mb-4"
+                            style={{ fontFamily: FN }}
+                          >
+                            BOUNTIES & PRIZES
+                          </p>
+                          <div className="bg-[#E2FEA5] border border-[#0F2C23]/10 rounded-3xl p-8 shadow-[0_20px_40px_-10px_rgba(226,254,165,0.4)] relative overflow-hidden">
+                            <h3 className="text-4xl font-black text-[#0F2C23] tracking-tight mb-2" style={{ fontFamily: FN }}>
+                              {form.bounty_pool_summary}
+                            </h3>
+                            <p className="text-[10px] text-[#0F2C23]/60 font-bold uppercase tracking-widest" style={{ fontFamily: FN }}>
+                              Total Bounty Value
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* BOTTOM ACTION BAR (SUMMARY) */}
-                  <div className="fixed bottom-0 left-0 right-0 p-8 flex justify-center pointer-events-none">
-                    <div className="bg-white border border-[#0F2C23]/10 rounded-2xl p-4 flex gap-4 shadow-xl pointer-events-auto">
+                  <div className="fixed bottom-0 left-0 right-0 p-8 flex justify-center pointer-events-none z-50">
+                    <div className="bg-[#0F2C23] border border-[#E2FEA5]/10 rounded-full p-2 flex gap-4 shadow-2xl pointer-events-auto items-center pl-6">
                       <button
                         onClick={() => setDone(false)}
-                        className="px-6 py-3 text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/60 hover:text-[#0F2C23]"
-                        style={{ fontFamily: PX }}
+                        className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-[#F8FFE8]/60 hover:text-[#E2FEA5] transition-colors"
+                        style={{ fontFamily: FN }}
                       >
-                        Make Edits
+                        <Pencil size={12} />
+                        Go Back and Make Edits
                       </button>
                       <button
                         onClick={handleGenerate}
                         disabled={isGenerating}
-                        className="px-10 py-3 bg-[#0F2C23] text-[#E2FEA5] rounded-xl text-[10px] uppercase font-bold tracking-widest hover:scale-[1.03] transition-transform flex items-center gap-3"
+                        className="px-8 py-3.5 bg-[#E2FEA5] text-[#0F2C23] rounded-full text-[10px] uppercase font-black tracking-widest hover:scale-[1.02] transition-transform flex items-center gap-3"
                         style={{ fontFamily: PX }}
                       >
                         {isGenerating ? (
-                          <Loader2 size={12} className="animate-spin" />
+                          <Loader2 size={14} className="animate-spin" />
                         ) : (
-                          <Sparkles size={12} />
+                          <Sparkles size={14} />
                         )}
                         {isGenerating ? "Synthesizing..." : "Generate Program Draft"}
                       </button>
@@ -1110,33 +1174,38 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                   <HackathonProgramPreview draft={draft.draft} />
 
                   {/* ══ STICKY ACTION BAR (DRAFT) ══ */}
-                  <div className="fixed bottom-0 left-0 right-0 bg-[#F8FFE8]/80 backdrop-blur-xl border-t border-[#0F2C23]/10 p-8 z-50">
-                    <div className="max-w-6xl mx-auto flex items-center justify-between">
-                      <div className="flex items-center gap-6">
+                  <div className="fixed bottom-0 left-0 right-0 p-8 flex justify-center pointer-events-none z-50">
+                    <div className="bg-[#0F2C23] border border-[#E2FEA5]/10 rounded-full p-2.5 flex items-center gap-6 shadow-[0_20px_40px_-10px_rgba(15,44,35,0.4)] pointer-events-auto">
+                      <div className="flex items-center gap-3 pl-6">
+                        <Info size={14} className="text-[#E2FEA5]/60" />
                         <p
-                          className="text-xs text-[#0F2C23]/40 font-medium"
+                          className="text-[11px] text-[#F8FFE8]/70 font-medium"
                           style={{ fontFamily: FN }}
                         >
-                          This draft is editable. You will be redirected to the edit page after
-                          saving.
+                          Draft is editable later
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 pl-4 border-l border-[#F8FFE8]/10">
                         <button
                           onClick={handleGenerate}
                           disabled={isGenerating}
-                          className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23] px-6 py-3 rounded-xl border border-[#0F2C23]/10 hover:bg-white transition-all shadow-sm"
-                          style={{ fontFamily: PX }}
+                          className="text-[10px] uppercase font-bold tracking-widest text-[#F8FFE8]/80 px-6 py-3 rounded-full hover:bg-white/5 transition-colors"
+                          style={{ fontFamily: FN }}
                         >
                           {isGenerating ? "Reasoning..." : "Re-Generate"}
                         </button>
                         <button
                           onClick={handleSave}
                           disabled={isSaving}
-                          className="text-[10px] uppercase font-bold tracking-widest bg-[#0F2C23] text-[#E2FEA5] px-10 py-3 rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-[#0F2C23]/20 disabled:opacity-50"
+                          className="text-[11px] uppercase font-black tracking-widest bg-[#E2FEA5] text-[#0F2C23] px-10 py-3.5 rounded-full hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 flex items-center gap-2"
                           style={{ fontFamily: PX }}
                         >
+                          {isSaving ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <ArrowRight size={14} />
+                          )}
                           {isSaving ? "Saving..." : "Save as Draft"}
                         </button>
                       </div>

@@ -59,7 +59,7 @@ export function ImageUpload({
   const isSquare = variant === "square";
 
   return (
-    <div className="w-full max-w-lg">
+    <div className="w-full">
       <input
         ref={inputRef}
         type="file"
@@ -73,20 +73,20 @@ export function ImageUpload({
           <div
             className={`overflow-hidden ${
               isCircle
-                ? "rounded-full w-24 h-24"
+                ? "rounded-full w-28 h-28"
                 : isSquare
-                  ? "rounded-2xl w-28 h-28"
-                  : "rounded-2xl"
+                  ? "rounded-2xl w-32 h-32"
+                  : "rounded-2xl w-full h-32"
             }`}
             style={{ backgroundColor: "rgba(45,74,62,0.06)" }}
           >
             <Image
               src={value}
               alt=""
-              width={isCircle || isSquare ? 112 : 280}
-              height={isCircle || isSquare ? 112 : 180}
+              width={isCircle ? 112 : isSquare ? 128 : 560}
+              height={isCircle ? 112 : isSquare ? 128 : 128}
               className={`object-cover ${
-                isCircle ? "w-24 h-24" : isSquare ? "w-28 h-28" : "w-full h-auto"
+                isCircle ? "w-28 h-28" : isSquare ? "w-32 h-32" : "w-full h-32"
               }`}
             />
           </div>
@@ -110,12 +110,12 @@ export function ImageUpload({
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           disabled={uploading}
-          className={`w-full flex flex-col items-center justify-center gap-2 border-2 border-dashed cursor-pointer transition-all duration-200 ${
+          className={`${isCircle || isSquare ? "inline-flex" : "w-full flex"} flex-col items-center justify-center gap-2 border-2 border-dashed cursor-pointer transition-all duration-200 ${
             isCircle
-              ? "rounded-full w-24 h-24"
+              ? "rounded-full w-28 h-28"
               : isSquare
-                ? "rounded-2xl w-28 h-28"
-                : "rounded-2xl py-8"
+                ? "rounded-2xl w-32 h-32"
+                : "rounded-2xl h-32"
           }`}
           style={{
             borderColor: dragOver ? "#2d4a3e" : "rgba(45,74,62,0.2)",

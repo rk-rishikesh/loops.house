@@ -6,7 +6,7 @@ export function Footer() {
   return (
     <div
       id="settings"
-      className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#385244] px-6 gap-32"
+      className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-[#385244] px-6 gap-32 pt-12"
     >
       <div className="relative z-50 flex max-w-7xl flex-col items-center gap-16 text-center">
         <div className="flex flex-col gap-2 items-center">
@@ -34,7 +34,7 @@ export function Footer() {
       <div className="pointer-events-none select-none">
         <div className="relative w-full">
           <Image
-            src="/assets/footer/clouds.svg"
+            src="/assets/footer/base.svg"
             alt=""
             width={1100}
             height={300}
@@ -43,8 +43,8 @@ export function Footer() {
             <Image
               src="/assets/footer/sleepingCat.svg"
               alt=""
-              width={700}
-              height={100}
+              width={750}
+              height={120}
             />
           </div>
         </div>

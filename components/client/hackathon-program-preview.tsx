@@ -17,6 +17,12 @@ interface ProgramDraft {
   }[];
   schedule: { phase: string; description: string }[];
   judging_criteria: { name: string; description: string }[];
+  prizes: {
+    title: string;
+    currency: string;
+    amount: number;
+    description?: string;
+  }[];
   documentation_plan: string[];
   organizer_notes: string[];
 }
@@ -34,7 +40,7 @@ export function HackathonProgramPreview({
     <div className="max-w-6xl mx-auto px-10 pt-20 pb-48 animate-[fadeUp_0.4s_ease-out]">
       {/* Header section */}
       <header className="mb-20">
-        <div className="flex items-center gap-3 mb-6">
+        {/* <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-[#0F2C23] flex items-center justify-center text-[#E2FEA5] shadow-[0_10px_20px_-5px_rgba(15,44,35,0.3)]">
             <Sparkles size={18} />
           </div>
@@ -44,7 +50,7 @@ export function HackathonProgramPreview({
           >
             AI Generated Intelligence
           </p>
-        </div>
+        </div> */}
         <h1
           className="font-black text-[#0F2C23] uppercase mb-8"
           style={{
@@ -72,12 +78,12 @@ export function HackathonProgramPreview({
             <Users size={60} />
           </div>
           <p
-            className="text-[10px] uppercase tracking-[0.2em] font-bold mb-12 opacity-40"
-            style={{ fontFamily: PX }}
+            className="text-[20px] uppercase tracking-[0.2em] font-bold mb-12 opacity-40"
+            style={{ fontFamily: FN }}
           >
             Target Builders
           </p>
-          <p className="text-xl font-medium leading-snug" style={{ fontFamily: FN }}>
+          <p className="text-xl font leading-snug" style={{ fontFamily: FN }}>
             {draft.target_audience}
           </p>
         </div>
@@ -85,17 +91,17 @@ export function HackathonProgramPreview({
         {/* Goals */}
         <div className="md:col-span-2 p-10 rounded-[48px] border-2 border-[#0F2C23]/10 bg-white shadow-[0_20px_40px_-15px_rgba(15,44,35,0.05)]">
           <p
-            className="text-[10px] uppercase tracking-[0.2em] font-bold mb-10 text-[#0F2C23]/40"
-            style={{ fontFamily: PX }}
+            className="text-[20px] uppercase tracking-[0.2em] font-bold mb-10 text-[#0F2C23]/40"
+            style={{ fontFamily: FN }}
           >
-            Program North Stars
+            Hackathon Goal
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-12">
             {draft.goals.map((g, i) => (
               <div key={i} className="flex gap-4">
                 <span
                   className="text-2xl text-[#0F2C23]/15 font-black shrink-0"
-                  style={{ fontFamily: PX }}
+                  style={{ fontFamily: FN }}
                 >
                   0{i + 1}
                 </span>
@@ -119,7 +125,7 @@ export function HackathonProgramPreview({
             <div className="w-8 h-8 rounded-full bg-[#0F2C23]/5 flex items-center justify-center text-[#0F2C23]">
               <Cpu size={16} />
             </div>
-            <h3 className="text-2xl font-black uppercase text-[#0F2C23]" style={{ fontFamily: PX }}>
+            <h3 className="text-2xl font-black uppercase text-[#0F2C23]" style={{ fontFamily: FN }}>
               Challenge Matrix
             </h3>
           </div>
@@ -132,7 +138,7 @@ export function HackathonProgramPreview({
                 <div className="flex justify-between items-start mb-4">
                   <h4
                     className="font-black text-[#0F2C23] uppercase text-lg leading-tight"
-                    style={{ fontFamily: PX }}
+                    style={{ fontFamily: FN }}
                   >
                     {c.title}
                   </h4>
@@ -166,28 +172,23 @@ export function HackathonProgramPreview({
         {/* Right Sidebar: Timeline & Criteria */}
         <div className="lg:col-span-2 space-y-16">
           {/* Timeline */}
-          <div className="p-2 border-l border-[#0F2C23]/10 ml-4">
+          <div className="p-2 ml-4">
             <div className="flex items-center gap-3 mb-10 -ml-4">
               <div className="w-8 h-8 rounded-full bg-[#0F2C23]/5 flex items-center justify-center text-[#0F2C23]">
                 <Zap size={16} />
               </div>
               <h3
                 className="text-2xl font-black uppercase text-[#0F2C23]"
-                style={{ fontFamily: PX }}
+                style={{ fontFamily: FN }}
               >
-                Sequence
+                Timeline
               </h3>
             </div>
             <div className="space-y-8">
               {draft.schedule.map((s, i) => (
                 <div key={i} className="relative pl-8">
-                  <div className="absolute left-[-5px] top-1 w-2 h-2 rounded-full bg-[#0F2C23]" />
-                  <p
-                    className="text-[10px] uppercase font-black tracking-widest text-[#0F2C23]/30 mb-1"
-                    style={{ fontFamily: PX }}
-                  >
-                    {s.phase}
-                  </p>
+                  <div className="absolute left-[-5px] top-3 w-2 h-2 rounded-full bg-[#0F2C23]" />
+
                   <h4 className="font-bold text-[#0F2C23] text-lg mb-1" style={{ fontFamily: FN }}>
                     {s.phase}
                   </h4>
@@ -209,26 +210,62 @@ export function HackathonProgramPreview({
             </div>
             <div className="flex items-center gap-3 mb-8">
               <Gavel size={20} />
-              <h3 className="text-xl font-black uppercase" style={{ fontFamily: PX }}>
-                Judging Rubric
+              <h3 className="text-xl font-black uppercase" style={{ fontFamily: FN }}>
+                Judging Criteria
               </h3>
             </div>
             <div className="space-y-6">
               {draft.judging_criteria.map((jc, i) => (
                 <div key={i} className="border-b border-[#0F2C23]/10 pb-5 last:border-0 last:pb-0">
                   <p
-                    className="text-[11px] font-black uppercase mb-2 tracking-tight"
-                    style={{ fontFamily: PX }}
+                    className="text-[20px] font-black uppercase mb-2 tracking-tight"
+                    style={{ fontFamily: FN }}
                   >
                     {jc.name}
                   </p>
-                  <p className="text-[13px] opacity-70 leading-relaxed" style={{ fontFamily: FN }}>
+                  <p className="text-[15px] opacity-70 leading-relaxed" style={{ fontFamily: FN }}>
                     {jc.description}
                   </p>
                 </div>
               ))}
             </div>
           </div>
+
+          {/* Prizes */}
+          {draft.prizes?.length > 0 && (
+            <div className="p-10 rounded-[48px] bg-white border-2 border-[#0F2C23]/10 shadow-[0_20px_40px_-15px_rgba(15,44,35,0.05)]">
+              <div className="flex items-center gap-3 mb-8">
+                <Trophy size={20} className="text-[#0F2C23]" />
+                <h3 className="text-xl font-black uppercase text-[#0F2C23]" style={{ fontFamily: FN }}>
+                  Prizes
+                </h3>
+              </div>
+              <div className="space-y-4">
+                {draft.prizes.map((p, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start justify-between gap-4 border-b border-[#0F2C23]/10 pb-4 last:border-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-bold text-[#0F2C23]" style={{ fontFamily: FN }}>
+                        {p.title}
+                      </p>
+                      {p.description && (
+                        <p className="text-sm text-[#0F2C23]/55 leading-relaxed" style={{ fontFamily: FN }}>
+                          {p.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="font-black text-[#0F2C23]" style={{ fontFamily: FN }}>
+                        {p.amount > 0 ? `${p.currency} ${p.amount.toLocaleString()}` : "—"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -254,7 +291,7 @@ export function HackathonProgramPreview({
             ))}
           </div>
         </div>
-        <div className="p-8 rounded-[32px] bg-[#0F2C23]/5 border border-[#0F2C23]/5">
+        {/* <div className="p-8 rounded-[32px] bg-[#0F2C23]/5 border border-[#0F2C23]/5">
           <h4
             className="text-xs font-black uppercase tracking-[0.2em] text-[#0F2C23]/40 mb-6"
             style={{ fontFamily: PX }}
@@ -272,7 +309,7 @@ export function HackathonProgramPreview({
               </span>
             ))}
           </div>
-        </div>
+        </div> */}
       </div>
 
       {additionalDetails && (

@@ -41,6 +41,16 @@ interface ProgramDraft {
     name: string;
     description: string;
   }[];
+  prizes: {
+    /** e.g. "1st Prize", "2nd Prize", "Best Design" */
+    title: string;
+    /** ISO currency code when possible, e.g. "USD" */
+    currency: string;
+    /** Numeric amount in main units (e.g. dollars, not cents) */
+    amount: number;
+    /** Optional details (cash, credits, swag, etc.) */
+    description?: string;
+  }[];
   documentation_plan: string[];
   organizer_notes: string[];
 }
@@ -110,12 +120,26 @@ TASK:
 - Assume this is a remote-first, async-friendly program unless the input explicitly suggests otherwise.
 
 RULES:
-- Be concrete but keep everything editable. Calculate the total duration using start_date and submission_deadline to determine the best temporal unit for the schedule.
-- For short bursts (< 4 days), use day-based or time-of-day units (e.g., "Day 1", "Saturday Afternoon").
-- For mid-range (1–3 weeks), use "Week 1", "Week 2", etc., or "Early Phase", "Mid-Phase".
-- For long-term (> 1 month), use "Month 1", "Quarter 1", or thematic phases.
+- Be concrete but keep everything editable.
+- Always express schedule phases using ACTUAL DATES derived from the input (do not use "Day 1", "Week 1", "Month 1").
+  - Use the host-provided ISO datetimes (start_date, submission_deadline, judging_deadline, results_date) to label phases like:
+    - "Mar 13–Mar 15: Build"
+    - "Mar 16: Submissions due"
+    - "Mar 16–Mar 18: Judging"
+    - "Mar 19: Results"
+  - If a date is missing, use the closest available date(s) and note the missing date in organizer_notes.
 - Derive challenge statements from the problem_statements and program_goal.
 - Make judging criteria aligned with the stated goals and (if present) any bounty pool or sponsor tracks.
+- If bounty_pool_summary is present, translate it into a structured prize breakdown in "prizes":
+  - Parse total pool and any constraints from bounty_pool_summary (currency + amount).
+  - If the host specifies an explicit split (e.g. "50/30/20" or exact amounts), follow it.
+  - If the host specifies only "split in N projects" (or "top N"), create "1st Prize"..."Nth Prize".
+    - If no ratio is specified, DO NOT split equally by default. Use a descending allocation:
+      - For N=3, default to 50%, 30%, 20%.
+      - For N=2, default to 60%, 40%.
+      - For N>3, use a smoothly decreasing curve that sums to 100% (top-heavy), and round to sensible amounts.
+  - If the host only provides a total pool with no N, choose a reasonable prize set (e.g. top 3) and explain the choice in organizer_notes.
+  - If prizes are non-cash ("credits", "swag"), include them in prizes with amount 0 and a description.
 - If some fields are missing, still produce a best-effort draft and leave explicit TODO-style notes for the organizer.
 - Keep language concise and builder-friendly.
 - The hackathon_id_suggestion should be a URL-safe slug: lowercase, words separated by hyphens, no spaces.
@@ -136,13 +160,19 @@ Return STRICT JSON matching this TypeScript type:
     "difficulty"?: "beginner" | "intermediate" | "advanced";
   }[];
   "schedule": {
-    "phase": string; // e.g. "Week 1: Onboarding & Ideation"
+    "phase": string; // include actual dates, e.g. "Mar 13–Mar 15: Build"
     "description": string;
   }[];
   "submission_requirements": string[]; // checklist style
   "judging_criteria": {
     "name": string;
     "description": string;
+  }[];
+  "prizes": {
+    "title": string;
+    "currency": string;
+    "amount": number;
+    "description"?: string;
   }[];
   "documentation_plan": string[]; // which docs/pages to prepare
   "organizer_notes": string[]; // explicit TODOs or caveats for the human organizer
