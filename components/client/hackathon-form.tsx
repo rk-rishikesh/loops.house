@@ -14,8 +14,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { saveHackathonAction } from "@/lib/actions";
 import type { StoredHackathon } from "@/lib/data-mappers";
-import { useSaveHackathon } from "@/lib/queries";
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 interface ProgramDraft {
@@ -264,13 +264,9 @@ type View = "list" | "form" | "generating" | "review";
 
 export function HackathonForm({
   hackathons,
-  userId,
 }: {
   hackathons: StoredHackathon[];
-  userId?: string;
 }) {
-  const saveHackathonMutation = useSaveHackathon();
-
   const [view, setView] = useState<View>("list");
   const [formStep, setFormStep] = useState<FormStep>("theme");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -328,12 +324,6 @@ export function HackathonForm({
       url: r.url ?? "",
       description: r.description ?? "",
     }));
-    const technical_docs =
-      technical_resources.length > 0
-        ? technical_resources
-            .map((r) => (r.description ? `${r.url} — ${r.description}` : r.url))
-            .join("\n")
-        : undefined;
     return {
       id,
       name: form.name || "Unnamed hackathon",
@@ -341,7 +331,6 @@ export function HackathonForm({
       theme: form.theme || undefined,
       website_url: form.website_url || undefined,
       technical_resources,
-      technical_docs,
       bounty_pool_summary: form.bounty_pool_summary || undefined,
       program_goal: form.program_goal || undefined,
       start_date: form.start_date || undefined,
@@ -389,13 +378,12 @@ export function HackathonForm({
   const handleSave = async () => {
     setSaving(true);
     const payload = buildPayload();
-    const hackathon: StoredHackathon & { host_id?: string } = {
-      ...payload,
-      host_id: userId,
-      created_at:
-        hackathons.find((h) => h.id === payload.id)?.created_at ?? new Date().toISOString(),
-    };
-    await saveHackathonMutation.mutateAsync(hackathon);
+    const result = await saveHackathonAction(payload);
+    if (!result.success) {
+      setSaving(false);
+      setAiError(result.error);
+      return;
+    }
     setSaving(false);
     setView("list");
   };

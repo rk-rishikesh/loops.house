@@ -5,7 +5,7 @@ import {
   type LeaderboardEntry,
 } from "@/components/client/hackathon-leaderboard";
 import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
-import { computePhase, getPhasePermissions } from "@/lib/hackathon-phase";
+import { getPhasePermissions } from "@/lib/hackathon-phase";
 import { getServerAuth } from "@/lib/server-auth";
 import {
   getAllSubmissionEvaluationsServer,
@@ -27,11 +27,10 @@ export default async function FinalizePage({
   const hackathon = await getHackathonServer(hackathon_id);
   if (!hackathon) redirect("/host");
 
-  const phase = computePhase(hackathon);
-  const permissions = getPhasePermissions(phase);
+  const permissions = getPhasePermissions(hackathon.phase);
 
   // If already finalized, show frozen results
-  if (phase === "finalized") {
+  if (hackathon.phase === "finalized") {
     const results = await getHackathonResultsServer(hackathon_id);
     const projects = await getProjectsServer();
     const projectMap: Record<string, string> = {};
@@ -55,7 +54,7 @@ export default async function FinalizePage({
             <h1 className="text-2xl font-semibold" style={{ color: "#2d4a3e" }}>
               Results: {hackathon.name}
             </h1>
-            <HackathonPhaseBadge hackathon={hackathon} size="md" />
+            <HackathonPhaseBadge phase={hackathon.phase} size="md" />
           </div>
           <p className="mb-6 text-sm opacity-60" style={{ color: "#2d4a3e" }}>
             Finalized with AI weight: {Math.round((hackathon.ai_weight ?? 0.5) * 100)}%
@@ -78,10 +77,10 @@ export default async function FinalizePage({
           <h1 className="mb-4 text-2xl font-semibold" style={{ color: "#2d4a3e" }}>
             Finalize: {hackathon.name}
           </h1>
-          <HackathonPhaseBadge hackathon={hackathon} size="md" />
+          <HackathonPhaseBadge phase={hackathon.phase} size="md" />
           <p className="mt-4 text-sm opacity-60" style={{ color: "#2d4a3e" }}>
             Hackathon must be in &quot;Completed&quot; phase (past results date) to finalize.
-            Current phase: {phase}
+            Current phase: {hackathon.phase}
           </p>
         </div>
       </div>
@@ -111,7 +110,7 @@ export default async function FinalizePage({
           <h1 className="text-2xl font-semibold" style={{ color: "#2d4a3e" }}>
             Finalize: {hackathon.name}
           </h1>
-          <HackathonPhaseBadge hackathon={hackathon} size="md" />
+          <HackathonPhaseBadge phase={hackathon.phase} size="md" />
         </div>
         <FinalizeHackathon
           hackathonId={hackathon_id}

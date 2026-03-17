@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { HackathonStats } from "@/app/host/[hackathon_id]/analytics/page";
 import type { StoredHackathon } from "@/lib/data-mappers";
+import { PHASE_COLORS, PHASE_LABELS, type HackathonPhase } from "@/lib/hackathon-phase";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -122,20 +123,14 @@ function BarRow({ label, count, max }: { label: string; count: number; max: numb
 
 /* ─── Phase Badge ────────────────────────────────────────────────── */
 function PhaseBadge({ phase }: { phase: string }) {
-  const colors: Record<string, { bg: string; text: string }> = {
-    draft: { bg: "rgba(15,44,35,0.08)", text: "#0F2C23" },
-    active: { bg: "rgba(34,197,94,0.15)", text: "#166534" },
-    judging: { bg: "rgba(234,179,8,0.15)", text: "#854d0e" },
-    completed: { bg: "rgba(59,130,246,0.15)", text: "#1e40af" },
-    archived: { bg: "rgba(107,114,128,0.15)", text: "#374151" },
-  };
-  const c = colors[phase] ?? colors.draft;
+  const c = PHASE_COLORS[phase as HackathonPhase] ?? PHASE_COLORS.draft;
+  const label = PHASE_LABELS[phase as HackathonPhase] ?? phase;
   return (
     <span
       className="inline-flex items-center rounded-full px-3 py-1 text-[10px] tracking-[0.12em] uppercase font-bold"
       style={{ fontFamily: PX, backgroundColor: c.bg, color: c.text }}
     >
-      {phase}
+      {label}
     </span>
   );
 }
@@ -151,7 +146,7 @@ export function HackathonAnalytics({
   backHref: string;
 }) {
   const [aiResult, setAiResult] = useState<AnalyticsResult | null>(null);
-  const canTriggerAI = stats.currentPhase === "judging";
+  const canTriggerAI = stats.currentPhase === "judging" || stats.currentPhase === "completed";
 
   const aiMutation = useMutation({
     mutationFn: async (): Promise<AnalyticsResult> => {
@@ -317,8 +312,8 @@ export function HackathonAnalytics({
           </div>
         </div>
 
-        {/* ── AI Analysis Section ────────────────────────────────── */}
-        <div className="mt-14">
+        {/* ── AI Analysis Section (only visible after judging starts) ── */}
+        {(canTriggerAI || stats.currentPhase === "finalized") && <div className="mt-14">
           <div className="flex items-center justify-between mb-6">
             <div>
               <p
@@ -330,9 +325,9 @@ export function HackathonAnalytics({
               <p className="text-sm text-[#0F2C23]/55" style={{ fontFamily: FN }}>
                 {canTriggerAI
                   ? "Generate a one-time AI narrative before finalizing results."
-                  : stats.currentPhase === "completed" || stats.currentPhase === "archived"
-                    ? "AI analysis is no longer available after completion."
-                    : "AI analysis is available during the judging phase."}
+                  : stats.currentPhase === "finalized"
+                    ? "AI analysis is no longer available after finalization."
+                    : ""}
               </p>
             </div>
             {canTriggerAI && !aiResult && (
@@ -473,7 +468,7 @@ export function HackathonAnalytics({
               )}
             </div>
           )}
-        </div>
+        </div>}
       </div>
 
       {/* ── Ticker ─────────────────────────────────────────────── */}

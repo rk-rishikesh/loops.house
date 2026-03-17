@@ -135,20 +135,13 @@ lib/
   hackathon-phase.ts          Phase computation & permission logic
   server-auth.ts              Server component auth (getServerAuth)
   server-data.ts              Server-side data fetching
-  data-mappers.ts             DB row ↔ frontend type mappers
-  storage.ts                  Async data layer for client components
-  queries.ts                  TanStack Query hooks
-  db/                         Data-access layer
-    hackathons.ts             Hackathon CRUD
-    hackathon-tracks.ts       Track operations
+  data-mappers.ts             DB row ↔ frontend type mappers (single source of truth for Stored* types)
+  db/                         Data-access layer (admin-client modules)
     hackathon-speakers.ts     Speaker management
     hackathon-results.ts      Results & leaderboard
-    submissions.ts            Submission CRUD
-    profiles.ts               Project/profile CRUD
-    teams.ts                  Team CRUD
+    hackathon-resources.ts    AI-compiled technical resources
     knowledge-base.ts         pgvector KB chunk operations
     rate-limiter.ts           DB-backed rate limiting
-    storage.ts                File upload helpers
   supabase/                   Client variants (browser, server, admin)
   validations/                Zod schemas
 supabase/

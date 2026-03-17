@@ -20,7 +20,6 @@ import type {
   StoredProject,
   StoredSubmission,
 } from "@/lib/data-mappers";
-import { getHackathon, getProject } from "@/lib/storage";
 import { type JudgingEvalSchema, judgingEvalSchema } from "@/lib/validations/schemas";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
@@ -401,8 +400,6 @@ function JudgingFormContent({
   /* ── AI evaluation mutation ───────────────────────────────────── */
   const evalMutation = useMutation({
     mutationFn: async (data: JudgingEvalSchema): Promise<EvalResult> => {
-      const project = await getProject(data.project_id);
-      const hackathon = await getHackathon(data.hackathon_id);
       const res = await fetch("/api/host-agents/project-evaluator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

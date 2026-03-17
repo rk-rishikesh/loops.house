@@ -137,7 +137,7 @@ export default function DashboardPage() {
 
           {/* Host a Hackathon */}
           <Link
-            href="/host/new"
+            href="/host"
             className="no-underline rounded-[48px] relative overflow-hidden group transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_40px_80px_-20px_rgba(15,44,35,0.08)] border border-[#0F2C23]/5"
             style={{ backgroundColor: "rgba(15, 44, 35, 0.04)" }}
           >

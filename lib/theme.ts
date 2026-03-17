@@ -3,7 +3,7 @@
  * Used by Tailwind via CSS variables and by components for dynamic/project-specific themes.
  */
 
-import type { StoredProject } from "@/lib/storage";
+import type { StoredProject } from "@/lib/data-mappers";
 
 // ─── Default Loops palette (fallback when no project theme) ─────────────────
 export const LOOPS_COLORS = {

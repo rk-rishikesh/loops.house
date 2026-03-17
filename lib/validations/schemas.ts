@@ -134,15 +134,23 @@ export const editHackathonSchema = z.object({
   theme: z.string().max(500).optional(),
   program_goal: z.string().max(2000).optional(),
   website_url: z.string().url().optional().or(z.literal("")),
+  logo_url: z.string().url().optional().or(z.literal("")),
+  banner_url: z.string().url().optional().or(z.literal("")),
   // Schedule
   start_date: z.string().optional(),
   submission_deadline: z.string().optional(),
   judging_deadline: z.string().optional(),
   results_date: z.string().optional(),
-  // Prizes
+  // Prizes & Judging
   bounty_pool_summary: z.string().max(2000).optional(),
   problem_statements: z.array(z.string()).optional(),
   judging_criteria: z.array(z.object({ name: z.string(), description: z.string() })).optional(),
+  // Resources
+  technical_resources: z
+    .array(z.object({ url: z.string(), description: z.string() }))
+    .optional(),
+  // Internal
+  organizer_notes: z.string().max(5000).optional(),
 });
 export type EditHackathonSchema = z.infer<typeof editHackathonSchema>;
 

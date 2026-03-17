@@ -1,10 +1,16 @@
-import { ArrowUpRight, BarChart3, Gavel, Settings, Trophy } from "lucide-react";
+import { ArrowUpRight, BarChart3, Bot, Gavel, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PublishHackathonBanner } from "@/components/client/publish-hackathon-banner";
 import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
-import { computePhase, getPhasePermissions } from "@/lib/hackathon-phase";
+import { getPhasePermissions } from "@/lib/hackathon-phase";
 import { getServerAuth } from "@/lib/server-auth";
-import { getHackathonServer, getProjectsServer, getSubmissionsServer } from "@/lib/server-data";
+import {
+  getHackathonJudgesServer,
+  getHackathonServer,
+  getProjectsServer,
+  getSubmissionsServer,
+} from "@/lib/server-data";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -35,22 +41,30 @@ export default async function HostBoosterPage({
   }
 
   const { hackathon_id } = await params;
-  // Guard against malformed IDs (eg. "/host/boosters")
+  // Guard against malformed IDs (e.g. "/host/hackathons")
   if (!hackathon_id.includes("-")) {
     redirect("/host");
   }
-  const [hackathon, projects, submissions] = await Promise.all([
+  const [hackathon, projects, submissions, judges] = await Promise.all([
     getHackathonServer(hackathon_id),
     getProjectsServer(),
     getSubmissionsServer(hackathon_id),
+    getHackathonJudgesServer(hackathon_id),
   ]);
 
   if (!hackathon) {
     redirect("/host");
   }
 
-  const phase = computePhase(hackathon);
-  const permissions = getPhasePermissions(phase);
+  const permissions = getPhasePermissions(hackathon.phase);
+
+  const totalSubmissions = submissions.length;
+  const judgeCount = judges.length;
+  const aiEvaluated = submissions.filter((s) => s.ai_evaluated_at).length;
+  const avgMomentum =
+    totalSubmissions > 0
+      ? Math.round(submissions.reduce((a, s) => a + s.momentum_score, 0) / totalSubmissions)
+      : 0;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
@@ -71,7 +85,7 @@ export default async function HostBoosterPage({
               </h1>
             </div>
             <div className="flex items-center gap-3 mt-4">
-              <HackathonPhaseBadge hackathon={hackathon} size="md" />
+              <HackathonPhaseBadge phase={hackathon.phase} size="md" />
             </div>
           </div>
           <div className="flex justify-end mt-6">
@@ -88,123 +102,78 @@ export default async function HostBoosterPage({
           </div>
         </div>
 
-        {/* ── Quick actions ────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
+        {/* ── Draft banner ─────────────────────────────────────────── */}
+        {hackathon.phase === "draft" && (
+          <PublishHackathonBanner hackathonId={hackathon.id} />
+        )}
+
+        {/* ── Stat cards ───────────────────────────────────────────── */}
+        <div className="grid grid-cols-4 gap-4 mb-12">
+          {[
+            { label: "Submissions", value: totalSubmissions, icon: Gavel },
+            { label: "Judges", value: judgeCount, icon: Users },
+            { label: "AI Evaluated", value: aiEvaluated, icon: Bot },
+            { label: "Avg Momentum", value: avgMomentum, icon: BarChart3 },
+          ].map(({ label, value, icon: Icon }) => (
+            <div
+              key={label}
+              className="rounded-3xl p-6 flex flex-col gap-4"
+              style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: "rgba(15,44,35,0.08)" }}
+              >
+                <Icon size={18} style={{ color: "#0F2C23" }} />
+              </div>
+              <div>
+                <p
+                  className="font-black text-[#0F2C23] leading-none"
+                  style={{ fontFamily: PX, fontSize: "clamp(28px, 3vw, 40px)" }}
+                >
+                  {value}
+                </p>
+                <p
+                  className="text-[9px] tracking-[0.16em] uppercase font-bold text-[#0F2C23]/40 mt-2"
+                  style={{ fontFamily: PX }}
+                >
+                  {label}
+                </p>
+              </div>
+            </div>
+          ))}
+
           <Link href={`/host/${hackathon.id}/analytics`} className="group no-underline">
             <div
-              className="rounded-3xl p-7 flex flex-col justify-between transition-all duration-200 group-hover:scale-[1.01]"
-              style={{ backgroundColor: "#0F2C23", minHeight: 220 }}
+              className="rounded-3xl p-6 flex flex-col justify-between h-full transition-all duration-200 group-hover:scale-[1.01]"
+              style={{ backgroundColor: "#0F2C23" }}
             >
               <div className="flex items-start justify-between">
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   style={{ backgroundColor: "rgba(248,255,232,0.06)" }}
                 >
-                  <BarChart3 size={22} style={{ color: "#E2FEA5" }} />
+                  <BarChart3 size={18} style={{ color: "#E2FEA5" }} />
                 </div>
-                <ArrowCircle size={44} />
+                <ArrowCircle size={36} />
               </div>
-              <div className="mt-8">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3
-                    className="font-black uppercase leading-tight"
-                    style={{
-                      fontFamily: PX,
-                      fontSize: "clamp(18px, 2vw, 24px)",
-                      letterSpacing: "-0.02em",
-                      color: "#F8FFE8",
-                    }}
-                  >
-                    Analytics
-                  </h3>
-                  <span
-                    className="text-[8px] tracking-[0.16em] uppercase font-bold px-2 py-1 rounded-full"
-                    style={{
-                      backgroundColor: "#E2FEA5",
-                      color: "#0F2C23",
-                      fontFamily: PX,
-                    }}
-                  >
-                    AI
-                  </span>
-                </div>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ fontFamily: FN, color: "rgba(248,255,232,0.72)" }}
-                >
-                  Generate AI-powered reports from submissions to this hackathon.
-                </p>
-              </div>
-            </div>
-          </Link>
-
-          <Link href={`/host/${hackathon.id}/manage`} className="group no-underline">
-            <div
-              className="rounded-3xl p-7 flex flex-col justify-between transition-all duration-200 group-hover:scale-[1.01]"
-              style={{ backgroundColor: "#0F2C23", minHeight: 220 }}
-            >
-              <div className="flex items-start justify-between">
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: "rgba(248,255,232,0.06)" }}
-                >
-                  <Settings size={22} style={{ color: "#E2FEA5" }} />
-                </div>
-                <ArrowCircle size={44} />
-              </div>
-              <div className="mt-8">
+              <div className="mt-4">
                 <h3
-                  className="font-black uppercase leading-tight mb-2"
+                  className="font-black uppercase leading-tight mb-1"
                   style={{
                     fontFamily: PX,
-                    fontSize: "clamp(18px, 2vw, 24px)",
+                    fontSize: "clamp(14px, 1.5vw, 18px)",
                     letterSpacing: "-0.02em",
                     color: "#F8FFE8",
                   }}
                 >
-                  Manage
+                  Full Analytics
                 </h3>
                 <p
-                  className="text-sm leading-relaxed"
-                  style={{ fontFamily: FN, color: "rgba(248,255,232,0.72)" }}
+                  className="text-xs leading-relaxed"
+                  style={{ fontFamily: FN, color: "rgba(248,255,232,0.6)" }}
                 >
-                  Edit details, speakers, judges, and timeline.
-                </p>
-              </div>
-            </div>
-          </Link>
-
-          <Link href={`/host/${hackathon.id}/manage/judges`} className="group no-underline">
-            <div
-              className="rounded-3xl p-7 flex flex-col justify-between transition-all duration-200 group-hover:scale-[1.01]"
-              style={{ backgroundColor: "#0F2C23", minHeight: 220 }}
-            >
-              <div className="flex items-start justify-between">
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: "rgba(248,255,232,0.06)" }}
-                >
-                  <Gavel size={22} style={{ color: "#E2FEA5" }} />
-                </div>
-                <ArrowCircle size={44} />
-              </div>
-              <div className="mt-8">
-                <h3
-                  className="font-black uppercase leading-tight mb-2"
-                  style={{
-                    fontFamily: PX,
-                    fontSize: "clamp(18px, 2vw, 24px)",
-                    letterSpacing: "-0.02em",
-                    color: "#F8FFE8",
-                  }}
-                >
-                  Invite Judges
-                </h3>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ fontFamily: FN, color: "rgba(248,255,232,0.72)" }}
-                >
-                  Send judge invites and control who scores this hackathon.
+                  AI reports, categories &amp; tech stacks
                 </p>
               </div>
             </div>

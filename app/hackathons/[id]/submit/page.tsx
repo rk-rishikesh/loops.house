@@ -2,7 +2,6 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SubmitToHackathonForm } from "@/components/client/submit-to-hackathon-form";
-import { computePhase } from "@/lib/hackathon-phase";
 import { getServerAuth } from "@/lib/server-auth";
 import {
   getHackathonServer,
@@ -48,8 +47,7 @@ export default async function SubmitToHackathonPage({
     );
   }
 
-  const phase = computePhase(hackathon);
-  if (phase !== "building") {
+  if (hackathon.phase !== "building") {
     return (
       <div className="min-h-screen" style={{ backgroundColor: "#f0ebe0" }}>
         <div className="px-10 pt-10 pb-16 max-w-3xl mx-auto">
@@ -62,7 +60,7 @@ export default async function SubmitToHackathonPage({
           </Link>
           <p className="mt-8 text-sm text-[#2d4a3e]/70" style={{ fontFamily: "Georgia, serif" }}>
             Submissions are only accepted during the building phase. This hackathon is currently in
-            the <strong>{phase}</strong> phase.
+            the <strong>{hackathon.phase}</strong> phase.
           </p>
         </div>
       </div>

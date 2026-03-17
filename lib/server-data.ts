@@ -88,12 +88,13 @@ export async function getProjectServer(projectId: string): Promise<StoredProject
 
 // --- Hackathons ---
 
-export async function getHackathonsServer(): Promise<StoredHackathon[]> {
+export async function getHackathonsServer(
+  opts: { includeDrafts?: boolean } = {},
+): Promise<StoredHackathon[]> {
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase
-    .from("hackathons")
-    .select("*")
-    .order("created_at", { ascending: false });
+  let query = supabase.from("hackathons").select("*").order("created_at", { ascending: false });
+  if (!opts.includeDrafts) query = query.neq("status", "draft");
+  const { data, error } = await query;
   if (error) console.error("[server-data] getHackathonsServer:", error.message);
   return (data ?? []).map(hackathonToStored);
 }
@@ -103,31 +104,6 @@ export async function getHackathonServer(id: string): Promise<StoredHackathon | 
   const { data, error } = await supabase.from("hackathons").select("*").eq("id", id).single();
   if (error) console.error("[server-data] getHackathonServer:", error.message);
   return data ? hackathonToStored(data) : null;
-}
-
-export async function getHackathonWithTracksServer(id: string): Promise<StoredHackathon | null> {
-  const supabase = await createServerSupabase();
-  const { data: hackathon, error } = await supabase
-    .from("hackathons")
-    .select("*")
-    .eq("id", id)
-    .single();
-  if (error) console.error("[server-data] getHackathonWithTracksServer:", error.message);
-  if (!hackathon) return null;
-
-  const { data: tracks, error: tracksError } = await supabase
-    .from("hackathon_tracks")
-    .select("sponsor_name, track_description")
-    .eq("hackathon_id", id);
-  if (tracksError)
-    console.error("[server-data] getHackathonWithTracksServer tracks:", tracksError.message);
-
-  const stored = hackathonToStored(hackathon);
-  stored.sponsor_tracks = (tracks ?? []).map((t) => ({
-    sponsor: t.sponsor_name,
-    track_description: t.track_description ?? "",
-  }));
-  return stored;
 }
 
 // --- Teams ---

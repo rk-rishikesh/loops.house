@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { JudgingForm } from "@/components/client/judging-form";
 import { canJudgeHackathon } from "@/lib/capabilities";
-import { computePhase, getPhasePermissions } from "@/lib/hackathon-phase";
+import { getPhasePermissions } from "@/lib/hackathon-phase";
 import { getServerAuth } from "@/lib/server-auth";
 import {
   getHackathonServer,
@@ -49,8 +49,7 @@ export default async function JudgeProjectPage({
   }
 
   // Phase-gate: judging only allowed during judging or completed phase
-  const phase = computePhase(hackathon);
-  const permissions = getPhasePermissions(phase);
+  const permissions = getPhasePermissions(hackathon.phase);
 
   if (!permissions.canJudge) {
     return (
@@ -63,7 +62,7 @@ export default async function JudgeProjectPage({
             Judging is not open yet
           </p>
           <p className="text-sm" style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}>
-            This hackathon is currently in the <strong>{phase}</strong> phase. Judging opens after
+            This hackathon is currently in the <strong>{hackathon.phase}</strong> phase. Judging opens after
             the submission deadline.
           </p>
           <a

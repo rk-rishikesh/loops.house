@@ -3,8 +3,8 @@
 import { ArrowLeft, ArrowRight, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import type { StoredHackathon, TechnicalResourceItem } from "@/lib/data-mappers";
-import { useSaveHackathon } from "@/lib/queries";
+import type { TechnicalResourceItem } from "@/lib/data-mappers";
+import { saveHackathonAction } from "@/lib/actions";
 import { HackathonProgramPreview } from "./hackathon-program-preview";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
@@ -36,7 +36,7 @@ interface HackathonProgramResponse {
 }
 
 interface HostApplicationFormProps {
-  userId: string;
+  userId?: string;
 }
 
 const STEPS = [
@@ -127,7 +127,6 @@ type FormField = keyof {
   program_goal: string;
   problem_statements: string;
   website_url: string;
-  technical_docs: string;
   bounty_pool_summary: string;
   organizer_notes: string;
 };
@@ -192,9 +191,8 @@ const STEP_FILLER = [
   },
 ];
 
-export function HostApplicationForm({ userId }: HostApplicationFormProps) {
+export function HostApplicationForm(_props: HostApplicationFormProps) {
   const router = useRouter();
-  const saveHackathonMutation = useSaveHackathon();
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
   const [step, setStep] = useState(0);
@@ -205,7 +203,6 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
     program_goal: "",
     problem_statements: "",
     website_url: "",
-    technical_docs: "",
     technical_resources: [] as TechnicalResourceItem[],
     bounty_pool_summary: "",
     organizer_notes: "",
@@ -287,7 +284,6 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
       theme: form.theme || undefined,
       problem_statements: problemStatements,
       website_url: form.website_url || undefined,
-      technical_docs: form.technical_docs || undefined,
       bounty_pool_summary: form.bounty_pool_summary || undefined,
       program_goal: form.program_goal || undefined,
       organizer_notes: form.organizer_notes ? [form.organizer_notes] : undefined,
@@ -322,17 +318,15 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
         .filter(Boolean);
 
       const hackathonId = draft.hackathon_id || crypto.randomUUID();
-      const hackathon: StoredHackathon = {
+      const result = await saveHackathonAction({
         id: hackathonId,
         name: draft.draft.hackathon_name || form.name || "Untitled hackathon",
         description: draft.draft.overview || undefined,
-        host_id: userId,
         problem_statements: problemStatements,
         theme: form.theme || undefined,
         website_url: form.website_url || undefined,
         technical_resources:
           form.technical_resources.length > 0 ? form.technical_resources : undefined,
-        technical_docs: form.technical_docs || undefined,
         bounty_pool_summary: form.bounty_pool_summary || undefined,
         program_goal: form.program_goal || undefined,
         start_date: form.start_date || undefined,
@@ -340,13 +334,11 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
         judging_deadline: form.judging_deadline || undefined,
         results_date: form.results_date || undefined,
         organizer_notes: draft.draft.organizer_notes.join("\n") || undefined,
-        sponsor_tracks: [],
         judging_criteria: draft.draft.judging_criteria ?? [],
-        created_at: new Date().toISOString(),
-      };
+      });
 
-      await saveHackathonMutation.mutateAsync(hackathon);
-      router.push("/host/" + hackathon.id);
+      if (!result.success) throw new Error(result.error);
+      router.push(`/host/${hackathonId}/manage/edit`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save hackathon.");
     } finally {
@@ -831,7 +823,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                     ) : (
                       <ArrowRight size={12} />
                     )}
-                    {isSaving ? "Saving…" : "Save hackathon"}
+                    {isSaving ? "Saving…" : "Save as Draft"}
                   </button>
                 )}
 
@@ -1121,19 +1113,12 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                   <div className="fixed bottom-0 left-0 right-0 bg-[#F8FFE8]/80 backdrop-blur-xl border-t border-[#0F2C23]/10 p-8 z-50">
                     <div className="max-w-6xl mx-auto flex items-center justify-between">
                       <div className="flex items-center gap-6">
-                        <button
-                          onClick={() => setDraft(null)}
-                          className="text-[10px] uppercase font-bold tracking-widest text-[#0F2C23]/50 hover:text-[#0F2C23] transition-colors"
-                          style={{ fontFamily: PX }}
-                        >
-                          &larr; Back to Brief
-                        </button>
-                        <div className="h-4 w-px bg-[#0F2C23]/10" />
                         <p
                           className="text-xs text-[#0F2C23]/40 font-medium"
                           style={{ fontFamily: FN }}
                         >
-                          This draft is editable after you finalise the program.
+                          This draft is editable. You will be redirected to the edit page after
+                          saving.
                         </p>
                       </div>
 
@@ -1152,7 +1137,7 @@ export function HostApplicationForm({ userId }: HostApplicationFormProps) {
                           className="text-[10px] uppercase font-bold tracking-widest bg-[#0F2C23] text-[#E2FEA5] px-10 py-3 rounded-xl hover:scale-[1.02] transition-all shadow-lg shadow-[#0F2C23]/20 disabled:opacity-50"
                           style={{ fontFamily: PX }}
                         >
-                          {isSaving ? "Finalising..." : "Finalise Program"}
+                          {isSaving ? "Saving..." : "Save as Draft"}
                         </button>
                       </div>
                     </div>

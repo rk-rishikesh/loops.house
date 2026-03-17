@@ -85,29 +85,26 @@ Phases are **computed from dates** (not stored) via `lib/hackathon-phase.ts`:
 
 1. **Supabase clients** (`lib/supabase/`): Three client variants — `client.ts` (browser singleton), `server.ts` (SSR with cookies), `admin.ts` (service-role, bypasses RLS). Pick the right one based on context.
 
-2. **Data-access layer** (`lib/db/`): CRUD modules — `teams`, `profiles`, `hackathons`, `submissions`, `knowledge-base`, `hackathon-tracks`, `hackathon-speakers`, `hackathon-results`, `storage`, `rate-limiter`. All use the admin client.
-
-3. **`lib/storage.ts`**: Async facade over `lib/db/*` modules that maps legacy `StoredProject`/`StoredBooster`/`StoredTeam` interfaces to DB rows. Client components import from here.
+2. **Data-access layer** (`lib/db/`): Admin-client CRUD modules for tables that need service-role access — `hackathon-speakers`, `hackathon-results`, `hackathon-resources`, `knowledge-base`, `rate-limiter`. Used by `lib/actions.ts` and API routes.
 
 ### Server-Side Data Layer
 
 - **`lib/actions.ts`**: Server Actions for mutations — creates projects, teams, hackathons, submissions, evaluations. Uses Zod validation from `lib/validations/schemas.ts`.
 - **`lib/server-auth.ts`**: `getServerAuth()` — server component auth helper, returns `{ user, role }` or redirects. Uses capability cookies for zero-DB-round-trip auth.
-- **`lib/server-data.ts`**: Server-side data fetching — mirrors `storage.ts` functions for use in server components and page loaders.
-- **`lib/data-mappers.ts`**: Maps DB rows (`Tables<"loops_profiles">`) to frontend `StoredProject`/`StoredBooster`/`StoredTeam` interfaces.
+- **`lib/server-data.ts`**: Server-side data fetching for use in server components and page loaders.
+- **`lib/data-mappers.ts`**: Maps DB rows (`Tables<"loops_profiles">`) to frontend `StoredProject`/`StoredHackathon`/`StoredTeam` interfaces. Single source of truth for all `Stored*` types.
 
 ### Form & Cache Layer
 
 - **`lib/validations/schemas.ts`**: Zod schemas for all forms and API validation (project, hackathon, team, admin, host-new, judge-invite).
 - **`lib/types/json-schemas.ts`**: Typed schemas for JSON columns (`ColorsJson`, `LinkItem`, `SocialLinks`, etc.).
-- **`lib/queries.ts`**: TanStack Query hooks (`useProjects`, `useBoosters`, `useTeams`, etc.) with stale-while-revalidate caching.
 - **`lib/cache-config.ts`**: TanStack Query cache timing constants and default options.
 
 ### Auth Flow
 
 - **`middleware.ts` (root, edge)**: Protects `/builder`, `/host`, `/judge`, and `/admin` routes. Refreshes Supabase session, encodes capabilities into cookies, redirects to `/login?redirect=`.
 - **`lib/supabase/middleware.ts`**: Exports `requireAuth(allowedRoles?)` for API routes — validates session + role, returns `{user, supabase}` or null.
-- **`app/providers.tsx`**: `AuthContext` with `useAuth()` hook providing `{user, session, role, loading}`.
+- **`app/providers.tsx`**: `QueryClientProvider` wrapper for TanStack Query. No client-side auth state — use `getServerAuth()` instead.
 - Auth methods: Google OAuth, GitHub OAuth, email/password.
 
 ### App Pages
@@ -195,7 +192,7 @@ Model tier is always passed explicitly: `"pro"`, `"flash"`, or `"embedding"`. Ca
 
 #### Host Agents (`app/api/host-agents/`)
 
-- **booster-generator** — Generate a full hackathon program draft. Model: `"flash"`. JSON. Rate limit: 5/day.
+- **hackathon-generator** — Generate a full hackathon program draft. Model: `"flash"`. JSON. Rate limit: 5/day.
 - **metric-analyst** — Analytics reports for hackathon submissions. Model: `"flash"`. JSON.
 - **project-evaluator** — AI judging against rubric criteria. Model: `"pro"`. JSON. Persists `ai_score` to submissions.
 - **resource-provisioner** — Technical resource plan for builders. Model: `"flash"`. JSON. Rate limit: 5/day.
@@ -246,7 +243,7 @@ Supabase Postgres with migrations in `supabase/migrations/`. Key migrations:
 - `20260312071348_evaluation_per_judge.sql` — Per-judge evaluation tracking
 - `20260312_hackathon_mgmt.sql` — Hackathon management (speakers, finalization, results)
 
-Key tables: users, teams, team_members, loops_profiles, boosters, hackathon_tracks, hackathon_cohosts, hackathon_judges, hackathon_speakers, knowledge_bases, knowledge_base_chunks, booster_track_chunks, submissions, host_new, judge_invites, rate_limits. RLS enabled on all tables.
+Key tables: users, teams, team_members, loops_profiles, hackathons, hackathon_tracks, hackathon_cohosts, hackathon_judges, hackathon_speakers, knowledge_bases, knowledge_base_chunks, booster_track_chunks, submissions, host_new, judge_invites, rate_limits. RLS enabled on all tables.
 
 Types: `lib/supabase/database.types.ts` (auto-generated, do not edit) re-exported through `lib/supabase/types.ts` with enum aliases.
 
@@ -314,7 +311,6 @@ Page request
 | Server Actions (`lib/actions.ts`) | `createServerSupabase()`    | `lib/supabase/server.ts`     |
 | API routes                        | `requireAuth()`             | `lib/supabase/middleware.ts` |
 | Data-access layer (`lib/db/*`)    | `supabaseAdmin`             | `lib/supabase/admin.ts`      |
-| Browser client components         | `sb()` via `lib/storage.ts` | `lib/supabase/client.ts`     |
 
 **Auth in server components:**
 
@@ -325,12 +321,12 @@ Page request
 ### Anti-Patterns (do NOT do these)
 
 - Calling Supabase directly from a `"use client"` component to write data — use a Server Action
-- Using `lib/storage.ts` in server components — use `lib/server-data.ts` instead
 - Fetching data in `useEffect` on mount when the page could be a server component
+- Importing types from deleted files (`lib/storage.ts`, `lib/queries.ts`) — use `lib/data-mappers.ts` for types
 - Skipping Zod validation in Server Actions
 - Forgetting `revalidatePath()` after a mutation — the page will show stale data
 - N+1 queries in server components — use bulk functions like `getSubmissionsForBoostersServer(ids)`
-- Storing auth state in localStorage — use session cookies via `app/providers.tsx`
+- Storing auth state in localStorage or client-side context — use `getServerAuth()` in server components
 - Using `useEffect` for mutations — always use Server Actions via `startTransition()`
 
 ## Conventions

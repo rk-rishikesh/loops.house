@@ -23,14 +23,14 @@ export interface LinkItem {
   url: string;
 }
 
-// --- boosters.technical_resources ---
+// --- hackathons.technical_resources ---
 
 export interface TechnicalResourceItem {
   url: string;
   description: string;
 }
 
-// --- boosters.judging_criteria ---
+// --- hackathons.judging_criteria ---
 
 export interface JudgingCriterionItem {
   name: string;

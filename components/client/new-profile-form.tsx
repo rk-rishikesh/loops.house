@@ -25,9 +25,8 @@ import {
   type KBStepStatus,
   KnowledgeBasePanel,
 } from "@/components/client/knowledge-base-panel";
-import { saveTeamAction } from "@/lib/actions";
-import type { StoredTeam } from "@/lib/data-mappers";
-import { useSaveProject } from "@/lib/queries";
+import { saveProjectAction, saveTeamAction } from "@/lib/actions";
+import type { StoredProject, StoredTeam } from "@/lib/data-mappers";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -43,15 +42,9 @@ const builderProfileSchema = z.object({
     .string()
     .min(80, "Please add a more detailed description (at least 80 characters)."),
   github_url: z.string().url("GitHub URL must be a valid link"),
-  youtube_url: z.string().url("YouTube URL must be a valid link"),
-  logo_url: z.string().url("Logo URL must be a valid link"),
-  website_url: z
-    .string()
-    .min(1, "Website URL is required")
-    .refine(
-      (val) => /^https?:\/\//i.test(val) || /^www\./i.test(val),
-      "Website URL must be a valid link",
-    ),
+  youtube_url: z.url("YouTube URL must be a valid link").optional(),
+  logo_url: z.url("Logo is required"),
+  website_url: z.url("Website URL must be a valid link"),
   screenshot_urls: z.string().optional(),
   social_links: z.string().optional(),
   hackathon_id: z.string().optional(),
@@ -174,8 +167,6 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
   const [screenshotFiles, setScreenshotFiles] = useState<string[]>([]);
   const [showIntro, setShowIntro] = useState(true);
 
-  const saveProjectMutation = useSaveProject();
-
   const {
     register,
     handleSubmit,
@@ -192,10 +183,8 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
       name: "",
       description: "",
       github_url: "",
-      youtube_url: "",
       logo_url: "",
       website_url: "",
-      screenshot_urls: "",
       social_links: "",
     },
   });
@@ -305,11 +294,6 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
 
   const handleNext = async () => {
     if (!activeStep) return;
-    // Enforce screenshot requirement on the screenshots step before moving on
-    if (activeStep.upload === "screenshots" && screenshotFiles.length < 4) {
-      setError("Please upload at least 4 screenshots of your project.");
-      return;
-    }
     setError(null);
     const ok = await trigger(activeStep.key);
     if (!ok && !activeStep.optional) return;
@@ -328,8 +312,8 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
       KB_STEPS.forEach((s) => setProgress((p) => ({ ...p, [s]: "pending" })));
 
       // Enforce at least 4 screenshots
-      if (screenshotFiles.length < 4) {
-        setError("Please upload at least 4 screenshots of your project.");
+      if (screenshotFiles.length < 2) {
+        setError("Please upload at least 2 screenshots of your project.");
         setLoading(false);
         return;
       }
@@ -436,11 +420,12 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
 
         if (serverError && !lastComplete) throw new Error(serverError);
         if (lastComplete && typeof lastComplete.project_id === "string") {
-          await saveProjectMutation.mutateAsync({
+          const result = await saveProjectAction({
             ...lastComplete,
             team_id: resolvedTeamId,
             created_at: new Date().toISOString(),
-          } as import("@/lib/storage").StoredProject);
+          } as StoredProject);
+          if (!result.success) throw new Error(result.error);
           router.push(`/builder/projects/${lastComplete.project_id}`);
           return;
         }
@@ -451,7 +436,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
         setLoading(false);
       }
     },
-    [router, saveProjectMutation, screenshotFiles],
+    [router, screenshotFiles],
   );
 
   const inputBase: React.CSSProperties = {
@@ -1025,7 +1010,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
             {/* Bottom Footer */}
             <div className="relative z-10">
               <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center gap-4 overflow-hidden">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#E2FEA5]/10 flex items-center justify-center">
+                <div className="shrink-0 w-10 h-10 rounded-full bg-[#E2FEA5]/10 flex items-center justify-center">
                   <div className="flex gap-1">
                     <motion.div
                       animate={{ opacity: [0.3, 1, 0.3] }}

@@ -8,7 +8,6 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { StoredHackathon, StoredProject } from "@/lib/data-mappers";
-import { getHackathon, getProject } from "@/lib/storage";
 import { type SocialAmplifierSchema, socialAmplifierSchema } from "@/lib/validations/schemas";
 
 type SocialAmplifierResult = {
@@ -61,7 +60,7 @@ function SocialGeneratorContent({
 
   const mutation = useMutation({
     mutationFn: async (data: SocialAmplifierSchema): Promise<SocialAmplifierResult> => {
-      const project = await getProject(data.project_id);
+      const project = projects.find((p) => p.project_id === data.project_id);
       if (!project) throw new Error("Project not found.");
 
       const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -79,7 +78,7 @@ function SocialGeneratorContent({
       };
 
       if (data.hackathon_id) {
-        const hackathon = await getHackathon(data.hackathon_id);
+        const hackathon = hackathons.find((h) => h.id === data.hackathon_id);
         if (hackathon) {
           payload.hackathon = {
             name: hackathon.name,

@@ -41,11 +41,11 @@ export async function middleware(request: NextRequest) {
   );
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Authenticated user hitting /login → redirect to dashboard
-  if (session && pathname === "/login") {
+  if (user && pathname === "/login") {
     const explicit = request.nextUrl.searchParams.get("redirect");
     if (explicit) {
       return NextResponse.redirect(new URL(explicit, request.url));
@@ -55,11 +55,10 @@ export async function middleware(request: NextRequest) {
 
   // Unauthenticated user on a public route → let through
   const isPublicRoute = PUBLIC.some((p) => pathname.startsWith(p));
-  if (!session && pathname !== "/login" && !isStaticAssetRequest && !isPublicRoute) {
+  if (!user && pathname !== "/login" && !isStaticAssetRequest && !isPublicRoute) {
     // Unauthenticated on protected route → login
     if (
       pathname === "/" ||
-      pathname.startsWith("/dashboard") ||
       pathname.startsWith("/admin") ||
       pathname.startsWith("/host") ||
       pathname.startsWith("/builder") ||
@@ -76,10 +75,10 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  if (!session) return response;
+  if (!user) return response;
 
   // Use Supabase session user ID directly (no manual JWT decoding)
-  const userId = session.user.id;
+  const userId = user.id;
 
   // Resolve capabilities — cookie first, then DB
   let caps: BasicCapabilities | null = null;

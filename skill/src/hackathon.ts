@@ -173,12 +173,6 @@ hackathon.command("ideate", {
       });
     }
 
-    // Fetch sponsor tracks if available
-    const { data: tracks } = await supabase
-      .from("hackathon_tracks")
-      .select("sponsor_name, track_description")
-      .eq("hackathon_id", options.hackathonId);
-
     // Optionally fetch project details for contextual feedback
     let projectSnapshot: { name?: string; description?: string; tech_stack?: string[] } | undefined;
     let projectName: string | undefined;
@@ -239,11 +233,7 @@ hackathon.command("ideate", {
       hackathon_context: {
         theme: hackathonData.theme ?? "",
         problem_statements: hackathonData.problem_statements || [],
-        sponsor_tracks:
-          tracks?.map((t) => ({
-            sponsor: t.sponsor_name,
-            track_description: t.track_description ?? "",
-          })) || [],
+        sponsor_tracks: [],
       },
     };
 
