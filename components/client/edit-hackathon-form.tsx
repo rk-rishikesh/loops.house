@@ -1,15 +1,17 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowUpRight, Check, Clock, Loader2, Save } from "lucide-react";
+import { ArrowUpRight, Check, Clock, Eye, Loader2, Plus, Save, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import type { z } from "zod";
 import { editHackathonAction } from "@/lib/actions";
 import type { StoredHackathon } from "@/lib/data-mappers";
 import type { PhasePermissions } from "@/lib/hackathon-phase";
 import { editHackathonSchema } from "@/lib/validations/schemas";
+import { HackathonPreviewModal } from "./hackathon-preview-modal";
+import { ImageUpload } from "./image-upload";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -21,32 +23,103 @@ interface Props {
   permissions: PhasePermissions;
 }
 
+const inputCls =
+  "w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors placeholder-[#0F2C23]/30";
+const inputStyle = {
+  backgroundColor: "#E2FEA5",
+  border: "none",
+  color: "#0F2C23",
+  fontFamily: FN,
+} as const;
+const labelStyle = {
+  color: "rgba(15,44,35,0.4)",
+  fontSize: "9px",
+  fontWeight: 700,
+  letterSpacing: "0.18em",
+  textTransform: "uppercase",
+  fontFamily: PX,
+} as const;
+
+function focusIn(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  e.currentTarget.style.backgroundColor = "#CBE595";
+}
+function focusOut(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  e.currentTarget.style.backgroundColor = "#E2FEA5";
+}
+
+function SectionHeader({ num, title }: { num: string; title: string }) {
+  return (
+    <div className="flex items-baseline gap-3 mb-6">
+      <span
+        className="font-black text-[#0F2C23]/18"
+        style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
+      >
+        {num}
+      </span>
+      <p
+        className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+        style={{ fontFamily: PX }}
+      >
+        {title}
+      </p>
+    </div>
+  );
+}
+
 export function EditHackathonForm({ hackathon, permissions }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isDirty },
     watch,
+    setValue,
   } = useForm<FormData>({
     resolver: zodResolver(editHackathonSchema),
     defaultValues: {
       id: hackathon.id,
       name: hackathon.name,
+      description: hackathon.description ?? "",
       theme: hackathon.theme ?? "",
       program_goal: hackathon.program_goal ?? "",
       website_url: hackathon.website_url ?? "",
+      logo_url: hackathon.logo_url ?? "",
+      banner_url: hackathon.banner_url ?? "",
       start_date: hackathon.start_date?.slice(0, 16) ?? "",
       submission_deadline: hackathon.submission_deadline?.slice(0, 16) ?? "",
       judging_deadline: hackathon.judging_deadline?.slice(0, 16) ?? "",
       results_date: hackathon.results_date?.slice(0, 16) ?? "",
       bounty_pool_summary: hackathon.bounty_pool_summary ?? "",
       problem_statements: hackathon.problem_statements ?? [],
+      judging_criteria: hackathon.judging_criteria ?? [],
+
+      technical_resources: hackathon.technical_resources ?? [],
+      organizer_notes: hackathon.organizer_notes ?? "",
     },
   });
+
+  const {
+    fields: problemFields,
+    append: appendProblem,
+    remove: removeProblem,
+  } = useFieldArray({ control, name: "problem_statements" as never });
+
+  const {
+    fields: criteriaFields,
+    append: appendCriterion,
+    remove: removeCriterion,
+  } = useFieldArray({ control, name: "judging_criteria" });
+
+  const {
+    fields: resourceFields,
+    append: appendResource,
+    remove: removeResource,
+  } = useFieldArray({ control, name: "technical_resources" });
 
   const onSubmit = (data: FormData) => {
     setMessage(null);
@@ -61,27 +134,11 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
     });
   };
 
-  const inputStyle = {
-    backgroundColor: "#E2FEA5",
-    border: "none",
-    color: "#0F2C23",
-    fontFamily: FN,
-  } as const;
-
-  const labelStyle = {
-    color: "rgba(15,44,35,0.4)",
-    fontSize: "9px",
-    fontWeight: 700,
-    letterSpacing: "0.18em",
-    textTransform: "uppercase",
-    fontFamily: PX,
-  } as const;
-
   const watchedValues = watch();
 
   return (
     <div className="pt-6 pb-24">
-      {/* ── Hero heading ─────────────────────────────────────────────── */}
+      {/* Hero */}
       <div className="mb-14">
         <h1
           className="font-black text-[#0F2C23] leading-[0.88] uppercase"
@@ -100,8 +157,8 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
             className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
             style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
           >
-            Configure the core information, timeline, and prize structure for your program. This
-            data is public once the program is launched.
+            Configure the core information, timeline, and prize structure for your program. This data
+            is public once the program is launched.
           </p>
         </div>
       </div>
@@ -109,34 +166,44 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
       <div className="grid gap-8 items-start" style={{ gridTemplateColumns: "1fr 320px" }}>
         {/* LEFT COLUMN */}
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-12">
-          {/* Section 01 - Info */}
+          {/* Section 01 - Core Information */}
           <div>
-            <div className="flex items-baseline gap-3 mb-6">
-              <span
-                className="font-black text-[#0F2C23]/18"
-                style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
-              >
-                01
-              </span>
-              <p
-                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
-                style={{ fontFamily: PX }}
-              >
-                Core Information
-              </p>
-            </div>
-
+            <SectionHeader num="01" title="Core Information" />
             <div className="grid gap-5">
+              <div className="grid grid-cols-2 gap-5">
+                <div>
+                  <label style={labelStyle} className="mb-2 block">
+                    Logo (required to publish)
+                  </label>
+                  <ImageUpload
+                    value={watchedValues.logo_url}
+                    onChange={(url) => setValue("logo_url", url, { shouldDirty: true })}
+                    placeholder="Upload logo"
+                    variant="square"
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle} className="mb-2 block">
+                    Banner (optional)
+                  </label>
+                  <ImageUpload
+                    value={watchedValues.banner_url}
+                    onChange={(url) => setValue("banner_url", url, { shouldDirty: true })}
+                    placeholder="Upload banner"
+                    variant="rect"
+                  />
+                </div>
+              </div>
               <div>
                 <label style={labelStyle} className="mb-2 block">
                   Program Name
                 </label>
                 <input
                   {...register("name")}
-                  className="w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors placeholder-[#0F2C23]/30"
+                  className={inputCls}
                   style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
-                  onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
+                  onFocus={focusIn}
+                  onBlur={focusOut}
                 />
                 {errors.name && (
                   <p className="mt-2 text-xs text-red-600" style={{ fontFamily: FN }}>
@@ -152,10 +219,25 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                 <input
                   {...register("theme")}
                   placeholder="e.g. Building the future of decentralization"
-                  className="w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors placeholder-[#0F2C23]/30"
+                  className={inputCls}
                   style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
-                  onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
+                  onFocus={focusIn}
+                  onBlur={focusOut}
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle} className="mb-2 block">
+                  Description
+                </label>
+                <textarea
+                  {...register("description")}
+                  rows={3}
+                  placeholder="Detailed description of your program"
+                  className={`${inputCls} resize-none`}
+                  style={inputStyle}
+                  onFocus={focusIn}
+                  onBlur={focusOut}
                 />
               </div>
 
@@ -167,10 +249,10 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   {...register("program_goal")}
                   rows={4}
                   placeholder="What is the objective of this program?"
-                  className="w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors placeholder-[#0F2C23]/30 resize-none"
+                  className={`${inputCls} resize-none`}
                   style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
-                  onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
+                  onFocus={focusIn}
+                  onBlur={focusOut}
                 />
               </div>
 
@@ -182,89 +264,42 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   {...register("website_url")}
                   type="url"
                   placeholder="https://your-program.com"
-                  className="w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors placeholder-[#0F2C23]/30"
+                  className={inputCls}
                   style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
-                  onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
+                  onFocus={focusIn}
+                  onBlur={focusOut}
                 />
               </div>
             </div>
           </div>
 
-          {/* Section 02 - Schedule */}
+          {/* Section 02 - Timeline */}
           <div>
-            <div className="flex items-baseline gap-3 mb-6">
-              <span
-                className="font-black text-[#0F2C23]/18"
-                style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
-              >
-                02
-              </span>
-              <p
-                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
-                style={{ fontFamily: PX }}
-              >
-                Timeline & Deadlines
-              </p>
-            </div>
-
+            <SectionHeader num="02" title="Timeline & Deadlines" />
             <div className="grid grid-cols-2 gap-5">
-              <div>
-                <label style={labelStyle} className="mb-2 block">
-                  Start Date
-                </label>
-                <input
-                  {...register("start_date")}
-                  type="datetime-local"
-                  disabled={!permissions.canEditTimeline}
-                  className="w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors disabled:opacity-40"
-                  style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
-                  onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
-                />
-              </div>
-              <div>
-                <label style={labelStyle} className="mb-2 block">
-                  Submission Deadline
-                </label>
-                <input
-                  {...register("submission_deadline")}
-                  type="datetime-local"
-                  disabled={!permissions.canEditTimeline}
-                  className="w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors disabled:opacity-40"
-                  style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
-                  onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
-                />
-              </div>
-              <div>
-                <label style={labelStyle} className="mb-2 block">
-                  Judging Deadline
-                </label>
-                <input
-                  {...register("judging_deadline")}
-                  type="datetime-local"
-                  disabled={!permissions.canEditTimeline}
-                  className="w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors disabled:opacity-40"
-                  style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
-                  onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
-                />
-              </div>
-              <div>
-                <label style={labelStyle} className="mb-2 block">
-                  Results Announcement
-                </label>
-                <input
-                  {...register("results_date")}
-                  type="datetime-local"
-                  disabled={!permissions.canEditTimeline}
-                  className="w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors disabled:opacity-40"
-                  style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
-                  onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
-                />
-              </div>
+              {(
+                [
+                  ["start_date", "Start Date"],
+                  ["submission_deadline", "Submission Deadline"],
+                  ["judging_deadline", "Judging Deadline"],
+                  ["results_date", "Results Announcement"],
+                ] as const
+              ).map(([field, label]) => (
+                <div key={field}>
+                  <label style={labelStyle} className="mb-2 block">
+                    {label}
+                  </label>
+                  <input
+                    {...register(field)}
+                    type="datetime-local"
+                    disabled={!permissions.canEditTimeline}
+                    className={`${inputCls} disabled:opacity-40`}
+                    style={inputStyle}
+                    onFocus={focusIn}
+                    onBlur={focusOut}
+                  />
+                </div>
+              ))}
             </div>
             {!permissions.canEditTimeline && (
               <p className="mt-3 text-[10px] text-[#0F2C23]/40 italic" style={{ fontFamily: FN }}>
@@ -273,36 +308,197 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
             )}
           </div>
 
-          {/* Section 03 - Prizes */}
+          {/* Section 03 - Prizes & Judging */}
           <div>
-            <div className="flex items-baseline gap-3 mb-6">
-              <span
-                className="font-black text-[#0F2C23]/18"
-                style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
-              >
-                03
-              </span>
-              <p
-                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
-                style={{ fontFamily: PX }}
-              >
-                Prizes & Judging
-              </p>
-            </div>
+            <SectionHeader num="03" title="Prizes & Judging" />
+            <div className="grid gap-6">
+              <div>
+                <label style={labelStyle} className="mb-2 block">
+                  Prize Pool Summary
+                </label>
+                <textarea
+                  {...register("bounty_pool_summary")}
+                  rows={3}
+                  placeholder="Describe the prizes, tracks, and judging criteria..."
+                  className={`${inputCls} resize-none`}
+                  style={inputStyle}
+                  onFocus={focusIn}
+                  onBlur={focusOut}
+                />
+              </div>
 
-            <div>
-              <label style={labelStyle} className="mb-2 block">
-                Prize Pool Summary
-              </label>
-              <textarea
-                {...register("bounty_pool_summary")}
-                rows={3}
-                placeholder="Describe the prizes, tracks, and judging criteria..."
-                className="w-full rounded-2xl px-5 py-3.5 text-sm outline-none transition-colors placeholder-[#0F2C23]/30 resize-none"
-                style={inputStyle}
-                onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
-                onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
-              />
+              {/* Problem Statements */}
+              <div>
+                <label style={labelStyle} className="mb-2 block">
+                  Problem Statements / Challenges
+                </label>
+                <div className="flex flex-col gap-2">
+                  {problemFields.map((field, idx) => (
+                    <div key={field.id} className="flex gap-2">
+                      <input
+                        {...register(`problem_statements.${idx}` as const)}
+                        placeholder={`Challenge ${idx + 1}`}
+                        className={`${inputCls} flex-1`}
+                        style={inputStyle}
+                        onFocus={focusIn}
+                        onBlur={focusOut}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeProblem(idx)}
+                        className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center border-none cursor-pointer transition-colors hover:bg-red-50"
+                        style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+                      >
+                        <Trash2 size={14} className="text-[#0F2C23]/40" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => appendProblem("" as never)}
+                    className="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold border-none cursor-pointer transition-colors hover:bg-[#0F2C23]/8"
+                    style={{
+                      backgroundColor: "rgba(15,44,35,0.04)",
+                      color: "#0F2C23",
+                      fontFamily: PX,
+                    }}
+                  >
+                    <Plus size={12} /> Add Challenge
+                  </button>
+                </div>
+              </div>
+
+              {/* Judging Criteria */}
+              <div>
+                <label style={labelStyle} className="mb-2 block">
+                  Judging Criteria
+                </label>
+                <div className="flex flex-col gap-3">
+                  {criteriaFields.map((field, idx) => (
+                    <div key={field.id} className="flex gap-2 items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <input
+                          {...register(`judging_criteria.${idx}.name` as const)}
+                          placeholder="Criterion name"
+                          className={inputCls}
+                          style={inputStyle}
+                          onFocus={focusIn}
+                          onBlur={focusOut}
+                        />
+                        <input
+                          {...register(`judging_criteria.${idx}.description` as const)}
+                          placeholder="Description"
+                          className={inputCls}
+                          style={inputStyle}
+                          onFocus={focusIn}
+                          onBlur={focusOut}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeCriterion(idx)}
+                        className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center border-none cursor-pointer transition-colors hover:bg-red-50"
+                        style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+                      >
+                        <Trash2 size={14} className="text-[#0F2C23]/40" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => appendCriterion({ name: "", description: "" })}
+                    className="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold border-none cursor-pointer transition-colors hover:bg-[#0F2C23]/8"
+                    style={{
+                      backgroundColor: "rgba(15,44,35,0.04)",
+                      color: "#0F2C23",
+                      fontFamily: PX,
+                    }}
+                  >
+                    <Plus size={12} /> Add Criterion
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 04 - Resources */}
+          <div>
+            <SectionHeader num="04" title="Resources" />
+            <div className="grid gap-6">
+              {/* Technical Resources */}
+              <div>
+                <label style={labelStyle} className="mb-2 block">
+                  Technical Resources
+                </label>
+                <div className="flex flex-col gap-3">
+                  {resourceFields.map((field, idx) => (
+                    <div key={field.id} className="flex gap-2 items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <input
+                          {...register(`technical_resources.${idx}.url` as const)}
+                          placeholder="Resource URL"
+                          className={inputCls}
+                          style={inputStyle}
+                          onFocus={focusIn}
+                          onBlur={focusOut}
+                        />
+                        <input
+                          {...register(`technical_resources.${idx}.description` as const)}
+                          placeholder="Description"
+                          className={inputCls}
+                          style={inputStyle}
+                          onFocus={focusIn}
+                          onBlur={focusOut}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeResource(idx)}
+                        className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center border-none cursor-pointer transition-colors hover:bg-red-50"
+                        style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+                      >
+                        <Trash2 size={14} className="text-[#0F2C23]/40" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => appendResource({ url: "", description: "" })}
+                    className="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold border-none cursor-pointer transition-colors hover:bg-[#0F2C23]/8"
+                    style={{
+                      backgroundColor: "rgba(15,44,35,0.04)",
+                      color: "#0F2C23",
+                      fontFamily: PX,
+                    }}
+                  >
+                    <Plus size={12} /> Add Resource
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 05 - Internal */}
+          <div>
+            <SectionHeader num="05" title="Internal Notes" />
+            <div className="grid gap-5">
+              <div>
+                <label style={labelStyle} className="mb-2 block">
+                  Organizer Notes (Internal)
+                </label>
+                <textarea
+                  {...register("organizer_notes")}
+                  rows={4}
+                  placeholder="Internal notes for organizers — not visible to participants"
+                  className={`${inputCls} resize-none`}
+                  style={inputStyle}
+                  onFocus={focusIn}
+                  onBlur={focusOut}
+                />
+                <p className="mt-2 text-[10px] text-[#0F2C23]/40 italic" style={{ fontFamily: FN }}>
+                  These notes are only visible to hosts and cohosts.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -349,7 +545,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
 
         {/* RIGHT SIDEBAR */}
         <aside className="sticky top-[81px] flex flex-col gap-4">
-          {/* Status card */}
+          {/* Profile Completion */}
           <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
             <p
               className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5"
@@ -373,6 +569,11 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   label: "Prizes",
                   done: !!watchedValues.bounty_pool_summary,
                   value: watchedValues.bounty_pool_summary ? "Defined" : "Empty",
+                },
+                {
+                  label: "Resources",
+                  done: (watchedValues.technical_resources?.length ?? 0) > 0,
+                  value: (watchedValues.technical_resources?.length ?? 0) > 0 ? "Linked" : "Not set",
                 },
               ].map(({ label, done, value }) => (
                 <div
@@ -401,43 +602,21 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
             </div>
           </div>
 
-          {/* Guide card */}
-          <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#E2FEA5" }}>
+          {/* Preview button */}
+          <button
+            type="button"
+            onClick={() => setShowPreviewModal(true)}
+            className="rounded-2xl px-6 py-4 flex items-center gap-3 border-none cursor-pointer transition-colors w-full text-left hover:scale-[1.01] transition-all"
+            style={{ backgroundColor: "#E2FEA5" }}
+          >
+            <Eye size={16} style={{ color: "#0F2C23" }} />
             <p
-              className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-4"
-              style={{ fontFamily: PX }}
+              className="text-[10px] tracking-wide uppercase font-bold"
+              style={{ fontFamily: PX, color: "#0F2C23" }}
             >
-              Configuration Guide
+              Preview Public Page
             </p>
-            <div className="flex flex-col gap-3">
-              {[
-                {
-                  n: "01",
-                  t: "Keep your program name and theme concise to attract more builders.",
-                },
-                {
-                  n: "02",
-                  t: "Double-check dates — they affect when submissions and judging are open.",
-                },
-                { n: "03", t: "A clear prize summary helps participants understand the stakes." },
-              ].map(({ n, t }) => (
-                <div key={n} className="flex items-start gap-3">
-                  <span
-                    className="font-black text-[#0F2C23]/20 leading-none shrink-0 mt-0.5"
-                    style={{ fontFamily: PX, fontSize: 11, width: 20 }}
-                  >
-                    {n}
-                  </span>
-                  <p
-                    className="text-xs text-[#0F2C23]/60 leading-relaxed"
-                    style={{ fontFamily: FN }}
-                  >
-                    {t}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+          </button>
 
           {/* Unsaved changes warning */}
           {isDirty && !isPending && (
@@ -456,6 +635,33 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
           )}
         </aside>
       </div>
+
+      {/* Preview modal */}
+      {showPreviewModal && (
+        <HackathonPreviewModal
+          hackathon={{
+            id: hackathon.id,
+            name: watchedValues.name ?? "",
+            description: watchedValues.description,
+            theme: watchedValues.theme,
+            program_goal: watchedValues.program_goal,
+            website_url: watchedValues.website_url,
+            logo_url: watchedValues.logo_url,
+            banner_url: watchedValues.banner_url,
+            start_date: watchedValues.start_date,
+            submission_deadline: watchedValues.submission_deadline,
+            judging_deadline: watchedValues.judging_deadline,
+            results_date: watchedValues.results_date,
+            bounty_pool_summary: watchedValues.bounty_pool_summary,
+            problem_statements: watchedValues.problem_statements?.filter(Boolean) ?? [],
+            judging_criteria: watchedValues.judging_criteria,
+            technical_resources: watchedValues.technical_resources,
+            created_at: hackathon.created_at,
+            phase: hackathon.phase,
+          }}
+          onClose={() => setShowPreviewModal(false)}
+        />
+      )}
     </div>
   );
 }

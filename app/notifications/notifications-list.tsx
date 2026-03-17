@@ -57,7 +57,7 @@ function InvitationCard({ invitation }: { invitation: Invitation }) {
 
   return (
     <div
-      className="flex items-center justify-between rounded-2xl px-5 py-4"
+      className="flex flex-row gap-4 items-center justify-between rounded-2xl py-4 w-full"
       style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
     >
       <div className="flex flex-col gap-0.5">
@@ -146,7 +146,7 @@ export function NotificationsList({ invitations }: { invitations: Invitation[] }
   const typeOrder = ["event_host", "cohost", "judge", "project_member"];
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 justify-start w-full">
       {typeOrder
         .filter((type) => grouped[type]?.length)
         .map((type) => {
@@ -157,7 +157,7 @@ export function NotificationsList({ invitations }: { invitations: Invitation[] }
           };
           const Icon = config.icon;
           return (
-            <div key={type} className="flex flex-col gap-3">
+            <div key={type} className="flex flex-col gap-3 justify-start">
               <div className="flex items-center gap-2 mb-1">
                 <Icon size={16} style={{ color: config.color }} />
                 <span

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { SpeakersManager } from "@/components/client/speakers-manager";
 import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
-import { computePhase, getPhasePermissions } from "@/lib/hackathon-phase";
+import { getPhasePermissions } from "@/lib/hackathon-phase";
 import { getServerAuth } from "@/lib/server-auth";
 import { getHackathonServer, getHackathonSpeakersServer } from "@/lib/server-data";
 
@@ -23,12 +23,11 @@ export default async function SpeakersPage({
   ]);
   if (!hackathon) redirect("/host");
 
-  const phase = computePhase(hackathon);
-  const permissions = getPhasePermissions(phase);
+  const permissions = getPhasePermissions(hackathon.phase);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+      <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-6 flex items-center gap-3">
           <a
             href={`/host/${hackathon_id}/manage`}
@@ -50,7 +49,7 @@ export default async function SpeakersPage({
             Speakers
           </h1>
           <div className="ml-2">
-            <HackathonPhaseBadge hackathon={hackathon} />
+            <HackathonPhaseBadge phase={hackathon.phase} />
           </div>
         </div>
         <SpeakersManager

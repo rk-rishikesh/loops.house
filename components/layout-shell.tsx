@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
+import type { BasicCapabilities } from "@/lib/capabilities";
 import {
   NAV_WIDTH_COLLAPSED,
   NAV_WIDTH_EXPANDED,
@@ -18,7 +19,13 @@ function useNavWidth() {
   return collapsed ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED;
 }
 
-export function LayoutShell({ children }: { children: React.ReactNode }) {
+export function LayoutShell({
+  children,
+  capabilities,
+}: {
+  children: React.ReactNode;
+  capabilities: BasicCapabilities | null;
+}) {
   const pathname = usePathname();
   const isLanding =
     pathname === "/" ||
@@ -36,7 +43,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
       className="hidden md:block min-h-screen transition-[margin] duration-200"
       style={{ backgroundColor: "#F8FFE8" }}
     >
-      <SideNav />
+      <SideNav capabilities={capabilities} />
       <div style={{ marginLeft: navWidth + 32 }}>{children}</div>
     </div>
   );

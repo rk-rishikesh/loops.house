@@ -25,12 +25,5 @@
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
   "editor.rulers": [100],
-  "files.exclude": {
-    "node_modules": true,
-    ".next": true,
-    "out": true,
-    "coverage": true,
-    "dist": true
-  },
   "biome.enabled": true
 }

@@ -38,10 +38,8 @@ export default async function NotificationsPage() {
           </p>
         </div>
 
-        <div className="max-w-2xl mx-auto">
-          <div className="flex items-center justify-center min-h-[50vh]">
-            <NotificationsList invitations={invitations} />
-          </div>
+        <div className="flex flex-col justify-start max-w-2xl min-h-[50vh]">
+          <NotificationsList invitations={invitations} />
         </div>
       </div>
     </div>

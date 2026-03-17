@@ -13,7 +13,7 @@ export default async function HostDashboardPage() {
   const auth = await getServerAuth();
   if (!auth) redirect("/login?redirect=/host");
 
-  const allHackathons = await getHackathonsServer();
+  const allHackathons = await getHackathonsServer({ includeDrafts: true });
   const hackathons = allHackathons.filter(
     (h) => h.host_id === auth.userId || auth.capabilities.cohostOf.includes(h.id),
   );
@@ -158,9 +158,8 @@ export default async function HostDashboardPage() {
           </div>
         </div>
 
-        {/* ══ MAIN SECTION — hosted boosters table ═════════════════════ */}
+        {/* ══ MAIN SECTION — hosted hackathons table ═════════════════════ */}
         <div className="mt-8">
-          {/* ── Hosted boosters table ──────────────────────────── */}
           <div className="rounded-3xl p-8" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
             {/* Section header */}
             <div className="flex items-center justify-between mb-7">
@@ -305,8 +304,8 @@ export default async function HostDashboardPage() {
                           )}
                         </div>
 
-                        {/* Status */}
-                        <HackathonPhaseBadge hackathon={b} />
+                        {/* Phase */}
+                        <HackathonPhaseBadge phase={b.phase} />
 
                         {/* Arrow */}
                         <div className="flex justify-center">

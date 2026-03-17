@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { JudgeInviteForm } from "@/components/client/judge-invite-form";
 import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
-import { computePhase, getPhasePermissions } from "@/lib/hackathon-phase";
+import { getPhasePermissions } from "@/lib/hackathon-phase";
 import { getServerAuth } from "@/lib/server-auth";
 import { getHackathonInvitationsServer, getHackathonServer } from "@/lib/server-data";
 
@@ -20,8 +20,7 @@ export default async function ManageJudgesPage({
   const hackathon = await getHackathonServer(hackathon_id);
   if (!hackathon) redirect("/host");
 
-  const phase = computePhase(hackathon);
-  const permissions = getPhasePermissions(phase);
+  const permissions = getPhasePermissions(hackathon.phase);
 
   const invitations = await getHackathonInvitationsServer(hackathon_id, "judge");
 
@@ -49,7 +48,7 @@ export default async function ManageJudgesPage({
             Judges
           </h1>
           <div className="ml-2">
-            <HackathonPhaseBadge hackathon={hackathon} />
+            <HackathonPhaseBadge phase={hackathon.phase} />
           </div>
         </div>
         {permissions.canEditJudges ? (

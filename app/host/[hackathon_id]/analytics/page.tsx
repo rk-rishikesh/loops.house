@@ -29,6 +29,7 @@ export default async function HostBoosterAnalyticsPage({
   params: Promise<{ hackathon_id: string }>;
 }) {
   const auth = await getServerAuth();
+  const now = new Date();
   if (!auth || !(auth.capabilities.isAdmin || auth.capabilities.isEventCreator)) {
     redirect("/login");
   }
@@ -98,10 +99,10 @@ export default async function HostBoosterAnalyticsPage({
   // Days to deadline
   let daysToDeadline: number | null = null;
   if (hackathon.judging_deadline) {
-    const diff = new Date(hackathon.judging_deadline).getTime() - Date.now();
+    const diff = new Date(hackathon.judging_deadline).getTime() - now.getTime();
     daysToDeadline = Math.ceil(diff / (1000 * 60 * 60 * 24));
   } else if (hackathon.submission_deadline) {
-    const diff = new Date(hackathon.submission_deadline).getTime() - Date.now();
+    const diff = new Date(hackathon.submission_deadline).getTime() - now.getTime();
     daysToDeadline = Math.ceil(diff / (1000 * 60 * 60 * 24));
   }
 
@@ -115,7 +116,7 @@ export default async function HostBoosterAnalyticsPage({
     judgeCount: judges.length,
     humanEvaluationCount: humanEvalCount ?? 0,
     daysToDeadline,
-    currentPhase: hackathon.status ?? "draft",
+    currentPhase: hackathon.phase,
   };
 
   return (

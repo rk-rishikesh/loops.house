@@ -9,7 +9,6 @@ interface HackathonInput {
   theme?: string;
   problem_statements: string[];
   website_url?: string;
-  technical_docs?: string;
   bounty_pool_summary?: string;
   program_goal?: string;
   start_date?: string;
@@ -87,7 +86,6 @@ export async function POST(request: NextRequest) {
         theme: hackathon.theme,
         problem_statements: hackathon.problem_statements,
         website_url: hackathon.website_url,
-        technical_docs: hackathon.technical_docs,
         bounty_pool_summary: hackathon.bounty_pool_summary,
         program_goal: hackathon.program_goal,
         start_date: hackathon.start_date,
@@ -118,7 +116,7 @@ RULES:
 - For long-term (> 1 month), use "Month 1", "Quarter 1", or thematic phases.
 - Derive challenge statements from the problem_statements and program_goal.
 - Make judging criteria aligned with the stated goals and (if present) any bounty pool or sponsor tracks.
-- If some fields are missing (e.g., technical_docs), still produce a best-effort draft and leave explicit TODO-style notes for the organizer.
+- If some fields are missing, still produce a best-effort draft and leave explicit TODO-style notes for the organizer.
 - Keep language concise and builder-friendly.
 - The hackathon_id_suggestion should be a URL-safe slug: lowercase, words separated by hyphens, no spaces.
 - In organizer_notes, include a brief explanation of why you chose the specific temporal units for the schedule (e.g., "Schedule based on a 48-hour sprint duration").

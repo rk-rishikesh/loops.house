@@ -1,5 +1,6 @@
 import { ArrowUpRight, Bot, Cpu, Database, InfoIcon, ShieldCheck, Users, Zap } from "lucide-react";
 import { redirect } from "next/navigation";
+import { PublishHackathonBanner } from "@/components/client/publish-hackathon-banner";
 import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
 import { canManageHackathon, getFullCapabilities } from "@/lib/capabilities";
 import { getServerAuth } from "@/lib/server-auth";
@@ -45,7 +46,7 @@ export default async function ManagePage({
               DASHBOARD.
             </h1>
             <div className="mt-4">
-              <HackathonPhaseBadge hackathon={hackathon} size="md" />
+              <HackathonPhaseBadge phase={hackathon.phase} size="md" />
             </div>
           </div>
           <div className="flex justify-end mt-8">
@@ -59,6 +60,11 @@ export default async function ManagePage({
             </p>
           </div>
         </div>
+
+        {/* ── Draft banner ─────────────────────────────────────────────── */}
+        {hackathon.phase === "draft" && (
+          <PublishHackathonBanner hackathonId={hackathon.id} />
+        )}
 
         {/* ── Section 01: Core Management ───────────────────────────────── */}
         <div className="mb-24">
@@ -77,12 +83,12 @@ export default async function ManagePage({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {[
               {
                 title: "Program Info",
                 desc: "Edit name, theme, schedule, and prize details for this hackathon.",
-                href: `/host/${hackathon_id}/manage/info`,
+                href: `/host/${hackathon_id}/manage/edit`,
                 icon: <InfoIcon size={20} />,
                 color: "#E2FEA5",
               },
@@ -98,6 +104,13 @@ export default async function ManagePage({
                 desc: "Invite and track judges assigned to score this hackathon.",
                 href: `/host/${hackathon_id}/manage/judges`,
                 icon: <ShieldCheck size={20} />,
+                color: "#E2FEA5",
+              },
+              {
+                title: "Cohosts",
+                desc: "Invite co-hosts to help manage this hackathon.",
+                href: `/host/${hackathon_id}/manage/cohosts`,
+                icon: <Users size={20} />,
                 color: "#E2FEA5",
               },
             ].map((item) => (

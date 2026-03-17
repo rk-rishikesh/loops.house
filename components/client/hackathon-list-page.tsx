@@ -137,7 +137,8 @@ function deriveStatus(hackathon: Hackathon, idx: number): EventStatus {
   if (hackathon.submission_deadline) {
     const deadline = new Date(hackathon.submission_deadline);
     if (deadline > now) return "ongoing";
-    return "past";
+    // Deadline passed but results_date hasn't passed (or not set) → still ongoing (judging)
+    return hackathon.results_date ? "ongoing" : "past";
   }
   // Fallback: distribute based on index
   if (idx % 3 === 2) return "past";

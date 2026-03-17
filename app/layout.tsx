@@ -9,6 +9,7 @@ import {
   Press_Start_2P,
 } from "next/font/google";
 import { LayoutShell } from "@/components/layout-shell";
+import { getServerAuth } from "@/lib/server-auth";
 import { SupabaseProvider } from "./providers";
 import "./globals.css";
 
@@ -56,11 +57,13 @@ export const metadata: Metadata = {
 };
 
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const auth = await getServerAuth();
+  const capabilities = auth?.capabilities ?? null;
   return (
     <html
       lang="en"
@@ -94,7 +97,7 @@ export default function RootLayout({
           </div>
         </div>
         <SupabaseProvider>
-          <LayoutShell>{children}</LayoutShell>
+          <LayoutShell capabilities={capabilities}>{children}</LayoutShell>
         </SupabaseProvider>
       </body>
     </html>

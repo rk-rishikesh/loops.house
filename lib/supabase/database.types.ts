@@ -83,6 +83,41 @@ export type Database = {
           },
         ]
       }
+      hackathon_resources: {
+        Row: {
+          content: Json
+          created_at: string
+          generated_at: string
+          hackathon_id: string
+          id: string
+          source_urls: string[]
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          generated_at?: string
+          hackathon_id: string
+          id?: string
+          source_urls?: string[]
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          generated_at?: string
+          hackathon_id?: string
+          id?: string
+          source_urls?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hackathon_resources_hackathon_id_fkey"
+            columns: ["hackathon_id"]
+            isOneToOne: true
+            referencedRelation: "hackathons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hackathon_results: {
         Row: {
           ai_score_weighted: number
@@ -179,101 +214,10 @@ export type Database = {
           },
         ]
       }
-      hackathon_track_chunks: {
-        Row: {
-          content: string
-          created_at: string
-          embedding: string
-          hackathon_id: string
-          id: string
-          source: string
-          track_id: string | null
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          embedding: string
-          hackathon_id: string
-          id?: string
-          source: string
-          track_id?: string | null
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          embedding?: string
-          hackathon_id?: string
-          id?: string
-          source?: string
-          track_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "hackathon_track_chunks_hackathon_id_fkey"
-            columns: ["hackathon_id"]
-            isOneToOne: false
-            referencedRelation: "hackathons"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "hackathon_track_chunks_track_id_fkey"
-            columns: ["track_id"]
-            isOneToOne: false
-            referencedRelation: "hackathon_tracks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      hackathon_tracks: {
-        Row: {
-          api_endpoints: string[] | null
-          cheatsheet_text: string | null
-          created_at: string
-          docs_text: string | null
-          hackathon_id: string
-          id: string
-          sdk_examples: string[] | null
-          sponsor_name: string
-          track_description: string | null
-          track_name: string | null
-        }
-        Insert: {
-          api_endpoints?: string[] | null
-          cheatsheet_text?: string | null
-          created_at?: string
-          docs_text?: string | null
-          hackathon_id: string
-          id?: string
-          sdk_examples?: string[] | null
-          sponsor_name: string
-          track_description?: string | null
-          track_name?: string | null
-        }
-        Update: {
-          api_endpoints?: string[] | null
-          cheatsheet_text?: string | null
-          created_at?: string
-          docs_text?: string | null
-          hackathon_id?: string
-          id?: string
-          sdk_examples?: string[] | null
-          sponsor_name?: string
-          track_description?: string | null
-          track_name?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "hackathon_tracks_hackathon_id_fkey"
-            columns: ["hackathon_id"]
-            isOneToOne: false
-            referencedRelation: "hackathons"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       hackathons: {
         Row: {
           ai_weight: number | null
+          banner_url: string | null
           bounty_pool_summary: string | null
           created_at: string
           description: string | null
@@ -284,6 +228,7 @@ export type Database = {
           judging_criteria: Json | null
           judging_deadline: string | null
           leaderboard_enabled: boolean | null
+          logo_url: string | null
           name: string
           organizer_notes: string | null
           problem_statements: string[] | null
@@ -292,7 +237,6 @@ export type Database = {
           start_date: string | null
           status: Database["public"]["Enums"]["hackathon_status"]
           submission_deadline: string | null
-          technical_docs: string | null
           technical_resources: Json | null
           theme: string | null
           updated_at: string
@@ -300,6 +244,7 @@ export type Database = {
         }
         Insert: {
           ai_weight?: number | null
+          banner_url?: string | null
           bounty_pool_summary?: string | null
           created_at?: string
           description?: string | null
@@ -310,6 +255,7 @@ export type Database = {
           judging_criteria?: Json | null
           judging_deadline?: string | null
           leaderboard_enabled?: boolean | null
+          logo_url?: string | null
           name: string
           organizer_notes?: string | null
           problem_statements?: string[] | null
@@ -318,7 +264,6 @@ export type Database = {
           start_date?: string | null
           status?: Database["public"]["Enums"]["hackathon_status"]
           submission_deadline?: string | null
-          technical_docs?: string | null
           technical_resources?: Json | null
           theme?: string | null
           updated_at?: string
@@ -326,6 +271,7 @@ export type Database = {
         }
         Update: {
           ai_weight?: number | null
+          banner_url?: string | null
           bounty_pool_summary?: string | null
           created_at?: string
           description?: string | null
@@ -336,6 +282,7 @@ export type Database = {
           judging_criteria?: Json | null
           judging_deadline?: string | null
           leaderboard_enabled?: boolean | null
+          logo_url?: string | null
           name?: string
           organizer_notes?: string | null
           problem_statements?: string[] | null
@@ -344,7 +291,6 @@ export type Database = {
           start_date?: string | null
           status?: Database["public"]["Enums"]["hackathon_status"]
           submission_deadline?: string | null
-          technical_docs?: string | null
           technical_resources?: Json | null
           theme?: string | null
           updated_at?: string
@@ -472,54 +418,6 @@ export type Database = {
           },
           {
             foreignKeyName: "invitations_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "loops_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      knowledge_base_chunks: {
-        Row: {
-          chunk_index: number
-          content: string
-          created_at: string
-          embedding: string
-          id: string
-          kb_id: string
-          metadata: Json | null
-          project_id: string
-        }
-        Insert: {
-          chunk_index: number
-          content: string
-          created_at?: string
-          embedding: string
-          id?: string
-          kb_id: string
-          metadata?: Json | null
-          project_id: string
-        }
-        Update: {
-          chunk_index?: number
-          content?: string
-          created_at?: string
-          embedding?: string
-          id?: string
-          kb_id?: string
-          metadata?: Json | null
-          project_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "knowledge_base_chunks_kb_id_fkey"
-            columns: ["kb_id"]
-            isOneToOne: false
-            referencedRelation: "knowledge_bases"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "knowledge_base_chunks_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "loops_profiles"

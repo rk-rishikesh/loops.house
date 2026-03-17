@@ -1,10 +1,12 @@
 import type { NextRequest } from "next/server";
+import { getHackathonResources } from "@/lib/db/hackathon-resources";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { streamContent } from "../../lib/gemini-client";
 
 interface IdeatorInput {
   message: string;
   conversation_history: { role: "user" | "assistant"; content: string }[];
+  hackathon_id?: string;
   hackathon_context?: {
     problem_statements: string[];
     sponsor_tracks?: { sponsor: string; track_description: string }[];
@@ -62,6 +64,16 @@ export async function POST(request: NextRequest) {
         headers: { "Content-Type": "application/json" },
       });
     }
+    // Fetch AI-generated resources for this hackathon if available
+    let resourceBlock = "";
+    if (input.hackathon_id) {
+      const resources = await getHackathonResources(input.hackathon_id);
+      if (resources?.content) {
+        const content = resources.content as Record<string, unknown>;
+        resourceBlock = `\n\nTECHNICAL RESOURCES (AI-compiled for this hackathon):\n${JSON.stringify(content, null, 2)}`;
+      }
+    }
+
     const contextBlock = [
       `HACKATHON CONTEXT:`,
       ctx.theme ? `Theme: ${ctx.theme}` : "",
@@ -69,6 +81,7 @@ export async function POST(request: NextRequest) {
       ctx.sponsor_tracks?.length
         ? `Sponsor Tracks:\n${ctx.sponsor_tracks.map((t) => `- ${t.sponsor}: ${t.track_description}`).join("\n")}`
         : "",
+      resourceBlock,
       input.project_snapshot
         ? `BUILDER'S CURRENT IDEA:\nName: ${input.project_snapshot.name || "TBD"}\nDescription: ${input.project_snapshot.description || "TBD"}\nTech: ${input.project_snapshot.tech_stack?.join(", ") || "TBD"}`
         : "",

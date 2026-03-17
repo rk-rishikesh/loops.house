@@ -6,6 +6,7 @@
  */
 
 import type { Database, Json } from "@/lib/supabase/types";
+import { computePhase, type HackathonPhase } from "@/lib/hackathon-phase";
 import type {
   ColorsJson,
   EvaluationScore,
@@ -19,6 +20,7 @@ export type { Database };
 
 // Re-export JSON schema types for convenience
 export type { ColorsJson, LinkItem, TechnicalResourceItem, JudgingCriterionItem, EvaluationScore };
+export type { HackathonPhase };
 
 // Re-export enum types from the DB types
 export type HackathonStatus = Database["public"]["Enums"]["hackathon_status"];
@@ -85,13 +87,16 @@ export interface StoredHackathon {
   name: string;
   host_id?: string;
   status?: HackathonStatus;
+  phase: HackathonPhase;
   problem_statements: string[];
   theme?: string;
   description?: string;
   is_exclusive?: boolean;
+  logo_url?: string;
+  banner_url?: string;
   website_url?: string;
   technical_resources?: TechnicalResourceItem[];
-  technical_docs?: string;
+
   bounty_pool_summary?: string;
   program_goal?: string;
   start_date?: string;
@@ -103,6 +108,7 @@ export interface StoredHackathon {
   judging_criteria?: JudgingCriterionItem[];
   finalized_at?: string | null;
   ai_weight?: number;
+  leaderboard_enabled?: boolean;
   created_at: string;
 }
 
@@ -196,13 +202,16 @@ export function hackathonToStored(b: HackathonRow): StoredHackathon {
     name: b.name,
     host_id: b.host_id,
     status: b.status,
+    phase: computePhase(b),
     problem_statements: b.problem_statements ?? [],
     theme: b.theme ?? undefined,
     description: b.description ?? undefined,
     is_exclusive: b.is_exclusive ?? undefined,
+    logo_url: b.logo_url ?? undefined,
+    banner_url: b.banner_url ?? undefined,
     website_url: b.website_url ?? undefined,
     technical_resources: asJsonArray<TechnicalResourceItem>(b.technical_resources) || undefined,
-    technical_docs: b.technical_docs ?? undefined,
+
     bounty_pool_summary: b.bounty_pool_summary ?? undefined,
     program_goal: b.program_goal ?? undefined,
     start_date: b.start_date ?? undefined,
@@ -213,6 +222,7 @@ export function hackathonToStored(b: HackathonRow): StoredHackathon {
     judging_criteria: asJsonArray<JudgingCriterionItem>(b.judging_criteria) || undefined,
     finalized_at: b.finalized_at ?? null,
     ai_weight: typeof b.ai_weight === "number" ? b.ai_weight : 0.5,
+    leaderboard_enabled: b.leaderboard_enabled ?? undefined,
     created_at: b.created_at,
   };
 }

@@ -12,7 +12,7 @@ import { cookies } from "next/headers";
 import type { z } from "zod";
 import { canManageHackathon, getFullCapabilities } from "@/lib/capabilities";
 import type { StoredProject } from "@/lib/data-mappers";
-import { storedToProfileInsert } from "@/lib/data-mappers";
+import { hackathonToStored, storedToProfileInsert } from "@/lib/data-mappers";
 import { saveResults } from "@/lib/db/hackathon-results";
 import { addSpeaker, removeSpeaker, updateSpeaker } from "@/lib/db/hackathon-speakers";
 import { computePhase } from "@/lib/hackathon-phase";
@@ -101,12 +101,12 @@ export async function removeProjectAction(projectId: string): Promise<ActionResu
 export async function saveHackathonAction(hackathon: {
   id: string;
   name: string;
+  description?: string;
   problem_statements: string[];
   theme?: string;
   is_exclusive?: boolean;
   website_url?: string;
   technical_resources?: { url: string; description: string }[];
-  technical_docs?: string;
   bounty_pool_summary?: string;
   program_goal?: string;
   start_date?: string;
@@ -114,6 +114,7 @@ export async function saveHackathonAction(hackathon: {
   judging_deadline?: string;
   results_date?: string;
   organizer_notes?: string;
+  judging_criteria?: { name: string; description: string }[];
 }): Promise<ActionResult> {
   const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized" };
@@ -149,12 +150,13 @@ export async function saveHackathonAction(hackathon: {
       id: hackathon.id,
       host_id: existing?.host_id ?? user.id,
       name: hackathon.name,
+      description: hackathon.description ?? null,
       problem_statements: hackathon.problem_statements,
       theme: hackathon.theme ?? null,
       is_exclusive: hackathon.is_exclusive ?? false,
       website_url: hackathon.website_url ?? null,
       technical_resources: hackathon.technical_resources ?? [],
-      technical_docs: hackathon.technical_docs ?? null,
+
       bounty_pool_summary: hackathon.bounty_pool_summary ?? null,
       program_goal: hackathon.program_goal ?? null,
       start_date: hackathon.start_date ?? null,
@@ -162,6 +164,7 @@ export async function saveHackathonAction(hackathon: {
       judging_deadline: hackathon.judging_deadline ?? null,
       results_date: hackathon.results_date ?? null,
       organizer_notes: hackathon.organizer_notes ?? null,
+      judging_criteria: hackathon.judging_criteria ?? [],
     })
     .select();
   if (error) return { success: false, error: error.message };
@@ -311,7 +314,7 @@ export async function submitProjectAction(
   // Phase-gate: submissions only allowed during building phase
   const { data: hackathon } = await supabaseAdmin
     .from("hackathons")
-    .select("start_date, submission_deadline, results_date, finalized_at")
+    .select("status, start_date, submission_deadline, results_date, finalized_at")
     .eq("id", hackathonId)
     .single();
   if (!hackathon) return { success: false, error: "Hackathon not found" };
@@ -845,6 +848,53 @@ export async function editHackathonAction(
 
   revalidatePath(`/host/${id}`);
   revalidatePath(`/hackathons/${id}`);
+  return { success: true, data: undefined };
+}
+
+// --- Publish hackathon (draft → active) ---
+
+export async function publishHackathonAction(
+  hackathonId: string,
+): Promise<ActionResult> {
+  if (!hackathonId) return { success: false, error: "Missing hackathon ID" };
+
+  const auth = await getAuthUser();
+  if (!auth) return { success: false, error: "Not authenticated" };
+
+  const hackathon = await getHackathon(hackathonId);
+  if (!hackathon) return { success: false, error: "Hackathon not found" };
+
+  const caps = await getFullCapabilities(supabaseAdmin, auth.id);
+  if (!caps || !canManageHackathon(caps, hackathon.host_id, auth.id, hackathon.id)) {
+    return { success: false, error: "Not authorized" };
+  }
+
+  if (hackathon.status !== "draft") {
+    return { success: false, error: "Hackathon is already published" };
+  }
+
+  if (!hackathon.name || !hackathon.start_date) {
+    return { success: false, error: "Name and start date are required to publish" };
+  }
+
+  if (!hackathon.logo_url) {
+    return { success: false, error: "A logo is required to publish. Upload one in the edit page." };
+  }
+
+  const { error } = await supabaseAdmin
+    .from("hackathons")
+    .update({ status: "active" })
+    .eq("id", hackathonId);
+  if (error) return { success: false, error: error.message };
+
+  // Fire-and-forget: generate hackathon resources in background
+  const stored = hackathonToStored(hackathon);
+  import("@/lib/agents/resource-provisioner")
+    .then(({ generateAndPersistResources }) => generateAndPersistResources(stored))
+    .catch((err) => console.error("[publishHackathon] Resource generation failed:", err));
+
+  revalidatePath(`/host/${hackathonId}`);
+  revalidatePath(`/hackathons`);
   return { success: true, data: undefined };
 }
 
