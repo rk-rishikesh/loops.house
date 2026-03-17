@@ -2,7 +2,6 @@
 
 import { useMutation } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   ArrowUpRight,
   BarChart3,
   Clock,
@@ -14,11 +13,10 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 import type { HackathonStats } from "@/app/host/[hackathon_id]/analytics/page";
 import type { StoredHackathon } from "@/lib/data-mappers";
-import { PHASE_COLORS, PHASE_LABELS, type HackathonPhase } from "@/lib/hackathon-phase";
+// import { PHASE_COLORS, PHASE_LABELS, type HackathonPhase } from "@/lib/hackathon-phase";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -122,24 +120,24 @@ function BarRow({ label, count, max }: { label: string; count: number; max: numb
 }
 
 /* ─── Phase Badge ────────────────────────────────────────────────── */
-function PhaseBadge({ phase }: { phase: string }) {
-  const c = PHASE_COLORS[phase as HackathonPhase] ?? PHASE_COLORS.draft;
-  const label = PHASE_LABELS[phase as HackathonPhase] ?? phase;
-  return (
-    <span
-      className="inline-flex items-center rounded-full px-3 py-1 text-[10px] tracking-[0.12em] uppercase font-bold"
-      style={{ fontFamily: PX, backgroundColor: c.bg, color: c.text }}
-    >
-      {label}
-    </span>
-  );
-}
+// function PhaseBadge({ phase }: { phase: string }) {
+//   const c = PHASE_COLORS[phase as HackathonPhase] ?? PHASE_COLORS.draft;
+//   const label = PHASE_LABELS[phase as HackathonPhase] ?? phase;
+//   return (
+//     <span
+//       className="inline-flex items-center rounded-full px-3 py-1 text-[10px] tracking-[0.12em] uppercase font-bold"
+//       style={{ fontFamily: PX, backgroundColor: c.bg, color: c.text }}
+//     >
+//       {label}
+//     </span>
+//   );
+// }
 
 /* ─── Main Component ─────────────────────────────────────────────── */
 export function HackathonAnalytics({
   hackathon,
   stats,
-  backHref,
+  // backHref,
 }: {
   hackathon: StoredHackathon;
   stats: HackathonStats;

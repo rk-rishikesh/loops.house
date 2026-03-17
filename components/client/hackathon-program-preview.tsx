@@ -1,6 +1,6 @@
 "use client";
 
-import { Cpu, Gavel, Info, Sparkles, Trophy, Users, Zap } from "lucide-react";
+import { Cpu, Gavel, Info, Trophy, Users, Zap } from "lucide-react";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";

@@ -5,11 +5,11 @@ import Link from "next/link";
 import { funnelSans, pixelifySans } from "@/app/fonts";
 import { motion } from "framer-motion";
 
-const terminalLines = [
-  "IRL co-building environment.",
-  "Direct access to Loops AI signals.",
-  "Demo day + ecosystem exposure.",
-];
+// const terminalLines = [
+//   "IRL co-building environment.",
+//   "Direct access to Loops AI signals.",
+//   "Demo day + ecosystem exposure.",
+// ];
 
 export function ResidencySection() {
   return (
