@@ -10,7 +10,7 @@ export function HeroSection() {
     >
       <div className="flex w-full max-w-7xl flex-col px-4 md:px-8">
         {/* Navbar */}
-        <header className="flex mt-8 mb-8 h-[80px] w-full items-center justify-between">
+        <header className="flex mt-4 mb-8 h-[80px] w-full items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image
               src="/logo.svg"
