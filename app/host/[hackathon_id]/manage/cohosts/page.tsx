@@ -10,7 +10,7 @@ import {
 } from "@/lib/server-data";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-const PX = "var(--font-pixelify-sans), sans-serif";
+const FN = "var(--font-funnel-sans), sans-serif";
 
 export default async function ManageCohostsPage({
   params,
@@ -25,7 +25,15 @@ export default async function ManageCohostsPage({
   if (!hackathon) redirect("/host");
 
   const caps = await getFullCapabilities(supabaseAdmin, auth.userId);
-  if (!caps || !canManageHackathon(caps, hackathon.host_id ?? "", auth.userId, hackathon.id)) {
+  if (
+    !caps ||
+    !canManageHackathon(
+      caps,
+      hackathon.host_id ?? "",
+      auth.userId,
+      hackathon.id,
+    )
+  ) {
     redirect("/host");
   }
 
@@ -41,17 +49,16 @@ export default async function ManageCohostsPage({
           <a
             href={`/host/${hackathon_id}/manage`}
             className="text-[11px] tracking-[0.16em] uppercase font-bold no-underline"
-            style={{ color: "rgba(15,44,35,0.55)", fontFamily: PX }}
+            style={{ color: "rgba(15,44,35,0.55)", fontFamily: FN }}
           >
             Manage
           </a>
           <span style={{ color: "rgba(15,44,35,0.35)" }}>/</span>
           <h1
-            className="font-black uppercase leading-tight"
+            className="font-bold uppercase leading-tight"
             style={{
               color: "#0F2C23",
-              fontFamily: PX,
-              fontSize: "clamp(18px, 2.4vw, 26px)",
+              fontFamily: FN,
               letterSpacing: "-0.02em",
             }}
           >

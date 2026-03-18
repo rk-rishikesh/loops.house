@@ -72,31 +72,8 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
   };
 
   return (
+    
     <div className="px-10 pt-10 pb-24">
-      {/* ── Hero heading ─────────────────────────────────────────────── */}
-      <div className="mb-14">
-        <h1
-          className="font-black text-[#0F2C23] leading-[0.88] uppercase"
-          style={{
-            fontFamily: PX,
-            fontSize: "clamp(52px, 9vw, 138px)",
-            letterSpacing: "-0.025em",
-          }}
-        >
-          SPEAKER
-          <br />
-          MANAGEMENT.
-        </h1>
-        <div className="flex justify-end mt-8">
-          <p
-            className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
-            style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
-          >
-            Add and manage speakers for this program. They&apos;ll appear on the public hackathon
-            page.
-          </p>
-        </div>
-      </div>
 
       {/* ── Two-column body ───────────────────────────────────────────── */}
       <div className="grid gap-8 items-start" style={{ gridTemplateColumns: "1fr 320px" }}>
@@ -107,13 +84,13 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
             <div className="flex items-baseline gap-3 mb-5">
               <span
                 className="font-black text-[#0F2C23]/18"
-                style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
+                style={{ fontFamily: FN, fontSize: 32, letterSpacing: "-0.025em" }}
               >
                 01
               </span>
               <p
-                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
-                style={{ fontFamily: PX }}
+                className="text-[15px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+                style={{ fontFamily: FN }}
               >
                 Add Speaker
               </p>
@@ -125,7 +102,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                   <div className="flex-1">
                     <p
                       className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/40 mb-2"
-                      style={{ fontFamily: PX }}
+                      style={{ fontFamily: FN }}
                     >
                       Speaker Name
                     </p>
@@ -147,7 +124,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                   <div className="flex-1">
                     <p
                       className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/40 mb-2"
-                      style={{ fontFamily: PX }}
+                      style={{ fontFamily: FN }}
                     >
                       Image URL (optional)
                     </p>
@@ -171,7 +148,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                       onClick={handleAdd}
                       disabled={isPending || !name.trim()}
                       className="inline-flex items-center gap-2 rounded-full overflow-hidden border-none cursor-pointer transition-all duration-200 hover:shadow-md disabled:opacity-40 pl-5 pr-4 py-3.5 text-[9px] tracking-[0.15em] uppercase font-bold text-[#F8FFE8]"
-                      style={{ backgroundColor: "#0F2C23", fontFamily: PX }}
+                      style={{ backgroundColor: "#0F2C23", fontFamily: FN }}
                     >
                       <Plus size={12} />
                       {isPending ? "Adding..." : "Add Speaker"}
@@ -205,13 +182,13 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
               <div className="flex items-baseline gap-3">
                 <span
                   className="font-black text-[#0F2C23]/18"
-                  style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
+                  style={{ fontFamily: FN, fontSize: 32, letterSpacing: "-0.025em" }}
                 >
                   02
                 </span>
                 <p
-                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
-                  style={{ fontFamily: PX }}
+                  className="text-[15px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+                  style={{ fontFamily: FN }}
                 >
                   Current Speakers
                 </p>
@@ -219,7 +196,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
               {speakers.length > 0 && (
                 <span
                   className="text-[10px] tracking-widest uppercase font-bold text-[#0F2C23]/30"
-                  style={{ fontFamily: PX }}
+                  style={{ fontFamily: FN }}
                 >
                   {speakers.length} speaker{speakers.length !== 1 ? "s" : ""}
                 </span>
@@ -235,7 +212,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                 <p
                   key={col}
                   className="text-[11px] tracking-[0.12em] uppercase font-semibold text-[#0F2C23]/40"
-                  style={{ fontFamily: PX }}
+                  style={{ fontFamily: FN }}
                 >
                   {col}
                 </p>
@@ -268,7 +245,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                   className="grid items-center py-6 border-b border-[#0F2C23]/10 transition-all duration-150 hover:bg-[#0F2C23]/[0.02] rounded-sm"
                   style={{ gridTemplateColumns: "64px 1fr 100px", gap: "0 20px" }}
                 >
-                  <p className="font-bold text-[#0F2C23]" style={{ fontFamily: PX, fontSize: 14 }}>
+                  <p className="font-bold text-[#0F2C23]" style={{ fontFamily: FN, fontSize: 14 }}>
                     {String(idx + 1).padStart(2, "0")}.
                   </p>
 
@@ -382,8 +359,8 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
           {/* Status card */}
           <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
             <p
-              className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5"
-              style={{ fontFamily: PX }}
+              className="text-[15px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5"
+              style={{ fontFamily: FN }}
             >
               Status
             </p>
@@ -422,7 +399,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                   <div className="flex-1 min-w-0">
                     <p
                       className="text-[9px] tracking-[0.14em] uppercase font-bold text-[#0F2C23]/38"
-                      style={{ fontFamily: PX }}
+                      style={{ fontFamily: FN }}
                     >
                       {label}
                     </p>
@@ -438,8 +415,8 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
           {/* How it works */}
           <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#E2FEA5" }}>
             <p
-              className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-4"
-              style={{ fontFamily: PX }}
+              className="text-[15px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-4"
+              style={{ fontFamily: FN }}
             >
               How it works
             </p>
@@ -461,7 +438,7 @@ export function SpeakersManager({ hackathonId, speakers, canEdit }: Props) {
                 <div key={n} className="flex items-start gap-3">
                   <span
                     className="font-black text-[#0F2C23]/20 leading-none shrink-0 mt-0.5"
-                    style={{ fontFamily: PX, fontSize: 11, width: 20 }}
+                    style={{ fontFamily: FN, fontSize: 11, width: 20 }}
                   >
                     {n}
                   </span>

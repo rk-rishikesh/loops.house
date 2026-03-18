@@ -71,34 +71,33 @@ export default async function HostBoosterPage({
       <div className="px-10 pt-10 pb-24">
         {/* ── Hero heading ────────────────────────────────────────── */}
         <div className="mb-16">
-          <div className="flex items-start justify-between gap-6 flex-wrap">
-            <div className="flex items-start gap-4">
-              <h1
-                className="font-black text-[#0F2C23] leading-[0.88] uppercase"
-                style={{
-                  fontFamily: PX,
-                  fontSize: "clamp(40px, 7vw, 96px)",
-                  letterSpacing: "-0.025em",
-                }}
-              >
-                {hackathon.name}
-              </h1>
-            </div>
-            <div className="flex items-center gap-3 mt-4">
-              <HackathonPhaseBadge phase={hackathon.phase} size="md" />
-            </div>
-          </div>
-          <div className="flex justify-end mt-6">
-            <p
-              className="max-w-[420px] text-right leading-relaxed"
+          <div className="flex items-start justify-between gap-10">
+            <h1
+              className="font-black text-[#0F2C23] leading-[0.88] uppercase min-w-0"
               style={{
-                fontFamily: FN,
-                fontSize: "clamp(14px, 1.5vw, 18px)",
-                color: "rgba(15,44,35,0.6)",
+                fontFamily: PX,
+                fontSize: "clamp(40px, 7vw, 96px)",
+                letterSpacing: "-0.025em",
               }}
             >
-              Hackathon-level view. See analytics and submissions for this specific program.
-            </p>
+              {hackathon.name}
+            </h1>
+
+            <div className="shrink-0 flex flex-col items-end pt-2">
+              <p
+                className="max-w-[420px] text-right leading-relaxed"
+                style={{
+                  fontFamily: FN,
+                  fontSize: "clamp(14px, 1.5vw, 18px)",
+                  color: "rgba(15,44,35,0.6)",
+                }}
+              >
+                Hackathon-level view. See analytics and submissions for this specific program.
+              </p>
+              <div className="mt-4">
+                <HackathonPhaseBadge phase={hackathon.phase} size="md" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -129,7 +128,7 @@ export default async function HostBoosterPage({
               <div>
                 <p
                   className="font-black text-[#0F2C23] leading-none"
-                  style={{ fontFamily: PX, fontSize: "clamp(28px, 3vw, 40px)" }}
+                  style={{ fontFamily: FN, fontSize: "clamp(28px, 3vw, 40px)" }}
                 >
                   {value}
                 </p>
@@ -162,7 +161,7 @@ export default async function HostBoosterPage({
               <h3
                 className="font-black uppercase leading-tight mb-1"
                 style={{
-                  fontFamily: PX,
+                  fontFamily: FN,
                   fontSize: "clamp(14px, 1.5vw, 18px)",
                   letterSpacing: "-0.02em",
                   color: "#F8FFE8",

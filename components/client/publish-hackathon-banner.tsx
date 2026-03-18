@@ -31,7 +31,6 @@ export function PublishHackathonBanner({ hackathonId }: { hackathonId: string })
         className="rounded-3xl p-7 flex items-center justify-between gap-6"
         style={{
           backgroundColor: "#0F2C23",
-          border: "2px dashed rgba(226,254,165,0.3)",
         }}
       >
         <div className="flex items-center gap-4">

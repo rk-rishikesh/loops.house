@@ -12,7 +12,11 @@ const FN = "var(--font-funnel-sans), sans-serif";
 
 interface CohostRow {
   user_id: string;
-  users: { email: string; display_name: string | null; avatar_url: string | null } | null;
+  users: {
+    email: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
 }
 
 export function CohostInviteForm({
@@ -54,13 +58,17 @@ export function CohostInviteForm({
     }
   }
 
-  const acceptedCount = initialInvites.filter((i) => i.status === "accepted").length;
-  const pendingCount = initialInvites.filter((i) => i.status === "pending").length;
+  const acceptedCount = initialInvites.filter(
+    (i) => i.status === "accepted",
+  ).length;
+  const pendingCount = initialInvites.filter(
+    (i) => i.status === "pending",
+  ).length;
 
   return (
     <div className="pt-6 pb-24">
       {/* Hero */}
-      <div className="mb-14">
+      <div className="flex items-start justify-between gap-10">
         <h1
           className="font-black text-[#0F2C23] leading-[0.88] uppercase"
           style={{
@@ -71,20 +79,23 @@ export function CohostInviteForm({
         >
           COHOST
           <br />
-          MANAGEMENT.
+          MANAGEMENT
         </h1>
-        <div className="flex justify-end mt-8">
+        <div className="flex flex-col items-end justify-end mt-8">
           <p
             className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
             style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
           >
-            Invite co-hosts to help you manage this hackathon. Cohosts can edit details, manage
-            speakers, and invite judges.
+            Invite co-hosts to help you manage this hackathon. Cohosts can edit
+            details, manage speakers, and invite judges.
           </p>
         </div>
       </div>
 
-      <div className="grid gap-8 items-start" style={{ gridTemplateColumns: "1fr 320px" }}>
+      <div
+        className=" px-10 grid gap-8 items-start mt-14"
+        style={{ gridTemplateColumns: "1fr 320px" }}
+      >
         {/* Left Column */}
         <div className="flex flex-col gap-12">
           {/* Invite form */}
@@ -92,13 +103,17 @@ export function CohostInviteForm({
             <div className="flex items-baseline gap-3 mb-6">
               <span
                 className="font-black text-[#0F2C23]/18"
-                style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
+                style={{
+                  fontFamily: FN,
+                  fontSize: 32,
+                  letterSpacing: "-0.025em",
+                }}
               >
                 01
               </span>
               <p
-                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
-                style={{ fontFamily: PX }}
+                className="text-[15px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+                style={{ fontFamily: FN }}
               >
                 Send Invite
               </p>
@@ -118,8 +133,12 @@ export function CohostInviteForm({
                   color: "#0F2C23",
                   fontFamily: FN,
                 }}
-                onFocus={(e) => (e.currentTarget.style.backgroundColor = "#CBE595")}
-                onBlur={(e) => (e.currentTarget.style.backgroundColor = "#E2FEA5")}
+                onFocus={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#CBE595")
+                }
+                onBlur={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#E2FEA5")
+                }
               />
               <button
                 type="submit"
@@ -129,9 +148,13 @@ export function CohostInviteForm({
               >
                 <span
                   className="pl-5 pr-3 py-3.5 text-[9px] tracking-[0.15em] uppercase font-bold text-[#F8FFE8] flex items-center gap-2"
-                  style={{ fontFamily: PX }}
+                  style={{ fontFamily: FN }}
                 >
-                  {inviting ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                  {inviting ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    <Send size={11} />
+                  )}
                   {inviting ? "Sending..." : "Invite"}
                 </span>
                 <span
@@ -178,20 +201,27 @@ export function CohostInviteForm({
             <div className="flex items-baseline gap-3 mb-6">
               <span
                 className="font-black text-[#0F2C23]/18"
-                style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
+                style={{
+                  fontFamily: FN,
+                  fontSize: 32,
+                  letterSpacing: "-0.025em",
+                }}
               >
                 02
               </span>
               <p
-                className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
-                style={{ fontFamily: PX }}
+                className="text-[15px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40"
+                style={{ fontFamily: FN }}
               >
                 Active Cohosts
               </p>
             </div>
 
             {existingCohosts.length === 0 ? (
-              <div className="py-16 text-center rounded-3xl" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+              <div
+                className="py-16 text-center rounded-3xl"
+                style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+              >
                 <Users size={24} className="mx-auto mb-4 text-[#0F2C23]/30" />
                 <p
                   className="text-sm text-[#0F2C23]/50"
@@ -229,7 +259,9 @@ export function CohostInviteForm({
                         className="text-sm font-semibold text-[#0F2C23] truncate"
                         style={{ fontFamily: FN }}
                       >
-                        {cohost.users?.display_name || cohost.users?.email || "Unknown"}
+                        {cohost.users?.display_name ||
+                          cohost.users?.email ||
+                          "Unknown"}
                       </p>
                       {cohost.users?.display_name && cohost.users?.email && (
                         <p
@@ -245,7 +277,7 @@ export function CohostInviteForm({
                       style={{
                         backgroundColor: "rgba(34,197,94,0.1)",
                         color: "#166534",
-                        fontFamily: PX,
+                        fontFamily: FN,
                       }}
                     >
                       Active
@@ -262,7 +294,11 @@ export function CohostInviteForm({
               <div className="flex items-baseline gap-3 mb-6">
                 <span
                   className="font-black text-[#0F2C23]/18"
-                  style={{ fontFamily: PX, fontSize: 32, letterSpacing: "-0.025em" }}
+                  style={{
+                    fontFamily: PX,
+                    fontSize: 32,
+                    letterSpacing: "-0.025em",
+                  }}
                 >
                   03
                 </span>
@@ -294,7 +330,8 @@ export function CohostInviteForm({
                           invite.status === "accepted"
                             ? "rgba(34,197,94,0.1)"
                             : "rgba(234,179,8,0.1)",
-                        color: invite.status === "accepted" ? "#166534" : "#92400E",
+                        color:
+                          invite.status === "accepted" ? "#166534" : "#92400E",
                         fontFamily: PX,
                       }}
                     >
@@ -309,10 +346,13 @@ export function CohostInviteForm({
 
         {/* Right Sidebar */}
         <aside className="sticky top-[81px] flex flex-col gap-4">
-          <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+          <div
+            className="rounded-3xl p-7"
+            style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+          >
             <p
-              className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5"
-              style={{ fontFamily: PX }}
+              className="text-[15px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5"
+              style={{ fontFamily: FN }}
             >
               Cohost Status
             </p>
@@ -328,13 +368,13 @@ export function CohostInviteForm({
                 >
                   <p
                     className="text-[9px] tracking-[0.14em] uppercase font-bold text-[#0F2C23]/38"
-                    style={{ fontFamily: PX }}
+                    style={{ fontFamily: FN }}
                   >
                     {label}
                   </p>
                   <p
                     className="text-sm font-black text-[#0F2C23]"
-                    style={{ fontFamily: PX }}
+                    style={{ fontFamily: FN }}
                   >
                     {value}
                   </p>
@@ -343,23 +383,35 @@ export function CohostInviteForm({
             </div>
           </div>
 
-          <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#E2FEA5" }}>
+          <div
+            className="rounded-2xl px-6 py-5"
+            style={{ backgroundColor: "#E2FEA5" }}
+          >
             <p
-              className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-4"
-              style={{ fontFamily: PX }}
+              className="text-[15px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-4"
+              style={{ fontFamily: FN }}
             >
               About Cohosts
             </p>
             <div className="flex flex-col gap-3">
               {[
-                { n: "01", t: "Cohosts can edit hackathon details, manage speakers, and invite judges." },
-                { n: "02", t: "Only the original host or admins can add cohosts." },
-                { n: "03", t: "Invitees receive a notification to accept the cohost role." },
+                {
+                  n: "01",
+                  t: "Cohosts can edit hackathon details, manage speakers, and invite judges.",
+                },
+                {
+                  n: "02",
+                  t: "Only the original host or admins can add cohosts.",
+                },
+                {
+                  n: "03",
+                  t: "Invitees receive a notification to accept the cohost role.",
+                },
               ].map(({ n, t }) => (
                 <div key={n} className="flex items-start gap-3">
                   <span
                     className="font-black text-[#0F2C23]/20 leading-none shrink-0 mt-0.5"
-                    style={{ fontFamily: PX, fontSize: 11, width: 20 }}
+                    style={{ fontFamily: FN, fontSize: 11, width: 20 }}
                   >
                     {n}
                   </span>

@@ -33,17 +33,16 @@ export default async function EditPage({ params }: { params: Promise<{ hackathon
           <a
             href={`/host/${hackathon_id}/manage`}
             className="text-[11px] tracking-[0.16em] uppercase font-bold no-underline"
-            style={{ color: "rgba(15,44,35,0.55)", fontFamily: PX }}
+            style={{ color: "rgba(15,44,35,0.55)", fontFamily: FN }}
           >
             Manage
           </a>
           <span style={{ color: "rgba(15,44,35,0.35)" }}>/</span>
           <h1
-            className="font-black uppercase leading-tight"
+            className="font-bold uppercase leading-tight"
             style={{
               color: "#0F2C23",
-              fontFamily: PX,
-              fontSize: "clamp(18px, 2.4vw, 26px)",
+              fontFamily: FN,
               letterSpacing: "-0.02em",
             }}
           >
