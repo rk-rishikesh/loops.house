@@ -54,7 +54,7 @@ export const HACKATHON_TABS: TabItem[] = [
   { key: "info", icon: Info, label: "About" },
   { key: "speakers", icon: Mic2, label: "Speakers" },
   { key: "schedule", icon: CalendarDays, label: "Schedule" },
-  { key: "prizes", icon: Trophy, label: "Tracks" },
+  { key: "prizes", icon: Trophy, label: "Tracks & Prizes" },
   { key: "techbuddy", icon: Sparkles, label: "Tech Buddy" },
   { key: "submit", icon: Send, label: "Submit Project" },
 ];
