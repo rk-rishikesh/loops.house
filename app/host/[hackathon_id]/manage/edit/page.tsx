@@ -8,10 +8,13 @@ import { getServerAuth } from "@/lib/server-auth";
 import { getHackathonServer } from "@/lib/server-data";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
-export default async function EditPage({ params }: { params: Promise<{ hackathon_id: string }> }) {
+export default async function EditPage({
+  params,
+}: {
+  params: Promise<{ hackathon_id: string }>;
+}) {
   const { hackathon_id } = await params;
   const auth = await getServerAuth();
   if (!auth) redirect("/login?redirect=/host");
@@ -20,7 +23,15 @@ export default async function EditPage({ params }: { params: Promise<{ hackathon
   if (!hackathon) redirect("/host");
 
   const caps = await getFullCapabilities(supabaseAdmin, auth.userId);
-  if (!caps || !canManageHackathon(caps, hackathon.host_id ?? "", auth.userId, hackathon.id)) {
+  if (
+    !caps ||
+    !canManageHackathon(
+      caps,
+      hackathon.host_id ?? "",
+      auth.userId,
+      hackathon.id,
+    )
+  ) {
     redirect("/host");
   }
 
