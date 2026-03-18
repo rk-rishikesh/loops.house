@@ -21,7 +21,13 @@ function ArrowCircle({ size = 44 }: { size?: number }) {
 }
 
 // ─── Table row ────────────────────────────────────────────────────────────────
-function ProjectRow({ project: p, index }: { project: StoredProject; index: number }) {
+function ProjectRow({
+  project: p,
+  index,
+}: {
+  project: StoredProject;
+  index: number;
+}) {
   return (
     <Link href={`/projects/${p.project_id}`} className="no-underline group">
       <div
@@ -36,7 +42,7 @@ function ProjectRow({ project: p, index }: { project: StoredProject; index: numb
         <p
           className="font-bold text-[#0F2C23] pt-0.5"
           style={{
-            fontFamily: PX,
+            fontFamily: FN,
             fontSize: "clamp(13px, 1.4vw, 15px)",
           }}
         >
@@ -48,7 +54,7 @@ function ProjectRow({ project: p, index }: { project: StoredProject; index: numb
           <p
             className="font-semibold text-[#0F2C23] mb-1.5 leading-snug"
             style={{
-              fontFamily: PX,
+              fontFamily: FN,
               fontSize: "clamp(13px, 1.3vw, 15px)",
             }}
           >
@@ -63,7 +69,7 @@ function ProjectRow({ project: p, index }: { project: StoredProject; index: numb
                   style={{
                     backgroundColor: "rgba(15,44,35,0.1)",
                     color: "#0F2C23",
-                    fontFamily: PX,
+                    fontFamily: FN,
                   }}
                 >
                   {p.category}
@@ -106,7 +112,11 @@ function ProjectRow({ project: p, index }: { project: StoredProject; index: numb
 }
 
 // ─── Projects Listing ─────────────────────────────────────────────────────────
-export default function ProjectsListing({ projects }: { projects: StoredProject[] }) {
+export default function ProjectsListing({
+  projects,
+}: {
+  projects: StoredProject[];
+}) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
 
@@ -115,7 +125,9 @@ export default function ProjectsListing({ projects }: { projects: StoredProject[
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
-        (p) => p.name.toLowerCase().includes(q) || (p.tagline ?? "").toLowerCase().includes(q),
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          (p.tagline ?? "").toLowerCase().includes(q),
       );
     }
     if (categoryFilter) {
@@ -171,7 +183,7 @@ export default function ProjectsListing({ projects }: { projects: StoredProject[
                   placeholder="Search projects…"
                   className="w-full pl-9 pr-8 py-2.5 rounded-full text-[13px] outline-none transition-all border border-[rgba(15,44,35,0.25)] focus:border-[rgba(15,44,35,0.45)] text-[#0F2C23] placeholder:text-[rgba(15,44,35,0.4)]"
                   style={{
-                    fontFamily: PX,
+                    fontFamily: FN,
                     letterSpacing: "0.02em",
                     backgroundColor: "rgba(15,44,35,0.1)",
                   }}
@@ -224,7 +236,7 @@ export default function ProjectsListing({ projects }: { projects: StoredProject[
             <p
               key={col}
               className="text-[11px] tracking-[0.12em] uppercase font-semibold"
-              style={{ fontFamily: PX, color: "rgba(15,44,35,0.4)" }}
+              style={{ fontFamily: FN, color: "rgba(15,44,35,0.4)" }}
             >
               {col}
             </p>
@@ -239,11 +251,17 @@ export default function ProjectsListing({ projects }: { projects: StoredProject[
           >
             <div
               className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-5"
-              style={{ backgroundColor: "rgba(15,44,35,0.08)", color: "#0F2C23" }}
+              style={{
+                backgroundColor: "rgba(15,44,35,0.08)",
+                color: "#0F2C23",
+              }}
             >
               <Code2 size={20} />
             </div>
-            <p className="font-bold text-[#0F2C23] mb-2" style={{ fontFamily: PX, fontSize: 15 }}>
+            <p
+              className="font-bold text-[#0F2C23] mb-2"
+              style={{ fontFamily: PX, fontSize: 15 }}
+            >
               {hasFilters ? "No matches found." : "No projects yet."}
             </p>
             <p
@@ -269,7 +287,9 @@ export default function ProjectsListing({ projects }: { projects: StoredProject[
             )}
           </div>
         ) : (
-          filtered.map((p, idx) => <ProjectRow key={p.project_id} project={p} index={idx} />)
+          filtered.map((p, idx) => (
+            <ProjectRow key={p.project_id} project={p} index={idx} />
+          ))
         )}
       </div>
     </div>

@@ -20,7 +20,7 @@ export default function DashboardPage() {
           >
             Loops
             <br />
-            House.
+            House
           </h1>
 
           <p
@@ -31,7 +31,8 @@ export default function DashboardPage() {
               color: "rgba(15,44,35,0.7)",
             }}
           >
-            Spin up projects, refine ideas, and ship faster with agent-assisted boosters.
+            Spin up projects, refine ideas, and ship faster with agent-assisted
+            boosters.
           </p>
         </div>
 
@@ -61,7 +62,7 @@ export default function DashboardPage() {
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  View My Projects.
+                  View My Projects
                 </h2>
                 <p
                   className="text-[15px] leading-relaxed"
@@ -79,7 +80,6 @@ export default function DashboardPage() {
             className="no-underline rounded-[48px] relative overflow-hidden group transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_40px_80px_-20px_rgba(226,254,165,0.4)]"
             style={{ backgroundColor: "#E2FEA5" }}
           >
-
             <div className="p-10 h-full min-h-[320px] flex flex-col justify-between relative z-10">
               <div className="flex justify-between items-start">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-[#0F2C23] text-[#E2FEA5] shadow-[0_0_30px_rgba(15,44,35,0.1)]">
@@ -99,13 +99,14 @@ export default function DashboardPage() {
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  Explore Hackathons.
+                  Explore Hackathons
                 </h2>
                 <p
                   className="text-[15px] leading-relaxed"
                   style={{ fontFamily: FN, color: "rgba(15,44,35,0.7)" }}
                 >
-                  Browse open challenges, grants, and hackathons to find your next break.
+                  Browse open challenges, grants, and hackathons to find your
+                  next break.
                 </p>
               </div>
             </div>
@@ -117,7 +118,7 @@ export default function DashboardPage() {
             className="no-underline rounded-[48px] relative overflow-hidden group transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_40px_80px_-20px_rgba(15,44,35,0.08)] border border-[#0F2C23]/5"
             style={{ backgroundColor: "rgba(15, 44, 35, 0.04)" }}
           >
-             <div className="p-10 h-full min-h-[320px] flex flex-col justify-between relative z-10">
+            <div className="p-10 h-full min-h-[320px] flex flex-col justify-between relative z-10">
               <div className="flex justify-between items-start">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-[#0F2C23] text-[#E2FEA5] shadow-[0_0_30px_rgba(15,44,35,0.05)]">
                   <Trophy size={28} />
@@ -136,7 +137,7 @@ export default function DashboardPage() {
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  Host a Hackathon.
+                  Host a Hackathon
                 </h2>
                 <p
                   className="text-[15px] leading-relaxed"

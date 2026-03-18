@@ -93,7 +93,11 @@ function FeaturedHero({ b }: { b: Hackathon }) {
         <div className="flex items-center justify-between px-9 py-5">
           <span
             className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[9px] tracking-[0.16em] uppercase font-bold"
-            style={{ fontFamily: PX, backgroundColor: "#E2FEA5", color: "#0F2C23" }}
+            style={{
+              fontFamily: PX,
+              backgroundColor: "#E2FEA5",
+              color: "#0F2C23",
+            }}
           >
             View program <ArrowUpRight size={11} />
           </span>
@@ -183,13 +187,24 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
   const fg = isPast ? "rgba(15,44,35,0.35)" : "#F8FFE8";
   const fgSub = isPast ? "rgba(15,44,35,0.35)" : "rgba(248,255,232,0.55)";
   const statusLabel = isPast ? "Ended" : isUpcoming ? "Upcoming" : "Open Now";
-  const dotColor = isPast ? "rgba(15,44,35,0.2)" : isUpcoming ? "#f0c060" : "#4caf7d";
+  const dotColor = isPast
+    ? "rgba(15,44,35,0.2)"
+    : isUpcoming
+      ? "#f0c060"
+      : "#4caf7d";
 
   return (
-    <Link href={`/hackathons/${b.id}`} className="no-underline block h-full group">
+    <Link
+      href={`/hackathons/${b.id}`}
+      className="no-underline block h-full group"
+    >
       <div
         className={`h-full rounded-2xl p-6 flex flex-col transition-all duration-200 ${!isPast ? "group-hover:scale-[1.01]" : ""}`}
-        style={{ backgroundColor: bg, minHeight: 200, opacity: isPast ? 0.6 : 1 }}
+        style={{
+          backgroundColor: bg,
+          minHeight: 200,
+          opacity: isPast ? 0.6 : 1,
+        }}
       >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
@@ -206,9 +221,14 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
           </div>
           <span
             className="w-7 h-7 flex items-center justify-center rounded-full"
-            style={{ backgroundColor: isPast ? "rgba(15,44,35,0.06)" : "#0F2C23" }}
+            style={{
+              backgroundColor: isPast ? "rgba(15,44,35,0.06)" : "#0F2C23",
+            }}
           >
-            <ArrowUpRight size={12} style={{ color: isPast ? "rgba(15,44,35,0.25)" : "#E2FEA5" }} />
+            <ArrowUpRight
+              size={12}
+              style={{ color: isPast ? "rgba(15,44,35,0.25)" : "#E2FEA5" }}
+            />
           </span>
         </div>
 
@@ -225,7 +245,10 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
         </h3>
 
         {b.theme && (
-          <p className="text-sm leading-relaxed mb-5" style={{ fontFamily: FN, color: fgSub }}>
+          <p
+            className="text-sm leading-relaxed mb-5"
+            style={{ fontFamily: FN, color: fgSub }}
+          >
             {b.theme.length > 72 ? `${b.theme.slice(0, 72)}...` : b.theme}
           </p>
         )}
@@ -235,28 +258,44 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
             <div
               className="relative w-10 h-10 rounded-xl overflow-hidden"
               style={{
-                backgroundColor: isPast ? "rgba(15,44,35,0.06)" : "rgba(248,255,232,0.08)",
+                backgroundColor: isPast
+                  ? "rgba(15,44,35,0.06)"
+                  : "rgba(248,255,232,0.08)",
                 border: `1px solid ${isPast ? "rgba(15,44,35,0.10)" : "rgba(248,255,232,0.12)"}`,
               }}
             >
-              <Image src={b.logo_url} alt={b.name} fill className="object-cover" sizes="40px" />
+              <Image
+                src={b.logo_url}
+                alt={b.name}
+                fill
+                className="object-cover"
+                sizes="40px"
+              />
             </div>
           ) : (
             <div
               className="w-10 h-10 rounded-xl"
               style={{
-                backgroundColor: isPast ? "rgba(15,44,35,0.06)" : "rgba(248,255,232,0.08)",
+                backgroundColor: isPast
+                  ? "rgba(15,44,35,0.06)"
+                  : "rgba(248,255,232,0.08)",
                 border: `1px solid ${isPast ? "rgba(15,44,35,0.10)" : "rgba(248,255,232,0.12)"}`,
               }}
             />
           )}
 
           {b.submission_deadline ? (
-            <span className="text-[10px] truncate" style={{ fontFamily: FN, color: fgSub }}>
+            <span
+              className="text-[10px] truncate"
+              style={{ fontFamily: FN, color: fgSub }}
+            >
               Due {fmtDateTime(b.submission_deadline)}
             </span>
           ) : (
-            <span className="text-[10px]" style={{ fontFamily: FN, color: fgSub }}>
+            <span
+              className="text-[10px]"
+              style={{ fontFamily: FN, color: fgSub }}
+            >
               {statusLabel}
             </span>
           )}
@@ -268,10 +307,14 @@ function HackCard({ b, status }: { b: Hackathon; status: EventStatus }) {
 
 export function HackathonListPage({ list }: { list: Hackathon[] }) {
   const mounted = useIsMounted();
-  const withStatus = list.map((h, idx) => ({ ...h, _status: deriveStatus(h, idx) as EventStatus }));
+  const withStatus = list.map((h, idx) => ({
+    ...h,
+    _status: deriveStatus(h, idx) as EventStatus,
+  }));
 
   // Prefer featuring an "Open Now" hackathon so we don't surface "Upcoming" in that bucket.
-  const featured = withStatus.find((h) => h._status === "ongoing") ?? withStatus[0] ?? null;
+  const featured =
+    withStatus.find((h) => h._status === "ongoing") ?? withStatus[0] ?? null;
 
   const bucketed: Record<TabId, typeof withStatus> = {
     ongoing: withStatus.filter((h) => h._status === "ongoing"),
@@ -300,7 +343,7 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
       <div
-        className="px-10 pb-24 transition-all duration-500 ease-out"
+        className="px-10 pb-24 transition-all duration-500 ease-out mt-8"
         style={{
           opacity: mounted ? 1 : 0,
           transform: mounted ? "translateY(0)" : "translateY(20px)",
@@ -336,7 +379,6 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
               {TAGLINE}
             </motion.p>
           </div>
-         
         </div>
 
         {/* ── Empty state ── */}
@@ -347,7 +389,12 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
           >
             <Zap
               size={24}
-              style={{ color: "#0F2C23", opacity: 0.3, margin: "0 auto 16px", display: "block" }}
+              style={{
+                color: "#0F2C23",
+                opacity: 0.3,
+                margin: "0 auto 16px",
+                display: "block",
+              }}
             />
             <p
               className="font-black uppercase mb-2"
@@ -360,7 +407,10 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
             >
               No open calls yet.
             </p>
-            <p className="text-sm mb-6" style={{ fontFamily: FN, color: "rgba(15,44,35,0.4)" }}>
+            <p
+              className="text-sm mb-6"
+              style={{ fontFamily: FN, color: "rgba(15,44,35,0.4)" }}
+            >
               Hosts are adding programs — check back soon.
             </p>
           </div>
@@ -379,31 +429,34 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
             <div className="mt-8 flex items-center justify-between gap-6">
               <div
                 className="inline-flex items-center gap-2 rounded-full p-1"
-                style={{ backgroundColor: "rgba(15,44,35,0.06)", border: "1px solid rgba(15,44,35,0.10)" }}
+                style={{
+                  backgroundColor: "rgba(15,44,35,0.06)",
+                  border: "1px solid rgba(15,44,35,0.10)",
+                }}
               >
-              {TAB_CONFIG.map((tab) => {
-                const on = tab.id === activeTab;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    className="border-none cursor-pointer px-5 py-2 rounded-full flex items-center justify-center gap-2 transition-all"
-                    style={{
-                      fontFamily: FN,
-                      fontSize: 10,
-                      letterSpacing: "0.14em",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      color: on ? "#0F2C23" : "rgba(15,44,35,0.55)",
-                      backgroundColor: on ? "#E2FEA5" : "transparent",
-                    }}
-                  >
-                    {tab.label}
-                    <span style={{ opacity: 0.6 }}>({counts[tab.id]})</span>
-                  </button>
-                );
-              })}
+                {TAB_CONFIG.map((tab) => {
+                  const on = tab.id === activeTab;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className="border-none cursor-pointer px-5 py-2 rounded-full flex items-center justify-center gap-2 transition-all"
+                      style={{
+                        fontFamily: FN,
+                        fontSize: 10,
+                        letterSpacing: "0.14em",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        color: on ? "#0F2C23" : "rgba(15,44,35,0.55)",
+                        backgroundColor: on ? "#E2FEA5" : "transparent",
+                      }}
+                    >
+                      {tab.label}
+                      <span style={{ opacity: 0.6 }}>({counts[tab.id]})</span>
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="relative w-[360px] max-w-[40vw]">
@@ -430,7 +483,10 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
 
             {/* ── Grid ── */}
             {filteredItems.length > 0 ? (
-              <div className="grid gap-4 mt-8" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+              <div
+                className="grid gap-4 mt-8"
+                style={{ gridTemplateColumns: "repeat(3, 1fr)" }}
+              >
                 {filteredItems.map((h) => (
                   <HackCard key={h.id} b={h} status={h._status} />
                 ))}
@@ -444,10 +500,17 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
                   className="text-[10px] tracking-[0.18em] uppercase font-bold mb-3"
                   style={{ fontFamily: PX, color: "rgba(226,254,165,0.5)" }}
                 >
-                  {q.length > 0 ? "No matching hackathons" : `No ${activeTab} programs`}
+                  {q.length > 0
+                    ? "No matching hackathons"
+                    : `No ${activeTab} programs`}
                 </p>
-                <p className="text-sm" style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}>
-                  {q.length > 0 ? "Try a different search term." : "Check back soon or explore another tab."}
+                <p
+                  className="text-sm"
+                  style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
+                >
+                  {q.length > 0
+                    ? "Try a different search term."
+                    : "Check back soon or explore another tab."}
                 </p>
               </div>
             )}

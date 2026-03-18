@@ -11,7 +11,12 @@ const FN = "var(--font-funnel-sans), sans-serif";
 function ArrowCircle({ size = 44 }: { size?: number }) {
   return (
     <span
-      style={{ width: size, height: size, backgroundColor: "#0F2C23", color: "#E2FEA5" }}
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: "#0F2C23",
+        color: "#E2FEA5",
+      }}
       className="inline-flex items-center justify-center rounded-full shrink-0 transition-transform duration-200"
     >
       <ArrowUpRight size={size * 0.38} />
@@ -20,9 +25,18 @@ function ArrowCircle({ size = 44 }: { size?: number }) {
 }
 
 // ─── Table row ────────────────────────────────────────────────────────────────
-function ProjectRow({ project: p, index }: { project: StoredProject; index: number }) {
+function ProjectRow({
+  project: p,
+  index,
+}: {
+  project: StoredProject;
+  index: number;
+}) {
   return (
-    <Link href={`/builder/projects/${p.project_id}`} className="no-underline group">
+    <Link
+      href={`/builder/projects/${p.project_id}`}
+      className="no-underline group"
+    >
       <div
         className="grid items-start py-7 border-b transition-all duration-150 group-hover:bg-[rgba(15,44,35,0.03)] rounded-sm"
         style={{
@@ -34,7 +48,11 @@ function ProjectRow({ project: p, index }: { project: StoredProject; index: numb
         {/* Number */}
         <p
           className="font-bold pt-0.5"
-          style={{ fontFamily: PX, fontSize: "clamp(13px, 1.4vw, 15px)", color: "#0F2C23" }}
+          style={{
+            fontFamily: FN,
+            fontSize: "clamp(13px, 1.4vw, 15px)",
+            color: "#0F2C23",
+          }}
         >
           {String(index + 1).padStart(2, "0")}.
         </p>
@@ -43,7 +61,11 @@ function ProjectRow({ project: p, index }: { project: StoredProject; index: numb
         <div>
           <p
             className="font-semibold mb-1.5 leading-snug"
-            style={{ fontFamily: PX, fontSize: "clamp(13px, 1.3vw, 15px)", color: "#0F2C23" }}
+            style={{
+              fontFamily: FN,
+              fontSize: "clamp(13px, 1.3vw, 15px)",
+              color: "#0F2C23",
+            }}
           >
             {p.name}
           </p>
@@ -76,7 +98,9 @@ export default async function BuilderProjectsPage() {
     auth ? getTeamsServer(auth.userId) : Promise.resolve([]),
   ]);
   const userTeamIds = new Set(userTeams.map((t) => t.id));
-  const projects = allProjects.filter((p) => p.team_id && userTeamIds.has(p.team_id));
+  const projects = allProjects.filter(
+    (p) => p.team_id && userTeamIds.has(p.team_id),
+  );
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
       <div className="px-10 pt-10 pb-24">
@@ -107,8 +131,8 @@ export default async function BuilderProjectsPage() {
                   color: "rgba(15,44,35,0.55)",
                 }}
               >
-                Create a project and let AI agents refine your story, generate social posts, and
-                apply to hackathons with confidence.
+                Create a project and let AI agents refine your story, generate
+                social posts, and apply to hackathons with confidence.
               </p>
 
               {/* Create new — pill CTA */}
@@ -157,7 +181,7 @@ export default async function BuilderProjectsPage() {
                       ? "text-right"
                       : "text-left"
               }`}
-              style={{ fontFamily: PX, color: "rgba(15,44,35,0.4)" }}
+              style={{ fontFamily: FN, color: "rgba(15,44,35,0.4)" }}
             >
               {col}
             </p>
@@ -172,7 +196,10 @@ export default async function BuilderProjectsPage() {
           >
             <div
               className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-6"
-              style={{ backgroundColor: "rgba(15,44,35,0.08)", color: "#0F2C23" }}
+              style={{
+                backgroundColor: "rgba(15,44,35,0.08)",
+                color: "#0F2C23",
+              }}
             >
               <FolderOpen size={24} />
             </div>
@@ -189,20 +216,30 @@ export default async function BuilderProjectsPage() {
             </p>
             <p
               className="mb-10 leading-relaxed"
-              style={{ fontFamily: FN, fontSize: 15, color: "rgba(15,44,35,0.5)" }}
+              style={{
+                fontFamily: FN,
+                fontSize: 15,
+                color: "rgba(15,44,35,0.5)",
+              }}
             >
               Create your first profile to get started.
             </p>
             <Link
               href="/builder/new"
               className="inline-flex items-center gap-2 rounded-full no-underline text-[10px] tracking-widest uppercase font-bold px-7 py-3"
-              style={{ backgroundColor: "#0F2C23", color: "#E2FEA5", fontFamily: PX }}
+              style={{
+                backgroundColor: "#0F2C23",
+                color: "#E2FEA5",
+                fontFamily: PX,
+              }}
             >
               <PlusCircle size={12} /> Create Profile
             </Link>
           </div>
         ) : (
-          projects.map((p, idx) => <ProjectRow key={p.project_id} project={p} index={idx} />)
+          projects.map((p, idx) => (
+            <ProjectRow key={p.project_id} project={p} index={idx} />
+          ))
         )}
       </div>
     </div>
