@@ -51,7 +51,7 @@ export function HeroSection() {
         </header>
 
         {/* Desktop layout */}
-        <div className="relative top-[15px] hidden flex-row items-start justify-between md:flex">
+        <div className="relative top-[10px] hidden flex-row items-start justify-between md:flex">
           {/* Left Side */}
           <div className="flex flex-col gap-48">
             <div className="flex flex-col gap-20 -left-2 relative top-16">
