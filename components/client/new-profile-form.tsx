@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
+  ArrowUpRight,
   ArrowRight,
   Check,
   ChevronDown,
@@ -19,7 +20,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
-import { ImageUpload, MultiImageUpload } from "@/components/client/image-upload";
+import {
+  ImageUpload,
+  MultiImageUpload,
+} from "@/components/client/image-upload";
 import {
   KB_STEPS,
   type KBStepStatus,
@@ -40,7 +44,10 @@ const builderProfileSchema = z.object({
   name: z.string().min(1, "Project name is required"),
   description: z
     .string()
-    .min(80, "Please add a more detailed description (at least 80 characters)."),
+    .min(
+      80,
+      "Please add a more detailed description (at least 80 characters).",
+    ),
   github_url: z.string().url("GitHub URL must be a valid link"),
   youtube_url: z.url("YouTube URL must be a valid link").optional(),
   logo_url: z.url("Logo is required"),
@@ -69,7 +76,8 @@ function CustomDropdown({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -83,7 +91,11 @@ function CustomDropdown({
         className="w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all duration-200 border-none cursor-pointer"
         style={{
           backgroundColor: open ? "#0F2C23" : "rgba(15,44,35,0.06)",
-          color: open ? "#F8FFE8" : selected ? "#0F2C23" : "rgba(15,44,35,0.55)",
+          color: open
+            ? "#F8FFE8"
+            : selected
+              ? "#0F2C23"
+              : "rgba(15,44,35,0.55)",
         }}
       >
         <span className="font-semibold text-base" style={{ fontFamily: PX }}>
@@ -119,18 +131,25 @@ function CustomDropdown({
                   fontFamily: FN,
                   fontSize: 14,
                   color: isSel ? "#F8FFE8" : "rgba(226,254,165,0.75)",
-                  backgroundColor: isSel ? "rgba(226,254,165,0.16)" : "transparent",
+                  backgroundColor: isSel
+                    ? "rgba(226,254,165,0.16)"
+                    : "transparent",
                   borderBottom:
-                    i < options.length - 1 ? "1px solid rgba(226,254,165,0.16)" : "none",
+                    i < options.length - 1
+                      ? "1px solid rgba(226,254,165,0.16)"
+                      : "none",
                 }}
                 onMouseEnter={(e) => {
                   if (!isSel)
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                      "rgba(226,254,165,0.1)";
+                    (
+                      e.currentTarget as HTMLButtonElement
+                    ).style.backgroundColor = "rgba(226,254,165,0.1)";
                 }}
                 onMouseLeave={(e) => {
                   if (!isSel)
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
+                    (
+                      e.currentTarget as HTMLButtonElement
+                    ).style.backgroundColor = "transparent";
                 }}
               >
                 {opt.label}
@@ -154,12 +173,18 @@ interface NewProfileFormProps {
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewProfileFormProps) {
+export function NewProfileForm({
+  teams,
+  userId: _userId,
+  initialTeamId,
+}: NewProfileFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState<Record<string, KBStepStatus>>({});
-  const [progressErrors, setProgressErrors] = useState<Record<string, string>>({});
+  const [progressErrors, setProgressErrors] = useState<Record<string, string>>(
+    {},
+  );
   const [error, setError] = useState<string | null>(null);
   const [animDir, setAnimDir] = useState<1 | -1>(1);
   const [animKey, setAnimKey] = useState(0);
@@ -192,7 +217,9 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
   useEffect(() => {
     if (hasAppliedDefaults.current) return;
     const validUrlTeam =
-      initialTeamId && teams.some((t) => t.id === initialTeamId) ? initialTeamId : null;
+      initialTeamId && teams.some((t) => t.id === initialTeamId)
+        ? initialTeamId
+        : null;
     if (!validUrlTeam) return;
     reset((prev) => ({
       ...prev,
@@ -234,7 +261,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
     {
       key: "youtube_url",
       label: "Got a demo video?",
-      sub: "Paste your YouTube demo link.",
+      sub: "Paste your YouTube demo link. Make sure the video is public and listed",
       placeholder: "https://youtube.com/watch?v=…",
       type: "url",
     },
@@ -260,9 +287,9 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
     {
       key: "social_links",
       label: "Social links to share?",
-      sub: "Format: Label, URL — one per line.",
+      sub: "Add one social link per row.",
       optional: true,
-      placeholder: "Twitter, https://twitter.com/…",
+      placeholder: "",
       multiline: true,
     },
     ...(teams.length > 0
@@ -331,7 +358,8 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
         resolvedTeamId = result.data.id;
       }
 
-      const screenshotUrls = screenshotFiles.length > 0 ? screenshotFiles : undefined;
+      const screenshotUrls =
+        screenshotFiles.length > 0 ? screenshotFiles : undefined;
       const socialLinks = data.social_links
         ? data.social_links
             .split("\n")
@@ -346,7 +374,10 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                 };
               return { label: trimmed, url: trimmed };
             })
-            .filter((x): x is { label: string; url: string } => x !== null && Boolean(x.url))
+            .filter(
+              (x): x is { label: string; url: string } =>
+                x !== null && Boolean(x.url),
+            )
         : undefined;
 
       try {
@@ -362,7 +393,9 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
         });
         if (!res.ok) {
           const json = await res.json().catch(() => ({}));
-          throw new Error(json.error || json.message || "Profile creation failed");
+          throw new Error(
+            json.error || json.message || "Profile creation failed",
+          );
         }
         if (!res.body) throw new Error("No response body");
 
@@ -389,21 +422,30 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
             if (chunk === "[DONE]") continue;
             try {
               const parsed = JSON.parse(chunk) as Record<string, unknown>;
-              if (typeof parsed.message === "string") serverError = parsed.message;
+              if (typeof parsed.message === "string")
+                serverError = parsed.message;
               if (typeof parsed.step === "string") {
                 const status = (
-                  ["done", "failed", "skipped"].includes(parsed.status as string)
+                  ["done", "failed", "skipped"].includes(
+                    parsed.status as string,
+                  )
                     ? parsed.status
                     : "started"
                 ) as KBStepStatus;
                 setProgress((p) => ({ ...p, [parsed.step as string]: status }));
-                if (parsed.status === "failed" && typeof parsed.error === "string")
+                if (
+                  parsed.status === "failed" &&
+                  typeof parsed.error === "string"
+                )
                   setProgressErrors((e) => ({
                     ...e,
                     [parsed.step as string]: parsed.error as string,
                   }));
               }
-              if (currentEvent === "complete" && typeof parsed.project_id === "string")
+              if (
+                currentEvent === "complete" &&
+                typeof parsed.project_id === "string"
+              )
                 lastComplete = parsed;
               if (
                 currentEvent === "flattened_codebase" &&
@@ -411,7 +453,10 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                 parsed.project_id === lastComplete.project_id &&
                 typeof parsed.flattened_codebase === "string"
               )
-                lastComplete = { ...lastComplete, flattened_codebase: parsed.flattened_codebase };
+                lastComplete = {
+                  ...lastComplete,
+                  flattened_codebase: parsed.flattened_codebase,
+                };
             } catch {
               /* ignore */
             }
@@ -459,7 +504,10 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F8FFE8" }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ backgroundColor: "#F8FFE8" }}
+    >
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
       <div className="flex flex-1">
         {/* LEFT — form / intro */}
@@ -495,32 +543,39 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                       }}
                     >
                       Your project pipeline from raw links to an{" "}
-                      <span className="text-[#0F2C23] font-bold">AI-ready knowledge graph</span>.
-                      Ship faster with agents that actually understand your codebase.
+                      <span className="text-[#0F2C23] font-bold">
+                        AI-ready knowledge graph
+                      </span>
+                      . Ship faster with agents that actually understand your
+                      codebase.
                     </p>
                   </div>
 
-                  <div className="flex flex-col items-start gap-4">
+                  <div className="flex flex-col items-start gap-4 justify-between">
                     <button
                       type="button"
                       onClick={() => setShowIntro(false)}
-                      className="group relative inline-flex items-center gap-4 rounded-full border-none cursor-pointer px-10 py-5 overflow-hidden transition-all duration-300 active:scale-95"
+                      className="group relative inline-flex items-center gap-4 rounded-full border-none cursor-pointer pl-4 px-1 h-12 overflow-hidden transition-all duration-300 active:scale-95"
                       style={{
                         backgroundColor: "#0F2C23",
                         boxShadow: "0 20px 40px -10px rgba(15, 44, 35, 0.4)",
                       }}
                     >
-                      <div className="absolute inset-0 bg-[#E2FEA5] translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                       <span
-                        className="relative z-10 text-[10px] font-black tracking-[0.2em] uppercase transition-colors duration-300 text-[#F8FFE8] group-hover:text-[#0F2C23]"
-                        style={{ fontFamily: PX }}
+                        className="relative z-10 text-[10px] font-black tracking-[0.2em] uppercase transition-colors duration-300 text-[#F8FFE8]"
+                        style={{ fontFamily: FN }}
                       >
                         Initialize Creator
                       </span>
-                      <ArrowRight
-                        size={14}
-                        className="relative z-10 transition-all duration-300 text-[#F8FFE8] group-hover:text-[#0F2C23] group-hover:translate-x-1"
-                      />
+                      <span
+                        className="w-10 h-10 flex items-center justify-center rounded-full"
+                        style={{ backgroundColor: "#E2FEA5" }}
+                      >
+                        <ArrowUpRight
+                          size={14}
+                          className="transition-colors duration-300 text-[#0F2C23]/60 group-hover:text-[#0F2C23]"
+                        />
+                      </span>
                     </button>
                     <p
                       className="text-[9px] pl-2 uppercase font-bold tracking-[0.2em]"
@@ -567,7 +622,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                       <div className="flex justify-between items-start">
                         <span
                           className="font-black text-[24px] leading-none opacity-20"
-                          style={{ fontFamily: PX, color: "#0F2C23" }}
+                          style={{ fontFamily: FN, color: "#0F2C23" }}
                         >
                           {step.num}
                         </span>
@@ -578,7 +633,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                       <div>
                         <h3
                           className="font-bold text-[15px] mb-1.5 uppercase tracking-tight"
-                          style={{ fontFamily: PX, color: "#0F2C23" }}
+                          style={{ fontFamily: FN, color: "#0F2C23" }}
                         >
                           {step.title}
                         </h3>
@@ -597,12 +652,15 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
           ) : (
             <form onSubmit={handleSubmit(onSubmit)}>
               {/* Step header */}
-              <div key={`hdr-${animKey}`} style={{ ...animStyle, marginBottom: 40 }}>
+              <div
+                key={`hdr-${animKey}`}
+                style={{ ...animStyle, marginBottom: 40 }}
+              >
                 <div className="flex items-center gap-3 mb-5">
                   <span
                     className="font-black leading-none"
                     style={{
-                      fontFamily: PX,
+                      fontFamily: FN,
                       fontSize: "clamp(40px, 6vw, 72px)",
                       letterSpacing: "-0.03em",
                       color: "rgba(15,44,35,0.2)",
@@ -614,7 +672,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                 <h1
                   className="font-black text-[#0F2C23] leading-[0.9] uppercase mb-4"
                   style={{
-                    fontFamily: PX,
+                    fontFamily: FN,
                     fontSize: "clamp(28px, 4.5vw, 56px)",
                     letterSpacing: "-0.02em",
                   }}
@@ -634,7 +692,10 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
               </div>
 
               {/* Input */}
-              <div key={`inp-${animKey}`} style={{ ...animStyle, animationDelay: "0.06s" }}>
+              <div
+                key={`inp-${animKey}`}
+                style={{ ...animStyle, animationDelay: "0.06s" }}
+              >
                 {/* team_id — optional, only shown when user has teams */}
                 {activeStep?.key === "team_id" && teams.length > 0 && (
                   <Controller
@@ -643,7 +704,10 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                     render={({ field }) => (
                       <CustomDropdown
                         options={[
-                          { value: "", label: `Auto-create: ${projectName || "Project"}(Team)` },
+                          {
+                            value: "",
+                            label: `Auto-create: ${projectName || "Project"}(Team)`,
+                          },
                           ...teams.map((t) => ({ value: t.id, label: t.name })),
                         ]}
                         value={field.value ?? ""}
@@ -685,71 +749,136 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                     name="social_links"
                     control={control}
                     render={({ field }) => {
-                      const items = (field.value ?? "").split("\n");
-                      if (items.length === 0) items.push("");
+                      const lines = (field.value ?? "").split("\n");
+                      if (lines.length === 0) lines.push("");
 
-                      const updateItem = (index: number, value: string) => {
-                        const next = [...items];
-                        next[index] = value;
-                        field.onChange(next.join("\n"));
+                      const parseLine = (line: string) => {
+                        const trimmed = line.trim();
+                        if (!trimmed) return { label: "", url: "" };
+
+                        const comma = trimmed.indexOf(",");
+                        if (comma > 0) {
+                          return {
+                            label: trimmed.slice(0, comma).trim(),
+                            url: trimmed.slice(comma + 1).trim(),
+                          };
+                        }
+
+                        // Back-compat: if user pasted "Label" only
+                        return { label: trimmed, url: "" };
+                      };
+
+                      const updateItem = (
+                        index: number,
+                        next: { label: string; url: string },
+                      ) => {
+                        const serialized =
+                          next.label || next.url
+                            ? `${next.label.trim()},${next.url.trim()}`
+                            : "";
+                        const nextLines = [...lines];
+                        nextLines[index] = serialized;
+                        field.onChange(nextLines.join("\n"));
                       };
 
                       const addItem = () => {
-                        field.onChange([...items, ""].join("\n"));
+                        field.onChange([...lines, ""].join("\n"));
                       };
 
                       const removeItem = (index: number) => {
-                        const next = items.filter((_, i) => i !== index);
-                        field.onChange((next.length ? next : [""]).join("\n"));
+                        const nextLines = lines.filter((_, i) => i !== index);
+                        field.onChange(
+                          (nextLines.length ? nextLines : [""]).join("\n"),
+                        );
                       };
 
                       return (
                         <div className="flex flex-col gap-3">
-                          {items.map((val, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                value={val}
-                                onChange={(e) => updateItem(idx, e.target.value)}
-                                placeholder="Label, https://link.com/…"
-                                className="outline-none placeholder-[#2d4a3e]/30"
-                                style={{
-                                  ...inputBase,
-                                  maxWidth: 420,
-                                  paddingTop: 12,
-                                  paddingBottom: 12,
-                                  fontSize: 14,
-                                }}
-                                onFocus={(e) =>
-                                  (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.1)")
-                                }
-                                onBlur={(e) =>
-                                  (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.06)")
-                                }
-                              />
-                              {items.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => removeItem(idx)}
-                                  className="flex items-center justify-center rounded-full border-none cursor-pointer"
+                          {lines.map((val, idx) => {
+                            const { label, url } = parseLine(val);
+                            return (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-2"
+                              >
+                                <input
+                                  type="text"
+                                  value={label}
+                                  onChange={(e) =>
+                                    updateItem(idx, {
+                                      label: e.target.value,
+                                      url,
+                                    })
+                                  }
+                                  placeholder="Label"
+                                  className="outline-none placeholder-[#2d4a3e]/30"
                                   style={{
-                                    width: 26,
-                                    height: 26,
-                                    backgroundColor: "rgba(15,44,35,0.06)",
-                                    color: "rgba(15,44,35,0.7)",
+                                    ...inputBase,
+                                    maxWidth: 190,
+                                    paddingTop: 12,
+                                    paddingBottom: 12,
+                                    fontSize: 14,
                                   }}
-                                >
-                                  <X size={12} />
-                                </button>
-                              )}
-                            </div>
-                          ))}
+                                  onFocus={(e) =>
+                                    (e.currentTarget.style.backgroundColor =
+                                      "rgba(15,44,35,0.1)")
+                                  }
+                                  onBlur={(e) =>
+                                    (e.currentTarget.style.backgroundColor =
+                                      "rgba(15,44,35,0.06)")
+                                  }
+                                />
+                                <input
+                                  type="url"
+                                  value={url}
+                                  onChange={(e) =>
+                                    updateItem(idx, {
+                                      label,
+                                      url: e.target.value,
+                                    })
+                                  }
+                                  placeholder="https://…"
+                                  className="outline-none placeholder-[#2d4a3e]/30 flex-1"
+                                  style={{
+                                    ...inputBase,
+                                    maxWidth: 420,
+                                    paddingTop: 12,
+                                    paddingBottom: 12,
+                                    fontSize: 14,
+                                  }}
+                                  onFocus={(e) =>
+                                    (e.currentTarget.style.backgroundColor =
+                                      "rgba(15,44,35,0.1)")
+                                  }
+                                  onBlur={(e) =>
+                                    (e.currentTarget.style.backgroundColor =
+                                      "rgba(15,44,35,0.06)")
+                                  }
+                                />
+                                {lines.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeItem(idx)}
+                                    className="flex items-center justify-center rounded-full border-none cursor-pointer"
+                                    style={{
+                                      width: 26,
+                                      height: 26,
+                                      backgroundColor: "rgba(15,44,35,0.06)",
+                                      color: "rgba(15,44,35,0.7)",
+                                    }}
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
                           <button
                             type="button"
                             onClick={addItem}
                             className="inline-flex items-center justify-center gap-2 border-none cursor-pointer text-[10px] tracking-widest uppercase font-bold mt-1"
                             style={{
-                              fontFamily: PX,
+                              fontFamily: FN,
                               width: "100%",
                               maxWidth: 420,
                               borderRadius: 16,
@@ -779,10 +908,12 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                       className="resize-none outline-none placeholder-[#2d4a3e]/30"
                       style={{ ...inputBase, fontFamily: FN, lineHeight: 1.7 }}
                       onFocus={(e) =>
-                        (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.1)")
+                        (e.currentTarget.style.backgroundColor =
+                          "rgba(15,44,35,0.1)")
                       }
                       onBlur={(e) =>
-                        (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.06)")
+                        (e.currentTarget.style.backgroundColor =
+                          "rgba(15,44,35,0.06)")
                       }
                     />
                   ) : (
@@ -793,24 +924,32 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                       className="outline-none placeholder-[#2d4a3e]/30"
                       style={inputBase}
                       onFocus={(e) =>
-                        (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.1)")
+                        (e.currentTarget.style.backgroundColor =
+                          "rgba(15,44,35,0.1)")
                       }
                       onBlur={(e) =>
-                        (e.currentTarget.style.backgroundColor = "rgba(15,44,35,0.06)")
+                        (e.currentTarget.style.backgroundColor =
+                          "rgba(15,44,35,0.06)")
                       }
                     />
                   ))}
 
                 {/* Field error */}
                 {activeStep?.key && errors[activeStep.key] && (
-                  <p className="mt-2 text-sm" style={{ fontFamily: FN, color: "#c0392b" }}>
+                  <p
+                    className="mt-2 text-sm"
+                    style={{ fontFamily: FN, color: "#c0392b" }}
+                  >
                     {errors[activeStep.key]?.message as string}
                   </p>
                 )}
 
                 {/* Error */}
                 {error && !loading && (
-                  <p className="mt-4 text-sm" style={{ fontFamily: FN, color: "#c0392b" }}>
+                  <p
+                    className="mt-4 text-sm"
+                    style={{ fontFamily: FN, color: "#c0392b" }}
+                  >
                     {error}
                   </p>
                 )}
@@ -832,7 +971,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                       backgroundColor: "transparent",
                       color: "#0F2C23",
                       border: "1.5px solid rgba(15,44,35,0.25)",
-                      fontFamily: PX,
+                      fontFamily: FN,
                     }}
                   >
                     <ArrowLeft size={11} /> Back
@@ -848,10 +987,10 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                     style={{
                       backgroundColor: "#0F2C23",
                       color: "#F8FFE8",
-                      fontFamily: PX,
+                      fontFamily: FN,
                     }}
                   >
-                    Continue <ArrowRight size={12} />
+                    Next <ArrowRight size={12} />
                   </button>
                 ) : (
                   <button
@@ -861,7 +1000,7 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                     style={{
                       backgroundColor: "#0F2C23",
                       color: "#F8FFE8",
-                      fontFamily: PX,
+                      fontFamily: FN,
                     }}
                   >
                     {loading && <Loader2 size={12} className="animate-spin" />}
@@ -879,15 +1018,6 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
             className="hidden lg:flex w-[400px] shrink-0 flex-col justify-between p-12 relative overflow-hidden"
             style={{ backgroundColor: "#0F2C23" }}
           >
-            {/* Background Effects */}
-            <div
-              className="absolute inset-0 pointer-events-none opacity-20"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle, rgba(226,254,165,0.2) 1px, transparent 1px)",
-                backgroundSize: "32px 32px",
-              }}
-            />
             <div
               className="absolute -top-20 -right-20 w-80 h-80 rounded-full blur-[120px] pointer-events-none"
               style={{ backgroundColor: "rgba(226,254,165,0.05)" }}
@@ -902,9 +1032,9 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                   animate={{ opacity: 1, y: 0 }}
                   className="font-black leading-none"
                   style={{
-                    fontFamily: PX,
+                    fontFamily: FN,
                     fontSize: 120,
-                    letterSpacing: "-0.06em",
+                    letterSpacing: "0.02em",
                     color: "#E2FEA5",
                     textShadow: "0 0 40px rgba(226,254,165,0.1)",
                   }}
@@ -914,13 +1044,13 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                 <div className="flex flex-col">
                   <p
                     className="text-[11px] tracking-[0.3em] uppercase font-black"
-                    style={{ fontFamily: PX, color: "rgba(226,254,165,0.4)" }}
+                    style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}
                   >
                     Current
                   </p>
                   <p
                     className="text-[11px] tracking-[0.3em] uppercase font-black"
-                    style={{ fontFamily: PX, color: "rgba(226,254,165,0.4)" }}
+                    style={{ fontFamily: FN, color: "rgba(226,254,165,0.4)" }}
                   >
                     Phase
                   </p>
@@ -930,7 +1060,9 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
                 <motion.div
                   className="h-full bg-[#E2FEA5]"
                   initial={{ width: 0 }}
-                  animate={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
+                  animate={{
+                    width: `${((currentStep + 1) / totalSteps) * 100}%`,
+                  }}
                   transition={{ duration: 0.6, ease: "circOut" }}
                 />
               </div>
@@ -938,125 +1070,78 @@ export function NewProfileForm({ teams, userId: _userId, initialTeamId }: NewPro
 
             {/* Step Progress Stepper */}
             <div className="relative z-10 py-6">
-              <div className="absolute left-[15px] top-8 bottom-8 w-px bg-white/5" />
+              <div className="relative max-h-[55vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex flex-col gap-6">
+                  {FORM_STEPS.map((step, absoluteIdx) => {
+                    const isCur = absoluteIdx === currentStep;
+                    const isPast = absoluteIdx < currentStep;
 
-              <div className="flex flex-col gap-6">
-                {FORM_STEPS.slice(
-                  Math.max(0, Math.min(currentStep - 1, totalSteps - 5)),
-                  Math.max(5, currentStep + 4),
-                ).map((step) => {
-                  const absoluteIdx = FORM_STEPS.indexOf(step);
-                  const isCur = absoluteIdx === currentStep;
-                  const isPast = absoluteIdx < currentStep;
-
-                  return (
-                    <motion.div
-                      key={step.key}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: isCur ? 1 : isPast ? 0.6 : 0.2, x: isCur ? 4 : 0 }}
-                      className="group flex items-start gap-5"
-                    >
-                      {/* Node */}
-                      <div className="relative z-20 flex-shrink-0 mt-1">
-                        {isPast ? (
-                          <div className="w-[28px] h-[28px] rounded-full bg-[#E2FEA5] flex items-center justify-center">
-                            <Check size={14} className="text-[#0F2C23] stroke-[3]" />
-                          </div>
-                        ) : isCur ? (
-                          <div className="relative">
-                            <motion.div
-                              animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.1, 0.4] }}
-                              transition={{ duration: 2, repeat: Infinity }}
-                              className="absolute inset-0 rounded-full bg-[#E2FEA5]"
-                            />
-                            <div className="relative w-[28px] h-[28px] rounded-full bg-[#E2FEA5] shadow-[0_0_15px_rgba(226,254,165,0.3)] flex items-center justify-center">
-                              <div className="w-2 h-2 rounded-full bg-[#0F2C23]" />
+                    return (
+                      <motion.div
+                        key={step.key}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{
+                          opacity: isCur ? 1 : isPast ? 0.6 : 0.2,
+                          x: 0,
+                        }}
+                        className="group flex items-start gap-5"
+                      >
+                        {/* Node */}
+                        <div className="relative z-20 flex-shrink-0 mt-1">
+                          {isPast ? (
+                            <div className="w-[28px] h-[28px] rounded-full bg-[#E2FEA5] flex items-center justify-center">
+                              <Check
+                                size={14}
+                                className="text-[#0F2C23] stroke-[3]"
+                              />
                             </div>
-                          </div>
-                        ) : (
-                          <div className="w-[28px] h-[28px] rounded-full border border-white/20 flex items-center justify-center bg-[#0F2C23]">
-                            <div className="w-1 h-1 rounded-full bg-white/20" />
-                          </div>
-                        )}
-                      </div>
+                          ) : isCur ? (
+                            <div className="relative">
+                              <div className="relative w-[28px] h-[28px] rounded-full bg-[#E2FEA5] flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-[#0F2C23]" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center bg-[#0F2C23]">
+                              <div className="w-1 h-1 rounded-full bg-white/20" />
+                            </div>
+                          )}
+                        </div>
 
-                      {/* Content */}
-                      <div className="flex flex-col pt-0.5 min-w-0">
-                        <p
-                          className="text-[9px] tracking-widest uppercase font-bold"
-                          style={{
-                            fontFamily: PX,
-                            color: isCur ? "#E2FEA5" : "rgba(226,254,165,0.4)",
-                          }}
-                        >
-                          Step {String(absoluteIdx + 1).padStart(2, "0")}
-                        </p>
-                        <h3
-                          className="text-[14px] font-bold leading-tight truncate"
-                          style={{
-                            fontFamily: FN,
-                            color: isCur ? "#F8FFE8" : "rgba(248,255,232,0.6)",
-                          }}
-                        >
-                          {step.label.replace(/\?|\./g, "")}
-                        </h3>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Bottom Footer */}
-            <div className="relative z-10">
-              <div className="p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center gap-4 overflow-hidden">
-                <div className="shrink-0 w-10 h-10 rounded-full bg-[#E2FEA5]/10 flex items-center justify-center">
-                  <div className="flex gap-1">
-                    <motion.div
-                      animate={{ opacity: [0.3, 1, 0.3] }}
-                      transition={{ duration: 1.2, repeat: Infinity }}
-                      className="w-1.5 h-1.5 rounded-full bg-[#E2FEA5]"
-                    />
-                    <motion.div
-                      animate={{ opacity: [0.3, 1, 0.3] }}
-                      transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }}
-                      className="w-1.5 h-1.5 rounded-full bg-[#E2FEA5]"
-                    />
-                    <motion.div
-                      animate={{ opacity: [0.3, 1, 0.3] }}
-                      transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }}
-                      className="w-1.5 h-1.5 rounded-full bg-[#E2FEA5]"
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <p
-                    className="text-[10px] uppercase font-black tracking-widest text-[#E2FEA5]/40"
-                    style={{ fontFamily: PX }}
-                  >
-                    System Processing
-                  </p>
-                  <p className="text-[14px] font-bold text-[#F8FFE8]" style={{ fontFamily: FN }}>
-                    Building Knowledge base
-                  </p>
+                        {/* Content */}
+                        <div className="flex flex-col pt-0.5 min-w-0">
+                          <p
+                            className="text-[9px] tracking-widest uppercase font-bold"
+                            style={{
+                              fontFamily: FN,
+                              color: isCur
+                                ? "#E2FEA5"
+                                : "rgba(226,254,165,0.4)",
+                            }}
+                          >
+                            Step {String(absoluteIdx + 1).padStart(2, "0")}
+                          </p>
+                          <h3
+                            className="text-[14px] font-bold leading-tight truncate"
+                            style={{
+                              fontFamily: FN,
+                              color: isCur
+                                ? "#F8FFE8"
+                                : "rgba(248,255,232,0.6)",
+                            }}
+                          >
+                            {step.label.replace(/\?|\./g, "")}
+                          </h3>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </aside>
         )}
       </div>
-
-      <style>{`
-        @keyframes slideUpIn {
-          from { opacity: 0; transform: translateY(18px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideDownIn {
-          from { opacity: 0; transform: translateY(-18px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        textarea::placeholder, input::placeholder { color: rgba(15,44,35,0.4); }
-      `}</style>
     </div>
   );
 }
