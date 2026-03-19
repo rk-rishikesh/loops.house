@@ -10,7 +10,7 @@ export function HeroSection() {
     >
       <div className="flex w-full max-w-7xl flex-col px-4 md:px-8">
         {/* Navbar */}
-        <header className="flex mt-4 mb-2 h-[80px] w-full items-center justify-between">
+        <header className="flex mt-2 mb-2 h-[80px] w-full items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image
               src="/logo.svg"
@@ -51,16 +51,21 @@ export function HeroSection() {
         </header>
 
         {/* Desktop layout */}
-        <div className="relative top-[20px] hidden flex-row items-start justify-between md:flex">
+        <div className="relative top-[15px] hidden flex-row items-start justify-between md:flex">
           {/* Left Side */}
           <div className="flex flex-col gap-48">
-            <div
-              className="flex flex-col gap-20 -left-2 relative top-16"
-            >
-              <span className={`block text-[#10271d] ${pixelifySans.className} font-bold tracking-[-0.04em] text-[220px] leading-[84px]`}>Build</span>
-              <span className={`block text-[#b5c1b4] ${pixelifySans.className} font-bold tracking-[-0.04em] text-[220px] leading-[84px]`}>Ship</span>
+            <div className="flex flex-col gap-20 -left-2 relative top-16">
+              <span
+                className={`block text-[#10271d] ${pixelifySans.className} font-bold tracking-[-0.04em] text-[220px] leading-[84px]`}
+              >
+                Build
+              </span>
+              <span
+                className={`block text-[#b5c1b4] ${pixelifySans.className} font-bold tracking-[-0.04em] text-[220px] leading-[84px]`}
+              >
+                Ship
+              </span>
             </div>
-          
           </div>
           {/* Right Side */}
           <div className="flex flex-col items-end gap-8 md:-translate-x-24">
@@ -73,22 +78,22 @@ export function HeroSection() {
                 className="rounded-[32px] object-cover object-center"
               />
               <Link
-                    href="/login"
-                    className={`${funnelSans.className} inline-flex h-[44px] w-[220px] items-center justify-center rounded-full bg-[#10271d] text-sm font-medium text-[#f7f9e8] shadow-sm transition hover:bg-[#0b1b14]`}
-                  >
-                    <div className="flex flex-row items-center justify-between w-full px-1 pl-4">
-                      <span className="uppercase text-xs tracking-wider pl-1">
-                        Login to Loops
-                      </span>
-                      <Image
-                        src="/assets/lightArrow.svg"
-                        alt=""
-                        width={35}
-                        height={35}
-                        className="shrink-0"
-                      />
-                    </div>
-                  </Link>
+                href="/login"
+                className={`${funnelSans.className} inline-flex h-[44px] w-[220px] items-center justify-center rounded-full bg-[#10271d] text-sm font-medium text-[#f7f9e8] shadow-sm transition hover:bg-[#0b1b14]`}
+              >
+                <div className="flex flex-row items-center justify-between w-full px-1 pl-4">
+                  <span className="uppercase text-xs tracking-wider pl-1">
+                    Login to Loops
+                  </span>
+                  <Image
+                    src="/assets/lightArrow.svg"
+                    alt=""
+                    width={35}
+                    height={35}
+                    className="shrink-0"
+                  />
+                </div>
+              </Link>
             </div>
 
             <div className="flex max-w-[530px] flex-col items-end gap-8 text-right">
