@@ -7,8 +7,15 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { submitProjectAction } from "@/lib/actions";
-import type { StoredHackathon, StoredProject, StoredSubmission } from "@/lib/data-mappers";
-import { type SubmitProjectSchema, submitProjectSchema } from "@/lib/validations/schemas";
+import type {
+  StoredHackathon,
+  StoredProject,
+  StoredSubmission,
+} from "@/lib/data-mappers";
+import {
+  type SubmitProjectSchema,
+  submitProjectSchema,
+} from "@/lib/validations/schemas";
 
 export function SubmitToHackathonForm({
   hackathon,
@@ -42,7 +49,11 @@ export function SubmitToHackathonForm({
       return;
     }
     startTransition(async () => {
-      const result = await submitProjectAction(hackathon.id, project.team_id!, data.project_id);
+      const result = await submitProjectAction(
+        hackathon.id,
+        project.team_id!,
+        data.project_id,
+      );
       if (result.success) {
         setSubmitted(true);
         router.push(`/builder/projects/${data.project_id}`);
@@ -82,9 +93,13 @@ export function SubmitToHackathonForm({
         >
           Submit project
         </h1>
-        <p className="mt-2 text-[#2d4a3e]/70" style={{ fontFamily: "Georgia, serif" }}>
+        <p
+          className="mt-2 text-[#2d4a3e]/70"
+          style={{ fontFamily: "Georgia, serif" }}
+        >
           Submit one of your projects to{" "}
-          <span className="font-semibold text-[#2d4a3e]">{hackathon.name}</span>.
+          <span className="font-semibold text-[#2d4a3e]">{hackathon.name}</span>
+          .
         </p>
 
         {submitted ? (
@@ -97,14 +112,20 @@ export function SubmitToHackathonForm({
           </div>
         ) : projects.length === 0 ? (
           <div className="mt-8 p-6 rounded-2xl border border-[#2d4a3e]/15 bg-[#f5f2ea]">
-            <p className="text-sm text-[#2d4a3e]/70" style={{ fontFamily: "Georgia, serif" }}>
-              You don&apos;t have any projects yet. Create one first, then submit it to this
-              hackathon.
+            <p
+              className="text-sm text-[#2d4a3e]/70"
+              style={{ fontFamily: "Georgia, serif" }}
+            >
+              You don&apos;t have any projects yet. Create one first, then
+              submit it to this hackathon.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">
-            <p className="text-sm text-[#2d4a3e]/70" style={{ fontFamily: "Georgia, serif" }}>
+            <p
+              className="text-sm text-[#2d4a3e]/70"
+              style={{ fontFamily: "Georgia, serif" }}
+            >
               Choose a project to submit:
             </p>
             {error && (
@@ -114,7 +135,9 @@ export function SubmitToHackathonForm({
               </div>
             )}
             {errors.project_id && (
-              <p className="text-xs text-red-600">{errors.project_id.message}</p>
+              <p className="text-xs text-red-600">
+                {errors.project_id.message}
+              </p>
             )}
             <ul className="space-y-2">
               {projects.map((p) => (

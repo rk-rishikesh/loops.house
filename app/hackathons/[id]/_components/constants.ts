@@ -78,4 +78,4 @@ export const SECTION_META: Record<
 };
 
 /** Sections rendered on light background (no dark container) */
-export const SIMPLE_SECTIONS: SectionKey[] = ["info", "speakers", "schedule", "prizes", "results"];
+export const SIMPLE_SECTIONS: SectionKey[] = ["info", "speakers", "schedule", "prizes", "submit", "results"];

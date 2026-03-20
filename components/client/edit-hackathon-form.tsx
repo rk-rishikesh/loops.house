@@ -1,7 +1,16 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowUpRight, Check, Clock, Eye, Loader2, Plus, Save, Trash2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  Check,
+  Clock,
+  Eye,
+  Loader2,
+  Plus,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -66,7 +75,14 @@ function SectionHeader({ num, title }: { num: string; title: string }) {
   );
 }
 
-function parsePrizeSummary(text: string): { title: string; currency?: string; amount?: number; description?: string }[] {
+function parsePrizeSummary(
+  text: string,
+): {
+  title: string;
+  currency?: string;
+  amount?: number;
+  description?: string;
+}[] {
   const blocks = text
     .split(/\n\s*\n/g)
     .map((b) => b.trim())
@@ -78,7 +94,10 @@ function parsePrizeSummary(text: string): { title: string; currency?: string; am
     const description = rest.join("\n").trim() || undefined;
 
     // Expected AI format: "1st Prize — USD 2500" (but be tolerant)
-    const parts = firstLine.split("—").map((p) => p.trim()).filter(Boolean);
+    const parts = firstLine
+      .split("—")
+      .map((p) => p.trim())
+      .filter(Boolean);
     const title = parts[0] ?? firstLine;
     const rhs = parts[1] ?? "";
     const m = rhs.match(/\b([A-Z]{3})\b\s+([\d,]+(?:\.\d+)?)/);
@@ -90,13 +109,21 @@ function parsePrizeSummary(text: string): { title: string; currency?: string; am
 }
 
 function serializePrizeSummary(
-  prizes: { title: string; currency?: string; amount?: number; description?: string }[],
+  prizes: {
+    title: string;
+    currency?: string;
+    amount?: number;
+    description?: string;
+  }[],
 ): string {
   return prizes
     .map((p) => {
       const title = (p.title ?? "").trim();
       const currency = (p.currency ?? "").trim().toUpperCase();
-      const amount = typeof p.amount === "number" && Number.isFinite(p.amount) ? p.amount : undefined;
+      const amount =
+        typeof p.amount === "number" && Number.isFinite(p.amount)
+          ? p.amount
+          : undefined;
       const firstLine =
         title && currency && typeof amount === "number"
           ? `${title} — ${currency} ${amount.toLocaleString()}`
@@ -114,7 +141,10 @@ function serializePrizeSummary(
 export function EditHackathonForm({ hackathon, permissions }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   const {
@@ -182,8 +212,12 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
   };
 
   const watchedValues = watch();
-  const [prizeRows, setPrizeRows] = useState(() => parsePrizeSummary(hackathon.bounty_pool_summary ?? ""));
-  const [lastSyncedSummary, setLastSyncedSummary] = useState(hackathon.bounty_pool_summary ?? "");
+  const [prizeRows, setPrizeRows] = useState(() =>
+    parsePrizeSummary(hackathon.bounty_pool_summary ?? ""),
+  );
+  const [lastSyncedSummary, setLastSyncedSummary] = useState(
+    hackathon.bounty_pool_summary ?? "",
+  );
 
   useEffect(() => {
     const nextSummary = watchedValues.bounty_pool_summary ?? "";
@@ -196,35 +230,41 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
     <div className="pt-6 pb-24">
       {/* Hero */}
       <div className="mb-14 flex flex-row justify-between">
-       <div>
-       <h1
-          className="font-black text-[#0F2C23] leading-[0.88] uppercase"
-          style={{
-            fontFamily: PX,
-            fontSize: "clamp(52px, 9vw, 138px)",
-            letterSpacing: "-0.025em",
-          }}
-        >
-          PROGRAM
-          <br />
-          DETAILS.
-        </h1>
-       </div>
-       
+        <div>
+          <h1
+            className="font-black text-[#0F2C23] leading-[0.88] uppercase"
+            style={{
+              fontFamily: PX,
+              fontSize: "clamp(52px, 9vw, 138px)",
+              letterSpacing: "-0.025em",
+            }}
+          >
+            PROGRAM
+            <br />
+            DETAILS.
+          </h1>
+        </div>
+
         <div className="flex justify-end mt-8">
           <p
             className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
             style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
           >
-            Configure the core information, timeline, and prize structure for your program. This data
-            is public once the program is launched.
+            Configure the core information, timeline, and prize structure for
+            your program. This data is public once the program is launched.
           </p>
         </div>
       </div>
 
-      <div className="grid gap-8 items-start" style={{ gridTemplateColumns: "1fr 320px" }}>
+      <div
+        className="grid gap-8 items-start"
+        style={{ gridTemplateColumns: "1fr 320px" }}
+      >
         {/* LEFT COLUMN */}
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-12">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col gap-12"
+        >
           {/* Section 01 - Core Information */}
           <div>
             <SectionHeader num="01" title="Core Information" />
@@ -239,7 +279,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   </label>
                   <ImageUpload
                     value={watchedValues.logo_url}
-                    onChange={(url) => setValue("logo_url", url, { shouldDirty: true })}
+                    onChange={(url) =>
+                      setValue("logo_url", url, { shouldDirty: true })
+                    }
                     placeholder="Upload logo"
                     variant="square"
                   />
@@ -250,7 +292,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   </label>
                   <ImageUpload
                     value={watchedValues.banner_url}
-                    onChange={(url) => setValue("banner_url", url, { shouldDirty: true })}
+                    onChange={(url) =>
+                      setValue("banner_url", url, { shouldDirty: true })
+                    }
                     placeholder="Upload banner"
                     variant="rect"
                   />
@@ -268,7 +312,10 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   onBlur={focusOut}
                 />
                 {errors.name && (
-                  <p className="mt-2 text-xs text-red-600" style={{ fontFamily: FN }}>
+                  <p
+                    className="mt-2 text-xs text-red-600"
+                    style={{ fontFamily: FN }}
+                  >
                     {errors.name.message}
                   </p>
                 )}
@@ -364,8 +411,12 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
               ))}
             </div>
             {!permissions.canEditTimeline && (
-              <p className="mt-3 text-[10px] text-[#0F2C23]/40 italic" style={{ fontFamily: FN }}>
-                Timeline is locked as the program has already started or concluded.
+              <p
+                className="mt-3 text-[10px] text-[#0F2C23]/40 italic"
+                style={{ fontFamily: FN }}
+              >
+                Timeline is locked as the program has already started or
+                concluded.
               </p>
             )}
           </div>
@@ -381,7 +432,10 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
 
                 <input type="hidden" {...register("bounty_pool_summary")} />
 
-                <div className="rounded-3xl p-6" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+                <div
+                  className="rounded-3xl p-6"
+                  style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+                >
                   <div className="flex items-center justify-between mb-4">
                     <p
                       className="text-[9px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/35"
@@ -392,13 +446,27 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                     <button
                       type="button"
                       className="inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-[11px] font-black border-none cursor-pointer transition-colors hover:bg-[#0F2C23]/8"
-                      style={{ backgroundColor: "rgba(15,44,35,0.06)", color: "#0F2C23", fontFamily: FN }}
+                      style={{
+                        backgroundColor: "rgba(15,44,35,0.06)",
+                        color: "#0F2C23",
+                        fontFamily: FN,
+                      }}
                       onClick={() => {
-                        const next = [...prizeRows, { title: "Prize", currency: "USD", amount: 0, description: "" }];
+                        const next = [
+                          ...prizeRows,
+                          {
+                            title: "Prize",
+                            currency: "USD",
+                            amount: 0,
+                            description: "",
+                          },
+                        ];
                         setPrizeRows(next);
                         const summary = serializePrizeSummary(next);
                         setLastSyncedSummary(summary);
-                        setValue("bounty_pool_summary", summary, { shouldDirty: true });
+                        setValue("bounty_pool_summary", summary, {
+                          shouldDirty: true,
+                        });
                       }}
                     >
                       <Plus size={12} /> Add prize
@@ -406,9 +474,16 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   </div>
 
                   {prizeRows.length === 0 ? (
-                    <div className="rounded-2xl px-4 py-3" style={{ backgroundColor: "rgba(226,254,165,0.35)" }}>
-                      <p className="text-sm text-[#0F2C23]/60 leading-relaxed" style={{ fontFamily: FN }}>
-                        Add prizes here. This will be saved as the program’s prize summary.
+                    <div
+                      className="rounded-2xl px-4 py-3"
+                      style={{ backgroundColor: "rgba(226,254,165,0.35)" }}
+                    >
+                      <p
+                        className="text-sm text-[#0F2C23]/60 leading-relaxed"
+                        style={{ fontFamily: FN }}
+                      >
+                        Add prizes here. This will be saved as the program’s
+                        prize summary.
                       </p>
                     </div>
                   ) : (
@@ -430,12 +505,16 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                                 onBlur={focusOut}
                                 onChange={(e) => {
                                   const next = prizeRows.map((row, idx) =>
-                                    idx === i ? { ...row, title: e.target.value } : row,
+                                    idx === i
+                                      ? { ...row, title: e.target.value }
+                                      : row,
                                   );
                                   setPrizeRows(next);
                                   const summary = serializePrizeSummary(next);
                                   setLastSyncedSummary(summary);
-                                  setValue("bounty_pool_summary", summary, { shouldDirty: true });
+                                  setValue("bounty_pool_summary", summary, {
+                                    shouldDirty: true,
+                                  });
                                 }}
                               />
                             </div>
@@ -450,16 +529,30 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                                 onBlur={focusOut}
                                 onChange={(e) => {
                                   const next = prizeRows.map((row, idx) =>
-                                    idx === i ? { ...row, currency: e.target.value.toUpperCase().slice(0, 3) } : row,
+                                    idx === i
+                                      ? {
+                                          ...row,
+                                          currency: e.target.value
+                                            .toUpperCase()
+                                            .slice(0, 3),
+                                        }
+                                      : row,
                                   );
                                   setPrizeRows(next);
                                   const summary = serializePrizeSummary(next);
                                   setLastSyncedSummary(summary);
-                                  setValue("bounty_pool_summary", summary, { shouldDirty: true });
+                                  setValue("bounty_pool_summary", summary, {
+                                    shouldDirty: true,
+                                  });
                                 }}
                               />
                               <input
-                                value={typeof p.amount === "number" && Number.isFinite(p.amount) ? String(p.amount) : ""}
+                                value={
+                                  typeof p.amount === "number" &&
+                                  Number.isFinite(p.amount)
+                                    ? String(p.amount)
+                                    : ""
+                                }
                                 inputMode="numeric"
                                 placeholder="0"
                                 className="w-[110px] rounded-xl px-3 py-2 text-sm outline-none text-right"
@@ -468,29 +561,52 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                                 onBlur={focusOut}
                                 onChange={(e) => {
                                   const raw = e.target.value;
-                                  const parsed = raw.trim() === "" ? undefined : Number(raw.replace(/,/g, ""));
+                                  const parsed =
+                                    raw.trim() === ""
+                                      ? undefined
+                                      : Number(raw.replace(/,/g, ""));
                                   const next = prizeRows.map((row, idx) =>
-                                    idx === i ? { ...row, amount: typeof parsed === "number" && !Number.isNaN(parsed) ? parsed : undefined } : row,
+                                    idx === i
+                                      ? {
+                                          ...row,
+                                          amount:
+                                            typeof parsed === "number" &&
+                                            !Number.isNaN(parsed)
+                                              ? parsed
+                                              : undefined,
+                                        }
+                                      : row,
                                   );
                                   setPrizeRows(next);
                                   const summary = serializePrizeSummary(next);
                                   setLastSyncedSummary(summary);
-                                  setValue("bounty_pool_summary", summary, { shouldDirty: true });
+                                  setValue("bounty_pool_summary", summary, {
+                                    shouldDirty: true,
+                                  });
                                 }}
                               />
                               <button
                                 type="button"
                                 className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center border-none cursor-pointer transition-colors hover:bg-red-50"
-                                style={{ backgroundColor: "rgba(15,44,35,0.06)" }}
+                                style={{
+                                  backgroundColor: "rgba(15,44,35,0.06)",
+                                }}
                                 onClick={() => {
-                                  const next = prizeRows.filter((_, idx) => idx !== i);
+                                  const next = prizeRows.filter(
+                                    (_, idx) => idx !== i,
+                                  );
                                   setPrizeRows(next);
                                   const summary = serializePrizeSummary(next);
                                   setLastSyncedSummary(summary);
-                                  setValue("bounty_pool_summary", summary, { shouldDirty: true });
+                                  setValue("bounty_pool_summary", summary, {
+                                    shouldDirty: true,
+                                  });
                                 }}
                               >
-                                <Trash2 size={14} className="text-[#0F2C23]/40" />
+                                <Trash2
+                                  size={14}
+                                  className="text-[#0F2C23]/40"
+                                />
                               </button>
                             </div>
                           </div>
@@ -506,12 +622,16 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                               onBlur={focusOut}
                               onChange={(e) => {
                                 const next = prizeRows.map((row, idx) =>
-                                  idx === i ? { ...row, description: e.target.value } : row,
+                                  idx === i
+                                    ? { ...row, description: e.target.value }
+                                    : row,
                                 );
                                 setPrizeRows(next);
                                 const summary = serializePrizeSummary(next);
                                 setLastSyncedSummary(summary);
-                                setValue("bounty_pool_summary", summary, { shouldDirty: true });
+                                setValue("bounty_pool_summary", summary, {
+                                  shouldDirty: true,
+                                });
                               }}
                             />
                           </div>
@@ -581,7 +701,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                           onBlur={focusOut}
                         />
                         <input
-                          {...register(`judging_criteria.${idx}.description` as const)}
+                          {...register(
+                            `judging_criteria.${idx}.description` as const,
+                          )}
                           placeholder="Description"
                           className={inputCls}
                           style={inputStyle}
@@ -601,7 +723,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   ))}
                   <button
                     type="button"
-                    onClick={() => appendCriterion({ name: "", description: "" })}
+                    onClick={() =>
+                      appendCriterion({ name: "", description: "" })
+                    }
                     className="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold border-none cursor-pointer transition-colors hover:bg-[#0F2C23]/8"
                     style={{
                       backgroundColor: "rgba(15,44,35,0.04)",
@@ -630,7 +754,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                     <div key={field.id} className="flex gap-2 items-start">
                       <div className="flex-1 grid grid-cols-2 gap-2">
                         <input
-                          {...register(`technical_resources.${idx}.url` as const)}
+                          {...register(
+                            `technical_resources.${idx}.url` as const,
+                          )}
                           placeholder="Resource URL"
                           className={inputCls}
                           style={inputStyle}
@@ -638,7 +764,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                           onBlur={focusOut}
                         />
                         <input
-                          {...register(`technical_resources.${idx}.description` as const)}
+                          {...register(
+                            `technical_resources.${idx}.description` as const,
+                          )}
                           placeholder="Description"
                           className={inputCls}
                           style={inputStyle}
@@ -690,7 +818,10 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                   onFocus={focusIn}
                   onBlur={focusOut}
                 />
-                <p className="mt-2 text-[10px] text-[#0F2C23]/40 italic" style={{ fontFamily: FN }}>
+                <p
+                  className="mt-2 text-[10px] text-[#0F2C23]/40 italic"
+                  style={{ fontFamily: FN }}
+                >
                   These notes are only visible to hosts and cohosts.
                 </p>
               </div>
@@ -709,7 +840,11 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                 className="pl-5 pr-3 py-3.5 text-[9px] tracking-[0.15em] uppercase font-bold text-[#F8FFE8] flex items-center gap-2"
                 style={{ fontFamily: FN }}
               >
-                {isPending ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                {isPending ? (
+                  <Loader2 size={11} className="animate-spin" />
+                ) : (
+                  <Save size={11} />
+                )}
                 {isPending ? "Saving..." : "Save Changes"}
               </span>
               <span
@@ -726,12 +861,18 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                 style={{
                   fontFamily: FN,
                   backgroundColor:
-                    message.type === "success" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)",
+                    message.type === "success"
+                      ? "rgba(34,197,94,0.08)"
+                      : "rgba(239,68,68,0.08)",
                   color: message.type === "success" ? "#166534" : "#B91C1C",
                   border: `1px solid ${message.type === "success" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}`,
                 }}
               >
-                {message.type === "success" ? <Check size={12} /> : <Clock size={12} />}
+                {message.type === "success" ? (
+                  <Check size={12} />
+                ) : (
+                  <Clock size={12} />
+                )}
                 {message.text}
               </div>
             )}
@@ -741,7 +882,10 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
         {/* RIGHT SIDEBAR */}
         <aside className="sticky top-[81px] flex flex-col gap-4">
           {/* Profile Completion */}
-          <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+          <div
+            className="rounded-3xl p-7"
+            style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+          >
             <p
               className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/40 mb-5"
               style={{ fontFamily: FN }}
@@ -757,18 +901,25 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                 },
                 {
                   label: "Timeline",
-                  done: !!watchedValues.start_date && !!watchedValues.submission_deadline,
+                  done:
+                    !!watchedValues.start_date &&
+                    !!watchedValues.submission_deadline,
                   value: watchedValues.start_date ? "Set" : "Not set",
                 },
                 {
                   label: "Prizes",
                   done: !!watchedValues.bounty_pool_summary,
-                  value: watchedValues.bounty_pool_summary ? "Defined" : "Empty",
+                  value: watchedValues.bounty_pool_summary
+                    ? "Defined"
+                    : "Empty",
                 },
                 {
                   label: "Resources",
                   done: (watchedValues.technical_resources?.length ?? 0) > 0,
-                  value: (watchedValues.technical_resources?.length ?? 0) > 0 ? "Linked" : "Not set",
+                  value:
+                    (watchedValues.technical_resources?.length ?? 0) > 0
+                      ? "Linked"
+                      : "Not set",
                 },
               ].map(({ label, done, value }) => (
                 <div
@@ -777,7 +928,9 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                 >
                   <span
                     className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center"
-                    style={{ backgroundColor: done ? "#0F2C23" : "rgba(15,44,35,0.1)" }}
+                    style={{
+                      backgroundColor: done ? "#0F2C23" : "rgba(15,44,35,0.1)",
+                    }}
                   >
                     {done && <Check size={10} style={{ color: "#F8FFE8" }} />}
                   </span>
@@ -788,7 +941,10 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
                     >
                       {label}
                     </p>
-                    <p className="text-sm text-[#0F2C23]/65 truncate" style={{ fontFamily: FN }}>
+                    <p
+                      className="text-sm text-[#0F2C23]/65 truncate"
+                      style={{ fontFamily: FN }}
+                    >
                       {value}
                     </p>
                   </div>
@@ -807,7 +963,7 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
             <Eye size={16} style={{ color: "#0F2C23" }} />
             <p
               className="text-[10px] tracking-wide uppercase font-bold"
-                style={{ fontFamily: FN, color: "#0F2C23" }}
+              style={{ fontFamily: FN, color: "#0F2C23" }}
             >
               Preview Hackathon Information
             </p>
@@ -848,7 +1004,8 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
             judging_deadline: watchedValues.judging_deadline,
             results_date: watchedValues.results_date,
             bounty_pool_summary: watchedValues.bounty_pool_summary,
-            problem_statements: watchedValues.problem_statements?.filter(Boolean) ?? [],
+            problem_statements:
+              watchedValues.problem_statements?.filter(Boolean) ?? [],
             judging_criteria: watchedValues.judging_criteria,
             technical_resources: watchedValues.technical_resources,
             created_at: hackathon.created_at,

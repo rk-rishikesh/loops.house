@@ -180,6 +180,7 @@ export function NewProfileForm({
 }: NewProfileFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [proceedProjectId, setProceedProjectId] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState<Record<string, KBStepStatus>>({});
   const [progressErrors, setProgressErrors] = useState<Record<string, string>>(
@@ -335,6 +336,7 @@ export function NewProfileForm({
     async (data: BuilderProfileInput) => {
       setError(null);
       setProgressErrors({});
+      setProceedProjectId(null);
       setLoading(true);
       KB_STEPS.forEach((s) => setProgress((p) => ({ ...p, [s]: "pending" })));
 
@@ -471,7 +473,7 @@ export function NewProfileForm({
             created_at: new Date().toISOString(),
           } as StoredProject);
           if (!result.success) throw new Error(result.error);
-          router.push(`/builder/projects/${lastComplete.project_id}`);
+          setProceedProjectId(lastComplete.project_id);
           return;
         }
         throw new Error(serverError || "No profile data received.");
@@ -512,9 +514,17 @@ export function NewProfileForm({
       <div className="flex flex-1">
         {/* LEFT — form / intro */}
         <main className="flex-1 flex flex-col justify-center px-6 md:px-12 lg:px-20 py-10">
-          {loading ? (
+          {loading || proceedProjectId ? (
             <div className="h-full min-h-[70vh] flex items-stretch">
-              <KnowledgeBasePanel progress={progress} errors={progressErrors} />
+              <KnowledgeBasePanel
+                progress={progress}
+                errors={progressErrors}
+                onProceed={
+                  proceedProjectId
+                    ? () => router.push(`/builder/projects/${proceedProjectId}`)
+                    : undefined
+                }
+              />
             </div>
           ) : showIntro ? (
             <section className="w-full">
@@ -1087,12 +1097,12 @@ export function NewProfileForm({
                         className="group flex items-start gap-5"
                       >
                         {/* Node */}
-                        <div className="relative z-20 flex-shrink-0 mt-1">
+                        <div className="relative z-20 shrink-0 mt-1">
                           {isPast ? (
                             <div className="w-[28px] h-[28px] rounded-full bg-[#E2FEA5] flex items-center justify-center">
                               <Check
                                 size={14}
-                                className="text-[#0F2C23] stroke-[3]"
+                                className="text-[#0F2C23] stroke-3"
                               />
                             </div>
                           ) : isCur ? (

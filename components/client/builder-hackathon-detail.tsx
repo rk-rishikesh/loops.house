@@ -181,7 +181,7 @@ export function BuilderHackathonDetail({
         className="flex-1 rounded-[15px] overflow-hidden flex flex-col min-h-0"
         style={{ backgroundColor: "#0F2C23" }}
       >
-        {section !== "submit" && renderTopBar()}
+        {renderTopBar()}
         {renderSection()}
       </div>
     </div>

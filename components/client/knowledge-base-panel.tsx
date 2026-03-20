@@ -6,15 +6,30 @@ import { Check, Loader2, X } from "lucide-react";
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
-export const KB_STEPS = ["code-reader", "demo-reader", "theme-reader", "knowledge-base"] as const;
-export type KBStepStatus = "pending" | "started" | "done" | "failed" | "skipped";
+export const KB_STEPS = [
+  "code-reader",
+  "demo-reader",
+  "theme-reader",
+  "knowledge-base",
+] as const;
+export type KBStepStatus =
+  | "pending"
+  | "started"
+  | "done"
+  | "failed"
+  | "skipped";
 
 interface ProgressPanelProps {
   progress: Record<string, KBStepStatus>;
   errors: Record<string, string>;
+  onProceed?: () => void;
 }
 
-export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelProps) {
+export function KnowledgeBasePanel({
+  progress,
+  errors: pErrors,
+  onProceed,
+}: ProgressPanelProps) {
   const friendlyLabel: Record<(typeof KB_STEPS)[number], string> = {
     "code-reader": "Code Reader",
     "demo-reader": "Demo Reader",
@@ -27,8 +42,12 @@ export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelP
     error: pErrors[step],
   }));
 
+  const kbDone = progress["knowledge-base"] === "done";
+  const heroTitle = kbDone ? "Knowledge Graph" : "Building Project";
+  const heroSubtitle = kbDone ? "Indexed." : "Intelligence.";
+
   return (
-    <section className="w-full">
+    <section className="w-full overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <div className="grid gap-8 lg:grid-cols-[1.4fr,1fr]">
         {/* Left: Progress List */}
         <div className="flex flex-col gap-8 py-4">
@@ -40,7 +59,7 @@ export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelP
               >
                 Knowledge Graph
               </span>
-              <div className="h-[1px] flex-1 bg-[#0F2C23]/10" />
+              <div className="h-px flex-1 bg-[#0F2C23]/10" />
             </div>
             <h2
               className="font-black uppercase leading-[0.9] text-[#0F2C23]"
@@ -50,17 +69,17 @@ export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelP
                 letterSpacing: "-0.04em",
               }}
             >
-              Building Project
+              {heroTitle}
               <br />
-              Intelligence.
+              {heroSubtitle}
             </h2>
             <p
               className="text-sm leading-relaxed max-w-xl text-[#0F2C23]/60"
               style={{ fontFamily: FN }}
             >
-              Our multi-agent system is currently processing your codebase. We&apos;re mapping
-              dependencies, analyzing user flows, and indexing visual context into a high-fidelity
-              knowledge graph.
+              {kbDone
+                ? "Your project knowledge graph is ready. If you made edits, click Re-sync to rebuild it."
+                : "Our multi-agent system is currently processing your codebase. We're mapping dependencies, analyzing user flows, and indexing visual context into a high-fidelity knowledge graph."}
             </p>
           </div>
 
@@ -79,18 +98,25 @@ export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelP
                   transition={{ delay: idx * 0.1 }}
                   className="group relative flex items-start gap-5 p-5 rounded-3xl border border-[#0F2C23]/10 transition-all duration-300"
                   style={{
-                    backgroundColor: isStarted ? "rgba(15, 44, 35, 0.05)" : "transparent",
-                    boxShadow: isStarted ? "0 10px 30px -10px rgba(15, 44, 35, 0.08)" : "none",
+                    backgroundColor: isStarted
+                      ? "rgba(15, 44, 35, 0.05)"
+                      : "transparent",
+                    boxShadow: isStarted
+                      ? "0 10px 30px -10px rgba(15, 44, 35, 0.08)"
+                      : "none",
                   }}
                 >
                   <div className="relative shrink-0 mt-1">
                     {isDone ? (
                       <div className="w-8 h-8 rounded-full bg-[#E2FEA5] flex items-center justify-center">
-                        <Check size={16} className="text-[#0F2C23] stroke-[3]" />
+                        <Check size={16} className="text-[#0F2C23] stroke-3" />
                       </div>
                     ) : isStarted ? (
                       <div className="w-8 h-8 rounded-full bg-[#0F2C23] flex items-center justify-center">
-                        <Loader2 size={16} className="text-[#E2FEA5] animate-spin" />
+                        <Loader2
+                          size={16}
+                          className="text-[#E2FEA5] animate-spin"
+                        />
                       </div>
                     ) : isFailed ? (
                       <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center">
@@ -107,7 +133,7 @@ export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelP
                     <div className="flex items-center justify-between mb-1">
                       <h3
                         className="font-bold text-[15px] text-[#0F2C23]"
-                        style={{ fontFamily: PX }}
+                        style={{ fontFamily: FN }}
                       >
                         {friendlyLabel[entry.step]}
                       </h3>
@@ -119,9 +145,11 @@ export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelP
                           ? "Verified"
                           : status === "started"
                             ? "Processing"
-                            : status === "failed"
-                              ? "Interrupt"
-                              : "Pending"}
+                            : status === "skipped"
+                              ? "Skipped"
+                              : status === "failed"
+                                ? "Interrupt"
+                                : "Pending"}
                       </span>
                     </div>
                     <p
@@ -132,12 +160,14 @@ export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelP
                         entry.error
                       ) : (
                         <>
-                          {idx === 0 && "Cloning repository and executing deep AST traversal."}
+                          {idx === 0 &&
+                            "Cloning repository and executing deep AST traversal."}
                           {idx === 1 &&
                             "Analyzing demo frames to identify core product archetypes."}
                           {idx === 2 &&
                             "Extracting design tokens and high-level component hierarchy."}
-                          {idx === 3 && "Warping context windows into the vector knowledge base."}
+                          {idx === 3 &&
+                            "Warping context windows into the vector knowledge base."}
                         </>
                       )}
                     </p>
@@ -146,6 +176,24 @@ export function KnowledgeBasePanel({ progress, errors: pErrors }: ProgressPanelP
               );
             })}
           </div>
+
+          {onProceed && kbDone && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={onProceed}
+                className="w-full rounded-full border-none cursor-pointer px-8 py-3 text-[10px] font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-[0.99]"
+                style={{
+                  backgroundColor: "#0F2C23",
+                  color: "#E2FEA5",
+                  fontFamily: PX,
+                  boxShadow: "0 20px 40px -20px rgba(15, 44, 35, 0.5)",
+                }}
+              >
+                Proceed to Project
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right: Agent Control Center */}

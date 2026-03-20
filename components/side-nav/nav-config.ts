@@ -13,7 +13,6 @@ import {
   Pencil,
   Send,
   Settings,
-  Share2,
   Sparkles,
   Trophy,
   Users,
@@ -96,7 +95,6 @@ export const PROJECT_TABS: TabItem[] = [
   { key: "edit", icon: Pencil, label: "Edit" },
   { key: "knowledge-base", icon: Database, label: "Knowledge Base" },
   { key: "share", icon: Sparkles, label: "Amplify With AI" },
-  { key: "public", icon: Share2, label: "Public URL" },
 ];
 
 export type NavContext =

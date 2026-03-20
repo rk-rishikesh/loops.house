@@ -24,6 +24,51 @@ function fmtDateTime(iso?: string) {
   });
 }
 
+function getTotalPrizePoolFromSummary(
+  summary?: string,
+): { label: string; amount: number } | null {
+  if (!summary) return null;
+
+  // bounty_pool_summary is stored as concatenated prize blocks like:
+  // "1st Prize — USD 5000\nDescription" (repeated)
+  // We parse all occurrences of currency + amount and sum them.
+  const matches: Array<{ currency: string; amount: number }> = [];
+
+  const currencyToken =
+    "(?:USD|EUR|GBP|INR|AUD|CAD|CHF|CNY|JPY|KRW|SGD|HKD|NZD|\\$|€|£)";
+  const amountRegex = new RegExp(
+    `${currencyToken}\\s*([0-9]+(?:,[0-9]{3})*(?:\\.[0-9]+)?|[0-9]+(?:\\.[0-9]+)?)(?:\\s*([kKmMbB]))?`,
+    "g",
+  );
+
+  let m: RegExpExecArray | null;
+  while ((m = amountRegex.exec(summary))) {
+    const currency = m[0].match(new RegExp(currencyToken, "i"))?.[0] ?? "$";
+    const raw = m[1];
+    const suffix = m[2]?.toLowerCase() ?? "";
+
+    const base = Number(String(raw).replace(/,/g, ""));
+    if (!Number.isFinite(base)) continue;
+
+    const multiplier =
+      suffix === "k" ? 1_000 : suffix === "m" ? 1_000_000 : suffix === "b" ? 1_000_000_000 : 1;
+
+    matches.push({ currency: currency.toUpperCase(), amount: base * multiplier });
+  }
+
+  if (matches.length === 0) return null;
+
+  const total = matches.reduce((sum, x) => sum + x.amount, 0);
+  const currencyLabel = matches[0].currency;
+
+  const formatted =
+    Number.isInteger(total) || total % 1 === 0
+      ? total.toLocaleString()
+      : total.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+  return { label: `${currencyLabel} ${formatted}`, amount: total };
+}
+
 type EventStatus = "ongoing" | "upcoming" | "past";
 type TabId = "ongoing" | "upcoming" | "past";
 
@@ -154,7 +199,12 @@ function FeaturedHero({ b }: { b: Hackathon }) {
                   className="text-[11px] truncate"
                   style={{ fontFamily: FN, color: "rgba(226,254,165,0.7)" }}
                 >
-                  {String(b.bounty_pool_summary).slice(0, 32)}
+                  {(() => {
+                    const parsed = getTotalPrizePoolFromSummary(
+                      b.bounty_pool_summary,
+                    );
+                    return parsed ? `Total ${parsed.label}` : String(b.bounty_pool_summary).slice(0, 32);
+                  })()}
                 </span>
               </div>
             )}

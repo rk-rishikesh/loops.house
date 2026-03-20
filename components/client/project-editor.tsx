@@ -24,8 +24,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { ImageUpload } from "@/components/client/image-upload";
-import { type KBStepStatus, KnowledgeBasePanel } from "@/components/client/knowledge-base-panel";
-import { createInvitationAction, removeTeamMemberAction, saveProjectAction } from "@/lib/actions";
+import {
+  KB_STEPS,
+  type KBStepStatus,
+  KnowledgeBasePanel,
+} from "@/components/client/knowledge-base-panel";
+import {
+  createInvitationAction,
+  removeTeamMemberAction,
+  saveProjectAction,
+} from "@/lib/actions";
 import type { StoredProject, StoredSubmission } from "@/lib/data-mappers";
 import type { TeamMemberInfo } from "@/lib/server-data";
 
@@ -105,7 +113,11 @@ function InlineSaveCancel({
         className="inline-flex items-center gap-1.5 text-[9px] tracking-[0.14em] uppercase font-bold px-3.5 py-2 rounded-full border-none cursor-pointer transition-all hover:opacity-90 disabled:opacity-40"
         style={{ fontFamily: PX, backgroundColor: "#0F2C23", color: "#F8FFE8" }}
       >
-        {saving ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+        {saving ? (
+          <Loader2 size={10} className="animate-spin" />
+        ) : (
+          <Check size={10} />
+        )}
         {saving ? "Saving…" : "Save"}
       </button>
       <button
@@ -174,15 +186,26 @@ export function ProjectEditor({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const [project, setProject] = useState<StoredProject | null | undefined>(initialProject);
+  const [project, setProject] = useState<StoredProject | null | undefined>(
+    initialProject,
+  );
   const [submissions] = useState<StoredSubmission[]>(initialSubmissions);
-  const [hackathonNames] = useState<Record<string, string>>(initialHackathonNames);
-  const [teamMembers, setTeamMembers] = useState<TeamMemberInfo[]>(initialTeamMembers);
+  const [hackathonNames] = useState<Record<string, string>>(
+    initialHackathonNames,
+  );
+  const [teamMembers, setTeamMembers] =
+    useState<TeamMemberInfo[]>(initialTeamMembers);
   const [memberEmail, setMemberEmail] = useState("");
   const [memberError, setMemberError] = useState<string | null>(null);
   const [memberSuccess, setMemberSuccess] = useState<string | null>(null);
   const isOwner = currentUserId === teamOwnerId;
   const [kbActiveTab, setKbActiveTab] = useState<string | null>(null);
+  const [kbSyncing, setKbSyncing] = useState(false);
+  const [kbSyncProgress, setKbSyncProgress] = useState<
+    Record<string, KBStepStatus>
+  >({});
+  const [kbSyncErrors, setKbSyncErrors] = useState<Record<string, string>>({});
+  const [kbSyncError, setKbSyncError] = useState<string | null>(null);
   const [socialLoading, setSocialLoading] = useState(false);
   const [socialResult, setSocialResult] = useState<{
     linkedin_post?: string;
@@ -216,7 +239,9 @@ export function ProjectEditor({
       name: project.name ?? "",
       tagline: project.tagline ?? "",
       description: String(
-        project.refined_description ?? (project as { description?: string }).description ?? "",
+        project.refined_description ??
+          (project as { description?: string }).description ??
+          "",
       ),
       category: project.category ?? "",
       website_url: project.website_url ?? "",
@@ -295,7 +320,7 @@ export function ProjectEditor({
             tech_stack_tags: project.tech_stack_tags || [],
             category: project.category || "",
             key_features: project.key_features || [],
-            loops_profile_url: `/projects/${projectId}`,
+            loops_profile_url: `www.loops.house/v/${projectId}`,
           },
           tone: "excited",
         }),
@@ -317,11 +342,6 @@ export function ProjectEditor({
     const read = () => {
       const h = window.location.hash.replace("#", "");
       if (!h) return;
-      if (h === "public") {
-        window.open(`/projects/${projectId}`, "_blank");
-        history.replaceState(null, "", window.location.pathname);
-        return;
-      }
       if (h === "share") setActiveSection("share");
       else if (h === "knowledge-base") setActiveSection("knowledge-base");
       else if (h === "edit") setActiveSection("project");
@@ -338,7 +358,11 @@ export function ProjectEditor({
         className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: "#F8FFE8" }}
       >
-        <Loader2 size={18} className="animate-spin" style={{ color: "#0F2C23" }} />
+        <Loader2
+          size={18}
+          className="animate-spin"
+          style={{ color: "#0F2C23" }}
+        />
       </div>
     );
 
@@ -347,7 +371,10 @@ export function ProjectEditor({
 
   if (project === null)
     return (
-      <div className="min-h-screen px-10 py-12" style={{ backgroundColor: "#F8FFE8" }}>
+      <div
+        className="min-h-screen px-10 py-12"
+        style={{ backgroundColor: "#F8FFE8" }}
+      >
         <Link
           href={effectiveBackHref}
           className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase font-bold text-[#0F2C23]/50 no-underline"
@@ -373,7 +400,9 @@ export function ProjectEditor({
   const screenshots = (p.screenshot_urls ?? []) as string[];
   const tags = (p.tech_stack_tags ?? []) as string[];
   const features = (p.key_features ?? []) as string[];
-  const desc = String(p.refined_description ?? (p as { description?: string }).description ?? "");
+  const desc = String(
+    p.refined_description ?? (p as { description?: string }).description ?? "",
+  );
 
   const links = [
     { key: "github", href: p.github_url, icon: Github, label: "GitHub" },
@@ -395,48 +424,214 @@ export function ProjectEditor({
 
   /* ─── Knowledge Base full-screen view ─────────────────────── */
   if (activeSection === "knowledge-base") {
-    // Mock progress for now - in a real app, this could come from the project status
+    const kbExists = (p.kb_sections?.length ?? 0) > 0;
     const verifiedProgress: Record<string, KBStepStatus> = {
-      "code-reader": "done",
-      "demo-reader": "done",
-      "theme-reader": "done",
-      "knowledge-base": "done",
+      "code-reader": kbExists ? "done" : "pending",
+      "demo-reader": kbExists ? "done" : "pending",
+      "theme-reader": kbExists ? "done" : "pending",
+      "knowledge-base": kbExists ? "done" : "pending",
+    };
+
+    const progressToShow = kbSyncing ? kbSyncProgress : verifiedProgress;
+    const errorsToShow = kbSyncing ? kbSyncErrors : {};
+
+    const handleKnowledgeBaseSync = async () => {
+      if (!project || !project.team_id) return;
+
+      setKbSyncError(null);
+      setKbSyncing(true);
+      setKbSyncProgress({
+        "code-reader": "pending",
+        "demo-reader": "pending",
+        "theme-reader": "pending",
+        "knowledge-base": "pending",
+      });
+      setKbSyncErrors({});
+
+      try {
+        const res = await fetch("/api/builder-agents/profile-creator", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_id: p.project_id,
+            team_id: project.team_id,
+            name: p.name,
+            description: desc,
+            github_url: p.github_url ?? undefined,
+            youtube_url: p.youtube_url ?? undefined,
+            logo_url: p.logo_url ?? undefined,
+            website_url: p.website_url ?? undefined,
+            screenshot_urls: p.screenshot_urls ?? [],
+            social_links: socialLinks,
+          }),
+        });
+
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          throw new Error(json.error || json.message || "Sync failed");
+        }
+
+        if (!res.body) throw new Error("No response body");
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let currentEvent: string | null = null;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              currentEvent = line.slice(7).trim();
+              continue;
+            }
+            if (!line.startsWith("data: ")) continue;
+
+            const chunk = line.slice(6);
+            if (chunk === "[DONE]") continue;
+
+            try {
+              const parsed = JSON.parse(chunk) as Record<string, unknown>;
+              const step = parsed.step;
+              if (typeof step === "string") {
+                if ((KB_STEPS as readonly string[]).includes(step)) {
+                  const rawStatus = parsed.status;
+                  const status = (
+                    ["done", "failed", "skipped"].includes(rawStatus as string)
+                      ? rawStatus
+                      : "started"
+                  ) as KBStepStatus;
+
+                  setKbSyncProgress((prev) => ({
+                    ...prev,
+                    [step]: status,
+                  }));
+
+                  if (status === "failed" && typeof parsed.error === "string") {
+                    setKbSyncErrors((prev) => ({
+                      ...prev,
+                      [step]: parsed.error as string,
+                    }));
+                  }
+                }
+              }
+              if (currentEvent === "complete") {
+                // KB indexing finished; the panel will update as steps resolve.
+              }
+            } catch {
+              /* ignore malformed chunks */
+            }
+          }
+        }
+      } catch (err) {
+        setKbSyncError(
+          err instanceof Error ? err.message : "Failed to sync knowledge base",
+        );
+      } finally {
+        setKbSyncing(false);
+        router.refresh();
+      }
     };
 
     return (
       <div className="flex flex-col h-screen overflow-hidden p-6 md:p-10">
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1
-              className="font-black text-[#0F2C23] uppercase tracking-tight"
-              style={{ fontFamily: PX, fontSize: 32 }}
-            >
-              Project Intelligence
-            </h1>
-            <p className="text-sm text-[#0F2C23]/60" style={{ fontFamily: FN }}>
-              Management and synchronization of your project&apos;s knowledge graph.
-            </p>
-          </div>
-          <div className="flex gap-3">
+          <h1
+            className="font-black text-[#0F2C23] uppercase tracking-tight"
+            style={{ fontFamily: PX, fontSize: 32 }}
+          >
+            Knowledge Graph
+          </h1>
+          <div className="flex gap-3 items-center">
             <button
               type="button"
               className="inline-flex items-center gap-2 rounded-full border-none cursor-pointer px-6 py-3 text-[10px] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
-              style={{ backgroundColor: "#0F2C23", color: "#E2FEA5", fontFamily: PX }}
+              disabled={kbSyncing}
+              style={{
+                backgroundColor: "#0F2C23",
+                color: "#E2FEA5",
+                fontFamily: PX,
+                opacity: kbSyncing ? 0.7 : 1,
+              }}
+              onClick={handleKnowledgeBaseSync}
             >
-              <Database size={14} /> Sync Now
+              <Database size={14} />{" "}
+              {kbSyncing
+                ? "Syncing..."
+                : kbExists
+                  ? "Re-sync Knowledge Graph"
+                  : "Sync Now"}
             </button>
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 p-4 md:p-6 overflow-y-auto custom-scrollbar">
-          <KnowledgeBasePanel progress={verifiedProgress} errors={{}} />
+        <div className="flex-1 min-h-0 p-4 md:p-6 overflow-y-auto custom-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <KnowledgeBasePanel progress={progressToShow} errors={errorsToShow} />
         </div>
+
+        {kbSyncError && (
+          <p
+            className="px-4 md:px-6 pb-6 text-sm text-[#0F2C23]/70"
+            style={{ fontFamily: FN }}
+          >
+            {kbSyncError}
+          </p>
+        )}
       </div>
     );
   }
 
   /* ─── Share full-screen view ─────────────────────────────────── */
   if (activeSection === "share") {
+    const renderSocialPost = (text: string) => {
+      const paragraphs = text
+        .split(/\n\s*\n/)
+        .map((p0) => p0.trim())
+        .filter(Boolean);
+
+      if (paragraphs.length === 0) {
+        return (
+          <p
+            className="text-sm leading-[1.85] whitespace-pre-wrap"
+            style={{
+              fontFamily: FN,
+              color: "rgba(226,254,165,0.82)",
+            }}
+          >
+            {text}
+          </p>
+        );
+      }
+
+      return (
+        <div className="flex flex-col gap-3">
+          {paragraphs.map((para, idx) => (
+            <p
+              key={idx}
+              className="text-sm leading-[1.85]"
+              style={{
+                fontFamily: FN,
+                color: "rgba(226,254,165,0.82)",
+              }}
+            >
+              {para.split("\n").map((line, lineIdx, arr) => (
+                <span key={lineIdx}>
+                  {line}
+                  {lineIdx < arr.length - 1 ? <br /> : null}
+                </span>
+              ))}
+            </p>
+          ))}
+        </div>
+      );
+    };
+
     return (
       <div
         className="flex flex-col h-screen overflow-hidden p-4"
@@ -457,6 +652,24 @@ export function ProjectEditor({
             >
               {p.name}
             </p>
+            <button
+              type="button"
+              onClick={async () => {
+                const url = `www.loops.house/v/${projectId}`;
+                try {
+                  await navigator.clipboard.writeText(url);
+                } catch {}
+              }}
+              className="text-[12px] tracking-[0.16em] uppercase font-bold px-3 py-2 rounded-full border-none cursor-pointer"
+              style={{
+                fontFamily: FN,
+                backgroundColor: "#E2FEA5",
+                color: "#0F2C23",
+              }}
+              title={`Copy: www.loops.house/v/${projectId}`}
+            >
+              Copy Public URL
+            </button>
           </div>
 
           {/* Body */}
@@ -480,8 +693,8 @@ export function ProjectEditor({
                   className="text-sm leading-relaxed text-center max-w-[440px]"
                   style={{ fontFamily: FN, color: "rgba(226,254,165,0.45)" }}
                 >
-                  Generate polished LinkedIn and X posts to announce your project. Pick a prompt or
-                  write your own.
+                  Generate polished LinkedIn and X posts to announce your
+                  project. Pick a prompt or write your own.
                 </p>
                 <div className="mt-8 grid grid-cols-2 gap-3 max-w-[560px] w-full">
                   {[
@@ -515,8 +728,8 @@ export function ProjectEditor({
                     <div
                       className="rounded-2xl p-6"
                       style={{
-                        backgroundColor: "rgba(226,254,165,0.04)",
-                        border: "1px solid rgba(226,254,165,0.06)",
+                        backgroundColor: "rgba(226,254,165,0.07)",
+                        border: "1px solid rgba(226,254,165,0.12)",
                       }}
                     >
                       <div className="flex items-center justify-between mb-4">
@@ -533,7 +746,9 @@ export function ProjectEditor({
                           type="button"
                           onClick={async () => {
                             try {
-                              await navigator.clipboard.writeText(socialResult.linkedin_post!);
+                              await navigator.clipboard.writeText(
+                                socialResult.linkedin_post!,
+                              );
                             } catch {}
                           }}
                           className="text-[8px] tracking-[0.16em] uppercase font-bold px-3 py-1.5 rounded-full border-none cursor-pointer"
@@ -546,63 +761,50 @@ export function ProjectEditor({
                           Copy
                         </button>
                       </div>
-                      <p
-                        className="text-sm leading-[1.85] whitespace-pre-wrap"
-                        style={{
-                          fontFamily: FN,
-                          color: "rgba(226,254,165,0.65)",
-                        }}
-                      >
-                        {socialResult.linkedin_post}
-                      </p>
+                      {renderSocialPost(socialResult.linkedin_post)}
                     </div>
                   )}
-                  {socialResult.twitter_post && !socialResult.twitter_post.startsWith("Error") && (
-                    <div
-                      className="rounded-2xl p-6"
-                      style={{
-                        backgroundColor: "rgba(226,254,165,0.04)",
-                        border: "1px solid rgba(226,254,165,0.06)",
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <p
-                          className="text-[9px] tracking-[0.2em] uppercase font-bold"
-                          style={{
-                            fontFamily: PX,
-                            color: "rgba(226,254,165,0.3)",
-                          }}
-                        >
-                          X / Twitter
-                        </p>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              await navigator.clipboard.writeText(socialResult.twitter_post!);
-                            } catch {}
-                          }}
-                          className="text-[8px] tracking-[0.16em] uppercase font-bold px-3 py-1.5 rounded-full border-none cursor-pointer"
-                          style={{
-                            fontFamily: PX,
-                            backgroundColor: "rgba(226,254,165,0.08)",
-                            color: "rgba(226,254,165,0.5)",
-                          }}
-                        >
-                          Copy
-                        </button>
+                  {socialResult.twitter_post &&
+                    !socialResult.twitter_post.startsWith("Error") && (
+                      <div
+                        className="rounded-2xl p-6"
+                        style={{
+                          backgroundColor: "rgba(226,254,165,0.07)",
+                          border: "1px solid rgba(226,254,165,0.12)",
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <p
+                            className="text-[9px] tracking-[0.2em] uppercase font-bold"
+                            style={{
+                              fontFamily: PX,
+                              color: "rgba(226,254,165,0.3)",
+                            }}
+                          >
+                            X / Twitter
+                          </p>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(
+                                  socialResult.twitter_post!,
+                                );
+                              } catch {}
+                            }}
+                            className="text-[8px] tracking-[0.16em] uppercase font-bold px-3 py-1.5 rounded-full border-none cursor-pointer"
+                            style={{
+                              fontFamily: PX,
+                              backgroundColor: "rgba(226,254,165,0.08)",
+                              color: "rgba(226,254,165,0.5)",
+                            }}
+                          >
+                            Copy
+                          </button>
+                        </div>
+                        {renderSocialPost(socialResult.twitter_post)}
                       </div>
-                      <p
-                        className="text-sm leading-[1.85] whitespace-pre-wrap"
-                        style={{
-                          fontFamily: FN,
-                          color: "rgba(226,254,165,0.65)",
-                        }}
-                      >
-                        {socialResult.twitter_post}
-                      </p>
-                    </div>
-                  )}
+                    )}
                   {socialResult.suggested_hashtags &&
                     socialResult.suggested_hashtags.length > 0 && (
                       <div className="flex flex-wrap gap-2">
@@ -666,7 +868,11 @@ export function ProjectEditor({
                   title="Generate"
                 >
                   {socialLoading ? (
-                    <Loader2 size={16} className="animate-spin" style={{ color: "#0F2C23" }} />
+                    <Loader2
+                      size={16}
+                      className="animate-spin"
+                      style={{ color: "#0F2C23" }}
+                    />
                   ) : (
                     <Share2 size={16} style={{ color: "#0F2C23" }} />
                   )}
@@ -689,7 +895,9 @@ export function ProjectEditor({
               <input
                 type="text"
                 value={editForm.name}
-                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, name: e.target.value }))
+                }
                 placeholder="Project name"
                 className="outline-none placeholder-[#0F2C23]/30 font-black uppercase"
                 style={{
@@ -704,7 +912,9 @@ export function ProjectEditor({
               <input
                 type="text"
                 value={editForm.tagline}
-                onChange={(e) => setEditForm((f) => ({ ...f, tagline: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, tagline: e.target.value }))
+                }
                 placeholder="Tagline — one sentence that captures the essence…"
                 className="outline-none placeholder-[#0F2C23]/30 text-right self-end max-w-[420px] w-full"
                 style={{
@@ -721,13 +931,15 @@ export function ProjectEditor({
               />
             </div>
           ) : (
-            <>
-            </>
+            <></>
           )}
         </div>
 
         {/* ── Three-column grid ─────────────────────────────────────────── */}
-        <div className="grid gap-5 items-start" style={{ gridTemplateColumns: "280px 1fr 340px" }}>
+        <div
+          className="grid gap-5 items-start"
+          style={{ gridTemplateColumns: "280px 1fr 340px" }}
+        >
           {/* ═══ LEFT — sidebar ═══════════════════════════════════════════ */}
           <aside className="sticky top-[81px] flex flex-col gap-5">
             {/* Logo */}
@@ -748,7 +960,10 @@ export function ProjectEditor({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <Code2 size={48} style={{ color: "#0F2C23", opacity: 0.22 }} />
+                  <Code2
+                    size={48}
+                    style={{ color: "#0F2C23", opacity: 0.22 }}
+                  />
                 )}
                 <div className="absolute top-3 right-3">
                   <PencilBtn onClick={() => openSection("logo")} />
@@ -758,7 +973,9 @@ export function ProjectEditor({
                 <div className="mt-2">
                   <ImageUpload
                     value={editForm.logo_url}
-                    onChange={(url) => setEditForm((f) => ({ ...f, logo_url: url }))}
+                    onChange={(url) =>
+                      setEditForm((f) => ({ ...f, logo_url: url }))
+                    }
                     placeholder="Upload logo"
                   />
                   <InlineSaveCancel
@@ -782,7 +999,10 @@ export function ProjectEditor({
               >
                 {p.name}
               </h2>
-              <p className="text-[#0F2C23]/55 leading-relaxed text-sm" style={{ fontFamily: FN }}>
+              <p
+                className="text-[#0F2C23]/55 leading-relaxed text-sm"
+                style={{ fontFamily: FN }}
+              >
                 {p.tagline || desc.slice(0, 130) || "No tagline."}
               </p>
             </div>
@@ -801,7 +1021,9 @@ export function ProjectEditor({
                     <input
                       type="text"
                       value={editForm.category}
-                      onChange={(e) => setEditForm((f) => ({ ...f, category: e.target.value }))}
+                      onChange={(e) =>
+                        setEditForm((f) => ({ ...f, category: e.target.value }))
+                      }
                       placeholder="e.g. AI, FinTech, DevTool"
                       className="outline-none placeholder-[#0F2C23]/30"
                       style={inlineInputStyle}
@@ -899,7 +1121,9 @@ export function ProjectEditor({
                       <input
                         type="url"
                         value={editForm[key]}
-                        onChange={(e) => setEditForm((f) => ({ ...f, [key]: e.target.value }))}
+                        onChange={(e) =>
+                          setEditForm((f) => ({ ...f, [key]: e.target.value }))
+                        }
                         placeholder={placeholder}
                         className="outline-none placeholder-[#0F2C23]/30"
                         style={inlineInputStyle}
@@ -935,7 +1159,10 @@ export function ProjectEditor({
                             backgroundColor: "#0F2C23",
                           }}
                         >
-                          <Icon size={24} style={{ color: "rgba(226,254,165,0.6)" }} />
+                          <Icon
+                            size={24}
+                            style={{ color: "rgba(226,254,165,0.6)" }}
+                          />
                           <span
                             className="text-[8px] tracking-[0.14em] uppercase font-bold"
                             style={{
@@ -1000,9 +1227,14 @@ export function ProjectEditor({
 
             {/* Hackathon submissions */}
             {submissions.length > 0 && (
-              <div className="rounded-2xl p-5" style={{ backgroundColor: "#0F2C23" }}>
+              <div
+                className="rounded-2xl p-5"
+                style={{ backgroundColor: "#0F2C23" }}
+              >
                 <SectionLabel>
-                  <span style={{ color: "rgba(226,254,165,0.4)" }}>Incubated at</span>
+                  <span style={{ color: "rgba(226,254,165,0.4)" }}>
+                    Incubated at
+                  </span>
                 </SectionLabel>
                 <div className="flex flex-col gap-2 mt-2">
                   {submissions.map((s) => (
@@ -1091,7 +1323,9 @@ export function ProjectEditor({
                         fontSize: "clamp(14px, 1.4vw, 16px)",
                       }}
                     >
-                      <span className="font-semibold italic">No description available yet.</span>
+                      <span className="font-semibold italic">
+                        No description available yet.
+                      </span>
                     </p>
                   )}
                 </>
@@ -1100,7 +1334,10 @@ export function ProjectEditor({
 
             {/* Gallery */}
             {screenshots.length > 0 && (
-              <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+              <div
+                className="rounded-3xl p-7"
+                style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+              >
                 <SectionLabel>Gallery</SectionLabel>
                 <div className="grid grid-cols-2 gap-3 mt-3">
                   {screenshots.slice(0, 4).map((src, i) => (
@@ -1127,7 +1364,10 @@ export function ProjectEditor({
           <aside className="sticky top-[81px] flex flex-col gap-4">
             {/* Features card */}
             {features.length > 0 && (
-              <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+              <div
+                className="rounded-3xl p-7"
+                style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+              >
                 <p
                   className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/35 mb-2"
                   style={{ fontFamily: PX }}
@@ -1152,13 +1392,18 @@ export function ProjectEditor({
                     const isOpen = openOverviewIndex === i;
                     const idx = f.indexOf(":");
                     const rawTitle = (idx >= 0 ? f.slice(0, idx) : f).trim();
-                    const title = rawTitle.length > 58 ? `${rawTitle.slice(0, 58)}…` : rawTitle;
+                    const title =
+                      rawTitle.length > 58
+                        ? `${rawTitle.slice(0, 58)}…`
+                        : rawTitle;
                     const body = (idx >= 0 ? f.slice(idx + 1) : f).trim();
                     return (
                       <button
                         key={i}
                         type="button"
-                        onClick={() => setOpenOverviewIndex((cur) => (cur === i ? null : i))}
+                        onClick={() =>
+                          setOpenOverviewIndex((cur) => (cur === i ? null : i))
+                        }
                         className="w-full text-left py-3 border-b border-[#0F2C23]/08 cursor-pointer"
                         style={{ background: "transparent" }}
                       >
@@ -1201,7 +1446,10 @@ export function ProjectEditor({
                           </div>
                           <span
                             className="text-[10px] tracking-widest uppercase font-bold shrink-0"
-                            style={{ fontFamily: PX, color: "rgba(15,44,35,0.35)" }}
+                            style={{
+                              fontFamily: PX,
+                              color: "rgba(15,44,35,0.35)",
+                            }}
                           >
                             {isOpen ? "—" : "+"}
                           </span>
@@ -1215,7 +1463,10 @@ export function ProjectEditor({
 
             {/* Knowledge base */}
             {(p.kb_sections?.length ?? 0) > 0 && (
-              <div className="rounded-3xl p-7" style={{ backgroundColor: "#0F2C23" }}>
+              <div
+                className="rounded-3xl p-7"
+                style={{ backgroundColor: "#0F2C23" }}
+              >
                 <p
                   className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#F8FFE8]/40 mb-4"
                   style={{ fontFamily: PX }}
@@ -1223,7 +1474,10 @@ export function ProjectEditor({
                   Knowledge Base
                 </p>
                 {typeof p.knowledge_base_chunks === "number" && (
-                  <p className="text-sm text-[#F8FFE8]/50 mb-4" style={{ fontFamily: FN }}>
+                  <p
+                    className="text-sm text-[#F8FFE8]/50 mb-4"
+                    style={{ fontFamily: FN }}
+                  >
                     {p.knowledge_base_chunks} chunks indexed
                   </p>
                 )}
@@ -1347,7 +1601,10 @@ export function ProjectEditor({
                                 className="flex items-start gap-2 text-[12px] text-[#F8FFE8]/60"
                                 style={{ fontFamily: FN }}
                               >
-                                <span className="shrink-0 mt-0.5 opacity-40">→</span> {f}
+                                <span className="shrink-0 mt-0.5 opacity-40">
+                                  →
+                                </span>{" "}
+                                {f}
                               </li>
                             ))}
                           </ul>
@@ -1365,7 +1622,10 @@ export function ProjectEditor({
                           ]
                             .filter((c) => c.value)
                             .map(({ label, value }) => (
-                              <div key={label} className="flex flex-col items-center gap-1.5">
+                              <div
+                                key={label}
+                                className="flex flex-col items-center gap-1.5"
+                              >
                                 <span
                                   className="w-10 h-10 rounded-xl border border-[#F8FFE8]/15"
                                   style={{
@@ -1399,7 +1659,10 @@ export function ProjectEditor({
 
             {/* Tech stack (if no KB) */}
             {tags.length > 0 && !(p.kb_sections?.length ?? 0) && (
-              <div className="rounded-2xl px-6 py-5" style={{ backgroundColor: "#0F2C23" }}>
+              <div
+                className="rounded-2xl px-6 py-5"
+                style={{ backgroundColor: "#0F2C23" }}
+              >
                 <p
                   className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#F8FFE8]/40 mb-4"
                   style={{ fontFamily: PX }}
@@ -1426,7 +1689,10 @@ export function ProjectEditor({
 
             {/* Manage Team */}
             {p.team_id && (
-              <div className="rounded-3xl p-7" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+              <div
+                className="rounded-3xl p-7"
+                style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+              >
                 <div className="flex items-center gap-2 mb-4">
                   <Users size={13} style={{ color: "#0F2C23", opacity: 0.5 }} />
                   <SectionLabel>Team</SectionLabel>
@@ -1443,7 +1709,10 @@ export function ProjectEditor({
                         <div
                           className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold uppercase"
                           style={{
-                            backgroundColor: m.role === "owner" ? "#0F2C23" : "rgba(15,44,35,0.12)",
+                            backgroundColor:
+                              m.role === "owner"
+                                ? "#0F2C23"
+                                : "rgba(15,44,35,0.12)",
                             color: m.role === "owner" ? "#F8FFE8" : "#0F2C23",
                             fontFamily: PX,
                           }}
@@ -1485,7 +1754,10 @@ export function ProjectEditor({
                             type="button"
                             onClick={() => {
                               startTransition(async () => {
-                                const result = await removeTeamMemberAction(p.team_id!, m.user_id);
+                                const result = await removeTeamMemberAction(
+                                  p.team_id!,
+                                  m.user_id,
+                                );
                                 if (result.success) {
                                   setTeamMembers((prev) =>
                                     prev.filter((x) => x.user_id !== m.user_id),
@@ -1557,12 +1829,18 @@ export function ProjectEditor({
                       </button>
                     </div>
                     {memberError && (
-                      <p className="text-[11px] mt-2 text-red-700/80" style={{ fontFamily: FN }}>
+                      <p
+                        className="text-[11px] mt-2 text-red-700/80"
+                        style={{ fontFamily: FN }}
+                      >
                         {memberError}
                       </p>
                     )}
                     {memberSuccess && (
-                      <p className="text-[11px] mt-2 text-green-700/80" style={{ fontFamily: FN }}>
+                      <p
+                        className="text-[11px] mt-2 text-green-700/80"
+                        style={{ fontFamily: FN }}
+                      >
                         {memberSuccess}
                       </p>
                     )}

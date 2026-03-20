@@ -1240,7 +1240,7 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                       <button
                         onClick={handleGenerate}
                         disabled={isGenerating}
-                        className="text-[10px] uppercase font-bold tracking-widest text-[#F8FFE8]/80 px-6 py-3 rounded-full hover:bg-white/5 transition-colors"
+                        className="text-[10px] uppercase font-bold tracking-widest text-[#F8FFE8]/80 px-6 py-3 rounded-full cursor-pointer hover:bg-white/5 transition-colors"
                         style={{ fontFamily: FN }}
                       >
                         {isGenerating ? "Reasoning..." : "Re-Generate"}
@@ -1248,8 +1248,8 @@ export function HostApplicationForm(_props: HostApplicationFormProps) {
                       <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="text-[11px] uppercase font-black tracking-widest bg-[#E2FEA5] text-[#0F2C23] px-10 py-3.5 rounded-full hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 flex items-center gap-2"
-                        style={{ fontFamily: PX }}
+                        className="text-[11px] uppercase font-black tracking-widest bg-[#E2FEA5] text-[#0F2C23] px-10 py-3.5 rounded-full cursor-pointer transition-transform shadow-lg disabled:opacity-50 flex items-center gap-2"
+                        style={{ fontFamily: FN }}
                       >
                         {isSaving ? (
                           <Loader2 size={14} className="animate-spin" />

@@ -31,7 +31,8 @@ export function LayoutShell({
     pathname === "/" ||
     pathname === "/login" ||
     pathname === "/shanghai" ||
-    pathname.startsWith("/shanghai/");
+    pathname.startsWith("/shanghai/") ||
+    pathname.startsWith("/v/");
   const navWidth = useNavWidth();
 
   if (isLanding) {

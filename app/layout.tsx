@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import {
   DM_Mono,
   Funnel_Sans,
@@ -8,6 +7,7 @@ import {
   Pixelify_Sans,
   Press_Start_2P,
 } from "next/font/google";
+import Image from "next/image";
 import { LayoutShell } from "@/components/layout-shell";
 import { getServerAuth } from "@/lib/server-auth";
 import { SupabaseProvider } from "./providers";
@@ -56,7 +56,6 @@ export const metadata: Metadata = {
   description: "Build hackathon projects, host events, and discover projects.",
 };
 
-
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -72,6 +71,7 @@ export default async function RootLayout({
       <body className="">
         {/* Mobile / small-screen blocker */}
         <div
+          id="loops-mobile-blocker"
           className="fixed inset-0 z-9999 flex items-center justify-center bg-[#F8FFE8] px-8 text-center md:hidden"
         >
           <div className="flex flex-col items-center gap-8">
@@ -86,11 +86,11 @@ export default async function RootLayout({
               <h1
                 className={`${pixelifySans.className} text-4xl font-bold uppercase leading-none tracking-tight text-[#0F2C23] sm:text-5xl`}
               >
-                Big Ideas Need<br />Big Screen
+                Big Ideas Need
+                <br />
+                Big Screen
               </h1>
-              <p
-                className={`${funnelSans.className} text-lg  text-[#0F2C23B3]`}
-              >
+              <p className={`${funnelSans.className} text-lg  text-[#0F2C23B3]`}>
                 Switch to Desktop
               </p>
             </div>
