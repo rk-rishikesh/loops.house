@@ -6,6 +6,8 @@ import {
   Trophy,
 } from "lucide-react";
 import Image from "next/image";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { StoredHackathon } from "@/lib/data-mappers";
 
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -63,6 +65,12 @@ export function HackathonAboutSection({
   hackathon: StoredHackathon;
   compact?: boolean;
 }) {
+  const descriptionLooksLikeMarkdown = !!h.description?.match(
+    /(^|\n)\s{0,3}(#{1,6}\s|[-*+]\s|\d+\.\s|>\s)|`{1,3}|\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|__[^_]+__/m,
+  );
+  const programGoalLooksLikeMarkdown = !!h.program_goal?.match(
+    /(^|\n)\s{0,3}(#{1,6}\s|[-*+]\s|\d+\.\s|>\s)|`{1,3}|\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|__[^_]+__/m,
+  );
   const hasResources = (h.technical_resources?.length ?? 0) > 0;
 
   const titleSize = compact
@@ -191,12 +199,86 @@ export function HackathonAboutSection({
                 </h3>
                 <div className="h-px flex-1 bg-[#0F2C23]/10" />
               </div>
-              <p
-                className="text-[#0F2C23]/70 leading-relaxed text-lg sm:text-xl font-medium"
-                style={{ fontFamily: FN }}
-              >
-                {h.description}
-              </p>
+              {descriptionLooksLikeMarkdown ? (
+                <div
+                  className="text-[#0F2C23]/70 leading-relaxed text-lg sm:text-xl font-medium"
+                  style={{ fontFamily: FN }}
+                >
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({ node, ...props }) => (
+                        <p {...props} className="mb-4 last:mb-0" />
+                      ),
+                      ul: ({ node, ...props }) => (
+                        <ul
+                          {...props}
+                          className="list-disc pl-6 mb-4 last:mb-0"
+                        />
+                      ),
+                      ol: ({ node, ...props }) => (
+                        <ol
+                          {...props}
+                          className="list-decimal pl-6 mb-4 last:mb-0"
+                        />
+                      ),
+                      li: ({ node, ...props }) => (
+                        <li {...props} className="mb-1 last:mb-0" />
+                      ),
+                      h1: ({ node, ...props }) => (
+                        <h1
+                          {...props}
+                          className="text-2xl sm:text-3xl font-black mb-3 text-[#0F2C23]"
+                        />
+                      ),
+                      h2: ({ node, ...props }) => (
+                        <h2
+                          {...props}
+                          className="text-xl sm:text-2xl font-black mb-3 text-[#0F2C23]"
+                        />
+                      ),
+                      h3: ({ node, ...props }) => (
+                        <h3
+                          {...props}
+                          className="text-lg sm:text-xl font-black mb-3 text-[#0F2C23]"
+                        />
+                      ),
+                      a: ({ node, ...props }) => (
+                        <a
+                          {...props}
+                          className="underline underline-offset-2 text-[#0F2C23]"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        />
+                      ),
+                      code: ({ className, children, ...props }) =>
+                        className ? (
+                          <pre className="rounded-xl p-4 mb-4 overflow-x-auto bg-[#0F2C23]/5 border border-[#0F2C23]/10">
+                            <code {...props} className={className}>
+                              {children}
+                            </code>
+                          </pre>
+                        ) : (
+                          <code
+                            {...props}
+                            className="px-1.5 py-0.5 rounded-md bg-[#0F2C23]/8 text-[#0F2C23]"
+                          >
+                            {children}
+                          </code>
+                        ),
+                    }}
+                  >
+                    {h.description}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <p
+                  className="text-[#0F2C23]/70 leading-relaxed text-lg sm:text-xl font-medium"
+                  style={{ fontFamily: FN }}
+                >
+                  {h.description}
+                </p>
+              )}
             </div>
           )}
 
@@ -211,12 +293,86 @@ export function HackathonAboutSection({
                 </h3>
                 <div className="h-px flex-1 bg-[#0F2C23]/10" />
               </div>
-              <p
-                className="text-[#0F2C23]/70 leading-relaxed text-lg sm:text-xl font-medium"
-                style={{ fontFamily: FN }}
-              >
-                {h.program_goal}
-              </p>
+              {programGoalLooksLikeMarkdown ? (
+                <div
+                  className="text-[#0F2C23]/70 leading-relaxed text-lg sm:text-xl font-medium"
+                  style={{ fontFamily: FN }}
+                >
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({ node, ...props }) => (
+                        <p {...props} className="mb-4 last:mb-0" />
+                      ),
+                      ul: ({ node, ...props }) => (
+                        <ul
+                          {...props}
+                          className="list-disc pl-6 mb-4 last:mb-0"
+                        />
+                      ),
+                      ol: ({ node, ...props }) => (
+                        <ol
+                          {...props}
+                          className="list-decimal pl-6 mb-4 last:mb-0"
+                        />
+                      ),
+                      li: ({ node, ...props }) => (
+                        <li {...props} className="mb-1 last:mb-0" />
+                      ),
+                      h1: ({ node, ...props }) => (
+                        <h1
+                          {...props}
+                          className="text-2xl sm:text-3xl font-black mb-3 text-[#0F2C23]"
+                        />
+                      ),
+                      h2: ({ node, ...props }) => (
+                        <h2
+                          {...props}
+                          className="text-xl sm:text-2xl font-black mb-3 text-[#0F2C23]"
+                        />
+                      ),
+                      h3: ({ node, ...props }) => (
+                        <h3
+                          {...props}
+                          className="text-lg sm:text-xl font-black mb-3 text-[#0F2C23]"
+                        />
+                      ),
+                      a: ({ node, ...props }) => (
+                        <a
+                          {...props}
+                          className="underline underline-offset-2 text-[#0F2C23]"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        />
+                      ),
+                      code: ({ className, children, ...props }) =>
+                        className ? (
+                          <pre className="rounded-xl p-4 mb-4 overflow-x-auto bg-[#0F2C23]/5 border border-[#0F2C23]/10">
+                            <code {...props} className={className}>
+                              {children}
+                            </code>
+                          </pre>
+                        ) : (
+                          <code
+                            {...props}
+                            className="px-1.5 py-0.5 rounded-md bg-[#0F2C23]/8 text-[#0F2C23]"
+                          >
+                            {children}
+                          </code>
+                        ),
+                    }}
+                  >
+                    {h.program_goal}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <p
+                  className="text-[#0F2C23]/70 leading-relaxed text-lg sm:text-xl font-medium"
+                  style={{ fontFamily: FN }}
+                >
+                  {h.program_goal}
+                </p>
+              )}
             </div>
           )}
         </div>
