@@ -142,11 +142,7 @@ export function ImageUpload({
         </button>
       )}
 
-      {error && (
-        <p className="mt-1.5 text-xs" style={{ color: "#c0392b", fontFamily: "Georgia, serif" }}>
-          {error}
-        </p>
-      )}
+      {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
     </div>
   );
 }
@@ -262,11 +258,7 @@ export function MultiImageUpload({
         </button>
       )}
 
-      {error && (
-        <p className="mt-1.5 text-xs" style={{ color: "#c0392b", fontFamily: "Georgia, serif" }}>
-          {error}
-        </p>
-      )}
+      {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
     </div>
   );
 }
