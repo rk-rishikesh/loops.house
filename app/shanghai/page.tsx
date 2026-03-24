@@ -96,7 +96,7 @@ export default function TrialPage() {
     <main className="bg-[#EDEDED]">
       <section
         ref={containerRef}
-        className="relative h-screen overflow-visible bg-slate-100"
+        className="relative h-screen overflow-visible bg-[#EDEDED]"
       >
         <Image
           src="/assets/shanghai/heroPattern.svg"
@@ -136,7 +136,7 @@ export default function TrialPage() {
           </div>
         </div>
       </section>
-      <section className="h-auto py-16 flex items-center justify-end bg-slate-200 px-6 pr-12 md:pr-20">
+      <section className="h-auto py-16 flex items-center justify-end bg-[#EDEDED] px-6 pr-12 md:pr-20">
         <div className="w-full flex justify-end">
           <div className="flex items-start gap-10 overflow-visible">
             <div className="w-[540px] text-right flex flex-col items-end gap-6">
@@ -202,7 +202,7 @@ export default function TrialPage() {
         >
           OUR PARTNERS
         </h2>
-        <div className="relative z-20 mt-64 overflow-hidden">
+        <div className="relative z-20 mt-32 overflow-hidden">
           <motion.div
             className="flex w-max gap-0"
             animate={{ x: ["0%", "-50%"] }}
@@ -263,13 +263,13 @@ export default function TrialPage() {
           </motion.div>
         </div>
       </section>
-      <section className="relative h-[330px] w-full">
+      <section className="relative h-screen w-full">
         <Image
           src="/assets/shanghai/footer.svg"
           alt="Shanghai footer pattern"
-          width={1437}
-          height={400}
-          className="h-full w-full"
+          fill
+          sizes="100vw"
+          className="object-cover"
         />
       </section>
     </main>
