@@ -159,6 +159,10 @@ export default function TrialPage() {
               </p>
               <button
                 type="button"
+                onClick={() => {
+                  window.location.href =
+                    "https://www.loops.house/hackathons/b5b89704-d5b7-460b-90ef-869040f7d212";
+                }}
                 className={`${funnelSans.className} inline-flex h-[44px] w-[200px] items-center justify-center self-end rounded-full bg-[#5E0F00] text-sm font-medium text-[#EDEDED]`}
               >
                 <div className="flex flex-row items-center justify-between gap-20">
