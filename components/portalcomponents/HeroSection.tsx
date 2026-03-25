@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { funnelSans, pixelifySans } from "@/app/fonts";
+import AnimatedButton from "@/components/buttons/animatedButton";
+import AnimatedHeroCat from "@/components/portalcomponents/AnimatedHeroCat";
 
 export function HeroSection() {
   return (
@@ -8,7 +10,7 @@ export function HeroSection() {
       id="overview"
       className="flex min-h-screen justify-center bg-[#F8FFE8] text-[#0f241c]"
     >
-      <div className="flex w-full max-w-7xl flex-col px-4 md:px-8">
+      <div className="flex w-full max-w-7xl flex-col">
         {/* Navbar */}
         <header className="flex mt-2 mb-2 h-[80px] w-full items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
@@ -20,9 +22,9 @@ export function HeroSection() {
               className="h-7 w-7"
             />
             <span
-              className={`${funnelSans.className} text-xl font-bold tracking-tighter text-[#10271d]`}
+              className={`${pixelifySans.className} uppercase text-xl font-bold tracking-tighter text-[#10271d]`}
             >
-              Loops
+              Loops House
             </span>
           </Link>
 
@@ -68,31 +70,32 @@ export function HeroSection() {
             </div>
           </div>
           {/* Right Side */}
-          <div className="flex flex-col items-end gap-8 md:-translate-x-24">
-            <div className="flex flex-col items-center gap-4">
-              <Image
-                src="/assets/portal/peepingCat.svg"
-                alt=""
-                width={250}
-                height={250}
-                className="rounded-[32px] object-cover object-center"
-              />
-              <Link
-                href="/login"
-                className={`${funnelSans.className} inline-flex h-[44px] w-[220px] items-center justify-center rounded-full bg-[#10271d] text-sm font-medium text-[#f7f9e8] shadow-sm transition hover:bg-[#0b1b14]`}
-              >
-                <div className="flex flex-row items-center justify-between w-full px-1 pl-4">
-                  <span className="uppercase text-xs tracking-wider pl-1">
-                    Login to Loops
-                  </span>
-                  <Image
-                    src="/assets/lightArrow.svg"
-                    alt=""
-                    width={35}
-                    height={35}
-                    className="shrink-0"
-                  />
-                </div>
+          <div className="flex flex-col items-end gap-12 ">
+            <div className="flex flex-col items-center gap-10">
+              <div className="flex items-end justify-center w-[342px] h-[193px] bg-[#3C574B] overflow-hidden rounded-[25px]">
+                <AnimatedHeroCat
+                  src="/assets/portal/peepingCat.png"
+                  alt=""
+                  width={305}
+                  height={193}
+                  className="rounded-[64px] object-contain object-center"
+                />
+                <Image
+                  src="/assets/portal/catHands.png"
+                  alt=""
+                  width={209}
+                  height={133}
+                  className="absolute top-40 ml-3 mt-1"
+                />
+              </div>
+              <Link href="/login" className="inline-flex self-end">
+                <AnimatedButton
+                  text="Login to Loops"
+                  leftPadding={20}
+                  rightPadding={5}
+                  gap={20}
+                  height={44}
+                />
               </Link>
             </div>
 
@@ -107,37 +110,30 @@ export function HeroSection() {
                 <div className="flex flex-col gap-3">
                   <Link
                     href="/hackathons"
-                    className={`${funnelSans.className} inline-flex h-[44px] w-[220px] items-center justify-center rounded-full bg-[#10271d] text-sm font-medium text-[#f7f9e8] shadow-sm transition hover:bg-[#0b1b14]`}
+                    className="inline-flex h-[44px] w-[220px] items-center justify-center"
                   >
-                    <div className="flex flex-row items-center justify-between w-full px-1 pl-4">
-                      <span className="uppercase text-xs tracking-wider">
-                        Explore Hackathons
-                      </span>
-                      <Image
-                        src="/assets/lightArrow.svg"
-                        alt=""
-                        width={35}
-                        height={35}
-                        className="shrink-0"
-                      />
-                    </div>
+                    <AnimatedButton
+                      text="View Hackathons"
+                      leftPadding={20}
+                      rightPadding={2}
+                      gap={30}
+                      height={44}
+                      fullWidth
+                    />
                   </Link>
                   <Link
                     href="/host/new"
-                    className={`${funnelSans.className} inline-flex h-[44px] w-[220px] items-center justify-center rounded-full border border-[#10271d] text-sm font-medium text-[#10271d] transition hover:bg-[#10271d]`}
+                    className="inline-flex h-[44px] w-[220px] items-center justify-center"
                   >
-                    <div className="flex flex-row items-center justify-between w-full px-1 pl-4">
-                      <span className="uppercase text-xs tracking-wider">
-                        Host Hackathon
-                      </span>
-                      <Image
-                        src="/assets/lightArrow.svg"
-                        alt=""
-                        width={35}
-                        height={35}
-                        className="shrink-0 transition-colors group-hover:invert"
-                      />
-                    </div>
+                    <AnimatedButton
+                      text="Host Hackathons"
+                      leftPadding={20}
+                      rightPadding={2}
+                      gap={26}
+                      height={44}
+                      invertedColors
+                      fullWidth
+                    />
                   </Link>
                 </div>
 

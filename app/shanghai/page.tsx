@@ -12,6 +12,7 @@ import {
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { funnelSans, pixelifySans } from "@/app/fonts";
+import ShanghaiJoinButton from "@/components/buttons/shanghaiJoinButton";
 
 const letters = [
   { text: "SH", color: "#9F4231", startX: 0, startY: 0, endX: 0, endY: 0 },
@@ -157,27 +158,12 @@ export default function TrialPage() {
               >
                 10th April - 23rd April, 2026
               </p>
-              <button
-                type="button"
+              <ShanghaiJoinButton
                 onClick={() => {
                   window.location.href =
                     "https://www.loops.house/hackathons/b5b89704-d5b7-460b-90ef-869040f7d212";
                 }}
-                className={`${funnelSans.className} inline-flex h-[44px] w-[200px] items-center justify-center self-end rounded-full bg-[#5E0F00] text-sm font-medium text-[#EDEDED]`}
-              >
-                <div className="flex flex-row items-center justify-between gap-20">
-                  <span className="relative left-6 text-sm uppercase">
-                    Join Now
-                  </span>
-                  <Image
-                    src="/assets/shanghai/lightArrow.svg"
-                    alt=""
-                    width={20}
-                    height={20}
-                    className="h-8 w-8 shrink-0"
-                  />
-                </div>
-              </button>
+              />
             </div>
 
             <div className="pointer-events-none mr-6 flex flex-col leading-[186px]">

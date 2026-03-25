@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { funnelSans, pixelifySans } from "@/app/fonts";
+import AnimatedButton from "@/components/buttons/animatedButton";
 
 export function StatsSection() {
   return (
@@ -67,8 +68,8 @@ export function StatsSection() {
                 <p
                   className={`${funnelSans.className} text-lg leading-relaxed text-[#10271d]`}
                 >
-                  Start with raw ideas, prototype fast in Loops, and launch updates
-                  to your community without losing momentum.
+                  Start with raw ideas, prototype fast in Loops, and launch
+                  updates to your community without losing momentum.
                 </p>
               </div>
             </div>
@@ -83,32 +84,27 @@ export function StatsSection() {
               <p
                 className={`${funnelSans.className} mt-3 text-base leading-relaxed text-[#10271d]`}
               >
-                Ideate with other builders, turn concepts into live loops, and ship
-                updates with Loops AI guiding every step.
+                Ideate with other builders, turn concepts into live loops, and
+                ship updates with Loops AI guiding every step.
               </p>
             </div>
 
             <Link
               href="/login"
-              className={`${funnelSans.className} w-[160px] h-[44px] inline-flex items-center justify-between rounded-full bg-[#10271d] text-sm font-medium text-[#f7f9e8] shadow-sm transition hover:bg-[#0b1b14]`}
+              className="inline-flex h-[44px] w-[160px] items-center justify-center"
             >
-              <div className="flex flex-row items-center justify-between gap-8 left-4">
-                <span className="uppercase left-4 relative text-sm">Get Started</span>
-                <Image
-                  src="/assets/lightArrow.svg"
-                  alt=""
-                  width={20}
-                  height={20}
-                  className="h-8 w-8 shrink-0"
-                />
-              </div>
+              <AnimatedButton
+                text="Get Started"
+                leftPadding={18}
+                rightPadding={15}
+                gap={10}
+                height={44}
+                fullWidth
+              />
             </Link>
-            
           </div>
-
         </div>
       </div>
     </div>
   );
 }
-
