@@ -8,8 +8,28 @@ import { useState, useTransition } from "react";
 import { ProjectEditor } from "@/components/client/project-editor";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { submitProjectAction } from "@/lib/actions";
-import type { StoredHackathon, StoredProject, StoredSubmission } from "@/lib/data-mappers";
+import type {
+  StoredHackathon,
+  StoredProject,
+  StoredSubmission,
+} from "@/lib/data-mappers";
 import { FN, PX } from "./constants";
+
+function formatTimeUntil(iso?: string) {
+  if (!iso) return null;
+  const target = new Date(iso);
+  if (Number.isNaN(target.getTime())) return null;
+
+  const diffMs = target.getTime() - Date.now();
+  if (diffMs <= 0) return null;
+
+  const totalMinutes = Math.floor(diffMs / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  return { days, hours, minutes };
+}
 
 interface HackathonSubmitSectionProps {
   hackathonId: string;
@@ -33,12 +53,17 @@ export function HackathonSubmitSection({
     (s) => s.hackathon_id === hackathonId && userProjectIds.has(s.project_id),
   );
   const submittedProject =
-    (hackathonSubmission && projects.find((p) => p.project_id === hackathonSubmission.project_id)) ??
+    (hackathonSubmission &&
+      projects.find((p) => p.project_id === hackathonSubmission.project_id)) ??
     null;
 
   if (submittedProject) {
-    const hackathonNames: Record<string, string> = { [hackathonId]: hackathon.name };
-    const projectSubmissions = submissions.filter((s) => s.project_id === submittedProject.project_id);
+    const hackathonNames: Record<string, string> = {
+      [hackathonId]: hackathon.name,
+    };
+    const projectSubmissions = submissions.filter(
+      (s) => s.project_id === submittedProject.project_id,
+    );
 
     return (
       <div className="flex-1 overflow-y-auto">
@@ -55,10 +80,112 @@ export function HackathonSubmitSection({
     );
   }
 
+  // Gate submissions UI strictly to building phase
+  if (hackathon.phase !== "building") {
+    const startsIn =
+      hackathon.phase === "upcoming"
+        ? formatTimeUntil(hackathon.start_date)
+        : null;
+
+    return (
+      <div
+        className="flex-1 relative flex min-h-screen flex-col items-center justify-center"
+        style={{ backgroundColor: "#F8FFE8" }}
+      >
+        {startsIn ? (
+          <div className="relative z-10 flex flex-col items-center gap-8">
+            <p
+              className="text-[11px] uppercase tracking-[0.35em] font-bold"
+              style={{ fontFamily: FN, color: "rgba(15,44,35,0.55)" }}
+            >
+              Submissions open in
+            </p>
+
+            <div className="flex items-start gap-7">
+              {[
+                {
+                  value: String(startsIn.days),
+                  label: "Days",
+                  bg: "rgba(226,254,165)",
+                  border: "1px solid rgba(15,44,35,0.10)",
+                  radius: 18,
+                },
+                {
+                  value: String(startsIn.hours).padStart(2, "0"),
+                  label: "Hours",
+                  bg: "rgba(226,254,165)",
+                  border: "1px solid rgba(15,44,35,0.10)",
+                  radius: 18,
+                },
+                {
+                  value: String(startsIn.minutes).padStart(2, "0"),
+                  label: "Min",
+                  bg: "rgba(226,254,165)",
+                  border: "1px solid rgba(15,44,35,0.10)",
+                  radius: 18,
+                },
+              ].map((unit) => (
+                <div key={unit.label} className="flex flex-col items-center">
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      width: 150,
+                      height: 170,
+                      backgroundColor: unit.bg,
+                      border: unit.border,
+                      borderRadius: unit.radius,
+                    }}
+                  >
+                    <span
+                      className="leading-none font-bold"
+                      style={{ fontFamily: FN, fontSize: 84, color: "#0F2C23" }}
+                    >
+                      {unit.value}
+                    </span>
+                  </div>
+                  <span
+                    className="mt-4 text-[11px] uppercase tracking-[0.25em] font-bold"
+                    style={{ fontFamily: FN, color: "rgba(15,44,35,0.45)" }}
+                  >
+                    {unit.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="relative z-10 flex flex-col items-center gap-5 text-center px-6">
+            <p
+              className="font-bold uppercase leading-none"
+              style={{
+                fontFamily: PX,
+                fontSize: "clamp(40px, 7vw, 72px)",
+                letterSpacing: "-0.04em",
+                color: "#0F2C23",
+              }}
+            >
+              {hackathon.phase}
+            </p>
+            <p
+              className="max-w-md text-sm leading-relaxed"
+              style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}
+            >
+              Submissions are only accepted during the building phase.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const submittedProjectIds = new Set(
-    submissions.filter((s) => s.hackathon_id === hackathonId).map((s) => s.project_id),
+    submissions
+      .filter((s) => s.hackathon_id === hackathonId)
+      .map((s) => s.project_id),
   );
-  const availableProjects = projects.filter((p) => !submittedProjectIds.has(p.project_id));
+  const availableProjects = projects.filter(
+    (p) => !submittedProjectIds.has(p.project_id),
+  );
 
   return (
     <div className="flex-1 overflow-y-auto px-14 py-14">
@@ -78,7 +205,8 @@ export function HackathonSubmitSection({
         className="text-sm leading-relaxed mb-10"
         style={{ fontFamily: FN, color: "rgba(15,44,35,0.55)" }}
       >
-        Choose a project to submit to <strong style={{ color: "#0F2C23" }}>{hackathon.name}</strong>
+        Choose a project to submit to{" "}
+        <strong style={{ color: "#0F2C23" }}>{hackathon.name}</strong>
       </p>
 
       {mounted && !isAuthenticated ? (
@@ -101,7 +229,11 @@ export function HackathonSubmitSection({
           <Link
             href="/login"
             className="inline-flex items-center gap-2 rounded-full no-underline text-[11px] tracking-widest uppercase font-bold px-8 py-3.5 transition-transform hover:scale-[1.03]"
-            style={{ backgroundColor: "#0F2C23", color: "#F8FFE8", fontFamily: PX }}
+            style={{
+              backgroundColor: "#0F2C23",
+              color: "#F8FFE8",
+              fontFamily: PX,
+            }}
           >
             Sign In
             <ArrowRight size={14} />
@@ -129,14 +261,21 @@ export function HackathonSubmitSection({
           <Link
             href="/builder/new"
             className="inline-flex items-center gap-2 rounded-full no-underline text-[11px] tracking-widest uppercase font-bold px-8 py-3.5 transition-transform hover:scale-[1.03]"
-            style={{ backgroundColor: "#0F2C23", color: "#F8FFE8", fontFamily: PX }}
+            style={{
+              backgroundColor: "#0F2C23",
+              color: "#F8FFE8",
+              fontFamily: PX,
+            }}
           >
             <Plus size={14} />
             Create Project
           </Link>
         </div>
       ) : (
-        <SubmitProjectPicker projects={availableProjects} hackathonId={hackathonId} />
+        <SubmitProjectPicker
+          projects={availableProjects}
+          hackathonId={hackathonId}
+        />
       )}
     </div>
   );
@@ -183,7 +322,9 @@ function SubmitProjectPicker({
       >
         <div
           className="grid gap-6"
-          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}
+          style={{
+            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+          }}
         >
           <Link
             href="/builder/new"
@@ -220,8 +361,12 @@ function SubmitProjectPicker({
                 onClick={() => setSelectedId(p.project_id)}
                 className="text-left rounded-[32px] p-6 transition-all cursor-pointer relative group"
                 style={{
-                  border: active ? "2px solid #0F2C23" : "1px solid rgba(15,44,35,0.12)",
-                  backgroundColor: active ? "rgba(226,254,165,0.28)" : "rgba(15,44,35,0.02)",
+                  border: active
+                    ? "2px solid #0F2C23"
+                    : "1px solid rgba(15,44,35,0.12)",
+                  backgroundColor: active
+                    ? "rgba(226,254,165,0.28)"
+                    : "rgba(15,44,35,0.02)",
                 }}
               >
                 {active && (
@@ -229,7 +374,11 @@ function SubmitProjectPicker({
                     className="absolute top-4 right-4 w-7 h-7 rounded-full flex items-center justify-center"
                     style={{ backgroundColor: "#0F2C23" }}
                   >
-                    <Check size={16} strokeWidth={3} style={{ color: "#E2FEA5" }} />
+                    <Check
+                      size={16}
+                      strokeWidth={3}
+                      style={{ color: "#E2FEA5" }}
+                    />
                   </div>
                 )}
 
@@ -247,7 +396,10 @@ function SubmitProjectPicker({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <Code2 size={30} style={{ color: "rgba(226,254,165,0.35)" }} />
+                      <Code2
+                        size={30}
+                        style={{ color: "rgba(226,254,165,0.35)" }}
+                      />
                     )}
                   </div>
 
@@ -290,7 +442,10 @@ function SubmitProjectPicker({
       </div>
 
       {submitError && (
-        <p className="text-xs mt-5" style={{ fontFamily: FN, color: "#dc3545" }}>
+        <p
+          className="text-xs mt-5"
+          style={{ fontFamily: FN, color: "#dc3545" }}
+        >
           {submitError}
         </p>
       )}
@@ -300,9 +455,17 @@ function SubmitProjectPicker({
           onClick={handleSubmit}
           disabled={!selectedId || isPending}
           className="inline-flex items-center justify-center gap-3 rounded-full text-[11px] tracking-widest uppercase font-bold px-10 py-4 transition-all hover:scale-[1.03] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 cursor-pointer"
-          style={{ backgroundColor: "#0F2C23", color: "#F8FFE8", fontFamily: PX }}
+          style={{
+            backgroundColor: "#0F2C23",
+            color: "#F8FFE8",
+            fontFamily: PX,
+          }}
         >
-          {isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+          {isPending ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Send size={14} />
+          )}
           {isPending ? "Submitting\u2026" : "Submit Project"}
         </button>
       </div>

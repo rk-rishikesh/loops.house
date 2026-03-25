@@ -51,9 +51,18 @@ function getTotalPrizePoolFromSummary(
     if (!Number.isFinite(base)) continue;
 
     const multiplier =
-      suffix === "k" ? 1_000 : suffix === "m" ? 1_000_000 : suffix === "b" ? 1_000_000_000 : 1;
+      suffix === "k"
+        ? 1_000
+        : suffix === "m"
+          ? 1_000_000
+          : suffix === "b"
+            ? 1_000_000_000
+            : 1;
 
-    matches.push({ currency: currency.toUpperCase(), amount: base * multiplier });
+    matches.push({
+      currency: currency.toUpperCase(),
+      amount: base * multiplier,
+    });
   }
 
   if (matches.length === 0) return null;
@@ -203,7 +212,9 @@ function FeaturedHero({ b }: { b: Hackathon }) {
                     const parsed = getTotalPrizePoolFromSummary(
                       b.bounty_pool_summary,
                     );
-                    return parsed ? `Total ${parsed.label}` : String(b.bounty_pool_summary).slice(0, 32);
+                    return parsed
+                      ? `Total ${parsed.label}`
+                      : String(b.bounty_pool_summary).slice(0, 32);
                   })()}
                 </span>
               </div>
@@ -408,7 +419,7 @@ export function HackathonListPage({ list }: { list: Hackathon[] }) {
               transition={{ duration: 0.5 }}
               className="font-black text-[#0F2C23] leading-[0.88] uppercase"
               style={{
-                fontFamily: PX,
+                fontFamily: FN,
                 fontSize: "clamp(48px, 8vw, 120px)",
                 letterSpacing: "-0.025em",
               }}

@@ -1,4 +1,11 @@
-import { ArrowUpRight, BarChart3, Bot, Gavel, Trophy, Users } from "lucide-react";
+import {
+  ArrowUpRight,
+  BarChart3,
+  Bot,
+  Gavel,
+  Trophy,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PublishHackathonBanner } from "@/components/client/publish-hackathon-banner";
@@ -35,7 +42,11 @@ export default async function HostBoosterPage({
   const auth = await getServerAuth();
   if (
     !auth ||
-    !(auth.capabilities.isAdmin || auth.capabilities.isEventCreator || auth.capabilities.isJudge)
+    !(
+      auth.capabilities.isAdmin ||
+      auth.capabilities.isEventCreator ||
+      auth.capabilities.isJudge
+    )
   ) {
     redirect("/login");
   }
@@ -63,7 +74,10 @@ export default async function HostBoosterPage({
   const aiEvaluated = submissions.filter((s) => s.ai_evaluated_at).length;
   const avgMomentum =
     totalSubmissions > 0
-      ? Math.round(submissions.reduce((a, s) => a + s.momentum_score, 0) / totalSubmissions)
+      ? Math.round(
+          submissions.reduce((a, s) => a + s.momentum_score, 0) /
+            totalSubmissions,
+        )
       : 0;
 
   return (
@@ -75,7 +89,7 @@ export default async function HostBoosterPage({
             <h1
               className="font-black text-[#0F2C23] leading-[0.88] uppercase min-w-0"
               style={{
-                fontFamily: PX,
+                fontFamily: FN,
                 fontSize: "clamp(40px, 7vw, 96px)",
                 letterSpacing: "-0.025em",
               }}
@@ -92,7 +106,8 @@ export default async function HostBoosterPage({
                   color: "rgba(15,44,35,0.6)",
                 }}
               >
-                Hackathon-level view. See analytics and submissions for this specific program.
+                Hackathon-level view. See analytics and submissions for this
+                specific program.
               </p>
               <div className="mt-4">
                 <HackathonPhaseBadge phase={hackathon.phase} size="md" />
@@ -143,7 +158,10 @@ export default async function HostBoosterPage({
           ))}
         </div>
 
-        <Link href={`/host/${hackathon.id}/analytics`} className="group no-underline block mb-12">
+        <Link
+          href={`/host/${hackathon.id}/analytics`}
+          className="group no-underline block mb-12"
+        >
           <div
             className="rounded-3xl p-6 flex flex-col justify-between transition-all duration-200 group-hover:scale-[1.01]"
             style={{ backgroundColor: "#0F2C23", minHeight: 140 }}
@@ -182,7 +200,10 @@ export default async function HostBoosterPage({
         {/* ── Finalize CTA (only when completed phase) ──────────────── */}
         {permissions.canFinalize && (
           <div className="mb-12">
-            <Link href={`/host/${hackathon.id}/finalize`} className="group no-underline block">
+            <Link
+              href={`/host/${hackathon.id}/finalize`}
+              className="group no-underline block"
+            >
               <div
                 className="rounded-3xl p-7 flex items-center justify-between transition-all duration-200 group-hover:scale-[1.005]"
                 style={{ backgroundColor: "#E2FEA5", minHeight: 110 }}
@@ -210,7 +231,8 @@ export default async function HostBoosterPage({
                       className="text-sm leading-relaxed"
                       style={{ fontFamily: FN, color: "rgba(15,44,35,0.7)" }}
                     >
-                      Set AI vs Judge weighting and lock the leaderboard results.
+                      Set AI vs Judge weighting and lock the leaderboard
+                      results.
                     </p>
                   </div>
                 </div>
@@ -263,7 +285,7 @@ export default async function HostBoosterPage({
               <p
                 className="font-black uppercase mb-3"
                 style={{
-                  fontFamily: PX,
+                  fontFamily: FN,
                   fontSize: "clamp(18px, 2.5vw, 28px)",
                   letterSpacing: "-0.02em",
                   color: "#0F2C23",
@@ -273,14 +295,21 @@ export default async function HostBoosterPage({
               </p>
               <p
                 className="leading-relaxed"
-                style={{ fontFamily: FN, fontSize: 15, color: "rgba(15,44,35,0.6)" }}
+                style={{
+                  fontFamily: FN,
+                  fontSize: 15,
+                  color: "rgba(15,44,35,0.6)",
+                }}
               >
-                Once builders submit to this hackathon, they&apos;ll appear here for grading.
+                Once builders submit to this hackathon, they&apos;ll appear here
+                for grading.
               </p>
             </div>
           ) : (
             submissions.map((sub, idx) => {
-              const project = projects.find((p) => p.project_id === sub.project_id);
+              const project = projects.find(
+                (p) => p.project_id === sub.project_id,
+              );
               if (!project) {
                 return null;
               }
@@ -329,7 +358,10 @@ export default async function HostBoosterPage({
                     >
                       <span
                         className="w-8 h-8 flex items-center justify-center rounded-full border"
-                        style={{ backgroundColor: "#E2FEA5", borderColor: "transparent" }}
+                        style={{
+                          backgroundColor: "#E2FEA5",
+                          borderColor: "transparent",
+                        }}
                       >
                         <ArrowUpRight size={13} className="text-[#0F2C23]" />
                       </span>

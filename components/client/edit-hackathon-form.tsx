@@ -22,7 +22,6 @@ import { editHackathonSchema } from "@/lib/validations/schemas";
 import { HackathonPreviewModal } from "./hackathon-preview-modal";
 import { ImageUpload } from "./image-upload";
 
-const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
 type FormData = z.infer<typeof editHackathonSchema>;
@@ -75,9 +74,7 @@ function SectionHeader({ num, title }: { num: string; title: string }) {
   );
 }
 
-function parsePrizeSummary(
-  text: string,
-): {
+function parsePrizeSummary(text: string): {
   title: string;
   currency?: string;
   amount?: number;
@@ -234,14 +231,14 @@ export function EditHackathonForm({ hackathon, permissions }: Props) {
           <h1
             className="font-black text-[#0F2C23] leading-[0.88] uppercase"
             style={{
-              fontFamily: PX,
-              fontSize: "clamp(52px, 9vw, 138px)",
+              fontFamily: FN,
+              fontSize: "clamp(48px, 8vw, 120px)",
               letterSpacing: "-0.025em",
             }}
           >
             PROGRAM
             <br />
-            DETAILS.
+            DETAILS
           </h1>
         </div>
 

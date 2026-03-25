@@ -109,15 +109,15 @@ export default async function BuilderProjectsPage() {
           <h1
             className="font-black leading-[0.88] uppercase"
             style={{
-              fontFamily: PX,
-              fontSize: "clamp(60px, 10vw, 148px)",
+              fontFamily: FN,
+              fontSize: "clamp(48px, 8vw, 120px)",
               letterSpacing: "-0.025em",
               color: "#0F2C23",
             }}
           >
             MY
             <br />
-            PROJECTS.
+            PROJECTS
           </h1>
 
           {/* Subheading right + CTA */}

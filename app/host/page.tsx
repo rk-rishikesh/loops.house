@@ -3,9 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
 import { getServerAuth } from "@/lib/server-auth";
-import { getHackathonsServer, getSubmissionsForHackathonsServer } from "@/lib/server-data";
+import {
+  getHackathonsServer,
+  getSubmissionsForHackathonsServer,
+} from "@/lib/server-data";
 
-const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
 /* ─── Page ────────────────────────────────────────────────────────── */
@@ -15,17 +17,21 @@ export default async function HostDashboardPage() {
 
   const allHackathons = await getHackathonsServer({ includeDrafts: true });
   const hackathons = allHackathons.filter(
-    (h) => h.host_id === auth.userId || auth.capabilities.cohostOf.includes(h.id),
+    (h) =>
+      h.host_id === auth.userId || auth.capabilities.cohostOf.includes(h.id),
   );
   const hackathonIds = hackathons.map((b: { id: string }) => b.id);
   const submissions = await getSubmissionsForHackathonsServer(hackathonIds);
 
   const totalHackathons = hackathons.length;
   const totalProjectsSubmitted = submissions.length;
-  const uniqueTeams = new Set(submissions.map((s: { team_id: string }) => s.team_id));
+  const uniqueTeams = new Set(
+    submissions.map((s: { team_id: string }) => s.team_id),
+  );
   const totalDevelopersEngaged = uniqueTeams.size;
 
-  const hackathonStats: Record<string, { projects: number; teams: number }> = {};
+  const hackathonStats: Record<string, { projects: number; teams: number }> =
+    {};
   for (const sub of submissions) {
     const stats =
       hackathonStats[sub.hackathon_id] ??
@@ -59,8 +65,8 @@ export default async function HostDashboardPage() {
               <h1
                 className="font-black text-[#0F2C23] leading-[0.88] uppercase"
                 style={{
-                  fontFamily: PX,
-                  fontSize: "clamp(52px, 9vw, 130px)",
+                  fontFamily: FN,
+                  fontSize: "clamp(48px, 8vw, 120px)",
                   letterSpacing: "-0.025em",
                 }}
               >
@@ -72,8 +78,8 @@ export default async function HostDashboardPage() {
                 className="text-[#0F2C23]/50 mt-5 max-w-[360px] leading-relaxed"
                 style={{ fontFamily: FN, fontSize: "clamp(14px, 1.3vw, 16px)" }}
               >
-                Manage programs, review builder submissions, and track engagement across your
-                hackathons.
+                Manage programs, review builder submissions, and track
+                engagement across your hackathons.
               </p>
             </div>
 
@@ -160,7 +166,10 @@ export default async function HostDashboardPage() {
 
         {/* ══ MAIN SECTION — hosted hackathons table ═════════════════════ */}
         <div className="mt-8">
-          <div className="rounded-3xl p-8" style={{ backgroundColor: "rgba(15,44,35,0.04)" }}>
+          <div
+            className="rounded-3xl p-8"
+            style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+          >
             {/* Section header */}
             <div className="flex items-center justify-between mb-7">
               <div className="flex items-center justify-between w-full">
@@ -190,7 +199,6 @@ export default async function HostDashboardPage() {
                   >
                     <Plus size={10} /> Create Hackathon
                   </Link>
-              
                 </div>
               </div>
             </div>
@@ -200,17 +208,27 @@ export default async function HostDashboardPage() {
               <div className="py-20 text-center">
                 <div
                   className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-5"
-                  style={{ backgroundColor: "rgba(15,44,35,0.08)", color: "#0F2C23" }}
+                  style={{
+                    backgroundColor: "rgba(15,44,35,0.08)",
+                    color: "#0F2C23",
+                  }}
                 >
                   <Zap size={22} />
                 </div>
                 <p
                   className="font-black text-[#0F2C23] uppercase mb-2"
-                  style={{ fontFamily: FN, fontSize: 16, letterSpacing: "-0.01em" }}
+                  style={{
+                    fontFamily: FN,
+                    fontSize: 16,
+                    letterSpacing: "-0.01em",
+                  }}
                 >
                   No hackathons yet.
                 </p>
-                <p className="text-[#0F2C23]/50 text-sm mb-7" style={{ fontFamily: FN }}>
+                <p
+                  className="text-[#0F2C23]/50 text-sm mb-7"
+                  style={{ fontFamily: FN }}
+                >
                   Create your first program to start engaging builders.
                 </p>
                 <Link
@@ -252,7 +270,11 @@ export default async function HostDashboardPage() {
                 {/* Rows */}
                 {hackathons.map((b, idx) => {
                   return (
-                    <Link key={b.id} href={`/host/${b.id}`} className="no-underline group">
+                    <Link
+                      key={b.id}
+                      href={`/host/${b.id}`}
+                      className="no-underline group"
+                    >
                       <div
                         className="grid py-5 transition-all rounded-sm hover:bg-[rgba(15,44,35,0.025)]"
                         style={{
@@ -265,7 +287,11 @@ export default async function HostDashboardPage() {
                         {/* Index */}
                         <span
                           className="font-black text-[#0F2C23]/18 tabular-nums"
-                          style={{ fontFamily: FN, fontSize: 11, letterSpacing: "-0.01em" }}
+                          style={{
+                            fontFamily: FN,
+                            fontSize: 11,
+                            letterSpacing: "-0.01em",
+                          }}
                         >
                           {String(idx + 1).padStart(2, "0")}
                         </span>
@@ -301,7 +327,10 @@ export default async function HostDashboardPage() {
                             className="w-8 h-8 flex items-center justify-center rounded-full transition-transform group-hover:scale-105"
                             style={{ backgroundColor: "#0F2C23" }}
                           >
-                            <ArrowUpRight size={13} style={{ color: "#E2FEA5" }} />
+                            <ArrowUpRight
+                              size={13}
+                              style={{ color: "#E2FEA5" }}
+                            />
                           </span>
                         </div>
                       </div>

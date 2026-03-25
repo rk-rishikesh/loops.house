@@ -146,8 +146,8 @@ export default function ProjectsListing({
           <h1
             className="font-black text-[#0F2C23] leading-[0.88] uppercase"
             style={{
-              fontFamily: PX,
-              fontSize: "clamp(60px, 10vw, 148px)",
+              fontFamily: FN,
+              fontSize: "clamp(48px, 8vw, 120px)",
               letterSpacing: "-0.025em",
             }}
           >

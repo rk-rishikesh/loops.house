@@ -3,10 +3,12 @@ import { SpeakersManager } from "@/components/client/speakers-manager";
 import { HackathonPhaseBadge } from "@/components/ui/hackathon-phase-badge";
 import { getPhasePermissions } from "@/lib/hackathon-phase";
 import { getServerAuth } from "@/lib/server-auth";
-import { getHackathonServer, getHackathonSpeakersServer } from "@/lib/server-data";
+import {
+  getHackathonServer,
+  getHackathonSpeakersServer,
+} from "@/lib/server-data";
 
 const FN = "var(--font-funnel-sans), sans-serif";
-const PX = "var(--font-pixelify-sans), sans-serif";
 
 export default async function SpeakersPage({
   params,
@@ -39,39 +41,40 @@ export default async function SpeakersPage({
             </a>
             <span style={{ color: "rgba(15,44,35,0.35)" }}>/</span>
             <h1
-            className="font-bold uppercase leading-tight"
-            style={{
-              color: "#0F2C23",
-              fontFamily: FN,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Speakers
-          </h1>
+              className="font-bold uppercase leading-tight"
+              style={{
+                color: "#0F2C23",
+                fontFamily: FN,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Speakers
+            </h1>
             <HackathonPhaseBadge phase={hackathon.phase} />
           </div>
 
           <div className="flex items-start justify-between gap-10 mt-12">
-          <h1
-          className="font-black text-[#0F2C23] leading-[0.88] uppercase"
-          style={{
-            fontFamily: PX,
-            fontSize: "clamp(52px, 9vw, 138px)",
-            letterSpacing: "-0.025em",
-          }}
-        >
-          SPEAKERS
-          <br />
-          MANAGEMENT
-        </h1>
-        <div className="flex flex-col items-end justify-end mt-8">
-          <p
-            className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
-            style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
-          >
-            Add and manage speakers for this program. They'll appear on the public hackathon page.
-          </p>
-        </div>
+            <h1
+              className="font-black text-[#0F2C23] leading-[0.88] uppercase"
+              style={{
+                fontFamily: FN,
+                fontSize: "clamp(48px, 8vw, 120px)",
+                letterSpacing: "-0.025em",
+              }}
+            >
+              SPEAKERS
+              <br />
+              MANAGEMENT
+            </h1>
+            <div className="flex flex-col items-end justify-end mt-8">
+              <p
+                className="text-[#0F2C23]/55 max-w-[380px] text-right leading-relaxed"
+                style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
+              >
+                Add and manage speakers for this program. They'll appear on the
+                public hackathon page.
+              </p>
+            </div>
           </div>
         </div>
         <SpeakersManager
@@ -84,7 +87,8 @@ export default async function SpeakersPage({
             className="mt-4 text-sm leading-relaxed"
             style={{ fontFamily: FN, color: "rgba(15,44,35,0.6)" }}
           >
-            This hackathon is finalized. Speaker details can no longer be edited.
+            This hackathon is finalized. Speaker details can no longer be
+            edited.
           </p>
         )}
       </div>

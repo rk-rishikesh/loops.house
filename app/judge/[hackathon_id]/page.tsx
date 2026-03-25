@@ -3,7 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { canJudgeHackathon } from "@/lib/capabilities";
 import { getServerAuth } from "@/lib/server-auth";
-import { getHackathonServer, getProjectsServer, getSubmissionsServer } from "@/lib/server-data";
+import {
+  getHackathonServer,
+  getProjectsServer,
+  getSubmissionsServer,
+} from "@/lib/server-data";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -55,7 +59,8 @@ export default async function JudgeHackathonPage({
               color: "rgba(15,44,35,0.55)",
             }}
           >
-            Review and score submissions for this hackathon using the AI-powered judging flow.
+            Review and score submissions for this hackathon using the AI-powered
+            judging flow.
           </p>
         </div>
 
@@ -109,7 +114,7 @@ export default async function JudgeHackathonPage({
               <p
                 className="font-black text-[#0F2C23] uppercase mb-3"
                 style={{
-                  fontFamily: PX,
+                  fontFamily: FN,
                   fontSize: "clamp(18px, 2.5vw, 28px)",
                   letterSpacing: "-0.02em",
                 }}
@@ -118,14 +123,21 @@ export default async function JudgeHackathonPage({
               </p>
               <p
                 className="leading-relaxed"
-                style={{ fontFamily: FN, fontSize: 15, color: "rgba(15,44,35,0.55)" }}
+                style={{
+                  fontFamily: FN,
+                  fontSize: 15,
+                  color: "rgba(15,44,35,0.55)",
+                }}
               >
-                Once builders submit to this hackathon, they&apos;ll appear here for grading.
+                Once builders submit to this hackathon, they&apos;ll appear here
+                for grading.
               </p>
             </div>
           ) : (
             submissions.map((sub, idx) => {
-              const project = projects.find((p) => p.project_id === sub.project_id);
+              const project = projects.find(
+                (p) => p.project_id === sub.project_id,
+              );
               if (!project) return null;
               return (
                 <div

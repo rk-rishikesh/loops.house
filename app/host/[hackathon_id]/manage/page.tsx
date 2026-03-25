@@ -7,7 +7,6 @@ import { getServerAuth } from "@/lib/server-auth";
 import { getHackathonServer } from "@/lib/server-data";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 
 export default async function ManagePage({
@@ -23,12 +22,23 @@ export default async function ManagePage({
   if (!hackathon) redirect("/host");
 
   const caps = await getFullCapabilities(supabaseAdmin, auth.userId);
-  if (!caps || !canManageHackathon(caps, hackathon.host_id ?? "", auth.userId, hackathon.id)) {
+  if (
+    !caps ||
+    !canManageHackathon(
+      caps,
+      hackathon.host_id ?? "",
+      auth.userId,
+      hackathon.id,
+    )
+  ) {
     redirect("/host");
   }
 
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: "#F8FFE8" }}>
+    <div
+      className="min-h-screen relative"
+      style={{ backgroundColor: "#F8FFE8" }}
+    >
       <div className="px-10 pt-10 pb-32">
         {/* ── Hero heading ─────────────────────────────────────────────── */}
         <div className="mb-20">
@@ -36,8 +46,8 @@ export default async function ManagePage({
             <h1
               className="font-black text-[#0F2C23] leading-[0.88] uppercase"
               style={{
-                fontFamily: PX,
-                fontSize: "clamp(52px, 9vw, 138px)",
+                fontFamily: FN,
+                fontSize: "clamp(48px, 8vw, 120px)",
                 letterSpacing: "-0.025em",
               }}
             >
@@ -51,8 +61,12 @@ export default async function ManagePage({
                 className="text-[#0F2C23]/55 leading-relaxed pt-5"
                 style={{ fontFamily: FN, fontSize: "clamp(14px, 1.5vw, 18px)" }}
               >
-                Welcome to the dashboard for <span className="font-bold text-[#0F2C23]">{hackathon.name}</span>. Manage
-                program info, speakers, judges, and cohosts from one place.
+                Welcome to the dashboard for{" "}
+                <span className="font-bold text-[#0F2C23]">
+                  {hackathon.name}
+                </span>
+                . Manage program info, speakers, judges, and cohosts from one
+                place.
               </p>
               <div className="mt-4 flex lg:justify-end">
                 <HackathonPhaseBadge phase={hackathon.phase} size="md" />
