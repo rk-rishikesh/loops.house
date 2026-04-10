@@ -35,6 +35,11 @@ const letters = [
   },
 ];
 
+const partnerLogos = [1, 2, 3, 4, 5, 6, 7].map((n, i) => ({
+  src: `/assets/shanghai/${n}.svg`,
+  borderRadius: i % 2 === 0 ? 25 : 182,
+}));
+
 function AnimatedLetter({
   text,
   color,
@@ -207,46 +212,21 @@ export default function TrialPage() {
                 className="flex shrink-0 items-center gap-6 pr-6"
                 aria-hidden={copy === 1 || undefined}
               >
-                <div
-                  className="flex shrink-0 items-center justify-center border border-[#9F4231] bg-[#5E0F00] px-6"
-                  style={{ width: 291, height: 215, borderRadius: 25 }}
-                >
-                  <span className="text-3xl font-semibold text-[#EDEDED]">
-                    GERMINA LABS
-                  </span>
-                </div>
-                <div
-                  className="flex shrink-0 items-center justify-center border border-[#9F4231] bg-[#5E0F00] px-6"
-                  style={{ width: 291, height: 215, borderRadius: 182 }}
-                >
-                  <span className="text-3xl font-semibold text-[#EDEDED]">
-                    DEVCOMPASS
-                  </span>
-                </div>
-                <div
-                  className="flex shrink-0 items-center justify-center border border-[#9F4231] bg-[#5E0F00] px-6"
-                  style={{ width: 291, height: 215, borderRadius: 25 }}
-                >
-                  <span className="text-3xl font-semibold text-[#EDEDED]">
-                    OPEN BUILD
-                  </span>
-                </div>
-                <div
-                  className="flex shrink-0 items-center justify-center border border-[#9F4231] bg-[#5E0F00] px-6"
-                  style={{ width: 291, height: 215, borderRadius: 182 }}
-                >
-                  <span className="text-3xl font-semibold text-[#EDEDED]">
-                    GERMINA LABS
-                  </span>
-                </div>
-                <div
-                  className="flex shrink-0 items-center justify-center border border-[#9F4231] bg-[#5E0F00] px-6"
-                  style={{ width: 291, height: 215, borderRadius: 25 }}
-                >
-                  <span className="text-3xl font-semibold text-[#EDEDED]">
-                    DEVCOMPASS
-                  </span>
-                </div>
+                {partnerLogos.map(({ src, borderRadius }) => (
+                  <div
+                    key={`${copy}-${src}`}
+                    className="relative flex shrink-0 items-center justify-center border border-[#9F4231] bg-[#5E0F00] px-6"
+                    style={{ width: 291, height: 215, borderRadius }}
+                  >
+                    <Image
+                      src={src}
+                      alt=""
+                      width={240}
+                      height={120}
+                      className="object-contain"
+                    />
+                  </div>
+                ))}
               </div>
             ))}
           </motion.div>
