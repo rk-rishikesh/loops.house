@@ -54,20 +54,26 @@ export function HackathonScheduleSection({
       ? [{ label: "Start date", value: fmt(h.start_date)!, iso: h.start_date }]
       : []),
     ...(h.submission_deadline
-      ? [{
-          label: "Submission deadline",
-          value: fmt(h.submission_deadline)!,
-          iso: h.submission_deadline,
-        }]
+      ? [
+          {
+            label: "Submission deadline",
+            value: fmt(h.submission_deadline)!,
+            iso: h.submission_deadline,
+          },
+        ]
       : []),
     ...(h.judging_deadline
-      ? [{
-          label: "Judging deadline",
-          value: fmt(h.judging_deadline)!,
-          iso: h.judging_deadline,
-        }]
+      ? [
+          {
+            label: "Judging deadline",
+            value: fmt(h.judging_deadline)!,
+            iso: h.judging_deadline,
+          },
+        ]
       : []),
-    ...(h.results_date ? [{ label: "Results", value: fmt(h.results_date)!, iso: h.results_date }] : []),
+    ...(h.results_date
+      ? [{ label: "Results", value: fmt(h.results_date)!, iso: h.results_date }]
+      : []),
   ];
 
   return (
@@ -154,12 +160,17 @@ export function HackathonScheduleSection({
                           className="m-0 leading-none font-black text-[#0F2C23]"
                           style={{ fontFamily: FN, fontSize: 18 }}
                         >
-                          {countdown.days}d {String(countdown.hours).padStart(2, "0")}h{" "}
+                          {countdown.days}d{" "}
+                          {String(countdown.hours).padStart(2, "0")}h{" "}
                           {String(countdown.minutes).padStart(2, "0")}m
                         </p>
                         <p
                           className="m-0 mt-1 uppercase font-bold tracking-[0.14em]"
-                          style={{ fontFamily: FN, fontSize: 9, color: "rgba(15,44,35,0.45)" }}
+                          style={{
+                            fontFamily: FN,
+                            fontSize: 9,
+                            color: "rgba(15,44,35,0.45)",
+                          }}
                         >
                           Remaining
                         </p>
