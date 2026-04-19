@@ -4,7 +4,7 @@ import { ArrowRight, Check, Code2, Loader2, Plus, Send } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { ProjectEditor } from "@/components/client/project-editor";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { submitProjectAction } from "@/lib/actions";
@@ -15,12 +15,12 @@ import type {
 } from "@/lib/data-mappers";
 import { FN, PX } from "./constants";
 
-function formatTimeUntil(iso?: string) {
+function formatTimeUntil(iso?: string, nowMs = Date.now()) {
   if (!iso) return null;
   const target = new Date(iso);
   if (Number.isNaN(target.getTime())) return null;
 
-  const diffMs = target.getTime() - Date.now();
+  const diffMs = target.getTime() - nowMs;
   if (diffMs <= 0) return null;
 
   const totalMinutes = Math.floor(diffMs / 60000);
@@ -47,6 +47,12 @@ export function HackathonSubmitSection({
   isAuthenticated,
 }: HackathonSubmitSectionProps) {
   const mounted = useIsMounted();
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const userProjectIds = new Set(projects.map((p) => p.project_id));
   const hackathonSubmission = submissions.find(
@@ -186,21 +192,64 @@ export function HackathonSubmitSection({
   const availableProjects = projects.filter(
     (p) => !submittedProjectIds.has(p.project_id),
   );
+  const submissionCountdown = formatTimeUntil(hackathon.submission_deadline, nowMs);
 
   return (
     <div className="flex-1 overflow-y-auto px-14 py-14">
-      <p
-        className="font-black uppercase leading-none select-none mb-3"
-        style={{
-          fontFamily: FN,
-          fontSize: "clamp(48px, 6vw, 80px)",
-          letterSpacing: "-0.04em",
-          lineHeight: 0.85,
-          color: "#0F2C23",
-        }}
-      >
-        SUBMIT
-      </p>
+      <div className="mb-3 flex items-end justify-between gap-8">
+        <p
+          className="font-black uppercase leading-none select-none"
+          style={{
+            fontFamily: FN,
+            fontSize: "clamp(48px, 6vw, 80px)",
+            letterSpacing: "-0.04em",
+            lineHeight: 0.85,
+            color: "#0F2C23",
+          }}
+        >
+          SUBMIT
+        </p>
+        {submissionCountdown && (
+          <div className="flex flex-col items-center gap-2 pb-1 text-center">
+            <div className="flex items-end gap-3">
+              {[
+                { label: "DAYS", value: String(submissionCountdown.days) },
+                { label: "HRS", value: String(submissionCountdown.hours).padStart(2, "0") },
+                { label: "MINS", value: String(submissionCountdown.minutes).padStart(2, "0") },
+              ].map((unit) => (
+                <div
+                  key={unit.label}
+                  className="rounded-2xl px-3 py-2 text-center"
+                  style={{
+                    backgroundColor: "rgba(15,44,35,0.05)",
+                    border: "1px solid rgba(15,44,35,0.1)",
+                    minWidth: 68,
+                  }}
+                >
+                  <p
+                    className="m-0 leading-none font-black"
+                    style={{ fontFamily: FN, fontSize: 22, color: "#0F2C23" }}
+                  >
+                    {unit.value}
+                  </p>
+                  <p
+                    className="m-0 mt-1 leading-none font-bold tracking-[0.14em]"
+                    style={{ fontFamily: FN, fontSize: 9, color: "rgba(15,44,35,0.45)" }}
+                  >
+                    {unit.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p
+              className="m-0 text-[10px] uppercase font-bold tracking-[0.16em]"
+              style={{ fontFamily: FN, color: "rgba(15,44,35,0.5)" }}
+            >
+              Submission due in
+            </p>
+          </div>
+        )}
+      </div>
       <p
         className="text-sm leading-relaxed mb-10"
         style={{ fontFamily: FN, color: "rgba(15,44,35,0.55)" }}
