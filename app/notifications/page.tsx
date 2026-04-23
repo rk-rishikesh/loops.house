@@ -4,6 +4,7 @@ import { getPendingInvitationsServer } from "@/lib/server-data";
 import { NotificationsList } from "./notifications-list";
 import { NotificationsCenterContainer } from "./notifications-center-container";
 
+
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
 

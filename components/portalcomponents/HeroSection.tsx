@@ -11,7 +11,7 @@ export function HeroSection() {
   return (
     <div
       id="overview"
-      className="flex h-screen w-full flex-col bg-[#F8FFE8] text-[#0f241c] mt-6"
+      className="flex h-screen w-full flex-col bg-[#F8FFE8] text-[#0f241c]"
     >
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 md:block md:flex-none md:px-0">
         <header className="flex w-full shrink-0 flex-col items-center pb-2 pt-[clamp(1.25rem,5vh,2.25rem)] md:mb-2 md:mt-2 md:h-[80px] md:flex-row md:justify-between md:py-0">
