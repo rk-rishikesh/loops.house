@@ -165,7 +165,8 @@ export default function TrialPage() {
               </p>
               <ShanghaiJoinButton
                 onClick={() => {
-                  window.location.href = "https://luma.com/2uei9ti4";
+                  window.location.href =
+                    "/hackathons/b5b89704-d5b7-460b-90ef-869040f7d212";
                 }}
               />
             </div>

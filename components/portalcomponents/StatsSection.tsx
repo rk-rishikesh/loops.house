@@ -1,7 +1,4 @@
-import Image from "next/image";
-import Link from "next/link";
-import { funnelSans, pixelifySans } from "@/app/fonts";
-import AnimatedButton from "@/components/buttons/animatedButton";
+import { funnelSans } from "@/app/fonts";
 
 export function StatsSection() {
   return (
@@ -16,17 +13,17 @@ export function StatsSection() {
             {/* Ideate / Build / Launch heading stack */}
             <div className="flex flex-col items-center gap-1 text-center sm:gap-2 md:flex-row md:items-baseline md:gap-6 md:text-left">
               <span
-                className={`${pixelifySans.className} font-bold leading-none tracking-[-0.04em] text-[84px] text-[#0F2C23] sm:text-[110px] md:text-[150px]`}
+                className={`${funnelSans.className} font-bold leading-none tracking-[-0.04em] text-[84px] text-[#0F2C23] sm:text-[110px] md:text-[150px]`}
               >
                 Shape.
               </span>
               <span
-                className={`${pixelifySans.className} font-bold leading-none tracking-[-0.04em] text-[84px] text-[#0F2C23CC] sm:text-[110px] md:text-[150px]`}
+                className={`${funnelSans.className} font-bold leading-none tracking-[-0.04em] text-[84px] text-[#0F2C23CC] sm:text-[110px] md:text-[150px]`}
               >
                 Your.
               </span>
               <span
-                className={`${pixelifySans.className} font-bold leading-none tracking-[-0.04em] text-[84px] text-[#0F2C2399] sm:text-[110px] md:text-[150px]`}
+                className={`${funnelSans.className} font-bold leading-none tracking-[-0.04em] text-[84px] text-[#0F2C2399] sm:text-[110px] md:text-[150px]`}
               >
                 Ideas.
               </span>
@@ -34,28 +31,67 @@ export function StatsSection() {
 
             {/* Cats row + desktop copy */}
             <div className="flex flex-col items-center gap-6 md:flex-row md:items-center md:gap-10">
-              <div className="flex flex-row items-center justify-center gap-4 md:justify-start">
-                <Image
-                  src="/assets/portal/catOne.svg"
-                  alt="Thinking cat"
-                  width={180}
-                  height={180}
-                  className="h-24 w-24 object-contain sm:h-32 sm:w-32 md:h-44 md:w-44"
-                />
-                <Image
-                  src="/assets/portal/catTwo.svg"
-                  alt="Laptop cat"
-                  width={180}
-                  height={180}
-                  className="relative top-1 h-24 w-24 object-contain sm:top-2 sm:h-32 sm:w-32 md:h-44 md:w-44"
-                />
-                <Image
-                  src="/assets/portal/catThree.svg"
-                  alt="Paper plane cat"
-                  width={180}
-                  height={180}
-                  className="h-24 w-24 object-contain sm:h-32 sm:w-32 md:h-44 md:w-44"
-                />
+              <div className="flex flex-row items-center justify-center gap-6 md:justify-start">
+                <div
+                  className="border border-[#0F2C23]/20 text-center"
+                  style={{
+                    width: 260,
+                    height: 260,
+                    borderRadius: "9999px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  }}
+                >
+                  <p
+                    className={`${funnelSans.className} uppercase text-[#0F2C23]/75`}
+                    style={{
+                      fontSize: 22,
+                      letterSpacing: "0.08em",
+                      lineHeight: 1,
+                    }}
+                  >
+                    Builders
+                  </p>
+                  <p
+                    className={`${funnelSans.className} leading-none text-[#0F2C23]`}
+                    style={{ fontSize: 88 }}
+                  >
+                    1085
+                  </p>
+                </div>
+                <div
+                  className="border border-[#0F2C23]/20 text-center"
+                  style={{
+                    width: 260,
+                    height: 260,
+                    borderRadius: "9999px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                  }}
+                >
+                  <p
+                    className={`${funnelSans.className} uppercase text-[#0F2C23]/75`}
+                    style={{
+                      fontSize: 22,
+                      letterSpacing: "0.08em",
+                      lineHeight: 1,
+                    }}
+                  >
+                    Projects
+                  </p>
+                  <p
+                    className={`${funnelSans.className} leading-none text-[#0F2C23]`}
+                    style={{ fontSize: 88 }}
+                  >
+                    67
+                  </p>
+                </div>
               </div>
 
               {/* Desktop text beside cats */}
@@ -89,7 +125,7 @@ export function StatsSection() {
               </p>
             </div>
 
-            <Link
+            {/* <Link
               href="/login"
               className="inline-flex h-[44px] w-[160px] items-center justify-center"
             >
@@ -101,7 +137,7 @@ export function StatsSection() {
                 height={44}
                 fullWidth
               />
-            </Link>
+            </Link> */}
           </div>
         </div>
       </div>

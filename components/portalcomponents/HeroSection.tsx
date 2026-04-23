@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { funnelSans, pixelifySans } from "@/app/fonts";
@@ -8,21 +11,20 @@ export function HeroSection() {
   return (
     <div
       id="overview"
-      className="flex min-h-screen justify-center bg-[#F8FFE8] text-[#0f241c]"
+      className="flex h-screen w-full flex-col bg-[#F8FFE8] text-[#0f241c] mt-6"
     >
-      <div className="flex w-full max-w-7xl flex-col">
-        {/* Navbar */}
-        <header className="flex mt-2 mb-2 h-[80px] w-full items-center justify-between">
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 md:block md:flex-none md:px-0">
+        <header className="flex w-full shrink-0 flex-col items-center pb-2 pt-[clamp(1.25rem,5vh,2.25rem)] md:mb-2 md:mt-2 md:h-[80px] md:flex-row md:justify-between md:py-0">
           <Link href="/" className="flex items-center gap-2">
             <Image
               src="/logo.svg"
               alt="Loops Logo"
               width={28}
               height={28}
-              className="h-7 w-7"
+              className="h-5 w-7"
             />
             <span
-              className={`${pixelifySans.className} uppercase text-xl font-bold tracking-tighter text-[#10271d]`}
+              className={`${pixelifySans.className} text-xl font-bold uppercase tracking-tighter text-[#10271d]`}
             >
               Loops House
             </span>
@@ -42,37 +44,157 @@ export function HeroSection() {
               Project Gallery
             </Link>
           </nav>
-
-          {/* Simple Mobile Toggle Placeholder (could be a burger icon) */}
-          <Link
-            href="/login"
-            className={`${funnelSans.className} flex h-8 items-center rounded-full border border-[#10271d] px-4 text-[10px] font-bold uppercase tracking-widest text-[#10271d] md:hidden`}
-          >
-            Login
-          </Link>
         </header>
 
-        {/* Desktop layout */}
-        <div className="relative top-[10px] hidden flex-row items-start justify-between md:flex">
-          {/* Left Side */}
+        <div className="flex min-h-0 flex-1 flex-col items-center pb-[max(4rem,env(safe-area-inset-bottom))] pt-[clamp(1rem,4vh,2rem)] md:hidden mt-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col items-center gap-1 text-center"
+          >
+            <div className="flex flex-row flex-nowrap items-baseline justify-center gap-3">
+              <motion.span
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.38,
+                  delay: 0.08,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                className={`${funnelSans.className} text-[clamp(3.75rem,16vw,5.5rem)] font-bold leading-none tracking-[-0.04em] text-[#10271d]`}
+              >
+                Ideate
+              </motion.span>
+              <motion.span
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.38,
+                  delay: 0.16,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                className={`${funnelSans.className} text-[clamp(3.75rem,16vw,5.5rem)] font-bold leading-none tracking-[-0.04em] text-[#b5c1b4]`}
+              >
+                Launch
+              </motion.span>
+            </div>
+            <motion.span
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.38,
+                delay: 0.24,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              className={`${funnelSans.className} relative text-[clamp(3.75rem,16vw,5.5rem)] font-bold leading-none tracking-[-0.04em] text-[#10271d]`}
+            >
+              Iterate
+              <span
+                className="pointer-events-none absolute -bottom-1 left-1/2 h-2 w-[min(100%,11rem)] -translate-x-1/2 rounded-full bg-[#10271d]/12 blur-md"
+                aria-hidden
+              />
+            </motion.span>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+              duration: 0.5,
+              delay: 0.06,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="flex min-h-0 w-full flex-1 items-center justify-center"
+          >
+            <div className="flex w-full max-w-[22rem] flex-col items-center gap-[clamp(0.75rem,2.5vh,1.5rem)]">
+              <div className="relative flex aspect-[320/180] w-full max-w-[20rem] items-end justify-center overflow-hidden rounded-[25px] bg-[#3C574B]">
+                <AnimatedHeroCat
+                  src="/assets/portal/peepingCat.png"
+                  alt=""
+                  width={285}
+                  height={180}
+                  className="max-h-44 w-auto object-contain object-bottom"
+                />
+                <Image
+                  src="/assets/portal/catHands.png"
+                  alt=""
+                  width={196}
+                  height={124}
+                  className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-0.5"
+                />
+              </div>
+              <p
+                className={`${funnelSans.className} px-2 text-center text-[0.9375rem] leading-snug text-[#0f241c]/80`}
+              >
+                Projects built with agents. Evaluated by agents. Competing on
+                traction.
+              </p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.42,
+              delay: 0.12,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="w-full max-w-[20rem] pt-[clamp(1rem,3vh,1.5rem)]"
+          >
+            <Link href="/login" className="inline-flex w-full justify-center">
+              <AnimatedButton
+                text="Login to Loops"
+                leftPadding={34}
+                rightPadding={9}
+                height={64}
+                fullWidth
+              />
+            </Link>
+          </motion.div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.25 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="relative top-[10px] mt-12 hidden flex-row items-start justify-between md:flex"
+        >
           <div className="flex flex-col gap-48">
-            <div className="flex flex-col gap-20 -left-2 relative top-16">
-              <span
-                className={`block text-[#10271d] ${pixelifySans.className} font-bold tracking-[-0.04em] text-[220px] leading-[84px]`}
+            <div className="relative -left-2 top-16 flex flex-col gap-20">
+              <motion.span
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{
+                  duration: 0.42,
+                  delay: 0.08,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                className={`block text-[#10271d] ${funnelSans.className} font-bold tracking-[-0.04em] text-[220px] leading-[84px]`}
               >
-                Build
-              </span>
-              <span
-                className={`block text-[#b5c1b4] ${pixelifySans.className} font-bold tracking-[-0.04em] text-[220px] leading-[84px]`}
+                Ideate
+              </motion.span>
+              <motion.span
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{
+                  duration: 0.42,
+                  delay: 0.16,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                className={`block text-[#b5c1b4] ${funnelSans.className} font-bold tracking-[-0.04em] text-[220px] leading-[84px]`}
               >
-                Ship
-              </span>
+                Launch
+              </motion.span>
             </div>
           </div>
-          {/* Right Side */}
           <div className="flex flex-col items-end gap-12 ">
             <div className="flex flex-col items-center gap-10">
-              <div className="flex items-end justify-center w-[342px] h-[193px] bg-[#3C574B] overflow-hidden rounded-[25px]">
+              <div className="flex h-[193px] w-[342px] items-end justify-center overflow-hidden rounded-[25px] bg-[#3C574B]">
                 <AnimatedHeroCat
                   src="/assets/portal/peepingCat.png"
                   alt=""
@@ -100,36 +222,22 @@ export function HeroSection() {
             </div>
 
             <div className="flex max-w-[530px] flex-col items-end gap-8 text-right">
-              <div>
-                Experience the AI-native hackathon infrastructure that supports
-                developers, organizers, and evaluators.
+              <div className={funnelSans.className}>
+                Projects built with agents. Evaluated by agents. Competing on
+                traction.
               </div>
 
               <div className="flex flex-row items-end gap-12">
-                {/* Vertical buttons to the left of Launch */}
                 <div className="flex flex-col gap-3">
                   <Link
-                    href="/hackathons"
+                    href="/projects"
                     className="inline-flex h-[44px] w-[220px] items-center justify-center"
                   >
                     <AnimatedButton
-                      text="View Hackathons"
+                      text="Projects Gallery"
                       leftPadding={20}
                       rightPadding={2}
-                      gap={30}
-                      height={44}
-                      fullWidth
-                    />
-                  </Link>
-                  <Link
-                    href="/host/new"
-                    className="inline-flex h-[44px] w-[220px] items-center justify-center"
-                  >
-                    <AnimatedButton
-                      text="Host Hackathons"
-                      leftPadding={20}
-                      rightPadding={2}
-                      gap={26}
+                      gap={22}
                       height={44}
                       invertedColors
                       fullWidth
@@ -137,15 +245,23 @@ export function HeroSection() {
                   </Link>
                 </div>
 
-                <div
-                  className={`${pixelifySans.className} text-[220px] font-bold leading-[152.2px] tracking-[-0.04em] text-[#10271d]`}
+                <motion.div
+                  initial={{ opacity: 0, y: 18 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.5 }}
+                  transition={{
+                    duration: 0.42,
+                    delay: 0.24,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className={`${funnelSans.className} text-[220px] font-bold leading-[152.2px] tracking-[-0.04em] text-[#10271d]`}
                 >
-                  Launch
-                </div>
+                  Iterate
+                </motion.div>
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

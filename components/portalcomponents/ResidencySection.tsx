@@ -44,7 +44,7 @@ export function ResidencySection() {
               <span
                 className={`${pixelifySans.className} font-bold tracking-[-0.04em] text-[180px] leading-[132.2px] text-[#E2FEA554] opacity-70`}
               >
-                Residency
+                Shanghai
               </span>
             </div>
 
@@ -53,7 +53,8 @@ export function ResidencySection() {
                 className={`${funnelSans.className} max-w-xl text-lg leading-relaxed text-[#f0f0f0]`}
               >
                 Join a curated cohort of technical founders building in public.
-                Collaborate, validate, and ship alongside high-conviction builders.
+                Collaborate, validate, and ship alongside high-conviction
+                builders.
               </p>
 
               <Link
@@ -61,7 +62,9 @@ export function ResidencySection() {
                 className={`${funnelSans.className} inline-flex h-[44px] w-[200px] items-center justify-center rounded-full bg-[#E2FEA5] text-sm font-medium text-[#0F2C23] shadow-sm transition hover:bg-[#0b1b14] hover:text-[#E2FEA5]`}
               >
                 <div className="flex flex-row items-center justify-between gap-20">
-                  <span className="relative left-6 text-sm uppercase">Apply Now</span>
+                  <span className="relative left-6 text-sm uppercase">
+                    Read More
+                  </span>
                   <Image
                     src="/assets/lightArrow.svg"
                     alt=""
@@ -155,13 +158,22 @@ export function ResidencySection() {
               </div>
             </motion.div> */}
 
-            <div className="mt-auto relative h-[450px] w-[450px]">
-              <Image
-                src="/assets/portal/coworkingCat.svg"
-                alt=""
-                fill
-                className="object-contain object-bottom-left"
-              />
+            <div className="pointer-events-none mt-auto ml-auto flex flex-col items-end leading-[186px]">
+              <span
+                className={`${pixelifySans.className} relative -mt-1 text-[96px] font-bold text-[#E2FEA5] sm:text-[140px] md:text-[180px]`}
+              >
+                居
+              </span>
+              <span
+                className={`${pixelifySans.className} relative -mt-1 text-[96px] font-bold text-[#E2FEA5] sm:text-[140px] md:text-[180px]`}
+              >
+                住
+              </span>
+              <span
+                className={`${pixelifySans.className} relative -mt-1 text-[96px] font-bold text-[#E2FEA5] sm:text-[140px] md:text-[180px]`}
+              >
+                权
+              </span>
             </div>
           </div>
         </div>
@@ -184,7 +196,7 @@ export function ResidencySection() {
               className={`${funnelSans.className} pl-8 text-xl font-bold uppercase tracking-widest text-[#385244]`}
             >
               {" "}
-              Loops House Shanghai Applications Open now {" "}
+              Loops House Shanghai{" "}
             </span>
           ))}
         </motion.div>
