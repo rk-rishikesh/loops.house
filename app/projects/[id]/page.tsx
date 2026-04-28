@@ -19,8 +19,11 @@ export default async function ViewerProjectDetailPage({
   ]);
 
   const hackathonIds = [...new Set(submissions.map((s) => s.hackathon_id))];
+  const emptyHackathonMap: Awaited<ReturnType<typeof getHackathonsByIdsServer>> = {};
   const [hackathonMap, teamMembers] = await Promise.all([
-    hackathonIds.length > 0 ? getHackathonsByIdsServer(hackathonIds) : Promise.resolve({}),
+    hackathonIds.length > 0
+      ? getHackathonsByIdsServer(hackathonIds)
+      : Promise.resolve(emptyHackathonMap),
     project?.team_id ? getTeamMembersServer(project.team_id) : Promise.resolve([]),
   ]);
   const hackathonNames: Record<string, string> = {};
