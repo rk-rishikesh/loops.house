@@ -3,6 +3,7 @@ import {
   getHackathonsByIdsServer,
   getProjectServer,
   getProjectSubmissionsServer,
+  getTeamMembersServer,
 } from "@/lib/server-data";
 
 export default async function ViewerProjectDetailPage({
@@ -18,7 +19,10 @@ export default async function ViewerProjectDetailPage({
   ]);
 
   const hackathonIds = [...new Set(submissions.map((s) => s.hackathon_id))];
-  const hackathonMap = hackathonIds.length > 0 ? await getHackathonsByIdsServer(hackathonIds) : {};
+  const [hackathonMap, teamMembers] = await Promise.all([
+    hackathonIds.length > 0 ? getHackathonsByIdsServer(hackathonIds) : Promise.resolve({}),
+    project?.team_id ? getTeamMembersServer(project.team_id) : Promise.resolve([]),
+  ]);
   const hackathonNames: Record<string, string> = {};
   for (const [hId, h] of Object.entries(hackathonMap)) {
     hackathonNames[hId] = h.name;
@@ -30,6 +34,7 @@ export default async function ViewerProjectDetailPage({
       projectId={id}
       submissions={submissions}
       hackathonNames={hackathonNames}
+      teamMembers={teamMembers}
     />
   );
 }

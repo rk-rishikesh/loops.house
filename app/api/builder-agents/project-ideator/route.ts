@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { getHackathonResources } from "@/lib/db/hackathon-resources";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { streamContent } from "../../lib/gemini-client";
+import { summarizeConversationHistory } from "../../lib/summarize-conversation-history";
 
 interface IdeatorInput {
   message: string;
@@ -32,16 +33,6 @@ RULES:
 - Keep responses concise and actionable.`;
 
 const MAX_HISTORY = 15;
-
-function summarizeHistory(
-  history: { role: string; content: string }[],
-): { role: string; content: string }[] {
-  if (history.length <= MAX_HISTORY) return history;
-  const older = history.slice(0, history.length - MAX_HISTORY);
-  const recent = history.slice(history.length - MAX_HISTORY);
-  const summary = older.map((m) => `${m.role}: ${m.content.slice(0, 100)}`).join("\n");
-  return [{ role: "user", content: `[Earlier conversation summary]\n${summary}` }, ...recent];
-}
 
 export async function POST(request: NextRequest) {
   const auth = await requireAuth();
@@ -74,12 +65,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const problemStatements = Array.isArray(ctx.problem_statements) ? ctx.problem_statements : [];
+    const sponsorTracks = Array.isArray(ctx.sponsor_tracks) ? ctx.sponsor_tracks : [];
+
     const contextBlock = [
       `HACKATHON CONTEXT:`,
       ctx.theme ? `Theme: ${ctx.theme}` : "",
-      `Problem Statements:\n${ctx.problem_statements.map((p, i) => `${i + 1}. ${p}`).join("\n")}`,
-      ctx.sponsor_tracks?.length
-        ? `Sponsor Tracks:\n${ctx.sponsor_tracks.map((t) => `- ${t.sponsor}: ${t.track_description}`).join("\n")}`
+      `Problem Statements:\n${problemStatements.map((p, i) => `${i + 1}. ${p}`).join("\n")}`,
+      sponsorTracks.length > 0
+        ? `Sponsor Tracks:\n${sponsorTracks.map((t) => `- ${t.sponsor}: ${t.track_description}`).join("\n")}`
         : "",
       resourceBlock,
       input.project_snapshot
@@ -89,7 +83,7 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join("\n\n");
 
-    const history = summarizeHistory(input.conversation_history || []);
+    const history = summarizeConversationHistory(input.conversation_history || [], MAX_HISTORY);
 
     const contents = [
       ...history.map((m) => ({

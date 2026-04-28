@@ -2,7 +2,11 @@ import { ArrowUpRight, FolderOpen, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import type { StoredProject } from "@/lib/data-mappers";
 import { getServerAuth } from "@/lib/server-auth";
-import { getProjectsServer, getTeamsServer } from "@/lib/server-data";
+import {
+  getProjectsServer,
+  getTeamsServer,
+  getUserProjectsByEmailServer,
+} from "@/lib/server-data";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
 const FN = "var(--font-funnel-sans), sans-serif";
@@ -91,16 +95,26 @@ function ProjectRow({
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-export default async function BuilderProjectsPage() {
+export default async function BuilderProjectsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ email?: string }>;
+}) {
   const auth = await getServerAuth();
+  const resolvedSearchParams = await searchParams;
+  const searchEmail = resolvedSearchParams?.email?.trim() ?? "";
   const [allProjects, userTeams] = await Promise.all([
     getProjectsServer(),
     auth ? getTeamsServer(auth.userId) : Promise.resolve([]),
   ]);
   const userTeamIds = new Set(userTeams.map((t) => t.id));
-  const projects = allProjects.filter(
+  const ownProjects = allProjects.filter(
     (p) => p.team_id && userTeamIds.has(p.team_id),
   );
+  const searchedProjects = searchEmail
+    ? await getUserProjectsByEmailServer(searchEmail)
+    : [];
+  const projects = searchEmail ? searchedProjects : ownProjects;
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#F8FFE8" }}>
       <div className="px-10 pt-10 pb-24">
@@ -131,8 +145,9 @@ export default async function BuilderProjectsPage() {
                   color: "rgba(15,44,35,0.55)",
                 }}
               >
-                Create a project and let AI agents refine your story, generate
-                social posts, and apply to hackathons with confidence.
+                {searchEmail
+                  ? `Showing projects for ${searchEmail}.`
+                  : "Create a project and let AI agents refine your story, generate social posts, and apply to hackathons with confidence."}
               </p>
 
               {/* Create new — pill CTA */}
@@ -158,6 +173,38 @@ export default async function BuilderProjectsPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Search projects by user email ─────────────────────────────── */}
+        <form method="GET" className="mb-6 flex items-center gap-3">
+          <input
+            name="email"
+            type="email"
+            defaultValue={searchEmail}
+            placeholder="Search projects by user email"
+            className="w-full max-w-[360px] rounded-xl px-4 py-2.5 text-[13px] border-none outline-none placeholder-[#0F2C23]/30"
+            style={{
+              backgroundColor: "rgba(15,44,35,0.06)",
+              color: "#0F2C23",
+              fontFamily: FN,
+            }}
+          />
+          <button
+            type="submit"
+            className="rounded-full px-4 py-2 text-[10px] tracking-[0.14em] uppercase font-bold border-none cursor-pointer"
+            style={{ backgroundColor: "#0F2C23", color: "#E2FEA5", fontFamily: PX }}
+          >
+            Search
+          </button>
+          {searchEmail && (
+            <Link
+              href="/builder/projects"
+              className="text-[10px] tracking-[0.14em] uppercase font-bold no-underline"
+              style={{ color: "rgba(15,44,35,0.55)", fontFamily: PX }}
+            >
+              Clear
+            </Link>
+          )}
+        </form>
 
         {/* ── Table header ─────────────────────────────────────────────────── */}
         <div
@@ -212,7 +259,7 @@ export default async function BuilderProjectsPage() {
                 color: "#0F2C23",
               }}
             >
-              No projects yet.
+              {searchEmail ? "No projects found." : "No projects yet."}
             </p>
             <p
               className="mb-10 leading-relaxed"
@@ -222,7 +269,9 @@ export default async function BuilderProjectsPage() {
                 color: "rgba(15,44,35,0.5)",
               }}
             >
-              Create your first profile to get started.
+              {searchEmail
+                ? "Try a different email or clear the search."
+                : "Create your first profile to get started."}
             </p>
             <Link
               href="/builder/new"

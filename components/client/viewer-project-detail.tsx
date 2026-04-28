@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { StoredProject, StoredSubmission } from "@/lib/data-mappers";
+import type { TeamMemberInfo } from "@/lib/server-data";
 import { type ChatInputSchema, chatInputSchema } from "@/lib/validations/schemas";
 
 const PX = "var(--font-pixelify-sans), sans-serif";
@@ -920,11 +921,13 @@ export function ViewerProjectDetail({
   project,
   submissions = [],
   hackathonNames = {},
+  teamMembers = [],
 }: {
   project: StoredProject | null;
   projectId: string;
   submissions?: StoredSubmission[];
   hackathonNames?: Record<string, string>;
+  teamMembers?: TeamMemberInfo[];
 }) {
   const [chatState, setChatState] = useState<ChatState>("bubble");
   const [chatMsgs] = useState<ChatMessage[]>([]);
@@ -1157,6 +1160,83 @@ export function ViewerProjectDetail({
                 </p>
               )}
             </div>
+
+            {/* Team members card */}
+            {teamMembers.length > 0 && (
+              <div
+                className="rounded-3xl p-7"
+                style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+              >
+                <p
+                  className="text-[9px] tracking-[0.2em] uppercase font-bold text-[#0F2C23]/35 mb-4"
+                  style={{ fontFamily: PX }}
+                >
+                  Team
+                </p>
+                <div className="flex flex-col gap-2">
+                  {teamMembers.map((m) => (
+                    <div
+                      key={m.user_id}
+                      className="flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors"
+                      style={{ backgroundColor: "rgba(15,44,35,0.04)" }}
+                    >
+                      <span
+                        className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: "rgba(15,44,35,0.1)" }}
+                      >
+                        {m.avatar_url ? (
+                          <Image
+                            src={m.avatar_url}
+                            alt={m.display_name ?? m.email}
+                            width={36}
+                            height={36}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span
+                            className="text-[10px] font-bold uppercase text-[#0F2C23]/60"
+                            style={{ fontFamily: PX }}
+                          >
+                            {(m.display_name ?? m.email ?? "?").trim().charAt(0)}
+                          </span>
+                        )}
+                      </span>
+                      <span className="flex flex-col min-w-0 flex-1">
+                        {m.display_name && (
+                          <span
+                            className="text-[12px] font-semibold text-[#0F2C23] truncate cursor-text select-text"
+                            style={{ fontFamily: PX, userSelect: "text" }}
+                          >
+                            {m.display_name}
+                          </span>
+                        )}
+                        <span
+                          className="text-[12px] text-[#0F2C23]/65 truncate cursor-text select-text"
+                          style={{ fontFamily: FN, userSelect: "text" }}
+                        >
+                          {m.email || "—"}
+                        </span>
+                      </span>
+                      {m.email && (
+                        <a
+                          href={`mailto:${m.email}`}
+                          className="text-[8px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/35 shrink-0 no-underline hover:text-[#0F2C23]/60"
+                          style={{ fontFamily: PX }}
+                        >
+                          Email
+                        </a>
+                      )}
+                      <span
+                        className="text-[8px] tracking-[0.18em] uppercase font-bold text-[#0F2C23]/35 shrink-0"
+                        style={{ fontFamily: PX }}
+                      >
+                        {m.role}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </main>
           <GalleryColumn shots={shots} name={p.name} />
         </div>

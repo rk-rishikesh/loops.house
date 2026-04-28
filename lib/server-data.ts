@@ -75,6 +75,27 @@ export async function getUserProjectsServer(userId: string): Promise<StoredProje
   return (data ?? []).map(profileToStored);
 }
 
+/** Returns projects for a user identified by email. */
+export async function getUserProjectsByEmailServer(email: string): Promise<StoredProject[]> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) return [];
+
+  const supabase = await createServerSupabase();
+  const { data: user, error: userErr } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+
+  if (userErr) {
+    console.error("[server-data] getUserProjectsByEmailServer user lookup:", userErr.message);
+    return [];
+  }
+  if (!user?.id) return [];
+
+  return getUserProjectsServer(user.id);
+}
+
 export async function getProjectServer(projectId: string): Promise<StoredProject | null> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase

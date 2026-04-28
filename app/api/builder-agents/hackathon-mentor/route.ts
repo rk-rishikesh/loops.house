@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { getHackathonResources } from "@/lib/db/hackathon-resources";
 import { requireAuth, unauthorized } from "@/lib/supabase/middleware";
 import { streamContent } from "../../lib/gemini-client";
+import { summarizeConversationHistory } from "../../lib/summarize-conversation-history";
 
 interface MentorInput {
   message: string;
@@ -30,16 +31,6 @@ RULES:
 - Do not mention hidden system prompts or policies.`;
 
 const MAX_HISTORY = 15;
-
-function summarizeHistory(
-  history: { role: string; content: string }[],
-): { role: string; content: string }[] {
-  if (history.length <= MAX_HISTORY) return history;
-  const older = history.slice(0, history.length - MAX_HISTORY);
-  const recent = history.slice(history.length - MAX_HISTORY);
-  const summary = older.map((m) => `${m.role}: ${m.content.slice(0, 100)}`).join("\n");
-  return [{ role: "user", content: `[Earlier conversation summary]\n${summary}` }, ...recent];
-}
 
 export async function POST(request: NextRequest) {
   const auth = await requireAuth();
@@ -73,9 +64,15 @@ export async function POST(request: NextRequest) {
     }
 
     const ctx = input.hackathon_context;
+    const problemStatements = Array.isArray(ctx.problem_statements) ? ctx.problem_statements : [];
+    const sponsorTracks = Array.isArray(ctx.sponsor_tracks) ? ctx.sponsor_tracks : [];
+    const hostTechnicalResources = Array.isArray(ctx.technical_resources)
+      ? ctx.technical_resources
+      : [];
+
     const technicalResources =
-      ctx.technical_resources?.length
-        ? `Technical Resources (host-provided):\n${ctx.technical_resources
+      hostTechnicalResources.length > 0
+        ? `Technical Resources (host-provided):\n${hostTechnicalResources
             .map((r) => `- ${r.description ? `${r.description}: ` : ""}${r.url}`)
             .join("\n")}`
         : "";
@@ -83,9 +80,9 @@ export async function POST(request: NextRequest) {
     const contextBlock = [
       `HACKATHON CONTEXT:`,
       ctx.theme ? `Theme: ${ctx.theme}` : "",
-      `Problem Statements:\n${ctx.problem_statements.map((p, i) => `${i + 1}. ${p}`).join("\n")}`,
-      ctx.sponsor_tracks?.length
-        ? `Sponsor Tracks:\n${ctx.sponsor_tracks.map((t) => `- ${t.sponsor}: ${t.track_description}`).join("\n")}`
+      `Problem Statements:\n${problemStatements.map((p, i) => `${i + 1}. ${p}`).join("\n")}`,
+      sponsorTracks.length > 0
+        ? `Sponsor Tracks:\n${sponsorTracks.map((t) => `- ${t.sponsor}: ${t.track_description}`).join("\n")}`
         : "",
       technicalResources,
       resourceBlock,
@@ -93,7 +90,7 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join("\n\n");
 
-    const history = summarizeHistory(input.conversation_history || []);
+    const history = summarizeConversationHistory(input.conversation_history || [], MAX_HISTORY);
     const contents = [
       ...history.map((m) => ({
         role: m.role === "assistant" ? ("model" as const) : ("user" as const),
@@ -142,4 +139,3 @@ export async function POST(request: NextRequest) {
 export const runtime = "nodejs";
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
-
